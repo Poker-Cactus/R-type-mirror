@@ -1,0 +1,49 @@
+name: Mirror main branch to repo2
+
+on:
+  push:
+    branches:
+      - main
+# yes, a b
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+
+    if: github.repository != 'EpitechPGE3-2025/G-CPP-500-MPL-5-2-rtype-4'
+    steps:
+      # Checkout the source repo
+      - name: Checkout source repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Needed to push full history
+
+      # Setup SSH key from secret
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.TOKEN_FOR_MIROR }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          
+          # Create SSH config for GitHub
+          cat > ~/.ssh/config << EOF
+          Host github.com
+            HostName github.com
+            User git
+            IdentityFile ~/.ssh/id_ed25519
+            IdentitiesOnly yes
+          EOF
+          chmod 600 ~/.ssh/config
+          
+          # Add GitHub to known hosts
+          ssh-keyscan github.com >> ~/.ssh/known_hosts
+          
+          # Test the SSH connection
+          ssh -T git@github.com || true
+
+      # Push to the destination repo
+      - name: Push to destination repo
+        run: |
+          git config user.name "marco"
+          git config user.email "marco.regad@epitech.eu"
+          git remote add mirror git@github.com:EpitechPGE3-2025/G-CPP-500-MPL-5-2-rtype-4.git
+          git push mirror main --force
