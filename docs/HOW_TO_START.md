@@ -15,8 +15,6 @@ sudo apt install build-essential cmake
 # Python (pour Conan)
 sudo apt install python3 python3-pip
 
-# Dépendances système pour SDL2 (souvent requises par Conan pour compiler)
-sudo apt install libsdl2-dev
 ```
 
 ### macOS
@@ -28,8 +26,6 @@ brew install cmake
 # Python
 brew install python
 
-# SDL2 (Optionnel si géré par Conan, mais utile)
-brew install sdl2
 ```
 
 ### Windows
