@@ -3,6 +3,12 @@ build/
 cmake-build-*/
 out/
 
+# Python Virtual Environment
+venv/
+.venv/
+env/
+ENV/
+
 # Conan
 conan.lock
 conaninfo.txt
