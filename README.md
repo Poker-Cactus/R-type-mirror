@@ -14,7 +14,7 @@ Ce projet est un moteur de jeu cross-platform (Linux/macOS/Windows) développé 
 ## 📚 Documentation
 
 - [Guide de Démarrage](docs/HOW_TO_START.md) - Instructions d'installation et de compilation
-- [Architecture](ARCHITECTURE.md) - Structure détaillée du projet
+- [Architecture](docs/ARCHITECTURE.md) - Structure détaillée du projet
 
 ## 🏗️ Structure du Projet
 
