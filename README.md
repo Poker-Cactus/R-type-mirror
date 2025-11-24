@@ -1,33 +1,33 @@
 # R-Type
 
-Un moteur de jeu multi-joueurs en réseau basé sur l'architecture ECS (Entity Component System), inspiré du jeu classique R-Type.
+Multiplayer networked game engine using ECS architecture, inspired by the classic R-Type.
 
-## 🚀 Démarrage Rapide
+## 🚀 Quick Start
 
 ```bash
-# Compilation
-rm -rf build && mkdir build && cd build
-conan install .. --output-folder=. --build=missing --profile=../conan_profile
-cmake .. -DCMAKE_TOOLCHAIN_FILE=build/Release/generators/conan_toolchain.cmake -DCMAKE_BUILD_TYPE=Release
-cmake --build .
+# Build with beautiful colors 🎨
+./build.sh
 
-# Exécution
-./server/server  # Lancer le serveur
-./client/client  # Lancer le client
+# Or manually:
+conan install . --output-folder=build --build=missing --profile=conan_profile
+cmake --preset conan-release
+cmake --build build --config Release
+
+# Run
+./build/server/server
+./build/client/client
 ```
 
 ## 📚 Documentation
 
-👉 **[Consultez le Wiki complet](https://github.com/Poker-Cactus/R-type-mirror/wiki)**
+- [Quick Start Guide](docs/HOW_TO_START.md) - Build & run instructions
+- [Development Setup](docs/SETUP_DEVELOPMENT.md) - VS Code & workflow
+- [Architecture](docs/ARCHITECTURE.md) - Project structure
 
-Liens rapides :
-- [Guide de Démarrage](docs/HOW_TO_START.md) - Installation et compilation
-- [Architecture](docs/ARCHITECTURE.md) - Structure du projet
+## 🛠️ Stack
 
-## 🛠️ Technologies
+**C++20** • **CMake** • **Conan** • **SDL2** • **ASIO**
 
-**Langage** : C++20 | **Build** : CMake + Conan | **Graphisme** : SDL2 | **Réseau** : Asio
+---
 
-## 📝 Licence
-
-EPITECH PROJECT - 2025
+EPITECH PROJECT © 2025
