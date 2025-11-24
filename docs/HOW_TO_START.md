@@ -70,7 +70,7 @@ Une fois les outils installés, suivez ces étapes pour compiler le projet.
 
 ```bash
 rm -rf build && mkdir build && cd build
-conan install .. --output-folder=. --build=missing
+conan install .. --output-folder=. --build=missing --profile=../conan_profile
 cmake .. -DCMAKE_TOOLCHAIN_FILE=build/Release/generators/conan_toolchain.cmake -DCMAKE_BUILD_TYPE=Release
 cmake --build .
 ```
