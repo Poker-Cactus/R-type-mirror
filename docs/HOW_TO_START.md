@@ -1,112 +1,95 @@
 # Comment Démarrer le Projet R-Type
 
-Ce document explique comment configurer l'environnement de développement, installer les dépendances et compiler le projet R-Type.
+Guide rapide pour configurer et compiler le projet R-Type.
 
-## 1. Installation des Outils par OS
+## 📋 Prérequis
+
+- **CMake** >= 3.15
+- **Compilateur C++20** (GCC >= 10, Clang >= 12, ou MSVC 2019+)
+- **Python** (pour Conan)
+
+## 🚀 Installation Rapide
 
 ### Ubuntu/Debian
 
 ```bash
-# Mise à jour
-sudo apt update
+# Installation des outils
+sudo apt update && sudo apt install -y build-essential cmake python3 python3-pip
 
-# Compilateur et CMake
-sudo apt install build-essential cmake
-
-# pipx (pour installer Conan de manière isolée)
-sudo apt install pipx
-pipx ensurepath
+# Installation de Conan
+pip install conan
+conan profile detect --force
 ```
-
-Fermez et rouvrez votre terminal pour que `pipx` soit dans le PATH.
 
 ### macOS
 
-Nécessite [Homebrew](https://brew.sh/).
-
 ```bash
-# CMake
-brew install cmake
+# Installation des outils (nécessite Homebrew)
+brew install cmake python
 
-# Python (inclut pip)
-brew install python
+# Installation de Conan
+pip install conan
+conan profile detect --force
 ```
 
 ### Windows
 
-1. **Visual Studio** : Installez Visual Studio 2019 ou 2022 avec le workload "Développement Desktop en C++".
-2. **CMake** : Téléchargez et installez depuis [cmake.org/download](https://cmake.org/download/).
-3. **Python** : Téléchargez et installez depuis [python.org](https://www.python.org/).
+1. Installez **Visual Studio 2019+** avec "Développement Desktop C++"
+2. Installez **CMake** : [cmake.org/download](https://cmake.org/download/)
+3. Installez **Python** : [python.org](https://www.python.org/)
+4. Ouvrez PowerShell et exécutez :
 
-## 2. Installation de Conan
-
-### Ubuntu/Debian
-
-```bash
-# Installer Conan via pipx (installation isolée)
-pipx install conan
-
-# Configurer le profil Conan
-conan profile detect --force
-```
-
-### macOS / Windows
-
-```bash
-# Installer Conan via pip
+```powershell
 pip install conan
-
-# Configurer le profil Conan
 conan profile detect --force
 ```
 
-## 3. Compilation du Projet
+## ⚙️ Compilation
 
-Une fois les outils installés, suivez ces étapes pour compiler le projet.
-
-### Étape 1 : Création du dossier de build et installation des dépendances
-
-À la racine du projet :
+À la racine du projet, exécutez :
 
 ```bash
-rm -rf build && mkdir build && cd build
-conan install .. --output-folder=. --build=missing --profile=../conan_profile
-cmake .. -DCMAKE_TOOLCHAIN_FILE=build/Release/generators/conan_toolchain.cmake -DCMAKE_BUILD_TYPE=Release
-cmake --build .
+# Installation des dépendances (SDL2, ASIO)
+conan install . --output-folder=build --build=missing --profile=conan_profile
+
+# Configuration CMake
+cmake --preset conan-release
+
+# Compilation
+cmake --build build/build/Release
 ```
 
-### Étape 2 : Exécution
+## 🎮 Exécution
 
-Les exécutables compilés se trouvent dans les dossiers respectifs :
-
-- **Serveur** : `./server/server` (ou `server\Release\server.exe` sur Windows)
-- **Client** : `./client/client` (ou `client\Release\client.exe` sur Windows)
-
-Lancez d'abord le serveur, puis connectez un ou plusieurs clients.
-
-## 4. Troubleshooting
-
-### Compilation échoue
-
-- Vérifiez que vous êtes dans le bon répertoire (racine du projet)
-- Assurez-vous que le compilateur C++20 est installé (`g++-10` minimum ou `clang-11`)
-- Nettoyez le build : `rm -rf build`
-- Réessayez les commandes de compilation
-
-### Conan ne trouve pas les dépendances
+### Lancer le serveur
 
 ```bash
-# Mettre à jour Conan (Ubuntu)
-pipx upgrade conan
-
-# Mettre à jour Conan (macOS/Windows)
-pip install --upgrade conan
-
-# Réinitialiser le profil
-conan profile detect --force
+./build/build/Release/server/server
 ```
 
-## 📚 Pour plus d'informations
+### Lancer le client
 
-- Consultez l'[Architecture du projet](ARCHITECTURE.md) pour comprendre la structure
-- Voir le [README principal](../README.md) pour un aperçu général
+```bash
+./build/build/Release/client/client
+```
+
+## 🔧 En cas de problème
+
+### Nettoyer et recommencer
+
+```bash
+rm -rf build
+conan install . --output-folder=build --build=missing --profile=conan_profile
+cmake --preset conan-release
+cmake --build build/build/Release
+```
+
+### Erreurs d'include dans VS Code
+
+Rechargez la fenêtre : `Cmd+Shift+P` (ou `Ctrl+Shift+P`) → "Reload Window"
+
+## 📚 Documentation
+
+- [Configuration de développement](SETUP_DEVELOPMENT.md) - Guide détaillé
+- [Architecture du projet](ARCHITECTURE.md) - Structure du code
+

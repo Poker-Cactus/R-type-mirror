@@ -5,7 +5,7 @@
 ** main.cpp
 */
 
-#include "main.hpp"
+#include "network/main.hpp"
 
 int main() {
     try {

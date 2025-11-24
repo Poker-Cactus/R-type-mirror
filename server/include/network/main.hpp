@@ -5,7 +5,9 @@
 ** main.hpp
 */
 
+#ifndef ASIO_STANDALONE
 #define ASIO_STANDALONE
+#endif
 #include <asio.hpp>
 #include <iostream>
 #include <vector>
