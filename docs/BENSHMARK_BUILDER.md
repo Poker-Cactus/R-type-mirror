@@ -64,4 +64,4 @@ You've (wisely) chosen Conan. Conan natively generates `conan_toolchain.cmake` a
 
 For a game engine, this is powerful: you define your engine as a LIBRARY and your game as an EXECUTABLE. CMake automatically propagates includes, compilation flags, and links.
 
-To ensure longevity, ease of dependency integration, and cross-platform compatibility (Linux for server, Windows for client), CMake is the only rational choice.
+To ensure longevity, ease of dependency integration, and cross-platform compatibility (Linux / Windows), CMake is the only rational choice.
