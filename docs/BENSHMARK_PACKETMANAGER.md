@@ -1,6 +1,6 @@
 # Detailed Benchmark: Conan vs vcpkg for Game Engines
 
-Here is a detailed benchmark between Conan and vcpkg, structured to highlight the specific needs of a game engine (compilation time, binary management, CI/CD), with a conclusion oriented toward Conan as requested.
+Here is a detailed benchmark between Conan and vcpkg, structured to highlight the specific needs of a game engine (compilation time, binary management, CI/CD).
 
 ## 1. Philosophy and Approach
 
@@ -16,7 +16,7 @@ Here is a detailed benchmark between Conan and vcpkg, structured to highlight th
 
 ## 2. Integration with CMake
 
-For your game engine, CMake integration is the critical point.
+For the game engine, CMake integration is the critical point.
 
 ### **vcpkg**
 - Integrates via a toolchain file. It's very "magical": you pass `-DCMAKE_TOOLCHAIN_FILE=...` and libraries become available via `find_package()`.
@@ -69,6 +69,7 @@ A game engine has many dependencies. With Conan, you don't waste time recompilin
 Network development often requires specific configurations (cross-compilation, security flags). The flexibility of Conan's Python recipes allows you to finely adapt each library without complex "hacks."
 
 ### **DevOps Ecosystem**
-Conan was designed for continuous integration (CI). When your engine grows and you need automatic builds for Linux, Windows, and possibly Android/iOS, Conan will handle compilation matrices much better than vcpkg.
+Conan was designed for continuous integration (CI). When your engine grows and you need automatic builds for Linux, Windows, Conan will handle compilation matrices much better than vcpkg.
 
-**In summary**: Choose Conan for its ability to scale with your project's complexity and to avoid turning your development machine into a heater with every dependency update.
+**In summary**: for ability to scale with your project's complexity and to avoid turning your development machine into a heater with every dependency update, we will choose Conan
+.
