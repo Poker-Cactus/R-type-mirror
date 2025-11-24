@@ -4,11 +4,7 @@ Un moteur de jeu multi-joueurs en réseau basé sur l'architecture ECS (Entity C
 
 ## 🚀 Démarrage Rapide
 
-\`\`\`bash
-# Installation de Conan
-pipx install conan  # Ubuntu/Debian
-pip install conan   # macOS/Windows
-
+```bash
 # Compilation
 rm -rf build && mkdir build && cd build
 conan install .. --output-folder=. --build=missing
@@ -18,14 +14,15 @@ cmake --build .
 # Exécution
 ./server/server  # Lancer le serveur
 ./client/client  # Lancer le client
-\`\`\`
+```
 
 ## 📚 Documentation
 
-Pour plus d'informations, consultez le **[Wiki](docs/Home.md)** :
+👉 **[Consultez le Wiki complet](https://github.com/Poker-Cactus/R-type-mirror/wiki)**
 
-- [Guide de Démarrage](docs/HOW_TO_START.md) - Installation complète et compilation
-- [Architecture](docs/ARCHITECTURE.md) - Structure détaillée du projet
+Liens rapides :
+- [Guide de Démarrage](docs/HOW_TO_START.md) - Installation et compilation
+- [Architecture](docs/ARCHITECTURE.md) - Structure du projet
 
 ## 🛠️ Technologies
 
