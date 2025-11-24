@@ -13,9 +13,12 @@ sudo apt update
 # Compilateur et CMake
 sudo apt install build-essential cmake
 
-# Python (pour Conan)
-sudo apt install python3 python3-pip python3-full
+# pipx (pour installer Conan de manière isolée)
+sudo apt install pipx
+pipx ensurepath
 ```
+
+Fermez et rouvrez votre terminal pour que `pipx` soit dans le PATH.
 
 ### macOS
 
@@ -25,7 +28,7 @@ Nécessite [Homebrew](https://brew.sh/).
 # CMake
 brew install cmake
 
-# Python
+# Python (inclut pip)
 brew install python
 ```
 
@@ -35,89 +38,44 @@ brew install python
 2. **CMake** : Téléchargez et installez depuis [cmake.org/download](https://cmake.org/download/).
 3. **Python** : Téléchargez et installez depuis [python.org](https://www.python.org/).
 
-## 2. Configuration de l'Environnement Virtuel Python
+## 2. Installation de Conan
 
-Afin d'éviter les problèmes de permissions avec pip (notamment sur Debian/Ubuntu), un environnement virtuel Python est recommandé.
+### Ubuntu/Debian
 
-### Créer l'environnement virtuel
+```bash
+# Installer Conan via pipx (installation isolée)
+pipx install conan
+
+# Configurer le profil Conan
+conan profile detect --force
+```
+
+### macOS / Windows
+
+```bash
+# Installer Conan via pip
+pip install conan
+
+# Configurer le profil Conan
+conan profile detect --force
+```
+
+## 3. Compilation du Projet
+
+Une fois les outils installés, suivez ces étapes pour compiler le projet.
+
+### Étape 1 : Création du dossier de build et installation des dépendances
 
 À la racine du projet :
 
 ```bash
-python3 -m venv venv
-```
-
-### Activer l'environnement virtuel
-
-**Linux/macOS** :
-
-```bash
-source venv/bin/activate
-```
-
-**Windows** (PowerShell) :
-
-```powershell
-venv\Scripts\Activate.ps1
-```
-
-**Windows** (CMD) :
-
-```cmd
-venv\Scripts\activate.bat
-```
-
-Une fois activé, vous verrez `(venv)` au début de votre terminal.
-
-### Optionnel : Activation automatique à chaque terminal
-
-Ajoutez cette ligne à votre `~/.bashrc` ou `~/.zshrc` :
-
-```bash
-if [[ "$PWD" == /chemin/vers/TypeMirror* ]]; then
-    source /chemin/vers/TypeMirror/venv/bin/activate
-fi
-```
-
-## 3. Lancer le Projet
-
-Une fois les outils installés et l'environnement virtuel activé, suivez ces étapes pour compiler et lancer le jeu.
-
-### Étape 1 : Installation de Conan et configuration
-
-```bash
-# S'assurer que l'env virtuel est activé
-source venv/bin/activate  # Linux/macOS
-
-# Installer Conan
-pip install conan
-
-# Détecter le profil Conan
-conan profile detect --force
-```
-
-### Étape 2 : Création du dossier de build et compilation des dépendances
-
-À la racine du projet, exécutez :
-
-```bash
-# Nettoyer et créer le dossier de build
-rm -rf build ; mkdir build
-cd build
-
-# Télécharger et préparer les dépendances
+rm -rf build && mkdir build && cd build
 conan install .. --output-folder=. --build=missing
-
-# Configurer CMake
-cmake .. \
-  -DCMAKE_TOOLCHAIN_FILE=build/Release/generators/conan_toolchain.cmake \
-  -DCMAKE_BUILD_TYPE=Release
-
-# Compiler le projet
+cmake .. -DCMAKE_TOOLCHAIN_FILE=build/Release/generators/conan_toolchain.cmake -DCMAKE_BUILD_TYPE=Release
 cmake --build .
 ```
 
-### Étape 3 : Exécution
+### Étape 2 : Exécution
 
 Les exécutables compilés se trouvent dans les dossiers respectifs :
 
@@ -128,25 +86,20 @@ Lancez d'abord le serveur, puis connectez un ou plusieurs clients.
 
 ## 4. Troubleshooting
 
-### "externally-managed-environment" (Debian/Ubuntu)
-
-Si vous avez cette erreur lors de `pip install`, activez simplement l'environnement virtuel :
-
-```bash
-source venv/bin/activate
-```
-
 ### Compilation échoue
 
 - Vérifiez que vous êtes dans le bon répertoire (racine du projet)
 - Assurez-vous que le compilateur C++20 est installé (`g++-10` minimum ou `clang-11`)
 - Nettoyez le build : `rm -rf build`
-- Réessayez les commandes de l'étape 2
+- Réessayez les commandes de compilation
 
 ### Conan ne trouve pas les dépendances
 
 ```bash
-# Mettre à jour Conan
+# Mettre à jour Conan (Ubuntu)
+pipx upgrade conan
+
+# Mettre à jour Conan (macOS/Windows)
 pip install --upgrade conan
 
 # Réinitialiser le profil
