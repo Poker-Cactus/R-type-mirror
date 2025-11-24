@@ -7,7 +7,7 @@ Un moteur de jeu multi-joueurs en réseau basé sur l'architecture ECS (Entity C
 ```bash
 # Compilation
 rm -rf build && mkdir build && cd build
-conan install .. --output-folder=. --build=missing
+conan install .. --output-folder=. --build=missing --profile=../conan_profile
 cmake .. -DCMAKE_TOOLCHAIN_FILE=build/Release/generators/conan_toolchain.cmake -DCMAKE_BUILD_TYPE=Release
 cmake --build .
 
