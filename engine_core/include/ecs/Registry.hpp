@@ -2,38 +2,46 @@
 ** EPITECH PROJECT, 2025
 ** R-Type
 ** File description:
-** ECS Registry
+** Registry header
 */
 
-#pragma once
+#ifndef REGISTRY_HPP
+#define REGISTRY_HPP
 
 #include <cstddef>
 
-namespace ECS {
+namespace ECS
+{
 
-    using Entity = std::size_t;
+/**
+ * @brief Main ECS Registry
+ *
+ * Manages entities, components and systems
+ */
+class Registry
+{
+  public:
+    Registry() = default;
+    ~Registry() = default;
 
-    class Registry {
-    public:
-        Registry() = default;
-        ~Registry() = default;
+    // Delete copy semantics
+    Registry(const Registry &) = delete;
+    Registry &operator=(const Registry &) = delete;
 
-        Entity createEntity();
+    // Allow move semantics
+    Registry(Registry &&) noexcept = default;
+    Registry &operator=(Registry &&) noexcept = default;
 
-        template <typename Component>
-        void addComponent(Entity entity, Component&& component);
+    /**
+     * @brief Create a new entity
+     * @return Entity ID
+     */
+    std::size_t createEntity();
 
-        template <typename Component>
-        Component& getComponent(Entity entity);
+  private:
+    std::size_t _nextEntityId{0};
+};
 
-        template <typename Component>
-        bool hasComponent(Entity entity) const;
+} // namespace ECS
 
-        template <typename Component>
-        void removeComponent(Entity entity);
-
-    private:
-        Entity _nextEntityId = 0;
-    };
-
-}
+#endif // REGISTRY_HPP

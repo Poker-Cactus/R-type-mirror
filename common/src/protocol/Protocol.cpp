@@ -4,5 +4,3 @@
 ** File description:
 ** Network Protocol implementation
 */
-
-#include "protocol/Protocol.hpp"
