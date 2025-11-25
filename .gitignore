@@ -46,3 +46,6 @@ Makefile
 
 # clang cache
 .cache/
+
+# Vscode workspace
+*.code-workspace
