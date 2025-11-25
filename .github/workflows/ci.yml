@@ -3,7 +3,7 @@ name: C++ CI
 on:
   pull_request:
   push:
-    branches: [ main, master, develop ]
+    branches: main
 
 jobs:
   build:
@@ -16,17 +16,19 @@ jobs:
     - name: Install dependencies
       run: |
         sudo apt update
-        sudo apt install -y clang clang-tidy clang-format clang-tools cmake gcc g++
+        sudo apt install -y \
+          clang clang-tidy clang-format clang-tools \
+          cmake gcc g++ \
+          libsdl2-dev libsdl2-image-dev libsdl2-ttf-dev libsdl2-mixer-dev
 
     - name: Create build directory
       run: mkdir -p build
 
     - name: Configure project
-      run: |
-        cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -B build -S .
+      run: cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -B build -S .
 
     - name: Build project
-      run: cmake --build build -- -j 4
+      run: cmake --build build -- -j4
 
     - name: Copy compile_commands.json
       run: cp build/compile_commands.json .
