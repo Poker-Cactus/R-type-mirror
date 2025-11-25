@@ -26,7 +26,6 @@ SpacesInCStyleCastParentheses: false
 SpacesInSquareBrackets: false
 SpaceBeforeAssignmentOperators: true
 SpaceAroundPointerQualifiers: Default
-
 ##### Alignment #####
 AlignConsecutiveAssignments: false
 AlignConsecutiveDeclarations: false
