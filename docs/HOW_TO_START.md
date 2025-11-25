@@ -1,95 +1,132 @@
-# Comment Démarrer le Projet R-Type
+# Getting Started with R-Type
 
-Guide rapide pour configurer et compiler le projet R-Type.
+Quick start guide to build and run the R-Type project.
 
-## 📋 Prérequis
+---
 
-- **CMake** >= 3.15
-- **Compilateur C++20** (GCC >= 10, Clang >= 12, ou MSVC 2019+)
-- **Python** (pour Conan)
+## 📋 Prerequisites
 
-## 🚀 Installation Rapide
+| Requirement | Minimum Version |
+|------------|-----------------|
+| **CMake** | 3.15+ |
+| **C++ Compiler** | C++20 support (GCC 10+, Clang 12+, MSVC 2019+) |
+| **Python** | 3.6+ (for Conan package manager) |
+| **Conan** | 2.0+ |
 
-### Ubuntu/Debian
+---
+
+## 🛠️ Environment Setup
+
+### Linux (Ubuntu/Debian)
 
 ```bash
-# Installation des outils
-sudo apt update && sudo apt install -y build-essential cmake python3 python3-pip
+# Install build tools and dependencies
+sudo apt update && sudo apt install -y \
+    build-essential \
+    cmake \
+    python3 \
+    python3-pip
 
-# Installation de Conan
-pip install conan
+# Install Conan package manager
+pip3 install conan
 conan profile detect --force
 ```
 
 ### macOS
 
 ```bash
-# Installation des outils (nécessite Homebrew)
-brew install cmake python
+# Install dependencies via Homebrew
+brew install cmake python3
 
-# Installation de Conan
-pip install conan
+# Install Conan package manager
+pip3 install conan
 conan profile detect --force
 ```
 
 ### Windows
 
-1. Installez **Visual Studio 2019+** avec "Développement Desktop C++"
-2. Installez **CMake** : [cmake.org/download](https://cmake.org/download/)
-3. Installez **Python** : [python.org](https://www.python.org/)
-4. Ouvrez PowerShell et exécutez :
+**Prerequisites:**
+- Visual Studio 2019+ with "Desktop development with C++" workload
+- CMake from [cmake.org](https://cmake.org/download/)
+- Python 3 from [python.org](https://www.python.org/)
 
 ```powershell
+# Install Conan package manager
 pip install conan
 conan profile detect --force
 ```
 
-## ⚙️ Compilation
+---
 
-À la racine du projet, exécutez :
+## 🚀 Build Instructions
+
+Clone the repository and navigate to the project root:
 
 ```bash
-# Installation des dépendances (SDL2, ASIO)
+git clone https://github.com/Poker-Cactus/R-type-mirror.git
+cd R-type-mirror
+```
+
+### Quick Build (with colors! 🎨)
+
+```bash
+./build.sh
+```
+
+### Manual Build
+
+### Step 1: Install Dependencies
+
+```bash
 conan install . --output-folder=build --build=missing --profile=conan_profile
+```
 
-# Configuration CMake
+This command:
+- Downloads and builds project dependencies (SDL2, ASIO)
+- Generates CMake configuration files
+- Creates a `conan-release` preset
+
+### Step 2: Configure Build System
+
+```bash
 cmake --preset conan-release
-
-# Compilation
-cmake --build build/build/Release
 ```
 
-## 🎮 Exécution
-
-### Lancer le serveur
+### Step 3: Compile Project
 
 ```bash
-./build/build/Release/server/server
+cmake --build build --config Release
 ```
 
-### Lancer le client
+**Build artifacts location:** `build/`
+
+### Run the Application
 
 ```bash
-./build/build/Release/client/client
+# Terminal 1 - Start server
+./build/server/server
+
+# Terminal 2 - Start client  
+./build/client/client
 ```
 
-## 🔧 En cas de problème
+## Troubleshooting
 
-### Nettoyer et recommencer
+**Quick rebuild:** `./build.sh rebuild`
 
+**Clean build:** `./build.sh clean && ./build.sh`
+
+**Manual clean:**
 ```bash
-rm -rf build
+rm -rf build CMakeUserPresets.json
 conan install . --output-folder=build --build=missing --profile=conan_profile
 cmake --preset conan-release
-cmake --build build/build/Release
+cmake --build build --config Release
 ```
 
-### Erreurs d'include dans VS Code
+**VS Code IntelliSense errors?** Reload window: `Ctrl+Shift+P` → `Reload Window`
 
-Rechargez la fenêtre : `Cmd+Shift+P` (ou `Ctrl+Shift+P`) → "Reload Window"
+---
 
-## 📚 Documentation
-
-- [Configuration de développement](SETUP_DEVELOPMENT.md) - Guide détaillé
-- [Architecture du projet](ARCHITECTURE.md) - Structure du code
+📚 **More info:** [Development Setup](SETUP_DEVELOPMENT.md) • [Architecture](ARCHITECTURE.md)
 

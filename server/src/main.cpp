@@ -1,8 +1,8 @@
 /*
 ** EPITECH PROJECT, 2025
-** R-Type
+** R-type-mirror
 ** File description:
-** Server entry point
+** main.cpp
 */
 
 int main()

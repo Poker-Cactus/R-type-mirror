@@ -1,159 +1,64 @@
-# Configuration de l'Environnement de Développement
+# Development Setup
 
-Ce guide vous aidera à configurer votre environnement de développement pour le projet R-Type.
+> **For basic setup**, see [Quick Start Guide](HOW_TO_START.md)
 
-## Prérequis
+## VS Code Configuration
 
-- **CMake** >= 3.15
-- **Conan** (gestionnaire de paquets C++)
-- **Compilateur C++20** :
-  - macOS : Clang (Xcode Command Line Tools)
-  - Linux : GCC >= 10 ou Clang >= 12
-  - Windows : MSVC 2019 ou plus récent
-- **VS Code** avec les extensions :
-  - C/C++ Extension Pack
-  - CMake Tools
+### Required Extensions
+- **C/C++ Extension Pack**
+- **CMake Tools**
 
-## Installation de Conan
+### Auto-Configuration
 
-### macOS / Linux
+The workspace includes portable IntelliSense config (`.vscode/c_cpp_properties.json`):
+- Uses environment variables (`${env:HOME}` / `${env:USERPROFILE}`)
+- Supports Mac, Linux, Windows
+- Auto-detects Conan dependencies
 
-```bash
-pip install conan
-```
+**If IntelliSense fails:** Reload window (`Ctrl+Shift+P` → `Reload Window`)
 
-### Windows
-
-```powershell
-pip install conan
-```
-
-## Configuration du Projet
-
-### 1. Cloner le dépôt
+## Development Workflow
 
 ```bash
-git clone https://github.com/Poker-Cactus/R-type-mirror.git
-cd R-type-mirror
+# 1. Create feature branch
+git checkout -b feat/your-feature
+
+# 2. Develop and rebuild
+./build.sh rebuild        # Fast colored rebuild
+# or
+cmake --build build --config Release
+
+# 3. Test
+./build/server/server
+./build/client/client
+
+# 4. Commit and push
+git add . && git commit -m "[ADD/FIX] Description"
+git push origin feat/your-feature
 ```
 
-### 2. Installer les dépendances avec Conan
+## Project Structure
 
+```
+engine_core/    # ECS engine
+common/         # Shared components & protocols
+server/         # Game server
+client/         # Game client
+conanfile.txt   # Dependencies (SDL2, ASIO)
+```
+
+## Dependencies
+
+- **ASIO** 1.28.0 - Async networking
+- **SDL2** 2.28.3 - Graphics rendering
+
+## Troubleshooting
+
+**Compiler version:** C++20 required (GCC 10+, Clang 12+, MSVC 2019+)
+
+**Clean rebuild:**
 ```bash
+rm -rf build CMakeUserPresets.json
 conan install . --output-folder=build --build=missing --profile=conan_profile
+cmake --preset conan-release && cmake --build build --config Release
 ```
-
-Cette commande va :
-- Télécharger et compiler SDL2 et ASIO
-- Générer les fichiers CMake nécessaires
-- Créer un preset CMake (`conan-release`)
-
-### 3. Configurer CMake
-
-```bash
-cmake --preset conan-release
-```
-
-### 4. Compiler le projet
-
-```bash
-cmake --build build/build/Release
-```
-
-## Configuration de VS Code
-
-### IntelliSense
-
-Le fichier `.vscode/c_cpp_properties.json` est déjà configuré pour tous les systèmes d'exploitation. Il utilise des variables d'environnement pour être portable :
-
-- **macOS/Linux** : `${env:HOME}/.conan2/...`
-- **Windows** : `${env:USERPROFILE}/.conan2/...`
-
-VS Code détectera automatiquement votre système et utilisera la bonne configuration.
-
-### Configuration CMake
-
-Le fichier `.vscode/settings.json` est configuré pour :
-- Utiliser CMake Tools comme provider de configuration
-- Ne pas configurer automatiquement à l'ouverture (évite les erreurs si Conan n'est pas encore installé)
-
-## Structure du Projet
-
-```
-.
-├── engine_core/        # Moteur ECS
-├── common/            # Code partagé (Components, Protocol)
-├── server/            # Serveur de jeu
-├── client/            # Client de jeu
-├── docs/              # Documentation
-├── conanfile.txt      # Dépendances Conan
-└── CMakeLists.txt     # Configuration CMake principale
-```
-
-## Exécution
-
-### Serveur
-
-```bash
-./build/build/Release/server/server
-```
-
-### Client
-
-```bash
-./build/build/Release/client/client
-```
-
-## Dépendances du Projet
-
-- **ASIO** (1.28.0) : Bibliothèque réseau asynchrone standalone
-- **SDL2** (2.28.3) : Bibliothèque graphique pour le rendu
-
-## Résolution des Problèmes
-
-### Erreurs d'include dans VS Code
-
-Si vous voyez des erreurs comme "impossible d'ouvrir le fichier source asio.hpp" :
-
-1. Assurez-vous d'avoir exécuté `conan install`
-2. Rechargez la fenêtre VS Code (`Cmd+Shift+P` > "Reload Window")
-3. Vérifiez que le chemin Conan existe : `~/.conan2/p/asiof472f53aca4d3/p/include`
-
-### Erreurs de compilation
-
-Si la compilation échoue :
-
-1. Nettoyez le dossier build : `rm -rf build`
-2. Réinstallez les dépendances : `conan install . --output-folder=build --build=missing --profile=conan_profile`
-3. Reconfigurez CMake : `cmake --preset conan-release`
-
-### Problèmes de version C++
-
-Le projet nécessite C++20. Assurez-vous que votre compilateur le supporte :
-
-```bash
-# GCC
-g++ --version  # >= 10
-
-# Clang
-clang++ --version  # >= 12
-
-# MSVC
-cl.exe  # Visual Studio 2019+
-```
-
-## Workflow de Développement
-
-1. **Créer une branche** : `git checkout -b feat/ma-feature`
-2. **Développer** : Modifier les fichiers, tester
-3. **Compiler** : `cmake --build build/build/Release`
-4. **Tester** : Exécuter les binaires
-5. **Commit** : `git add . && git commit -m "feat: ma feature"`
-6. **Push** : `git push origin feat/ma-feature`
-
-## Support
-
-Pour toute question ou problème, consultez :
-- [Architecture du Projet](./ARCHITECTURE.md)
-- [Guide de Démarrage](./HOW_TO_START.md)
-- Les benchmarks dans `docs/BENCHMARK/`
