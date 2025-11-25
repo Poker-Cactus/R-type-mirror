@@ -43,3 +43,6 @@ Makefile
 
 # Logs
 *.log
+
+# clang cache
+.cache/
