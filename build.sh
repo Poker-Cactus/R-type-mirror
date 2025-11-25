@@ -54,15 +54,17 @@ print_building() {
 
 # Check if clean is requested
 if [ "$1" == "clean" ]; then
-    print_step "${CLEAN}" "Cleaning build directory..."
+    echo -e "\033[1;34m🧹 MrPropre au charbon 🧹\033[0m"
     rm -rf build CMakeUserPresets.json
-    print_success "Clean complete!"
-    echo ""
+    echo -e "${GRAY}\n  ======== Cleaning ========${RESET}"
+    echo -e "${GRAY}  Delete folder build/${RESET}"
+    echo -e "${GRAY}  Delete file CMakeUserPresets.json\n${RESET}"
+    echo -e "\033[1;33m🪄  Tutty Propo 🪄\033[0m"
     exit 0
 fi
 
 # Check if only rebuild is requested
-if [ "$1" == "rebuild" ]; then
+if [ "$1" == "rebuild" ] || [ "$1" == "re" ]; then
     print_step "${BUILD}" "Rebuilding project..."
     cmake --build build --config Release 2>&1 | while IFS= read -r line; do
         if [[ $line == *"engine_core"* ]]; then
@@ -160,7 +162,7 @@ if [ $? -eq 0 ]; then
     echo -e "${GREEN}${BOLD}"
     echo "╔═══════════════════════════════════════════════════════════╗"
     echo "║                                                           ║"
-    echo "║              ${SPARKLES}  BUILD SUCCESSFUL!  ${SPARKLES}                 ║"
+    echo "║              ${SPARKLES}  BUILD SUCCESSFUL!  ${SPARKLES}                    ║"
     echo "║                                                           ║"
     echo "╚═══════════════════════════════════════════════════════════╝"
     echo -e "${RESET}\n"
@@ -169,6 +171,7 @@ if [ $? -eq 0 ]; then
     echo -e "  ${SERVER}  Server: ${GREEN}./build/server/server${RESET}"
     echo -e "  ${CLIENT}  Client: ${BLUE}./build/client/client${RESET}"
     echo ""
+    echo -e "\033[1;33m🍝 Mamacita, les pâtes au Crous 🍝\033[0m"
 else
     echo ""
     print_error "Build failed!"
