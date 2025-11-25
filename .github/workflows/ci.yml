@@ -1,0 +1,38 @@
+name: C++ CI
+
+on:
+  pull_request:
+  push:
+    branches: [ main, master, develop ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
+    - name: Install dependencies
+      run: |
+        sudo apt update
+        sudo apt install -y clang clang-tidy clang-format clang-tools cmake gcc g++
+
+    - name: Create build directory
+      run: mkdir -p build
+
+    - name: Configure project
+      run: |
+        cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -B build -S .
+
+    - name: Build project
+      run: cmake --build build -- -j 4
+
+    - name: Copy compile_commands.json
+      run: cp build/compile_commands.json .
+
+    - name: Run clang-format check
+      run: ./scripts/format-check.sh
+
+    - name: Run clang-tidy check
+      run: ./scripts/tidy-check.sh

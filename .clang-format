@@ -14,7 +14,6 @@ SortIncludes: true
 IncludeBlocks: Preserve
 
 ##### Function Signatures #####
-# Permet de garder les signatures sur une seule ligne si elles tiennent
 BinPackParameters: true
 AllowAllParametersOfDeclarationOnNextLine: false
 AllowShortFunctionsOnASingleLine: Inline
@@ -22,6 +21,11 @@ AllowShortBlocksOnASingleLine: false
 
 ##### Spacing #####
 SpaceBeforeParens: ControlStatements
+SpacesInParentheses: false
+SpacesInCStyleCastParentheses: false
+SpacesInSquareBrackets: false
+SpaceBeforeAssignmentOperators: true
+SpaceAroundPointerQualifiers: Default
 
 ##### Alignment #####
 AlignConsecutiveAssignments: false
@@ -29,6 +33,8 @@ AlignConsecutiveDeclarations: false
 AlignOperands: false
 AlignTrailingComments: false
 
+##### Whitespace #####
+MaxEmptyLinesToKeep: 1
+
 ##### Misc #####
 ReflowComments: true
-SpacesInParentheses: false
