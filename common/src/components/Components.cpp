@@ -1,8 +1,6 @@
 /*
 ** EPITECH PROJECT, 2025
-** R-Type
+** R-type-mirror
 ** File description:
-** Components implementation
+** Components.cpp
 */
-
-#include "components/Components.hpp"

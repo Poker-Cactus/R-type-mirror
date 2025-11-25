@@ -1,7 +1,7 @@
 project(server)
 
 add_executable(server
-    src/network/main.cpp
+    src/main.cpp
 )
 
 target_include_directories(server PRIVATE include)

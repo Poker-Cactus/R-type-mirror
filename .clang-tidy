@@ -1,0 +1,40 @@
+Checks: >
+  bugprone-*,
+  clang-analyzer-*,
+  modernize-*,
+  performance-*,
+  readability-*,
+  cppcoreguidelines-avoid-goto,
+  cppcoreguidelines-avoid-c-arrays,
+  cppcoreguidelines-avoid-magic-numbers,
+  cppcoreguidelines-non-private-member-variables-in-classes,
+  -readability-magic-numbers,
+  -clang-diagnostic-c++98-compat,
+  -llvmlibc-*,
+  -modernize-use-trailing-return-type,
+  -altera-*,
+  -fuchsia-*,
+  -hicpp-*,
+  -google-*,
+  -llvm-*,
+  -cert-dcl21-cpp,
+  -misc-non-private-member-variables-in-classes
+
+  # Smart pointers (force modern RAII)
+  modernize-make-unique,
+  modernize-make-shared,
+  modernize-use-nullptr,
+  modernize-use-bool-literals,
+  modernize-use-default-member-init,
+  modernize-use-override,
+  modernize-raw-string-literal,
+  modernize-use-auto
+
+  # Security / memory
+  cppcoreguidelines-owning-memory,
+  clang-analyzer-cplusplus.NewDelete,
+  clang-analyzer-cplusplus.NewDeleteLeaks
+
+WarningsAsErrors: ''
+HeaderFilterRegex: '.*'
+FormatStyle: none
