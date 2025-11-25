@@ -1,0 +1,11 @@
+[requires]
+sdl/2.28.3
+asio/1.28.0
+
+[generators]
+CMakeDeps
+CMakeToolchain
+
+[options]
+
+[tool_requires]
