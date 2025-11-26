@@ -1,7 +1,7 @@
 project(engine_core)
 
 add_library(engine_core STATIC
-    src/ecs/Registry.cpp
+    src/ecs/World.cpp
 )
 
 target_include_directories(engine_core PUBLIC
