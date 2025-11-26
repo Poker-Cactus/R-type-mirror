@@ -13,20 +13,25 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v3
 
-    - name: Install dependencies
+    - name: Install system dependencies
       run: |
         sudo apt update
         sudo apt install -y \
           clang clang-tidy clang-format clang-tools \
           cmake gcc g++ \
-          libsdl2-dev libsdl2-image-dev libsdl2-ttf-dev libsdl2-mixer-dev \
-          libasio-dev
+          python3 python3-pip
 
-    - name: Create build directory
-      run: mkdir -p build
+    - name: Install Conan
+      run: |
+        pip3 install conan
+        conan profile detect --force
+
+    - name: Install dependencies with Conan
+      run: |
+        conan install . --output-folder=build --build=missing --profile=conan_profile_ci
 
     - name: Configure project
-      run: cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -B build -S .
+      run: cmake --preset conan-release -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
 
     - name: Build project
       run: cmake --build build -- -j4
