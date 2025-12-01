@@ -1,31 +1,31 @@
-BasedOnStyle:  LLVM
+BasedOnStyle: LLVM
 
-##### Indentation #####
+# Indentation
 IndentWidth: 2
 ContinuationIndentWidth: 2
 TabWidth: 4
 UseTab: Never
 
-##### Brace Style #####
+# Brace Style
 BreakBeforeBraces: Linux
 
-##### Templates #####
+# Templates
 BreakTemplateDeclarations: Yes
 
-##### Line Length #####
+# Line Length
 ColumnLimit: 120
 
-##### Includes #####
+# Includes
 SortIncludes: true
 IncludeBlocks: Preserve
 
-##### Function Signatures #####
+# Function Signatures
 BinPackParameters: true
 AllowAllParametersOfDeclarationOnNextLine: false
 AllowShortFunctionsOnASingleLine: Inline
 AllowShortBlocksOnASingleLine: false
 
-##### Spacing #####
+# Spacing
 SpaceBeforeParens: ControlStatements
 SpacesInParentheses: false
 SpacesInCStyleCastParentheses: false
@@ -33,14 +33,14 @@ SpacesInSquareBrackets: false
 SpaceBeforeAssignmentOperators: true
 SpaceAroundPointerQualifiers: Default
 
-##### Alignment #####
+# Alignment
 AlignConsecutiveAssignments: false
 AlignConsecutiveDeclarations: false
 AlignOperands: false
 AlignTrailingComments: false
 
-##### Whitespace #####
+# Whitespace
 MaxEmptyLinesToKeep: 1
 
-##### Misc #####
+# Misc
 ReflowComments: true
