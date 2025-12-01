@@ -8,6 +8,6 @@ target_include_directories(client PRIVATE include)
 
 target_link_libraries(client PRIVATE 
     engine_core 
-    common 
+    common
     SDL2::SDL2
 )
