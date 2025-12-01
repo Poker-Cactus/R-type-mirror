@@ -10,7 +10,7 @@ UseTab: Never
 BreakBeforeBraces: Linux
 
 # Templates
-BreakTemplateDeclarations: Yes
+# BreakTemplateDeclarations: Yes
 
 # Line Length
 ColumnLimit: 120
