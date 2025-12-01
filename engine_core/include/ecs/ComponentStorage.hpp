@@ -15,8 +15,7 @@
 
 static constexpr std::size_t INVALID = std::numeric_limits<std::size_t>::max();
 
-template <typename T>
-class ComponentStorage
+template <typename T> class ComponentStorage
 {
 public:
   void addComponent(Entity ent, T component)
