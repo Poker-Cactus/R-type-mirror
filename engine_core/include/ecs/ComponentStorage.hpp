@@ -11,9 +11,8 @@
 #include "Entity.hpp"
 #include <cstddef>
 #include <limits>
+#include <stdexcept>
 #include <vector>
-
-static constexpr std::size_t INVALID = std::numeric_limits<std::size_t>::max();
 
 template <typename T> class ComponentStorage
 {
@@ -60,9 +59,25 @@ public:
 
   [[nodiscard]] bool hasComponent(Entity ent) const { return ent < sparseArray.size() && sparseArray[ent] != INVALID; }
 
-  T &getComponent(Entity ent) { return denseComponentArray[sparseArray[ent]]; }
+  T &getComponent(Entity ent)
+  {
+    if (!hasComponent(ent)) {
+      throw std::out_of_range("Entity does not have this component");
+    }
+    return denseComponentArray[sparseArray[ent]];
+  }
+
+  const T &getComponent(Entity ent) const
+  {
+    if (!hasComponent(ent)) {
+      throw std::out_of_range("Entity does not have this component");
+    }
+    return denseComponentArray[sparseArray[ent]];
+  }
 
 private:
+  static constexpr std::size_t INVALID = std::numeric_limits<std::size_t>::max();
+
   std::vector<std::size_t> sparseArray;
   std::vector<Entity> denseEntityArray;
   std::vector<T> denseComponentArray;
