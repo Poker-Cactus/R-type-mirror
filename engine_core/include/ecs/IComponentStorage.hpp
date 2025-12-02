@@ -10,12 +10,12 @@
 
 #include "Entity.hpp"
 
-class IComponentStorage {
+class IComponentStorage
+{
 public:
-    virtual ~IComponentStorage() = default;
-    virtual void removeComponent(Entity) = 0;
-    [[nodiscard]] virtual bool hasComponent(Entity) const = 0;
+  virtual ~IComponentStorage() = default;
+  virtual void removeComponent(Entity) = 0;
+  [[nodiscard]] virtual bool hasComponent(Entity) const = 0;
 };
-
 
 #endif // ECS_ICOMPONENTSTORAGE_HPP_
