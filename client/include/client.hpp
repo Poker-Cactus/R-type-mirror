@@ -9,8 +9,11 @@
 #include "../../common/include/network/safeQueue.hpp"
 #include <array>
 #include <asio.hpp>
+#include <capnp/message.h>
+#include <capnp/serialize.h>
 #include <iostream>
 #include <thread>
+#include "GameMessages.capnp.h"
 #define UNUSED __attribute__((unused))
 #pragma once
 

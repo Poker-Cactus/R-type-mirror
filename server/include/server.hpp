@@ -12,6 +12,9 @@
 #include <iostream>
 #include <thread>
 #include <vector>
+#include <capnp/message.h>
+#include <capnp/serialize.h>
+#include "GameMessages.capnp.h"
 #define UNUSED __attribute__((unused))
 #pragma once
 
