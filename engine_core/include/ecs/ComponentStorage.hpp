@@ -15,7 +15,8 @@
 #include <stdexcept>
 #include <vector>
 
-template <typename T> class ComponentStorage : public IComponentStorage
+template <typename T>
+class ComponentStorage : public IComponentStorage
 {
 public:
   void addComponent(Entity ent, T component)
@@ -58,7 +59,10 @@ public:
     sparseArray[ent] = INVALID;
   }
 
-  [[nodiscard]] bool hasComponent(Entity ent) const override { return ent < sparseArray.size() && sparseArray[ent] != INVALID; }
+  [[nodiscard]] bool hasComponent(Entity ent) const override
+  {
+    return ent < sparseArray.size() && sparseArray[ent] != INVALID;
+  }
 
   T &getComponent(Entity ent)
   {
