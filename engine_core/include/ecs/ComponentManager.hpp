@@ -83,7 +83,7 @@ public:
     }
   }
 
-  void removeAllComponent(Entity ent)
+  void removeAllComponents(Entity ent)
   {
     for (auto &pair : storages) {
       pair.second->removeComponent(ent);
