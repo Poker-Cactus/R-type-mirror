@@ -9,12 +9,14 @@
 #define ECS_COMPONENTSTORAGE_HPP_
 
 #include "Entity.hpp"
+#include "IComponentStorage.hpp"
 #include <cstddef>
 #include <limits>
 #include <stdexcept>
 #include <vector>
 
-template <typename T> class ComponentStorage
+template <typename T>
+class ComponentStorage : public IComponentStorage
 {
 public:
   void addComponent(Entity ent, T component)
@@ -32,7 +34,7 @@ public:
     }
   }
 
-  void removeComponent(Entity ent)
+  void removeComponent(Entity ent) override
   {
     if (ent >= sparseArray.size() || sparseArray[ent] == INVALID) {
       return;
@@ -57,7 +59,10 @@ public:
     sparseArray[ent] = INVALID;
   }
 
-  [[nodiscard]] bool hasComponent(Entity ent) const { return ent < sparseArray.size() && sparseArray[ent] != INVALID; }
+  [[nodiscard]] bool hasComponent(Entity ent) const override
+  {
+    return ent < sparseArray.size() && sparseArray[ent] != INVALID;
+  }
 
   T &getComponent(Entity ent)
   {
