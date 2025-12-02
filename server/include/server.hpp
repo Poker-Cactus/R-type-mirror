@@ -12,6 +12,7 @@
 #include <iostream>
 #include <thread>
 #include <vector>
+#define UNUSED __attribute__((unused))
 #pragma once
 
 class UdpServer

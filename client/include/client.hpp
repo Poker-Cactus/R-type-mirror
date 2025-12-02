@@ -5,10 +5,13 @@
 ** client.hpp
 */
 
+#include "../../common/include/network/messageQueue.hpp"
 #include "../../common/include/network/safeQueue.hpp"
 #include <array>
 #include <asio.hpp>
+#include <iostream>
 #include <thread>
+#define UNUSED __attribute__((unused))
 #pragma once
 
 class UdpClient
