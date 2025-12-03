@@ -42,10 +42,10 @@ public:
       m_alive[newEntity] = 1;
     } else {
       // Créer une nouvelle entité avec un nouvel ID
-      newEntity = m_nextId++;
-      if (newEntity >= MAX_ENTITIES) {
+      if (m_nextId >= MAX_ENTITIES) {
         throw std::runtime_error("EntityManager: Entity ID overflow");
       }
+      newEntity = m_nextId++;
       m_alive.push_back(1);
     }
 
