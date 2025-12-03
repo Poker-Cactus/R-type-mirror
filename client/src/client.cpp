@@ -32,6 +32,7 @@ UdpClient::~UdpClient()
 
 void UdpClient::send(const std::string &msg)
 {
+
     _socket.async_send(
         asio::buffer(msg),
         asio::bind_executor(_strand, [](const std::error_code &error, std::size_t /*bytes_transferred*/) {

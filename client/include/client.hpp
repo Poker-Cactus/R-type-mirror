@@ -7,8 +7,11 @@
 
 #include "../../common/include/network/messageQueue.hpp"
 #include "../../common/include/network/safeQueue.hpp"
+#include "GameMessages.capnp.h"
 #include <array>
 #include <asio.hpp>
+#include <capnp/message.h>
+#include <capnp/serialize.h>
 #include <iostream>
 #include <thread>
 #define UNUSED __attribute__((unused))
