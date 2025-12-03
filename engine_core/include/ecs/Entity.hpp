@@ -8,6 +8,7 @@
 #include <cstdint>
 
 #ifndef ECS_ENTITY_HPP_
+#define ECS_ENTITY_HPP_
 
 using Entity = std::uint32_t;
 
