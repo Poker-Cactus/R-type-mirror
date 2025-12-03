@@ -10,7 +10,8 @@
 int main()
 {
     try {
-        UdpServer server(4242);
+        // NetworkManager server(4242);
+        Server server(4242);
     } catch (const std::exception &e) {
         std::cerr << "Exception: " << e.what() << "\n";
     }
