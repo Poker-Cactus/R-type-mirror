@@ -25,6 +25,18 @@ namespace ecs
 constexpr std::size_t MAX_COMPONENTS = 64;
 
 /**
+ * @brief Maximum number of entities in the world
+ *
+ * This defines the upper limit for entity creation and storage allocation.
+ * Entity IDs are recycled when entities are destroyed, so this represents
+ * the maximum number of entities that can exist simultaneously.
+ *
+ * @note Increase this value for larger game worlds
+ * @note 5000 entities should be sufficient for most games
+ */
+constexpr std::size_t MAX_ENTITIES = 5000;
+
+/**
  * @brief Type alias for component signatures using bitsets
  *
  * A component signature is a bitset where each bit represents the presence

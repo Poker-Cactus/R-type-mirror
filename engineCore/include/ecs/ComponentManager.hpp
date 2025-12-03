@@ -20,23 +20,6 @@ public:
   ~ComponentManager() = default;
 
   template <typename T>
-  ComponentStorage<T> &ensureStorage()
-  {
-    auto key = std::type_index(typeid(T));
-    auto iterator = storages.find(key);
-
-    if (iterator != storages.end()) {
-      return static_cast<ComponentStorage<T> &>(*iterator->second);
-    }
-
-    // Si le storage n'existe pas, on le crée
-    auto newStorage = std::make_unique<ComponentStorage<T>>();
-    ComponentStorage<T> &ref = *newStorage;
-    storages.emplace(key, std::move(newStorage));
-    return ref;
-  }
-
-  template <typename T>
   void addComponent(Entity ent, T component)
   {
     ComponentStorage<T> &storage = ensureStorage<T>();
@@ -118,6 +101,23 @@ public:
 private:
   std::unordered_map<std::type_index, std::unique_ptr<IComponentStorage>> storages;
   std::unordered_map<Entity, ecs::ComponentSignature> entitySignatures;
+
+  template <typename T>
+  ComponentStorage<T> &ensureStorage()
+  {
+    auto key = std::type_index(typeid(T));
+    auto iterator = storages.find(key);
+
+    if (iterator != storages.end()) {
+      return static_cast<ComponentStorage<T> &>(*iterator->second);
+    }
+
+    // Si le storage n'existe pas, on le crée
+    auto newStorage = std::make_unique<ComponentStorage<T>>();
+    ComponentStorage<T> &ref = *newStorage;
+    storages.emplace(key, std::move(newStorage));
+    return ref;
+  }
 };
 
 #endif // ECS_COMPONENTMANAGER_HPP_
