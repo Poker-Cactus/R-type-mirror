@@ -10,12 +10,13 @@
 #include "INetworkManager.hpp"
 #include <array>
 #include <asio.hpp>
+#include <capnp/message.h>
+#include <capnp/serialize.h>
 #include <iostream>
 #include <thread>
-#include <vector>
 
-#define UNUSED __attribute__((unused))
 #pragma once
+#define UNUSED __attribute__((unused))
 
 class NetworkManager ::INetworkManager
 {
@@ -24,11 +25,12 @@ class NetworkManager ::INetworkManager
     ~NetworkManager();
 
     void run();
-    void send(const std::string &message, asio::ip::udp::endpoint target_endpoint);
-    void send(kj::Array<capnp::word> &data, asio::ip::udp::endpoint target_endpoint);
+    template <typename T, typename U> void send(const T &data, U targetEndpoint);
 
-  private:
-    void startReceive();
+    void serialize(const T &data);
+    std::string &deserialize(const std::array<char, 1024> &recvBuffer, const std::size_t bytes_transferred)
+
+        private : void startReceive();
     bool getIncomingMessage(MessageQueue &message);
 
     const asio::ip::udp::socket &getSocket() const { return _socket; }
@@ -42,6 +44,5 @@ class NetworkManager ::INetworkManager
     asio::ip::udp::socket _socket;
     asio::strand<asio::io_context::executor_type> _strand;
     asio::ip::udp::endpoint _remote_endpoint; // Stocke qui nous a envoyé le dernier paquet
-    std::array<char, 1024> _recv_buffer;
     SafeQueue<MessageQueue> _inComingMessages;
 };

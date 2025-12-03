@@ -44,28 +44,48 @@ void NetworkManager::run()
     }
 }
 
-template <typename T> void NetworkManager::send(const T &message, asio::ip::udp::endpoint target_endpoint)
+template <typename T> void NetworkManager::send(const T &data, asio::ip::udp::endpoint targetEndpoint)
 {
+    kj::ArrayPtr<const kj::byte> bytes;
+
+    switch (data) {
+    case std::is_same_v<T, std::string>:
+        bytes = serialize(data);
+        break;
+    case std::is_same_v<T, kj::Array<capnp::word>>:
+        bytes = data.asBytes();
+        break;
+    default:
+        bytes = data.asBytes();
+        break;
+    }
+
+    auto buffer = std::make_shared<std::vector<uint8_t>>(bytes.begin(), bytes.end());
+
     _socket.async_send_to(
-        asio::buffer(message), target_endpoint,
-        asio::bind_executor(_strand, [](const std::error_code &error, std::size_t /*bytes_transferred*/) {
+        asio::buffer(*buffer), targetEndpoint,
+        asio::bind_executor(_strand, [buffer](const std::error_code &error, std::size_t /*bytes_transferred*/) {
             if (error) {
                 std::cerr << "Erreur d'envoi: " << error.message() << std::endl;
             }
         }));
 }
 
-template <typename T> void NetworkManager::send(kj::Array<T> &data, asio::ip::udp::endpoint target_endpoint)
+void NetworkManager::serialize(UNUSED const std::string &data)
 {
-    auto buffer_ptr = std::make_shared<std::vector<uint8_t>>(data.asBytes().begin(), data.asBytes().end());
+    // Créer un message Cap'n Proto
+    // Membre de la classe NetworkManager
+    capnp::word scratch_space[1024 * 64]; // Buffer statique de 512KB (par ex)
+    // Dans la boucle
+    capnp::MallocMessageBuilder messageBuilder(kj::arrayPtr(scratch_space, sizeof(scratch_space)));
+    auto netMsg = messageBuilder.initRoot<NetworkMessage>();
 
-    _socket.async_send_to(
-        asio::buffer(*buffer_ptr), target_endpoint,
-        asio::bind_executor(_strand, [buffer_ptr](const std::error_code &error, std::size_t /*bytes_transferred*/) {
-            if (error) {
-                std::cerr << "Erreur d'envoi: " << error.message() << std::endl;
-            }
-        }));
+    netMsg.setMessageType("PONG");
+    netMsg.setPayload(capnp::Data::Reader(reinterpret_cast<const capnp::byte *>(message.data()), message.size()));
+    netMsg.setTimestamp(std::chrono::system_clock::now().time_since_epoch().count());
+
+    auto serialized = capnp::messageToFlatArray(messageBuilder);
+    return serialized.asBytes();
 }
 
 bool NetworkManager::getIncomingMessage(MessageQueue &msg)
@@ -73,21 +93,37 @@ bool NetworkManager::getIncomingMessage(MessageQueue &msg)
     return _inComingMessages.pop(msg);
 }
 
+std::string &NetworkManager::deserialize(const std::array<char, 1024> &recvBuffer,
+                                         const std::size_t bytes_transferred) const
+{
+    capnp::FlatArrayMessageReader reader(kj::ArrayPtr<const capnp::word>(
+        reinterpret_cast<const capnp::word *>(data.data()), bytes_transferred / sizeof(capnp::word)));
+
+    auto netMsg = reader.getRoot<NetworkMessage>();
+    std::string messageType = netMsg.getMessageType();
+    auto payload = netMsg.getPayload();
+
+    std::string message(reinterpret_cast<const char *>(payload.begin()), payload.size());
+    return message;
+}
+
 void NetworkManager::startReceive()
 {
+    std::array<char, 1024> recvBuffer;
+
     _socket.async_receive_from(
-        asio::buffer(_recv_buffer), _remote_endpoint,
+        asio::buffer(recvBuffer), _remote_endpoint,
         asio::bind_executor(_strand, [this](const std::error_code &error, std::size_t bytes_transferred) {
             if (!error) {
-                std::string message(_recv_buffer.data(), bytes_transferred);
+                try {
+                    const std::string data = deserialize(recvBuffer, bytes_transferred);
+                    MessageQueue messageQueue(data, _remote_endpoint);
+                    _inComingMessages.push(messageQueue);
 
-                // 2. On le met dans la queue (Thread Safe !)
-                // Dans un vrai R-Type, tu stockerais une struct {header, body, endpoint_id}
-                MessageQueue messageQueue(message, _remote_endpoint);
-                _inComingMessages.push(messageQueue);
-
-                // 3. On relance l'écoute immédiatement
-                startReceive();
+                    startReceive();
+                } catch (const std::exception &e) {
+                    std::cerr << "Erreur de désérialisation: " << e.what() << std::endl;
+                }
             } else {
                 std::cerr << "Erreur de réception: " << error.message() << std::endl;
             }
