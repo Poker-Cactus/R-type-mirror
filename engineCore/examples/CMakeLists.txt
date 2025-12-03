@@ -5,7 +5,7 @@ add_executable(SystemManagerExample
 )
 
 target_link_libraries(SystemManagerExample
-    PRIVATE engine_core
+    PRIVATE engineCore
 )
 
 target_include_directories(SystemManagerExample

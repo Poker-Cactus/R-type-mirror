@@ -8,7 +8,7 @@ add_executable(system_manager_tests
 
 target_link_libraries(system_manager_tests
     PRIVATE
-        engine_core
+        engineCore
         doctest::doctest
 )
 
@@ -27,7 +27,7 @@ add_executable(component_signature_tests
 
 target_link_libraries(component_signature_tests
     PRIVATE
-        engine_core
+        engineCore
         doctest::doctest
 )
 

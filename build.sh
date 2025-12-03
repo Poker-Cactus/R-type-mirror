@@ -67,7 +67,7 @@ fi
 if [ "$1" == "rebuild" ] || [ "$1" == "re" ]; then
     print_step "${BUILD}" "Rebuilding project..."
     cmake --build build --config Release 2>&1 | while IFS= read -r line; do
-        if [[ $line == *"engine_core"* ]]; then
+        if [[ $line == *"engineCore"* ]]; then
             echo -e "${MAGENTA}${ENGINE} $line${RESET}"
         elif [[ $line == *"common"* ]]; then
             echo -e "${CYAN}${COMMON} $line${RESET}"
@@ -133,7 +133,7 @@ if [ "$1" == "test" ]; then
     else
         # Run all tests with CTest
         cd build
-        ctest --test-dir engine_core/tests --output-on-failure --verbose 2>&1 | while IFS= read -r line; do
+        ctest --test-dir engineCore/tests --output-on-failure --verbose 2>&1 | while IFS= read -r line; do
             if [[ $line == *"PASSED"* ]] || [[ $line == *"passed"* ]] || [[ $line == *"SUCCESS"* ]]; then
                 echo -e "${GREEN}$line${RESET}"
             elif [[ $line == *"FAILED"* ]] || [[ $line == *"failed"* ]] || [[ $line == *"Error"* ]]; then
@@ -309,7 +309,7 @@ print_step "${BUILD}" "Compiling project..."
 echo ""
 
 cmake --build build --config Release 2>&1 | while IFS= read -r line; do
-    if [[ $line == *"engine_core"* ]]; then
+    if [[ $line == *"engineCore"* ]]; then
         if [[ $line == *"Building"* ]]; then
             print_building "${MAGENTA}Engine Core${RESET}"
         else

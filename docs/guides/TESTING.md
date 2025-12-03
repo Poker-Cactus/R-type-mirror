@@ -25,7 +25,7 @@ Ce projet utilise **doctest** pour les tests unitaires du moteur ECS. doctest es
 ### Méthode 3 : Via CTest
 ```bash
 cd build
-ctest --test-dir engine_core/tests --output-on-failure
+ctest --test-dir engineCore/tests --output-on-failure
 ```
 
 ## 🎯 Commandes utiles
@@ -93,16 +93,16 @@ ctest --test-dir engine_core/tests --output-on-failure
 cd build
 
 # Mode verbose
-ctest --test-dir engine_core/tests --verbose
+ctest --test-dir engineCore/tests --verbose
 
 # Lancer seulement les tests qui ont échoué
-ctest --test-dir engine_core/tests --rerun-failed
+ctest --test-dir engineCore/tests --rerun-failed
 
 # Lancer en parallèle (4 jobs)
-ctest --test-dir engine_core/tests -j4
+ctest --test-dir engineCore/tests -j4
 
 # Afficher la sortie seulement en cas d'échec
-ctest --test-dir engine_core/tests --output-on-failure
+ctest --test-dir engineCore/tests --output-on-failure
 ```
 
 ## 📊 Structure des tests
@@ -110,7 +110,7 @@ ctest --test-dir engine_core/tests --output-on-failure
 ### Fichiers
 
 ```
-engine_core/
+engineCore/
 ├── tests/
 │   ├── CMakeLists.txt              # Configuration CMake pour les tests
 │   └── SystemManagerTests.cpp      # Tests du SystemManager (20 tests)

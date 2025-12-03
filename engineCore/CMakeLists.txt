@@ -1,12 +1,12 @@
 cmake_minimum_required(VERSION 3.14)
 
-project(engine_core)
+project(engineCore)
 
-add_library(engine_core STATIC
+add_library(engineCore STATIC
     src/ecs/World.cpp
 )
 
-target_include_directories(engine_core PUBLIC
+target_include_directories(engineCore PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/include/
 )
 
