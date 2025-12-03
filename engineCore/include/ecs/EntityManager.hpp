@@ -32,7 +32,7 @@ public:
    * @brief Constructs the EntityManager
    * Initializes entity tracking and pre-allocates signature storage
    */
-  EntityManager() : m_nextId(0), m_livingEntityCount(0) { m_signatures.resize(MAX_ENTITIES); }
+  EntityManager() { m_signatures.resize(MAX_ENTITIES); }
 
   /**
    * @brief Creates a new entity
@@ -176,8 +176,8 @@ private:
   std::vector<uint8_t> m_alive; ///< Entity states (1 = alive, 0 = dead)
   std::vector<Entity> m_freeIds; ///< Available IDs for reuse
   std::vector<ComponentSignature> m_signatures; ///< Component signatures per entity
-  Entity m_nextId; ///< Next ID to assign
-  std::size_t m_livingEntityCount; ///< Number of living entities (cached for performance)
+  Entity m_nextId{}; ///< Next ID to assign
+  std::size_t m_livingEntityCount{}; ///< Number of living entities (cached for performance)
 };
 } // namespace ecs
 

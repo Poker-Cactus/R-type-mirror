@@ -409,7 +409,7 @@ TEST_CASE("WorldIntegration - ProvidesEntitySignatureAccess")
   constexpr float kPosX = 5.0F;
   constexpr float kPosY = 10.0F;
 
-  world.getComponentManager().addComponent(kEntity, Position{kPosX, kPosY});
+  world.addComponent(kEntity, Position{kPosX, kPosY});
 
   auto sig = world.getEntitySignature(kEntity);
 
@@ -422,18 +422,16 @@ TEST_CASE("WorldIntegration - SignaturePersistsAcrossComponentOperations")
   constexpr Entity kEntity = 1;
   constexpr int kMaxHealth = 100;
 
-  auto &manager = world.getComponentManager();
-
-  manager.addComponent(kEntity, Position{0, 0});
+  world.addComponent(kEntity, Position{0, 0});
   CHECK(world.getEntitySignature(kEntity).count() == 1);
 
-  manager.addComponent(kEntity, Velocity{0, 0});
+  world.addComponent(kEntity, Velocity{0, 0});
   CHECK(world.getEntitySignature(kEntity).count() == 2);
 
-  manager.addComponent(kEntity, Health{kMaxHealth, kMaxHealth});
+  world.addComponent(kEntity, Health{kMaxHealth, kMaxHealth});
   CHECK(world.getEntitySignature(kEntity).count() == 3);
 
-  manager.removeComponent<Velocity>(kEntity);
+  world.removeComponent<Velocity>(kEntity);
   CHECK(world.getEntitySignature(kEntity).count() == 2);
 }
 

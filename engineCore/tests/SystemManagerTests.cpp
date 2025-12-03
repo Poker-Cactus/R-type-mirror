@@ -505,14 +505,3 @@ TEST_CASE("NewFeatures - WorldConstGetSystemWorks")
   REQUIRE(system != nullptr);
   CHECK(system->getUpdateCallCount() == 0);
 }
-
-TEST_CASE("NewFeatures - ConstGetComponentManagerWorks")
-{
-  ecs::World world;
-
-  const auto &constWorld = world;
-  const auto &componentManager = constWorld.getComponentManager();
-
-  // Just verify it compiles and returns const reference
-  (void)componentManager;
-}
