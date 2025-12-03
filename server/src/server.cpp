@@ -37,8 +37,8 @@ void UdpServer::run()
     while (_running) {
         MessageQueue msg;
         while (getIncomingMessage(msg)) {
-            std::cout << "Client says: " << msg.getData() << std::endl;
-            asyncSend("PONG", msg.getSenderEndpoint());
+            std::cout << "Message complet: '" << msg.getFullMessage() << "'" << std::endl;
+            asyncSend("PONGGGG", msg.getSenderEndpoint());
         }
         std::this_thread::sleep_for(std::chrono::milliseconds(1));
     }
@@ -46,19 +46,14 @@ void UdpServer::run()
 
 void UdpServer::asyncSend(const std::string &message, asio::ip::udp::endpoint target_endpoint)
 {
-    // Créer un message Cap'n Proto
     capnp::MallocMessageBuilder messageBuilder;
     auto netMsg = messageBuilder.initRoot<NetworkMessage>();
 
-    netMsg.setMessageType("PONG");
-    netMsg.setPayload(capnp::Data::Reader(reinterpret_cast<const capnp::byte *>(message.data()), message.size()));
-    netMsg.setTimestamp(std::chrono::system_clock::now().time_since_epoch().count());
+    netMsg.setMessageType(message);
 
-    // Sérialiser en buffer
     auto serialized = capnp::messageToFlatArray(messageBuilder);
     auto bytes = serialized.asBytes();
 
-    // Copier dans un buffer partagé
     auto buffer = std::make_shared<std::vector<capnp::byte>>(bytes.begin(), bytes.end());
 
     _socket.async_send_to(
@@ -82,23 +77,23 @@ void UdpServer::startReceive()
         asio::bind_executor(_strand, [this](const std::error_code &error, std::size_t bytes_transferred) {
             if (!error) {
                 try {
-                    // Désérialiser avec Cap'n Proto
-                    capnp::FlatArrayMessageReader reader(
-                        kj::ArrayPtr<const capnp::word>(reinterpret_cast<const capnp::word *>(_recv_buffer.data()),
-                                                        bytes_transferred / sizeof(capnp::word)));
+                    size_t word_count = (bytes_transferred + sizeof(capnp::word) - 1) / sizeof(capnp::word);
+
+                    kj::Array<capnp::word> aligned_buffer = kj::heapArray<capnp::word>(word_count);
+                    memcpy(aligned_buffer.begin(), _recv_buffer.data(), bytes_transferred);
+
+                    capnp::FlatArrayMessageReader reader(aligned_buffer.asPtr());
 
                     auto netMsg = reader.getRoot<NetworkMessage>();
-                    std::string messageType = netMsg.getMessageType();
-                    auto payload = netMsg.getPayload();
+                    std::string messageType = netMsg.getMessageType().cStr();
 
-                    std::string message(reinterpret_cast<const char *>(payload.begin()), payload.size());
-
-                    MessageQueue messageQueue(message, _remote_endpoint);
+                    MessageQueue messageQueue(messageType, _remote_endpoint);
                     _inComingMessages.push(messageQueue);
 
                     startReceive();
                 } catch (const std::exception &e) {
                     std::cerr << "Erreur de désérialisation: " << e.what() << std::endl;
+                    startReceive();
                 }
             } else {
                 std::cerr << "Erreur de réception: " << error.message() << std::endl;

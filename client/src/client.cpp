@@ -32,10 +32,19 @@ UdpClient::~UdpClient()
 
 void UdpClient::send(const std::string &msg)
 {
-    
+    capnp::MallocMessageBuilder messageBuilder;
+    auto netMsg = messageBuilder.initRoot<NetworkMessage>();
+
+    netMsg.setMessageType(msg);
+
+    auto serialized = capnp::messageToFlatArray(messageBuilder);
+    auto bytes = serialized.asBytes();
+
+    auto buffer = std::make_shared<std::vector<capnp::byte>>(bytes.begin(), bytes.end());
+
     _socket.async_send(
-        asio::buffer(msg),
-        asio::bind_executor(_strand, [](const std::error_code &error, std::size_t /*bytes_transferred*/) {
+        asio::buffer(*buffer),
+        asio::bind_executor(_strand, [buffer](const std::error_code &error, std::size_t /*bytes_transferred*/) {
             if (error) {
                 std::cerr << "Erreur d'envoi : " << error.message() << std::endl;
             }
@@ -67,7 +76,7 @@ void UdpClient::loop()
         // }
 
         // Pour l'exemple, on envoie un ping manuel :
-        send(std::string(1, MESSAGE_PING) + " " + "Hello from Client!");
+        send("PING HELLO SERVER");
 
         // --- 2. Réseau (Network System) ---
         // On traite TOUS les paquets reçus depuis la dernière frame
@@ -89,9 +98,23 @@ void UdpClient::startReceive()
         asio::buffer(_recv_buffer),
         asio::bind_executor(_strand, [this](const std::error_code &error, std::size_t bytes_transferred) {
             if (!error) {
-                std::string msg(_recv_buffer.data(), bytes_transferred);
-                _inComingMessages.push(msg);
-                startReceive();
+                try {
+                    size_t word_count = (bytes_transferred + sizeof(capnp::word) - 1) / sizeof(capnp::word);
+                    kj::Array<capnp::word> array = kj::heapArray<capnp::word>(word_count);
+                    memcpy(array.begin(), _recv_buffer.data(), bytes_transferred);
+
+                    capnp::FlatArrayMessageReader messageReader(array.asPtr());
+
+                    auto netMsg = messageReader.getRoot<NetworkMessage>();
+                    std::string msgType = netMsg.getMessageType().cStr();
+
+                    _inComingMessages.push(msgType);
+
+                    startReceive();
+                } catch (const std::exception &e) {
+                    std::cerr << "Erreur de désérialisation : " << e.what() << std::endl;
+                    startReceive();
+                }
             } else {
                 std::cerr << "Erreur de réception : " << error.message() << std::endl;
             }
