@@ -10,6 +10,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 # Dependencies setup via Conan
 find_package(SDL2 REQUIRED)
 find_package(asio REQUIRED)
+find_package(doctest REQUIRED)
 
 # Add subdirectories
 add_subdirectory(engineCore)

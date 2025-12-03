@@ -103,17 +103,93 @@ public:
    */
   void update(float deltaTime) { systemManager.update(*this, deltaTime); }
 
-  /**
-   * @brief Gets the component manager for entity component access
-   * @return Reference to the component manager
-   */
-  ComponentManager &getComponentManager() { return componentManager; }
+  // ========== Component Management ==========
 
   /**
-   * @brief Gets the component manager (const version)
-   * @return Const reference to the component manager
+   * @brief Adds a component to an entity
+   * @tparam T Component type
+   * @param entity Target entity
+   * @param component Component data to add
+   *
+   * @example
+   * Entity player = createEntity();
+   * world.addComponent(player, Position{0.0f, 0.0f});
+   * world.addComponent(player, Velocity{1.0f, 0.0f});
    */
-  [[nodiscard]] const ComponentManager &getComponentManager() const { return componentManager; }
+  template <typename T>
+  void addComponent(Entity entity, T component)
+  {
+    componentManager.addComponent(entity, std::move(component));
+  }
+
+  /**
+   * @brief Gets a reference to an entity's component
+   * @tparam T Component type
+   * @param entity Target entity
+   * @return Reference to the component
+   * @throws std::out_of_range if entity doesn't have the component
+   *
+   * @example
+   * Position& pos = world.getComponent<Position>(player);
+   * pos.x += velocity.x * deltaTime;
+   */
+  template <typename T>
+  T &getComponent(Entity entity)
+  {
+    return componentManager.getComponent<T>(entity);
+  }
+
+  /**
+   * @brief Gets a const reference to an entity's component
+   * @tparam T Component type
+   * @param entity Target entity
+   * @return Const reference to the component
+   * @throws std::out_of_range if entity doesn't have the component
+   */
+  template <typename T>
+  const T &getComponent(Entity entity) const
+  {
+    return componentManager.getComponent<T>(entity);
+  }
+
+  /**
+   * @brief Checks if an entity has a specific component
+   * @tparam T Component type
+   * @param entity Target entity
+   * @return true if entity has the component, false otherwise
+   *
+   * @example
+   * if (world.hasComponent<Health>(enemy)) {
+   *     world.getComponent<Health>(enemy).damage(10);
+   * }
+   */
+  template <typename T>
+  [[nodiscard]] bool hasComponent(Entity entity) const
+  {
+    return componentManager.hasComponent<T>(entity);
+  }
+
+  /**
+   * @brief Removes a component from an entity
+   * @tparam T Component type
+   * @param entity Target entity
+   *
+   * @example
+   * world.removeComponent<Invulnerable>(player); // Player can take damage again
+   */
+  template <typename T>
+  void removeComponent(Entity entity)
+  {
+    componentManager.removeComponent<T>(entity);
+  }
+
+  /**
+   * @brief Removes all components from an entity
+   * @param entity Target entity
+   *
+   * This is useful when destroying an entity or resetting its state.
+   */
+  void removeAllComponents(Entity entity) { componentManager.removeAllComponents(entity); }
 
   /**
    * @brief Gets the component signature for an entity

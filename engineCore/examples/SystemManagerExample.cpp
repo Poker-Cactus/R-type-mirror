@@ -204,7 +204,6 @@ void demonstrateComponentSignatures()
   std::cout << "Les signatures permettent de filtrer les entités efficacement\n\n";
 
   ecs::World world;
-  auto &manager = world.getComponentManager();
 
   // Créer des entités avec différents composants
   constexpr Entity kPlayer = 1;
@@ -227,20 +226,20 @@ void demonstrateComponentSignatures()
   std::cout << "Création d'entités:\n";
 
   // Joueur : Position + Velocity + Health
-  manager.addComponent(kPlayer, Position{kPlayerX, kPlayerY});
-  manager.addComponent(kPlayer, Velocity{kPlayerVelX, kPlayerVelY});
-  manager.addComponent(kPlayer, Health{kPlayerHealth, kPlayerHealth});
+  world.addComponent(kPlayer, Position{kPlayerX, kPlayerY});
+  world.addComponent(kPlayer, Velocity{kPlayerVelX, kPlayerVelY});
+  world.addComponent(kPlayer, Health{kPlayerHealth, kPlayerHealth});
   std::cout << "  - Joueur (Position, Velocity, Health)\n";
 
   // Ennemi : Position + Velocity + Health
-  manager.addComponent(kEnemy, Position{kEnemyX, kEnemyY});
-  manager.addComponent(kEnemy, Velocity{kEnemyVelX, kEnemyVelY});
-  manager.addComponent(kEnemy, Health{kEnemyHealth, kEnemyHealth});
+  world.addComponent(kEnemy, Position{kEnemyX, kEnemyY});
+  world.addComponent(kEnemy, Velocity{kEnemyVelX, kEnemyVelY});
+  world.addComponent(kEnemy, Health{kEnemyHealth, kEnemyHealth});
   std::cout << "  - Ennemi (Position, Velocity, Health)\n";
 
   // Pack de vie : Position + Health (pas de mouvement)
-  manager.addComponent(kHealthPack, Position{kHealthPackX, kHealthPackY});
-  manager.addComponent(kHealthPack, Health{kHealthPackAmount, kHealthPackAmount});
+  world.addComponent(kHealthPack, Position{kHealthPackX, kHealthPackY});
+  world.addComponent(kHealthPack, Health{kHealthPackAmount, kHealthPackAmount});
   std::cout << "  - Pack de vie (Position, Health)\n";
 
   // Afficher les signatures

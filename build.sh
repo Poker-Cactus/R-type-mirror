@@ -99,11 +99,22 @@ fi
 # Check if test is requested
 if [ "$1" == "test" ]; then
     TEST_FILTER="$2"
+    COVERAGE_FLAG="$3"
+
+    # Check if coverage is requested (either as 2nd or 3rd argument)
+    if [ "$TEST_FILTER" == "--coverage" ]; then
+        COVERAGE_FLAG="--coverage"
+        TEST_FILTER=""
+    fi
 
     if [ -n "$TEST_FILTER" ]; then
         print_step "🧪" "Running tests matching: ${TEST_FILTER}..."
     else
-        print_step "🧪" "Running all tests..."
+        if [ "$COVERAGE_FLAG" == "--coverage" ]; then
+            print_step "🧪" "Running all tests with coverage..."
+        else
+            print_step "🧪" "Running all tests..."
+        fi
     fi
     echo ""
 
@@ -111,6 +122,31 @@ if [ "$1" == "test" ]; then
     if [ ! -d "build" ]; then
         print_error "Build directory not found! Run './build.sh' first."
         exit 1
+    fi
+
+    # If coverage is requested, rebuild with coverage flags
+    if [ "$COVERAGE_FLAG" == "--coverage" ]; then
+        print_step "🔧" "Configuring build with coverage enabled..."
+        cd build
+        cmake .. -DENABLE_COVERAGE=ON > /dev/null 2>&1
+        if [ $? -ne 0 ]; then
+            print_error "CMake configuration with coverage failed!"
+            cd ..
+            exit 1
+        fi
+        print_success "Coverage configuration applied!"
+        echo ""
+
+        print_step "🔨" "Rebuilding tests with coverage..."
+        cmake --build . --target component_signature_tests component_manager_tests entity_tests entity_manager_tests component_storage_tests system_manager_tests world_tests 2>&1 | tail -10
+        if [ $? -ne 0 ]; then
+            print_error "Build with coverage failed!"
+            cd ..
+            exit 1
+        fi
+        print_success "Tests rebuilt with coverage!"
+        echo ""
+        cd ..
     fi
 
     # Build test command
@@ -157,6 +193,264 @@ if [ "$1" == "test" ]; then
         echo "║                                                           ║"
         echo "╚═══════════════════════════════════════════════════════════╝"
         echo -e "${RESET}\n"
+
+        # Generate coverage report if requested
+        if [ "$COVERAGE_FLAG" == "--coverage" ]; then
+            print_step "📊" "Generating coverage report..."
+            echo ""
+
+            cd build
+
+            # Find all .gcda files (coverage data from executed code)
+            GCDA_FILES=$(find ./engineCore/tests -name '*.gcda' 2>/dev/null)
+
+            if [ -z "$GCDA_FILES" ]; then
+                print_error "No coverage data found. Make sure tests are built with coverage flags."
+                echo -e "${YELLOW}Hint: You may need to rebuild with coverage enabled:${RESET}"
+                echo -e "  ${CYAN}cmake -DENABLE_COVERAGE=ON ..${RESET}"
+                cd ..
+                exit 1
+            fi
+
+            # Create coverage directory
+            mkdir -p coverage_report
+            cd coverage_report
+
+            # Run gcov on test files
+            echo -e "${CYAN}Generating coverage reports...${RESET}"
+
+            # Process each test's gcda file directly
+            for gcda_file in $GCDA_FILES; do
+                gcov "../${gcda_file}" > /dev/null 2>&1 || true
+            done
+
+            # Generate summary
+            echo ""
+            echo -e "${CYAN}${BOLD}Code Coverage Summary:${RESET}"
+            echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${RESET}"
+
+            total_files=0
+            global_total_lines=0
+            global_exec_lines=0
+
+            # Create temporary files for data aggregation
+            temp_data=$(mktemp)
+            temp_folders=$(mktemp)
+
+            # Parse .gcov files for source coverage
+            for gcov_file in *.gcov; do
+                if [ -f "$gcov_file" ]; then
+                    # Extract the full path from the gcov file (format: "Source:/path/to/file")
+                    full_path=$(head -n 1 "$gcov_file" | grep "Source:" | sed "s/.*Source://" | tr -d ' ')
+
+                    # Skip system headers, conan dependencies, and doctest
+                    if [[ "$full_path" == *"/Applications/"* ]] || \
+                       [[ "$full_path" == *"/usr/"* ]] || \
+                       [[ "$full_path" == *"/.conan"* ]] || \
+                       [[ "$full_path" == *"doctest"* ]] || \
+                       [[ -z "$full_path" ]]; then
+                        continue
+                    fi
+
+                    # Check if it's a project source file
+                    if [[ "$full_path" == *"/engineCore/"* ]] || \
+                       [[ "$full_path" == *"/client/"* ]] || \
+                       [[ "$full_path" == *"/server/"* ]] || \
+                       [[ "$full_path" == *"/common/"* ]] || \
+                       [[ "$full_path" == *"/network/"* ]]; then
+
+                        # Skip test files
+                        if [[ "$full_path" == *"/tests/"* ]]; then
+                            continue
+                        fi
+
+                        # Extract folder name (simple approach)
+                        if [[ "$full_path" == *"/engineCore/"* ]]; then
+                            folder_name="engineCore"
+                        elif [[ "$full_path" == *"/client/"* ]]; then
+                            folder_name="client"
+                        elif [[ "$full_path" == *"/server/"* ]]; then
+                            folder_name="server"
+                        elif [[ "$full_path" == *"/common/"* ]]; then
+                            folder_name="common"
+                        elif [[ "$full_path" == *"/network/"* ]]; then
+                            folder_name="network"
+                        else
+                            continue
+                        fi
+
+                        # Extract filename
+                        filename=$(basename "$full_path")
+
+                        # Calculate coverage
+                        lines_total=$(grep -E "^[[:space:]]*[0-9#-]+:[[:space:]]*[0-9]+" "$gcov_file" | grep -v "^[[:space:]]*-:" | wc -l | tr -d ' ')
+                        lines_exec=$(grep -E "^[[:space:]]*[1-9][0-9]*:[[:space:]]*[0-9]+" "$gcov_file" | wc -l | tr -d ' ')
+
+                        if [ "$lines_total" -gt 0 ]; then
+                            # Store file data: folder|filename|exec|total
+                            echo "${folder_name}|${filename}|${lines_exec}|${lines_total}" >> "$temp_data"
+
+                            # Track unique folders
+                            echo "$folder_name" >> "$temp_folders"
+
+                            # Accumulate global totals
+                            global_total_lines=$((global_total_lines + lines_total))
+                            global_exec_lines=$((global_exec_lines + lines_exec))
+
+                            total_files=$((total_files + 1))
+                        fi
+                    fi
+                fi
+            done
+
+            if [ $total_files -eq 0 ]; then
+                echo -e "  ${YELLOW}No source coverage data found.${RESET}"
+                rm -f "$temp_data" "$temp_folders"
+            else
+                # First, display uncovered lines summary
+                echo ""
+                echo -e "${YELLOW}${BOLD}⚠️  Uncovered Lines Report:${RESET}"
+                echo -e "${GRAY}   ────────────────────────────────────────────────────${RESET}"
+
+                has_uncovered=0
+                for gcov_file in *.gcov; do
+                    if [ -f "$gcov_file" ]; then
+                        # Extract the full path
+                        full_path=$(head -n 1 "$gcov_file" | grep "Source:" | sed "s/.*Source://" | tr -d ' ')
+
+                        # Check if it's a project source file
+                        if [[ "$full_path" == *"/engineCore/"* ]] || \
+                           [[ "$full_path" == *"/client/"* ]] || \
+                           [[ "$full_path" == *"/server/"* ]] || \
+                           [[ "$full_path" == *"/common/"* ]] || \
+                           [[ "$full_path" == *"/network/"* ]]; then
+
+                            # Skip test files
+                            if [[ "$full_path" == *"/tests/"* ]]; then
+                                continue
+                            fi
+
+                            filename=$(basename "$full_path")
+
+                            # Find uncovered lines (marked with #####)
+                            uncovered_lines=$(grep -n "^[[:space:]]*#####:" "$gcov_file" | grep -v "}" | head -10)
+
+                            if [ -n "$uncovered_lines" ]; then
+                                has_uncovered=1
+                                echo ""
+                                echo -e "   ${RED}📄 ${filename}${RESET}"
+
+                                # Display up to 10 uncovered lines with their content
+                                echo "$uncovered_lines" | while IFS=: read -r line_num line_content; do
+                                    # Extract just the line number from gcov format
+                                    actual_line=$(echo "$line_content" | sed 's/^[[:space:]]*#####:[[:space:]]*//' | awk '{print $1}')
+                                    # Extract the code content
+                                    code_content=$(echo "$line_content" | sed 's/^[[:space:]]*#####:[[:space:]]*[0-9]*://')
+
+                                    if [ -n "$code_content" ] && [ "$code_content" != "}" ]; then
+                                        printf "      ${GRAY}Line %-4s${RESET} %s\n" "$actual_line" "$code_content"
+                                    fi
+                                done | head -10
+
+                                # Count total uncovered
+                                total_uncovered=$(echo "$uncovered_lines" | wc -l | tr -d ' ')
+                                if [ "$total_uncovered" -gt 10 ]; then
+                                    echo -e "      ${GRAY}... and $((total_uncovered - 10)) more uncovered lines${RESET}"
+                                fi
+                            fi
+                        fi
+                    fi
+                done
+
+                if [ $has_uncovered -eq 0 ]; then
+                    echo -e "   ${GREEN}✨ All lines are covered!${RESET}"
+                fi
+
+                echo ""
+                echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${RESET}"
+
+                # Get unique folders
+                folders=$(sort -u "$temp_folders")
+
+                # Display coverage by folder
+                for folder in $folders; do
+                    # Calculate folder totals
+                    folder_total=0
+                    folder_exec=0
+
+                    while IFS='|' read -r fld fname fexec ftotal; do
+                        if [ "$fld" = "$folder" ]; then
+                            folder_total=$((folder_total + ftotal))
+                            folder_exec=$((folder_exec + fexec))
+                        fi
+                    done < "$temp_data"
+
+                    if [ $folder_total -gt 0 ]; then
+                        folder_coverage=$(awk "BEGIN {printf \"%.1f\", ($folder_exec/$folder_total)*100}")
+
+                        # Color based on folder coverage
+                        if (( $(echo "$folder_coverage >= 90" | bc -l) )); then
+                            folder_color="$GREEN"
+                        elif (( $(echo "$folder_coverage >= 70" | bc -l) )); then
+                            folder_color="$YELLOW"
+                        else
+                            folder_color="$RED"
+                        fi
+
+                        echo ""
+                        echo -e "${MAGENTA}${BOLD}📦 ${folder}${RESET} - ${folder_color}${folder_coverage}%${RESET} (${folder_exec}/${folder_total} lines)"
+                        echo -e "${GRAY}   ────────────────────────────────────────────────────${RESET}"
+
+                        # Display individual files for this folder
+                        while IFS='|' read -r fld fname fexec ftotal; do
+                            if [ "$fld" = "$folder" ]; then
+                                file_coverage=$(awk "BEGIN {printf \"%.1f\", ($fexec/$ftotal)*100}")
+
+                                # Color based on file coverage
+                                if (( $(echo "$file_coverage >= 90" | bc -l) )); then
+                                    file_color="$GREEN"
+                                elif (( $(echo "$file_coverage >= 70" | bc -l) )); then
+                                    file_color="$YELLOW"
+                                else
+                                    file_color="$RED"
+                                fi
+
+                                printf "   ${file_color}%5.1f%%${RESET} - %-40s ${GRAY}(%s/%s)${RESET}\n" "$file_coverage" "$fname" "$fexec" "$ftotal"
+                            fi
+                        done < "$temp_data"
+                    fi
+                done
+
+                # Display global coverage
+                if [ $global_total_lines -gt 0 ]; then
+                    global_coverage=$(awk "BEGIN {printf \"%.1f\", ($global_exec_lines/$global_total_lines)*100}")
+
+                    # Color based on global coverage
+                    if (( $(echo "$global_coverage >= 90" | bc -l) )); then
+                        global_color="$GREEN"
+                    elif (( $(echo "$global_coverage >= 70" | bc -l) )); then
+                        global_color="$YELLOW"
+                    else
+                        global_color="$RED"
+                    fi
+
+                    echo ""
+                    echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${RESET}"
+                    echo -e "${WHITE}${BOLD}🌍 TOTAL COVERAGE:${RESET} ${global_color}${BOLD}${global_coverage}%${RESET} (${global_exec_lines}/${global_total_lines} lines)"
+                fi
+
+                # Cleanup temp files
+                rm -f "$temp_data" "$temp_folders"
+            fi
+
+            echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${RESET}"
+            echo ""
+            print_success "Coverage report generated!"
+            echo -e "${GRAY}Detailed coverage files: build/coverage_report/*.gcov${RESET}"
+            echo ""
+
+            cd ../..
+        fi
     else
         echo ""
         print_error "Some tests failed!"
