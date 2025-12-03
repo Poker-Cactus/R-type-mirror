@@ -140,10 +140,10 @@ public:
    * physicsSig.set(getComponentId<Velocity>());
    *
    * std::vector<Entity> physicsEntities;
-   * world.getEntitiesWithSignature(physicsSig, physicsEntities);
+   * World::getEntitiesWithSignature(physicsSig, physicsEntities);
    * // physicsEntities now contains all entities with Position AND Velocity
    */
-  void getEntitiesWithSignature(const ComponentSignature &signature, std::vector<Entity> &entities) const;
+  static void getEntitiesWithSignature(const ComponentSignature &signature, std::vector<Entity> &entities);
 
   /**
    * @brief Returns the number of registered systems

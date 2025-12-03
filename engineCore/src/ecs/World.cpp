@@ -9,7 +9,7 @@
 
 namespace ecs
 {
-void World::getEntitiesWithSignature(const ComponentSignature &signature, std::vector<Entity> &entities) const
+void World::getEntitiesWithSignature(const ComponentSignature &signature, std::vector<Entity> &entities)
 {
   entities.clear();
 
