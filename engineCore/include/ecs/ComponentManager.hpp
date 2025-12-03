@@ -8,6 +8,7 @@
 #ifndef ECS_COMPONENTMANAGER_HPP_
 #define ECS_COMPONENTMANAGER_HPP_
 
+#include "ComponentSignature.hpp"
 #include "ComponentStorage.hpp"
 #include <memory>
 #include <typeindex>
@@ -23,6 +24,9 @@ public:
   {
     ComponentStorage<T> &storage = ensureStorage<T>();
     storage.addComponent(ent, component);
+
+    // Update entity signature
+    entitySignatures[ent].set(ecs::getComponentId<T>());
   }
 
   template <typename T>
@@ -63,6 +67,9 @@ public:
 
     if (iterator != storages.end()) {
       iterator->second->removeComponent(ent);
+
+      // Update entity signature
+      entitySignatures[ent].reset(ecs::getComponentId<T>());
     }
   }
 
@@ -71,10 +78,29 @@ public:
     for (auto &pair : storages) {
       pair.second->removeComponent(ent);
     }
+
+    // Clear entity signature
+    entitySignatures[ent].reset();
+  }
+
+  /**
+   * @brief Gets the component signature for an entity
+   * @param ent Entity to get signature for
+   * @return Component signature bitset for the entity
+   */
+  [[nodiscard]] const ecs::ComponentSignature &getEntitySignature(Entity ent) const
+  {
+    static const ecs::ComponentSignature emptySignature;
+    auto iter = entitySignatures.find(ent);
+    if (iter != entitySignatures.end()) {
+      return iter->second;
+    }
+    return emptySignature;
   }
 
 private:
   std::unordered_map<std::type_index, std::unique_ptr<IComponentStorage>> storages;
+  std::unordered_map<Entity, ecs::ComponentSignature> entitySignatures;
 
   template <typename T>
   ComponentStorage<T> &ensureStorage()

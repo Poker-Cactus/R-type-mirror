@@ -6,8 +6,8 @@ add_executable(client
 
 target_include_directories(client PRIVATE include)
 
-target_link_libraries(client PRIVATE 
-    engine_core 
+target_link_libraries(client PRIVATE
+    engineCore
     common
     SDL2::SDL2
 )

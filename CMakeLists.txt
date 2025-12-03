@@ -12,7 +12,7 @@ find_package(SDL2 REQUIRED)
 find_package(asio REQUIRED)
 
 # Add subdirectories
-add_subdirectory(engine_core)
+add_subdirectory(engineCore)
 add_subdirectory(common)
 add_subdirectory(server)
 add_subdirectory(client)
