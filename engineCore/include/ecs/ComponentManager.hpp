@@ -12,6 +12,7 @@
 #include "ComponentStorage.hpp"
 #include "ecs/IComponentStorage.hpp"
 #include <memory>
+#include <stdexcept>
 #include <typeindex>
 #include <unordered_map>
 #include <utility>

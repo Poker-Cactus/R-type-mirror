@@ -10,6 +10,7 @@
 
 #include "ISystem.hpp"
 
+#include <cstddef>
 #include <memory>
 #include <type_traits>
 #include <typeindex>

@@ -12,6 +12,7 @@
 #include "ComponentSignature.hpp"
 #include "Entity.hpp"
 #include "SystemManager.hpp"
+#include <cstddef>
 #include <vector>
 
 namespace ecs
