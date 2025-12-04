@@ -5,18 +5,13 @@
 ** Client entry point
 */
 
-#include "../../common/include/network/messageQueue.hpp"
+#include "../../network/include/asioClient.hpp"
 #include "../include/client.hpp"
-#include <chrono>
-#include <iostream>
-#include <thread>
 
 int main(UNUSED int argc, char **argv)
 {
     try {
-        UdpClient client("127.0.0.1", "4242");
-        client.loop();
-
+        Client client(std::make_shared<AsioClient>("127.0.0.1", "4242"));
     } catch (std::exception &e) {
         std::cerr << e.what() << std::endl;
     }

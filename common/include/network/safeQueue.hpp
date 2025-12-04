@@ -5,9 +5,10 @@
 ** safeQueue.hpp
 */
 
+#pragma once
+
 #include <deque>
 #include <mutex>
-#pragma once
 
 template <typename T> class SafeQueue
 {

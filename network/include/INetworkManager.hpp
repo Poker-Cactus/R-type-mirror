@@ -5,8 +5,11 @@
 ** INetworkManager.hpp
 */
 
-#include <vector>
 #pragma once
+
+#include <cstdint>
+#include <string>
+#include <vector>
 
 class INetworkManager
 {
@@ -14,6 +17,5 @@ class INetworkManager
     virtual ~INetworkManager() = default;
 
     virtual void run() = 0;
-    template <typename T, typename U> virtual void send(const T &data, U targetEndpoint) = 0;
-    virtual void serialize(const std::string &data) = 0;
+    virtual void send(const std::string &data, const uint32_t &targetEndpointId) = 0;
 };

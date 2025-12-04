@@ -1,13 +1,12 @@
 project(server)
 
-capnp_generate_cpp(CAPNP_SRCS CAPNP_HDRS
-    include/GameMessage.capnp
-)
+# capnp_generate_cpp(CAPNP_SRCS CAPNP_HDRS
+    # include/GameMessage.capnp
+# )
 
 add_executable(server
     src/main.cpp
     src/server.cpp
-    ${CAPNP_SRCS}
 )
 
 target_include_directories(server PRIVATE
@@ -16,9 +15,6 @@ target_include_directories(server PRIVATE
 )
 
 target_link_libraries(server PRIVATE 
-    engine_core 
-    common 
-    asio::asio
-    CapnProto::capnp
-    CapnProto::kj
+    engine_core
+    network
 )

@@ -5,39 +5,20 @@
 ** client.hpp
 */
 
-#include "../../common/include/network/messageQueue.hpp"
-#include "../../common/include/network/safeQueue.hpp"
-#include "GameMessage.capnp.h"
-#include <array>
-#include <asio.hpp>
-#include <capnp/message.h>
-#include <capnp/serialize.h>
-#include <chrono>
-#include <iostream>
-#include <kj/array.h>
-#include <thread>
-#define UNUSED __attribute__((unused))
 #pragma once
 
-class UdpClient
+#include "../../common/include/common.hpp"
+#include "../../network/include/INetworkManager.hpp"
+#include <iostream>
+#include <memory>
+#include <thread>
+
+class Client
 {
   public:
-    UdpClient(const std::string &host, const std::string &port);
-    ~UdpClient();
-
-    void send(const std::string &msg);
-    bool getIncomingMessage(std::string &msg);
-    void recvLoop();
-    void loop();
+    Client(std::shared_ptr<INetworkManager> networkManager);
+    ~Client();
 
   private:
-    void startReceive();
-
-    asio::io_context _io_context;
-    std::thread _network_thread;
-    bool _running;
-    asio::ip::udp::socket _socket;
-    asio::strand<asio::io_context::executor_type> _strand;
-    std::array<char, 1024> _recv_buffer;
-    SafeQueue<std::string> _inComingMessages;
+    std::shared_ptr<INetworkManager> _networkManager;
 };

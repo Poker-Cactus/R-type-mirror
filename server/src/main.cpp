@@ -5,13 +5,14 @@
 ** main.cpp
 */
 
+#include "../../network/include/asioServer.hpp"
 #include "../include/server.hpp"
+#include <iostream>
 
 int main()
 {
     try {
-        // NetworkManager server(4242);
-        Server server(4242);
+        Server server(std::make_shared<AsioServer>(4242));
     } catch (const std::exception &e) {
         std::cerr << "Exception: " << e.what() << "\n";
     }

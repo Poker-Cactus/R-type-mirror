@@ -17,6 +17,7 @@ find_package(CapnProto REQUIRED)
 # Add subdirectories
 add_subdirectory(engine_core)
 add_subdirectory(common)
+add_subdirectory(network)
 add_subdirectory(server)
 add_subdirectory(client)
 
