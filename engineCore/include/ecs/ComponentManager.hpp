@@ -24,7 +24,7 @@ public:
   void addComponent(Entity ent, const T &component)
   {
     ComponentStorage<T> &storage = ensureStorage<T>();
-    storage.addComponent(ent, std::move(component));
+    storage.addComponent(ent, component);
 
     // Update entity signature
     entitySignatures[ent].set(ecs::getComponentId<T>());
