@@ -64,7 +64,7 @@ add_executable(system_manager_tests
 target_link_libraries(system_manager_tests
     PRIVATE
         engineCore
-        doctest::doctes
+        doctest::doctest
 )
 
 target_include_directories(system_manager_tests
@@ -90,7 +90,7 @@ add_executable(component_signature_tests
 target_link_libraries(component_signature_tests
     PRIVATE
         engineCore
-        doctest::doctes
+        doctest::doctest
 )
 
 target_include_directories(component_signature_tests
@@ -116,7 +116,7 @@ add_executable(entity_tests
 target_link_libraries(entity_tests
     PRIVATE
         engineCore
-        doctest::doctes
+        doctest::doctest
 )
 
 target_include_directories(entity_tests
@@ -142,7 +142,7 @@ add_executable(component_storage_tests
 target_link_libraries(component_storage_tests
     PRIVATE
         engineCore
-        doctest::doctes
+        doctest::doctest
 )
 
 target_include_directories(component_storage_tests
@@ -168,7 +168,7 @@ add_executable(entity_manager_tests
 target_link_libraries(entity_manager_tests
     PRIVATE
         engineCore
-        doctest::doctes
+        doctest::doctest
 )
 
 target_include_directories(entity_manager_tests
@@ -194,7 +194,7 @@ add_executable(component_manager_tests
 target_link_libraries(component_manager_tests
     PRIVATE
         engineCore
-        doctest::doctes
+        doctest::doctest
 )
 
 target_include_directories(component_manager_tests
@@ -220,7 +220,7 @@ add_executable(world_tests
 target_link_libraries(world_tests
     PRIVATE
         engineCore
-        doctest::doctes
+        doctest::doctest
 )
 
 target_include_directories(world_tests
@@ -238,7 +238,7 @@ set_target_properties(world_tests PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/tests"
 )
 
-# Add tests to CTes
+# Add tests to CTest
 enable_testing()
 add_test(NAME SystemManagerTests COMMAND system_manager_tests)
 add_test(NAME ComponentSignatureTests COMMAND component_signature_tests)

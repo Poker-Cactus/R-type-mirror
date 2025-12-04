@@ -10,6 +10,7 @@
 
 #include "ComponentSignature.hpp"
 #include "ComponentStorage.hpp"
+#include "ecs/IComponentStorage.hpp"
 #include <memory>
 #include <typeindex>
 #include <unordered_map>
@@ -38,7 +39,7 @@ public:
   }
 
   template <typename T>
-  [[nodiscard]] [[nodiscard]] const T &getComponent(Entity ent) const
+  [[nodiscard]] const T &getComponent(Entity ent) const
   {
     auto key = std::type_index(typeid(T));
     auto iterator = storages.find(key);
@@ -49,7 +50,7 @@ public:
   }
 
   template <typename T>
-  [[nodiscard]] [[nodiscard]] [[nodiscard]] [[nodiscard]] [[nodiscard]] bool hasComponent(Entity ent) const
+  [[nodiscard]] bool hasComponent(Entity ent) const
   {
     auto key = std::type_index(typeid(T));
     auto iterator = storages.find(key);
