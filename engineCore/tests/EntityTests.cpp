@@ -9,6 +9,7 @@
 #include "ecs/Entity.hpp"
 #include <doctest/doctest.h>
 #include <limits>
+#include <unordered_map>
 
 // ============================================================================
 // ENTITY TYPE TESTS
