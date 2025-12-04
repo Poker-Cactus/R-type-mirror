@@ -147,7 +147,7 @@ public:
    * @throws std::out_of_range if entity doesn't have the component
    */
   template <typename T>
-  [[nodiscard]] [[nodiscard]] const T &getComponent(Entity entity) const
+  [[nodiscard]] const T &getComponent(Entity entity) const
   {
     return componentManager.getComponent<T>(entity);
   }
