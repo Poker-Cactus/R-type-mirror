@@ -7,9 +7,11 @@
 
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
 #include "ecs/ComponentSignature.hpp"
+#include "ecs/Entity.hpp"
 #include "ecs/ISystem.hpp"
 #include "ecs/World.hpp"
 #include <doctest/doctest.h>
+#include <stdexcept>
 
 // ============================================================================
 // TEST COMPONENTS
@@ -156,14 +158,14 @@ TEST_SUITE("World")
 
     SUBCASE("Add component")
     {
-      world.addComponent(entity, Position{1.0F, 2.0F});
+      world.addComponent(entity, Position{.x = 1.0F, .y = 2.0F});
 
       CHECK(world.hasComponent<Position>(entity));
     }
 
     SUBCASE("Get component")
     {
-      world.addComponent(entity, Position{10.0F, 20.0F});
+      world.addComponent(entity, Position{.x = 10.0F, .y = 20.0F});
 
       auto &pos = world.getComponent<Position>(entity);
       CHECK(pos.x == 10.0F);
@@ -172,7 +174,7 @@ TEST_SUITE("World")
 
     SUBCASE("Modify component")
     {
-      world.addComponent(entity, Position{1.0F, 1.0F});
+      world.addComponent(entity, Position{.x = 1.0F, .y = 1.0F});
 
       auto &pos = world.getComponent<Position>(entity);
       pos.x = 5.0F;
@@ -186,14 +188,14 @@ TEST_SUITE("World")
     {
       CHECK_FALSE(world.hasComponent<Position>(entity));
 
-      world.addComponent(entity, Position{0.0F, 0.0F});
+      world.addComponent(entity, Position{.x = 0.0F, .y = 0.0F});
 
       CHECK(world.hasComponent<Position>(entity));
     }
 
     SUBCASE("Remove component")
     {
-      world.addComponent(entity, Position{1.0F, 1.0F});
+      world.addComponent(entity, Position{.x = 1.0F, .y = 1.0F});
       CHECK(world.hasComponent<Position>(entity));
 
       world.removeComponent<Position>(entity);
@@ -202,8 +204,8 @@ TEST_SUITE("World")
 
     SUBCASE("Multiple components per entity")
     {
-      world.addComponent(entity, Position{1.0F, 2.0F});
-      world.addComponent(entity, Velocity{3.0F, 4.0F});
+      world.addComponent(entity, Position{.x = 1.0F, .y = 2.0F});
+      world.addComponent(entity, Velocity{.dx = 3.0F, .dy = 4.0F});
       world.addComponent(entity, Health{100});
 
       CHECK(world.hasComponent<Position>(entity));
@@ -213,8 +215,8 @@ TEST_SUITE("World")
 
     SUBCASE("Remove all components")
     {
-      world.addComponent(entity, Position{1.0F, 1.0F});
-      world.addComponent(entity, Velocity{1.0F, 1.0F});
+      world.addComponent(entity, Position{.x = 1.0F, .y = 1.0F});
+      world.addComponent(entity, Velocity{.dx = 1.0F, .dy = 1.0F});
       world.addComponent(entity, Health{100});
 
       world.removeAllComponents(entity);
@@ -232,7 +234,7 @@ TEST_SUITE("World")
 
     SUBCASE("Get entity signature")
     {
-      world.addComponent(entity, Position{0.0F, 0.0F});
+      world.addComponent(entity, Position{.x = 0.0F, .y = 0.0F});
 
       const auto &sig = world.getEntitySignature(entity);
       CHECK(sig.test(ecs::getComponentId<Position>()));
@@ -240,8 +242,8 @@ TEST_SUITE("World")
 
     SUBCASE("Signature tracks multiple components")
     {
-      world.addComponent(entity, Position{0.0F, 0.0F});
-      world.addComponent(entity, Velocity{0.0F, 0.0F});
+      world.addComponent(entity, Position{.x = 0.0F, .y = 0.0F});
+      world.addComponent(entity, Velocity{.dx = 0.0F, .dy = 0.0F});
 
       const auto &sig = world.getEntitySignature(entity);
       CHECK(sig.test(ecs::getComponentId<Position>()));
@@ -254,7 +256,7 @@ TEST_SUITE("World")
   {
     ecs::World world;
     Entity entity = 0;
-    world.addComponent(entity, Position{1.0F, 2.0F});
+    world.addComponent(entity, Position{.x = 1.0F, .y = 2.0F});
 
     SUBCASE("Const getComponent")
     {
@@ -300,12 +302,12 @@ TEST_SUITE("World")
       Entity enemy = 1;
 
       // Add components
-      world.addComponent(player, Position{0.0F, 0.0F});
-      world.addComponent(player, Velocity{1.0F, 0.0F});
+      world.addComponent(player, Position{.x = 0.0F, .y = 0.0F});
+      world.addComponent(player, Velocity{.dx = 1.0F, .dy = 0.0F});
       world.addComponent(player, Health{100});
 
-      world.addComponent(enemy, Position{10.0F, 10.0F});
-      world.addComponent(enemy, Velocity{-1.0F, 0.0F});
+      world.addComponent(enemy, Position{.x = 10.0F, .y = 10.0F});
+      world.addComponent(enemy, Velocity{.dx = -1.0F, .dy = 0.0F});
       world.addComponent(enemy, Health{50});
 
       // Verify setup
@@ -339,9 +341,9 @@ TEST_SUITE("World")
       Entity ent1 = 1;
       Entity ent2 = 2;
 
-      world.addComponent(ent0, Position{1.0F, 1.0F});
-      world.addComponent(ent1, Position{2.0F, 2.0F});
-      world.addComponent(ent2, Position{3.0F, 3.0F});
+      world.addComponent(ent0, Position{.x = 1.0F, .y = 1.0F});
+      world.addComponent(ent1, Position{.x = 2.0F, .y = 2.0F});
+      world.addComponent(ent2, Position{.x = 3.0F, .y = 3.0F});
 
       CHECK(world.getComponent<Position>(ent0).x == 1.0F);
       CHECK(world.getComponent<Position>(ent1).x == 2.0F);
@@ -353,10 +355,10 @@ TEST_SUITE("World")
       Entity ent0 = 0;
       Entity ent1 = 1;
 
-      world.addComponent(ent0, Position{1.0F, 1.0F});
-      world.addComponent(ent0, Velocity{2.0F, 2.0F});
+      world.addComponent(ent0, Position{.x = 1.0F, .y = 1.0F});
+      world.addComponent(ent0, Velocity{.dx = 2.0F, .dy = 2.0F});
 
-      world.addComponent(ent1, Position{3.0F, 3.0F});
+      world.addComponent(ent1, Position{.x = 3.0F, .y = 3.0F});
       world.addComponent(ent1, Health{50});
 
       CHECK(world.hasComponent<Position>(ent0));

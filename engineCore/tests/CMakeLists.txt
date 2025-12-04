@@ -1,4 +1,4 @@
-# SystemManager Unit Tests with doctest
+# SystemManager Unit Tests with doctes
 
 # Try to find doctest if not already found (for standalone builds)
 if(NOT TARGET doctest::doctest)
@@ -7,6 +7,47 @@ endif()
 
 # Option for code coverage
 option(ENABLE_COVERAGE "Enable code coverage" OFF)
+
+# Strict compilation flags for all tests
+set(STRICT_COMPILE_FLAGS "")
+if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+    set(STRICT_COMPILE_FLAGS
+        -Wall              # Enable all common warnings
+        -Wextra            # Enable extra warnings
+        -Wpedantic         # Strict ISO C++ compliance
+        # -Werror          # Treat warnings as errors (disabled to allow compilation)
+        -Wshadow           # Warn about variable shadowing
+        -Wcast-align       # Warn about pointer cast alignment issues
+        -Wunused           # Warn about unused variables/functions
+        # -Wconversion     # Warn about implicit conversions (can be noisy)
+        # -Wsign-conversion # Warn about sign conversions (can be noisy)
+        -Wnull-dereference # Warn about null pointer dereferences
+        -Wdouble-promotion # Warn about float->double promotions
+        -Wformat=2         # Extra format string checks
+    )
+
+    # Additional flags for GCC
+    if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+        list(APPEND STRICT_COMPILE_FLAGS
+            -Wduplicated-cond     # Warn about duplicated conditions
+            -Wduplicated-branches # Warn about duplicated branches
+            -Wlogical-op          # Warn about logical operations
+        )
+    endif()
+
+    # Additional flags for Clang
+    if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+        list(APPEND STRICT_COMPILE_FLAGS
+            -Wmost                # Most warnings
+        )
+    endif()
+elseif(MSVC)
+    set(STRICT_COMPILE_FLAGS
+        /W4      # Warning level 4
+        # /WX    # Treat warnings as errors (disabled to allow compilation)
+        /permissive- # Strict standard conformance
+    )
+endif()
 
 # Add coverage flags if enabled
 if(ENABLE_COVERAGE)
@@ -29,6 +70,8 @@ target_link_libraries(system_manager_tests
 target_include_directories(system_manager_tests
     PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../include
 )
+
+target_compile_options(system_manager_tests PRIVATE ${STRICT_COMPILE_FLAGS})
 
 if(ENABLE_COVERAGE)
     target_compile_options(system_manager_tests PRIVATE ${COVERAGE_FLAGS})
@@ -54,6 +97,8 @@ target_include_directories(component_signature_tests
     PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../include
 )
 
+target_compile_options(component_signature_tests PRIVATE ${STRICT_COMPILE_FLAGS})
+
 if(ENABLE_COVERAGE)
     target_compile_options(component_signature_tests PRIVATE ${COVERAGE_FLAGS})
     target_link_options(component_signature_tests PRIVATE ${COVERAGE_FLAGS})
@@ -77,6 +122,8 @@ target_link_libraries(entity_tests
 target_include_directories(entity_tests
     PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../include
 )
+
+target_compile_options(entity_tests PRIVATE ${STRICT_COMPILE_FLAGS})
 
 if(ENABLE_COVERAGE)
     target_compile_options(entity_tests PRIVATE ${COVERAGE_FLAGS})
@@ -102,6 +149,8 @@ target_include_directories(component_storage_tests
     PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../include
 )
 
+target_compile_options(component_storage_tests PRIVATE ${STRICT_COMPILE_FLAGS})
+
 if(ENABLE_COVERAGE)
     target_compile_options(component_storage_tests PRIVATE ${COVERAGE_FLAGS})
     target_link_options(component_storage_tests PRIVATE ${COVERAGE_FLAGS})
@@ -125,6 +174,8 @@ target_link_libraries(entity_manager_tests
 target_include_directories(entity_manager_tests
     PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../include
 )
+
+target_compile_options(entity_manager_tests PRIVATE ${STRICT_COMPILE_FLAGS})
 
 if(ENABLE_COVERAGE)
     target_compile_options(entity_manager_tests PRIVATE ${COVERAGE_FLAGS})
@@ -150,6 +201,8 @@ target_include_directories(component_manager_tests
     PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../include
 )
 
+target_compile_options(component_manager_tests PRIVATE ${STRICT_COMPILE_FLAGS})
+
 if(ENABLE_COVERAGE)
     target_compile_options(component_manager_tests PRIVATE ${COVERAGE_FLAGS})
     target_link_options(component_manager_tests PRIVATE ${COVERAGE_FLAGS})
@@ -173,6 +226,8 @@ target_link_libraries(world_tests
 target_include_directories(world_tests
     PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../include
 )
+
+target_compile_options(world_tests PRIVATE ${STRICT_COMPILE_FLAGS})
 
 if(ENABLE_COVERAGE)
     target_compile_options(world_tests PRIVATE ${COVERAGE_FLAGS})

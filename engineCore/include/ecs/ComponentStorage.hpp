@@ -19,7 +19,7 @@ template <typename T>
 class ComponentStorage : public IComponentStorage
 {
 public:
-  void addComponent(Entity ent, T component)
+  void addComponent(Entity ent, const T &component)
   {
     if (ent >= sparseArray.size()) {
       sparseArray.resize(ent + 1, INVALID);
@@ -72,7 +72,7 @@ public:
     return denseComponentArray[sparseArray[ent]];
   }
 
-  const T &getComponent(Entity ent) const
+  [[nodiscard]] const T &getComponent(Entity ent) const
   {
     if (!hasComponent(ent)) {
       throw std::out_of_range("Entity does not have this component");

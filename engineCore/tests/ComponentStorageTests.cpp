@@ -9,7 +9,7 @@
 #include "ecs/ComponentStorage.hpp"
 #include "ecs/Entity.hpp"
 #include <doctest/doctest.h>
-#include <string>
+#include <stdexcept>
 
 // ============================================================================
 // TEST COMPONENTS
@@ -45,36 +45,36 @@ TEST_SUITE("ComponentStorage")
     SUBCASE("Add single component")
     {
       Entity entity = 0;
-      Position pos{10.0f, 20.0f};
+      Position pos{.x = 10.0F, .y = 20.0F};
 
       storage.addComponent(entity, pos);
 
       CHECK(storage.hasComponent(entity));
       auto &retrieved = storage.getComponent(entity);
-      CHECK(retrieved.x == 10.0f);
-      CHECK(retrieved.y == 20.0f);
+      CHECK(retrieved.x == 10.0F);
+      CHECK(retrieved.y == 20.0F);
     }
 
     SUBCASE("Add multiple components")
     {
-      storage.addComponent(0, Position{1.0f, 2.0f});
-      storage.addComponent(1, Position{3.0f, 4.0f});
-      storage.addComponent(2, Position{5.0f, 6.0f});
+      storage.addComponent(0, Position{.x = 1.0F, .y = 2.0F});
+      storage.addComponent(1, Position{.x = 3.0F, .y = 4.0F});
+      storage.addComponent(2, Position{.x = 5.0F, .y = 6.0F});
 
       CHECK(storage.hasComponent(0));
       CHECK(storage.hasComponent(1));
       CHECK(storage.hasComponent(2));
 
-      CHECK(storage.getComponent(0) == Position{1.0f, 2.0f});
-      CHECK(storage.getComponent(1) == Position{3.0f, 4.0f});
-      CHECK(storage.getComponent(2) == Position{5.0f, 6.0f});
+      CHECK(storage.getComponent(0) == Position{1.0F, 2.0F});
+      CHECK(storage.getComponent(1) == Position{3.0F, 4.0F});
+      CHECK(storage.getComponent(2) == Position{5.0F, 6.0F});
     }
 
     SUBCASE("Add component to non-sequential entities")
     {
-      storage.addComponent(0, Position{1.0f, 1.0f});
-      storage.addComponent(5, Position{5.0f, 5.0f});
-      storage.addComponent(10, Position{10.0f, 10.0f});
+      storage.addComponent(0, Position{.x = 1.0F, .y = 1.0F});
+      storage.addComponent(5, Position{.x = 5.0F, .y = 5.0F});
+      storage.addComponent(10, Position{.x = 10.0F, .y = 10.0F});
 
       CHECK(storage.hasComponent(0));
       CHECK_FALSE(storage.hasComponent(3));
@@ -90,27 +90,27 @@ TEST_SUITE("ComponentStorage")
     SUBCASE("Update component by adding again")
     {
       Entity entity = 0;
-      storage.addComponent(entity, Position{1.0f, 1.0f});
+      storage.addComponent(entity, Position{.x = 1.0F, .y = 1.0F});
 
-      CHECK(storage.getComponent(entity) == Position{1.0f, 1.0f});
+      CHECK(storage.getComponent(entity) == Position{1.0F, 1.0F});
 
       // Update by adding again (covers lines 28-29)
-      storage.addComponent(entity, Position{2.0f, 2.0f});
+      storage.addComponent(entity, Position{.x = 2.0F, .y = 2.0F});
 
-      CHECK(storage.getComponent(entity) == Position{2.0f, 2.0f});
+      CHECK(storage.getComponent(entity) == Position{2.0F, 2.0F});
     }
 
     SUBCASE("Update component by reference")
     {
       Entity entity = 0;
-      storage.addComponent(entity, Position{1.0f, 1.0f});
+      storage.addComponent(entity, Position{.x = 1.0F, .y = 1.0F});
 
       auto &pos = storage.getComponent(entity);
-      pos.x = 100.0f;
-      pos.y = 200.0f;
+      pos.x = 100.0F;
+      pos.y = 200.0F;
 
-      CHECK(storage.getComponent(entity).x == 100.0f);
-      CHECK(storage.getComponent(entity).y == 200.0f);
+      CHECK(storage.getComponent(entity).x == 100.0F);
+      CHECK(storage.getComponent(entity).y == 200.0F);
     }
   }
 
@@ -121,7 +121,7 @@ TEST_SUITE("ComponentStorage")
     SUBCASE("Remove existing component")
     {
       Entity entity = 0;
-      storage.addComponent(entity, Position{1.0f, 1.0f});
+      storage.addComponent(entity, Position{.x = 1.0F, .y = 1.0F});
 
       CHECK(storage.hasComponent(entity));
 
@@ -140,21 +140,21 @@ TEST_SUITE("ComponentStorage")
     SUBCASE("Remove and re-add component")
     {
       Entity entity = 0;
-      storage.addComponent(entity, Position{1.0f, 1.0f});
+      storage.addComponent(entity, Position{.x = 1.0F, .y = 1.0F});
       storage.removeComponent(entity);
 
       CHECK_FALSE(storage.hasComponent(entity));
 
-      storage.addComponent(entity, Position{2.0f, 2.0f});
+      storage.addComponent(entity, Position{.x = 2.0F, .y = 2.0F});
       CHECK(storage.hasComponent(entity));
-      CHECK(storage.getComponent(entity) == Position{2.0f, 2.0f});
+      CHECK(storage.getComponent(entity) == Position{2.0F, 2.0F});
     }
 
     SUBCASE("Remove from multiple entities")
     {
-      storage.addComponent(0, Position{1.0f, 1.0f});
-      storage.addComponent(1, Position{2.0f, 2.0f});
-      storage.addComponent(2, Position{3.0f, 3.0f});
+      storage.addComponent(0, Position{.x = 1.0F, .y = 1.0F});
+      storage.addComponent(1, Position{.x = 2.0F, .y = 2.0F});
+      storage.addComponent(2, Position{.x = 3.0F, .y = 3.0F});
 
       // Remove middle entity (covers swap lines 52-54)
       storage.removeComponent(1);
@@ -170,7 +170,7 @@ TEST_SUITE("ComponentStorage")
       CHECK_FALSE(storage.hasComponent(999));
 
       // Add component and verify
-      storage.addComponent(0, Position{1.0f, 1.0f});
+      storage.addComponent(0, Position{.x = 1.0F, .y = 1.0F});
       CHECK(storage.hasComponent(0));
     }
   }
@@ -193,7 +193,7 @@ TEST_SUITE("ComponentStorage")
     SUBCASE("Const version also throws on missing component")
     {
       const ComponentStorage<Position> &constStorage = storage;
-      CHECK_THROWS_AS(constStorage.getComponent(0), std::out_of_range);
+      CHECK_THROWS_AS(static_cast<void>(constStorage.getComponent(0)), std::out_of_range);
     }
   }
 
@@ -204,12 +204,12 @@ TEST_SUITE("ComponentStorage")
       ComponentStorage<Velocity> storage;
       Entity entity = 0;
 
-      storage.addComponent(entity, Velocity{5.0f, -3.0f});
+      storage.addComponent(entity, Velocity{.dx = 5.0F, .dy = -3.0F});
 
       CHECK(storage.hasComponent(entity));
       auto &vel = storage.getComponent(entity);
-      CHECK(vel.dx == 5.0f);
-      CHECK(vel.dy == -3.0f);
+      CHECK(vel.dx == 5.0F);
+      CHECK(vel.dy == -3.0F);
     }
 
     SUBCASE("Health components")
@@ -217,7 +217,7 @@ TEST_SUITE("ComponentStorage")
       ComponentStorage<Health> storage;
       Entity entity = 0;
 
-      storage.addComponent(entity, Health{100, 100});
+      storage.addComponent(entity, Health{.hp = 100, .maxHp = 100});
 
       CHECK(storage.hasComponent(entity));
       auto &health = storage.getComponent(entity);
@@ -232,8 +232,8 @@ TEST_SUITE("ComponentStorage")
 
     SUBCASE("Add components with large entity IDs")
     {
-      storage.addComponent(1000, Position{1.0f, 1.0f});
-      storage.addComponent(2000, Position{2.0f, 2.0f});
+      storage.addComponent(1000, Position{.x = 1.0F, .y = 1.0F});
+      storage.addComponent(2000, Position{.x = 2.0F, .y = 2.0F});
 
       CHECK(storage.hasComponent(1000));
       CHECK(storage.hasComponent(2000));
@@ -242,10 +242,10 @@ TEST_SUITE("ComponentStorage")
 
     SUBCASE("Remove middle entity maintains other entities")
     {
-      storage.addComponent(0, Position{0.0f, 0.0f});
-      storage.addComponent(1, Position{1.0f, 1.0f});
-      storage.addComponent(2, Position{2.0f, 2.0f});
-      storage.addComponent(3, Position{3.0f, 3.0f});
+      storage.addComponent(0, Position{.x = 0.0F, .y = 0.0F});
+      storage.addComponent(1, Position{.x = 1.0F, .y = 1.0F});
+      storage.addComponent(2, Position{.x = 2.0F, .y = 2.0F});
+      storage.addComponent(3, Position{.x = 3.0F, .y = 3.0F});
 
       storage.removeComponent(1);
 
@@ -255,9 +255,9 @@ TEST_SUITE("ComponentStorage")
       CHECK(storage.hasComponent(3));
 
       // Verify values are still correct
-      CHECK(storage.getComponent(0).x == 0.0f);
-      CHECK(storage.getComponent(2).x == 2.0f);
-      CHECK(storage.getComponent(3).x == 3.0f);
+      CHECK(storage.getComponent(0).x == 0.0F);
+      CHECK(storage.getComponent(2).x == 2.0F);
+      CHECK(storage.getComponent(3).x == 3.0F);
     }
   }
 }

@@ -84,7 +84,7 @@ public:
    * @return Const pointer to the system, or nullptr if not found
    */
   template <typename T>
-  const T *getSystem() const
+  [[nodiscard]] const T *getSystem() const
   {
     auto key = std::type_index(typeid(T));
     auto iter = systemLookup.find(key);
@@ -103,7 +103,7 @@ public:
   [[nodiscard]] bool hasSystem() const noexcept
   {
     auto key = std::type_index(typeid(T));
-    return systemLookup.find(key) != systemLookup.end();
+    return systemLookup.contains(key);
   }
 
   /**

@@ -49,7 +49,7 @@ public:
     (void)deltaTime;
   }
 
-  ecs::ComponentSignature getSignature() const override
+  [[nodiscard]] ecs::ComponentSignature getSignature() const override
   {
     ecs::ComponentSignature sig;
     sig.set(ecs::getComponentId<Position>());
@@ -67,7 +67,7 @@ public:
     (void)deltaTime;
   }
 
-  ecs::ComponentSignature getSignature() const override
+  [[nodiscard]] ecs::ComponentSignature getSignature() const override
   {
     ecs::ComponentSignature sig;
     sig.set(ecs::getComponentId<Health>());
@@ -84,7 +84,7 @@ public:
     (void)deltaTime;
   }
 
-  ecs::ComponentSignature getSignature() const override
+  [[nodiscard]] ecs::ComponentSignature getSignature() const override
   {
     ecs::ComponentSignature sig;
     sig.set(ecs::getComponentId<Position>());
@@ -337,8 +337,8 @@ TEST_CASE("ComponentManager - UpdatesSignatureOnComponentAdd")
   ComponentManager manager;
   constexpr Entity kEntity = 1;
 
-  manager.addComponent(kEntity, Position{0, 0});
-  manager.addComponent(kEntity, Velocity{1, 1});
+  manager.addComponent(kEntity, Position{.x = 0, .y = 0});
+  manager.addComponent(kEntity, Velocity{.vx = 1, .vy = 1});
 
   auto sig = manager.getEntitySignature(kEntity);
 
@@ -352,8 +352,8 @@ TEST_CASE("ComponentManager - UpdatesSignatureOnComponentRemove")
   ComponentManager manager;
   constexpr Entity kEntity = 1;
 
-  manager.addComponent(kEntity, Position{0, 0});
-  manager.addComponent(kEntity, Velocity{1, 1});
+  manager.addComponent(kEntity, Position{.x = 0, .y = 0});
+  manager.addComponent(kEntity, Velocity{.vx = 1, .vy = 1});
   manager.removeComponent<Velocity>(kEntity);
 
   auto sig = manager.getEntitySignature(kEntity);
@@ -369,9 +369,9 @@ TEST_CASE("ComponentManager - ClearsSignatureOnRemoveAllComponents")
   constexpr Entity kEntity = 1;
   constexpr int kMaxHealth = 100;
 
-  manager.addComponent(kEntity, Position{0, 0});
-  manager.addComponent(kEntity, Velocity{1, 1});
-  manager.addComponent(kEntity, Health{kMaxHealth, kMaxHealth});
+  manager.addComponent(kEntity, Position{.x = 0, .y = 0});
+  manager.addComponent(kEntity, Velocity{.vx = 1, .vy = 1});
+  manager.addComponent(kEntity, Health{.current = kMaxHealth, .max = kMaxHealth});
 
   manager.removeAllComponents(kEntity);
 
@@ -385,8 +385,8 @@ TEST_CASE("ComponentManager - MultipleEntitiesHaveIndependentSignatures")
   constexpr Entity kEntity1 = 1;
   constexpr Entity kEntity2 = 2;
 
-  manager.addComponent(kEntity1, Position{0, 0});
-  manager.addComponent(kEntity2, Velocity{1, 1});
+  manager.addComponent(kEntity1, Position{.x = 0, .y = 0});
+  manager.addComponent(kEntity2, Velocity{.vx = 1, .vy = 1});
 
   auto sig1 = manager.getEntitySignature(kEntity1);
   auto sig2 = manager.getEntitySignature(kEntity2);
@@ -409,7 +409,7 @@ TEST_CASE("WorldIntegration - ProvidesEntitySignatureAccess")
   constexpr float kPosX = 5.0F;
   constexpr float kPosY = 10.0F;
 
-  world.addComponent(kEntity, Position{kPosX, kPosY});
+  world.addComponent(kEntity, Position{.x = kPosX, .y = kPosY});
 
   auto sig = world.getEntitySignature(kEntity);
 
@@ -422,13 +422,13 @@ TEST_CASE("WorldIntegration - SignaturePersistsAcrossComponentOperations")
   constexpr Entity kEntity = 1;
   constexpr int kMaxHealth = 100;
 
-  world.addComponent(kEntity, Position{0, 0});
+  world.addComponent(kEntity, Position{.x = 0, .y = 0});
   CHECK(world.getEntitySignature(kEntity).count() == 1);
 
-  world.addComponent(kEntity, Velocity{0, 0});
+  world.addComponent(kEntity, Velocity{.vx = 0, .vy = 0});
   CHECK(world.getEntitySignature(kEntity).count() == 2);
 
-  world.addComponent(kEntity, Health{kMaxHealth, kMaxHealth});
+  world.addComponent(kEntity, Health{.current = kMaxHealth, .max = kMaxHealth});
   CHECK(world.getEntitySignature(kEntity).count() == 3);
 
   world.removeComponent<Velocity>(kEntity);
