@@ -29,25 +29,27 @@ TEST_SUITE("EntityManager")
 
     SUBCASE("Create multiple entities")
     {
-      Entity e0 = manager.createEntity();
-      Entity e1 = manager.createEntity();
-      Entity e2 = manager.createEntity();
+      Entity ent0 = manager.createEntity();
+      Entity ent1 = manager.createEntity();
+      Entity ent2 = manager.createEntity();
 
-      CHECK(e0 == 0);
-      CHECK(e1 == 1);
-      CHECK(e2 == 2);
+      CHECK(ent0 == 0);
+      CHECK(ent1 == 1);
+      CHECK(ent2 == 2);
 
-      CHECK(manager.isAlive(e0));
-      CHECK(manager.isAlive(e1));
-      CHECK(manager.isAlive(e2));
+      CHECK(manager.isAlive(ent0));
+      CHECK(manager.isAlive(ent1));
+      CHECK(manager.isAlive(ent2));
 
       CHECK(manager.getAliveCount() == 3);
     }
 
     SUBCASE("Entity IDs are sequential")
     {
+      constexpr int entityCount = 10;
       std::vector<Entity> entities;
-      for (int i = 0; i < 10; ++i) {
+      entities.reserve(entityCount);
+      for (int i = 0; i < entityCount; ++i) {
         entities.push_back(manager.createEntity());
       }
 
@@ -74,15 +76,15 @@ TEST_SUITE("EntityManager")
 
     SUBCASE("Destroy multiple entities")
     {
-      Entity e0 = manager.createEntity();
-      Entity e1 = manager.createEntity();
-      Entity e2 = manager.createEntity();
+      Entity ent0 = manager.createEntity();
+      Entity ent1 = manager.createEntity();
+      Entity ent2 = manager.createEntity();
 
-      manager.destroyEntity(e1);
+      manager.destroyEntity(ent1);
 
-      CHECK(manager.isAlive(e0));
-      CHECK_FALSE(manager.isAlive(e1));
-      CHECK(manager.isAlive(e2));
+      CHECK(manager.isAlive(ent0));
+      CHECK_FALSE(manager.isAlive(ent1));
+      CHECK(manager.isAlive(ent2));
       CHECK(manager.getAliveCount() == 2);
     }
 
@@ -105,32 +107,32 @@ TEST_SUITE("EntityManager")
 
     SUBCASE("Reuse destroyed entity ID")
     {
-      Entity e0 = manager.createEntity();
-      Entity e1 = manager.createEntity();
-      Entity e2 = manager.createEntity();
+      Entity ent0 = manager.createEntity();
+      Entity ent1 = manager.createEntity();
+      Entity ent2 = manager.createEntity();
 
-      manager.destroyEntity(e1);
-      CHECK_FALSE(manager.isAlive(e1));
+      manager.destroyEntity(ent1);
+      CHECK_FALSE(manager.isAlive(ent1));
 
-      Entity e3 = manager.createEntity();
-      CHECK(e3 == e1); // Should reuse e1's ID
-      CHECK(manager.isAlive(e3));
+      Entity ent3 = manager.createEntity();
+      CHECK(ent3 == ent1); // Should reuse ent1's ID
+      CHECK(manager.isAlive(ent3));
     }
 
     SUBCASE("LIFO order for recycled IDs")
     {
-      Entity e0 = manager.createEntity();
-      Entity e1 = manager.createEntity();
-      Entity e2 = manager.createEntity();
+      Entity ent0 = manager.createEntity();
+      Entity ent1 = manager.createEntity();
+      Entity ent2 = manager.createEntity();
 
-      manager.destroyEntity(e0);
-      manager.destroyEntity(e1);
+      manager.destroyEntity(ent0);
+      manager.destroyEntity(ent1);
 
-      Entity e3 = manager.createEntity(); // Should get e1 (last destroyed)
-      Entity e4 = manager.createEntity(); // Should get e0
+      Entity ent3 = manager.createEntity(); // Should get ent1 (last destroyed)
+      Entity ent4 = manager.createEntity(); // Should get ent0
 
-      CHECK(e3 == e1);
-      CHECK(e4 == e0);
+      CHECK(ent3 == ent1);
+      CHECK(ent4 == ent0);
     }
   }
 
@@ -177,7 +179,7 @@ TEST_SUITE("EntityManager")
 
     SUBCASE("Get signature of non-existent entity throws")
     {
-      CHECK_THROWS_AS(manager.getSignature(999), std::out_of_range);
+      CHECK_THROWS_AS((void)manager.getSignature(999), std::out_of_range);
     }
 
     SUBCASE("Set signature of non-existent entity throws")
@@ -190,7 +192,7 @@ TEST_SUITE("EntityManager")
     {
       Entity entity = manager.createEntity();
       manager.destroyEntity(entity);
-      CHECK_THROWS_AS(manager.getSignature(entity), std::out_of_range);
+      CHECK_THROWS_AS((void)manager.getSignature(entity), std::out_of_range);
     }
   }
 
@@ -206,9 +208,9 @@ TEST_SUITE("EntityManager")
 
     SUBCASE("Count after creating entities")
     {
-      manager.createEntity();
-      manager.createEntity();
-      manager.createEntity();
+      (void)manager.createEntity();
+      (void)manager.createEntity();
+      (void)manager.createEntity();
 
       CHECK(manager.getAliveCount() == 3);
       CHECK(manager.getTotalCount() == 3);
@@ -216,11 +218,11 @@ TEST_SUITE("EntityManager")
 
     SUBCASE("Count after destroying entities")
     {
-      Entity e0 = manager.createEntity();
-      Entity e1 = manager.createEntity();
-      Entity e2 = manager.createEntity();
+      Entity ent0 = manager.createEntity();
+      Entity ent1 = manager.createEntity();
+      Entity ent2 = manager.createEntity();
 
-      manager.destroyEntity(e1);
+      manager.destroyEntity(ent1);
 
       CHECK(manager.getAliveCount() == 2);
       CHECK(manager.getTotalCount() == 3); // Total doesn't decrease
@@ -228,9 +230,9 @@ TEST_SUITE("EntityManager")
 
     SUBCASE("Count after recycling")
     {
-      Entity e0 = manager.createEntity();
-      manager.destroyEntity(e0);
-      manager.createEntity(); // Reuses e0
+      Entity ent0 = manager.createEntity();
+      manager.destroyEntity(ent0);
+      (void)manager.createEntity(); // Reuses ent0
 
       CHECK(manager.getAliveCount() == 1);
       CHECK(manager.getTotalCount() == 1);
@@ -249,30 +251,30 @@ TEST_SUITE("EntityManager")
 
     SUBCASE("Returns all living entities")
     {
-      Entity e0 = manager.createEntity();
-      Entity e1 = manager.createEntity();
-      Entity e2 = manager.createEntity();
+      Entity ent0 = manager.createEntity();
+      Entity ent1 = manager.createEntity();
+      Entity ent2 = manager.createEntity();
 
       auto entities = manager.getAllEntities();
       CHECK(entities.size() == 3);
-      CHECK(std::find(entities.begin(), entities.end(), e0) != entities.end());
-      CHECK(std::find(entities.begin(), entities.end(), e1) != entities.end());
-      CHECK(std::find(entities.begin(), entities.end(), e2) != entities.end());
+      CHECK(std::find(entities.begin(), entities.end(), ent0) != entities.end());
+      CHECK(std::find(entities.begin(), entities.end(), ent1) != entities.end());
+      CHECK(std::find(entities.begin(), entities.end(), ent2) != entities.end());
     }
 
     SUBCASE("Excludes destroyed entities")
     {
-      Entity e0 = manager.createEntity();
-      Entity e1 = manager.createEntity();
-      Entity e2 = manager.createEntity();
+      Entity ent0 = manager.createEntity();
+      Entity ent1 = manager.createEntity();
+      Entity ent2 = manager.createEntity();
 
-      manager.destroyEntity(e1);
+      manager.destroyEntity(ent1);
 
       auto entities = manager.getAllEntities();
       CHECK(entities.size() == 2);
-      CHECK(std::find(entities.begin(), entities.end(), e0) != entities.end());
-      CHECK(std::find(entities.begin(), entities.end(), e1) == entities.end());
-      CHECK(std::find(entities.begin(), entities.end(), e2) != entities.end());
+      CHECK(std::find(entities.begin(), entities.end(), ent0) != entities.end());
+      CHECK(std::find(entities.begin(), entities.end(), ent1) == entities.end());
+      CHECK(std::find(entities.begin(), entities.end(), ent2) != entities.end());
     }
   }
 
@@ -282,9 +284,9 @@ TEST_SUITE("EntityManager")
 
     SUBCASE("Clear resets all state")
     {
-      manager.createEntity();
-      manager.createEntity();
-      manager.createEntity();
+      (void)manager.createEntity();
+      (void)manager.createEntity();
+      (void)manager.createEntity();
 
       manager.clear();
 
@@ -305,10 +307,11 @@ TEST_SUITE("EntityManager")
     {
       // This test would be slow with MAX_ENTITIES = 5000
       // Just verify the first few work
-      for (int i = 0; i < 100; ++i) {
-        CHECK_NOTHROW(manager.createEntity());
+      constexpr int testEntityCount = 100;
+      for (int i = 0; i < testEntityCount; ++i) {
+        CHECK_NOTHROW((void)manager.createEntity());
       }
-      CHECK(manager.getAliveCount() == 100);
+      CHECK(manager.getAliveCount() == testEntityCount);
     }
 
     SUBCASE("Creating more than MAX_ENTITIES throws (covers line 47)")
@@ -341,10 +344,10 @@ TEST_SUITE("EntityManager")
 
     SUBCASE("isAlive returns true for recycled entity")
     {
-      Entity e0 = manager.createEntity();
-      manager.destroyEntity(e0);
-      Entity e1 = manager.createEntity(); // Reuses e0
-      CHECK(manager.isAlive(e1));
+      Entity ent0 = manager.createEntity();
+      manager.destroyEntity(ent0);
+      Entity ent1 = manager.createEntity(); // Reuses ent0
+      CHECK(manager.isAlive(ent1));
     }
   }
 }
