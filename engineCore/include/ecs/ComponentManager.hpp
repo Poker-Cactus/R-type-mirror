@@ -13,6 +13,7 @@
 #include <memory>
 #include <typeindex>
 #include <unordered_map>
+#include <utility>
 
 class ComponentManager
 {
@@ -20,10 +21,10 @@ public:
   ~ComponentManager() = default;
 
   template <typename T>
-  void addComponent(Entity ent, T component)
+  void addComponent(Entity ent, const T &component)
   {
     ComponentStorage<T> &storage = ensureStorage<T>();
-    storage.addComponent(ent, component);
+    storage.addComponent(ent, std::move(component));
 
     // Update entity signature
     entitySignatures[ent].set(ecs::getComponentId<T>());
@@ -37,7 +38,7 @@ public:
   }
 
   template <typename T>
-  const T &getComponent(Entity ent) const
+  [[nodiscard]] [[nodiscard]] const T &getComponent(Entity ent) const
   {
     auto key = std::type_index(typeid(T));
     auto iterator = storages.find(key);
@@ -48,7 +49,7 @@ public:
   }
 
   template <typename T>
-  bool hasComponent(Entity ent) const
+  [[nodiscard]] [[nodiscard]] [[nodiscard]] [[nodiscard]] [[nodiscard]] bool hasComponent(Entity ent) const
   {
     auto key = std::type_index(typeid(T));
     auto iterator = storages.find(key);

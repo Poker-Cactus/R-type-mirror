@@ -7,9 +7,12 @@
 
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
 #include "ecs/Entity.hpp"
+#include <cstdint>
 #include <doctest/doctest.h>
 #include <limits>
+#include <type_traits>
 #include <unordered_map>
+#include <vector>
 
 // ============================================================================
 // ENTITY TYPE TESTS

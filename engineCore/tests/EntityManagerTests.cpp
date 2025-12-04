@@ -6,8 +6,13 @@
 */
 
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
+#include "ecs/ComponentSignature.hpp"
 #include "ecs/EntityManager.hpp"
+#include <algorithm>
+#include <cstddef>
 #include <doctest/doctest.h>
+#include <stdexcept>
+#include <vector>
 
 // ============================================================================
 // ENTITY MANAGER TESTS
@@ -107,9 +112,9 @@ TEST_SUITE("EntityManager")
 
     SUBCASE("Reuse destroyed entity ID")
     {
-      Entity ent0 = manager.createEntity();
+      [[maybe_unused]] Entity ent0 = manager.createEntity();
       Entity ent1 = manager.createEntity();
-      Entity ent2 = manager.createEntity();
+      [[maybe_unused]] Entity ent2 = manager.createEntity();
 
       manager.destroyEntity(ent1);
       CHECK_FALSE(manager.isAlive(ent1));
@@ -121,9 +126,9 @@ TEST_SUITE("EntityManager")
 
     SUBCASE("LIFO order for recycled IDs")
     {
-      Entity ent0 = manager.createEntity();
+      [[maybe_unused]] Entity ent0 = manager.createEntity();
       Entity ent1 = manager.createEntity();
-      Entity ent2 = manager.createEntity();
+      [[maybe_unused]] Entity ent2 = manager.createEntity();
 
       manager.destroyEntity(ent0);
       manager.destroyEntity(ent1);
@@ -218,9 +223,9 @@ TEST_SUITE("EntityManager")
 
     SUBCASE("Count after destroying entities")
     {
-      Entity ent0 = manager.createEntity();
+      [[maybe_unused]] Entity ent0 = manager.createEntity();
       Entity ent1 = manager.createEntity();
-      Entity ent2 = manager.createEntity();
+      [[maybe_unused]] Entity ent2 = manager.createEntity();
 
       manager.destroyEntity(ent1);
 
@@ -257,9 +262,9 @@ TEST_SUITE("EntityManager")
 
       auto entities = manager.getAllEntities();
       CHECK(entities.size() == 3);
-      CHECK(std::find(entities.begin(), entities.end(), ent0) != entities.end());
-      CHECK(std::find(entities.begin(), entities.end(), ent1) != entities.end());
-      CHECK(std::find(entities.begin(), entities.end(), ent2) != entities.end());
+      CHECK(std::ranges::find(entities, ent0) != entities.end());
+      CHECK(std::ranges::find(entities, ent1) != entities.end());
+      CHECK(std::ranges::find(entities, ent2) != entities.end());
     }
 
     SUBCASE("Excludes destroyed entities")
@@ -272,9 +277,9 @@ TEST_SUITE("EntityManager")
 
       auto entities = manager.getAllEntities();
       CHECK(entities.size() == 2);
-      CHECK(std::find(entities.begin(), entities.end(), ent0) != entities.end());
-      CHECK(std::find(entities.begin(), entities.end(), ent1) == entities.end());
-      CHECK(std::find(entities.begin(), entities.end(), ent2) != entities.end());
+      CHECK(std::ranges::find(entities, ent0) != entities.end());
+      CHECK(std::ranges::find(entities, ent1) == entities.end());
+      CHECK(std::ranges::find(entities, ent2) != entities.end());
     }
   }
 

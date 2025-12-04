@@ -71,7 +71,7 @@ public:
    * @return Const pointer to the system, or nullptr if not found
    */
   template <typename T>
-  const T *getSystem() const
+  [[nodiscard]] const T *getSystem() const
   {
     return systemManager.getSystem<T>();
   }
@@ -147,7 +147,7 @@ public:
    * @throws std::out_of_range if entity doesn't have the component
    */
   template <typename T>
-  const T &getComponent(Entity entity) const
+  [[nodiscard]] [[nodiscard]] const T &getComponent(Entity entity) const
   {
     return componentManager.getComponent<T>(entity);
   }

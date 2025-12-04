@@ -124,11 +124,22 @@ if [ "$1" == "test" ]; then
         exit 1
     fi
 
+
+    # Always run a full build before tests
+    print_step "🔨" "Running full build before tests..."
+    ./build.sh
+
+    # Clean coverage_report before building tests
+    if [ -d "build/coverage_report" ]; then
+        print_step "🧹" "Cleaning coverage_report directory..."
+        rm -rf build/coverage_report
+    fi
+
     # If coverage is requested, rebuild with coverage flags
     if [ "$COVERAGE_FLAG" == "--coverage" ]; then
-        print_step "🔧" "Configuring build with coverage enabled..."
+        print_step "🔧" "Configuring build with coverage and tests enabled..."
         cd build
-        cmake .. -DENABLE_COVERAGE=ON > /dev/null 2>&1
+        cmake .. -DENABLE_COVERAGE=ON -DBUILD_TESTS=ON > /dev/null 2>&1
         if [ $? -ne 0 ]; then
             print_error "CMake configuration with coverage failed!"
             cd ..
@@ -145,6 +156,29 @@ if [ "$1" == "test" ]; then
             exit 1
         fi
         print_success "Tests rebuilt with coverage!"
+        echo ""
+        cd ..
+    else
+        # Build tests without coverage
+        print_step "🔧" "Configuring build with tests enabled..."
+        cd build
+        cmake .. -DBUILD_TESTS=ON > /dev/null 2>&1
+        if [ $? -ne 0 ]; then
+            print_error "CMake configuration failed!"
+            cd ..
+            exit 1
+        fi
+        print_success "Configuration applied!"
+        echo ""
+
+        print_step "🔨" "Building tests..."
+        cmake --build . --target component_signature_tests component_manager_tests entity_tests entity_manager_tests component_storage_tests system_manager_tests world_tests 2>&1 | tail -10
+        if [ $? -ne 0 ]; then
+            print_error "Build failed!"
+            cd ..
+            exit 1
+        fi
+        print_success "Tests rebuilt!"
         echo ""
         cd ..
     fi

@@ -10,6 +10,8 @@
 #include "ecs/ComponentSignature.hpp"
 #include "ecs/Entity.hpp"
 #include <doctest/doctest.h>
+#include <stdexcept>
+#include <string>
 
 // ============================================================================
 // TEST COMPONENTS
@@ -51,7 +53,7 @@ TEST_SUITE("ComponentManager")
 
     SUBCASE("Add single component")
     {
-      manager.addComponent(entity, Position{1.0F, 2.0F});
+      manager.addComponent(entity, Position{.x = 1.0F, .y = 2.0F});
 
       CHECK(manager.hasComponent<Position>(entity));
       auto &pos = manager.getComponent<Position>(entity);
@@ -61,9 +63,9 @@ TEST_SUITE("ComponentManager")
 
     SUBCASE("Add multiple component types to same entity")
     {
-      manager.addComponent(entity, Position{1.0F, 2.0F});
-      manager.addComponent(entity, Velocity{3.0F, 4.0F});
-      manager.addComponent(entity, Health{100, 100});
+      manager.addComponent(entity, Position{.x = 1.0F, .y = 2.0F});
+      manager.addComponent(entity, Velocity{.dx = 3.0F, .dy = 4.0F});
+      manager.addComponent(entity, Health{.hp = 100, .maxHp = 100});
 
       CHECK(manager.hasComponent<Position>(entity));
       CHECK(manager.hasComponent<Velocity>(entity));
@@ -76,9 +78,9 @@ TEST_SUITE("ComponentManager")
       Entity ent1 = 1;
       Entity ent2 = 2;
 
-      manager.addComponent(ent0, Position{1.0F, 1.0F});
-      manager.addComponent(ent1, Position{2.0F, 2.0F});
-      manager.addComponent(ent2, Position{3.0F, 3.0F});
+      manager.addComponent(ent0, Position{.x = 1.0F, .y = 1.0F});
+      manager.addComponent(ent1, Position{.x = 2.0F, .y = 2.0F});
+      manager.addComponent(ent2, Position{.x = 3.0F, .y = 3.0F});
 
       CHECK(manager.getComponent<Position>(ent0).x == 1.0F);
       CHECK(manager.getComponent<Position>(ent1).x == 2.0F);
@@ -93,7 +95,7 @@ TEST_SUITE("ComponentManager")
 
     SUBCASE("Signature is updated when adding component")
     {
-      manager.addComponent(entity, Position{0.0F, 0.0F});
+      manager.addComponent(entity, Position{.x = 0.0F, .y = 0.0F});
 
       const auto &sig = manager.getEntitySignature(entity);
       CHECK(sig.test(ecs::getComponentId<Position>()));
@@ -101,8 +103,8 @@ TEST_SUITE("ComponentManager")
 
     SUBCASE("Signature tracks multiple components")
     {
-      manager.addComponent(entity, Position{0.0F, 0.0F});
-      manager.addComponent(entity, Velocity{0.0F, 0.0F});
+      manager.addComponent(entity, Position{.x = 0.0F, .y = 0.0F});
+      manager.addComponent(entity, Velocity{.dx = 0.0F, .dy = 0.0F});
 
       const auto &sig = manager.getEntitySignature(entity);
       CHECK(sig.test(ecs::getComponentId<Position>()));
@@ -124,7 +126,7 @@ TEST_SUITE("ComponentManager")
 
     SUBCASE("Remove existing component")
     {
-      manager.addComponent(entity, Position{1.0F, 1.0F});
+      manager.addComponent(entity, Position{.x = 1.0F, .y = 1.0F});
       CHECK(manager.hasComponent<Position>(entity));
 
       manager.removeComponent<Position>(entity);
@@ -134,8 +136,8 @@ TEST_SUITE("ComponentManager")
 
     SUBCASE("Remove updates signature")
     {
-      manager.addComponent(entity, Position{0.0F, 0.0F});
-      manager.addComponent(entity, Velocity{0.0F, 0.0F});
+      manager.addComponent(entity, Position{.x = 0.0F, .y = 0.0F});
+      manager.addComponent(entity, Velocity{.dx = 0.0F, .dy = 0.0F});
 
       manager.removeComponent<Position>(entity);
 
@@ -151,9 +153,9 @@ TEST_SUITE("ComponentManager")
 
     SUBCASE("Remove one component doesn't affect others")
     {
-      manager.addComponent(entity, Position{1.0F, 1.0F});
-      manager.addComponent(entity, Velocity{2.0F, 2.0F});
-      manager.addComponent(entity, Health{100, 100});
+      manager.addComponent(entity, Position{.x = 1.0F, .y = 1.0F});
+      manager.addComponent(entity, Velocity{.dx = 2.0F, .dy = 2.0F});
+      manager.addComponent(entity, Health{.hp = 100, .maxHp = 100});
 
       manager.removeComponent<Velocity>(entity);
 
@@ -170,9 +172,9 @@ TEST_SUITE("ComponentManager")
 
     SUBCASE("Remove all components from entity")
     {
-      manager.addComponent(entity, Position{1.0F, 1.0F});
-      manager.addComponent(entity, Velocity{2.0F, 2.0F});
-      manager.addComponent(entity, Health{100, 100});
+      manager.addComponent(entity, Position{.x = 1.0F, .y = 1.0F});
+      manager.addComponent(entity, Velocity{.dx = 2.0F, .dy = 2.0F});
+      manager.addComponent(entity, Health{.hp = 100, .maxHp = 100});
 
       manager.removeAllComponents(entity);
 
@@ -183,8 +185,8 @@ TEST_SUITE("ComponentManager")
 
     SUBCASE("Signature is reset after removing all")
     {
-      manager.addComponent(entity, Position{0.0F, 0.0F});
-      manager.addComponent(entity, Velocity{0.0F, 0.0F});
+      manager.addComponent(entity, Position{.x = 0.0F, .y = 0.0F});
+      manager.addComponent(entity, Velocity{.dx = 0.0F, .dy = 0.0F});
 
       manager.removeAllComponents(entity);
 
@@ -205,7 +207,7 @@ TEST_SUITE("ComponentManager")
 
     SUBCASE("Modify component through reference")
     {
-      manager.addComponent(entity, Position{1.0F, 1.0F});
+      manager.addComponent(entity, Position{.x = 1.0F, .y = 1.0F});
 
       auto &pos = manager.getComponent<Position>(entity);
       pos.x = 10.0F;
@@ -217,8 +219,8 @@ TEST_SUITE("ComponentManager")
 
     SUBCASE("Update component by adding again")
     {
-      manager.addComponent(entity, Position{1.0F, 1.0F});
-      manager.addComponent(entity, Position{5.0F, 5.0F});
+      manager.addComponent(entity, Position{.x = 1.0F, .y = 1.0F});
+      manager.addComponent(entity, Position{.x = 5.0F, .y = 5.0F});
 
       CHECK(manager.getComponent<Position>(entity) == Position{5.0F, 5.0F});
     }
@@ -228,7 +230,7 @@ TEST_SUITE("ComponentManager")
   {
     ComponentManager manager;
     Entity entity = 0;
-    manager.addComponent(entity, Position{1.0F, 2.0F});
+    manager.addComponent(entity, Position{.x = 1.0F, .y = 2.0F});
 
     SUBCASE("Const getComponent")
     {
@@ -266,7 +268,7 @@ TEST_SUITE("ComponentManager")
     SUBCASE("Const version also throws")
     {
       const ComponentManager &constManager = manager;
-      CHECK_THROWS_AS(constManager.getComponent<Position>(entity), std::out_of_range);
+      CHECK_THROWS_AS([[maybe_unused]] auto &unused = constManager.getComponent<Position>(entity), std::out_of_range);
     }
   }
 
@@ -276,14 +278,14 @@ TEST_SUITE("ComponentManager")
 
     SUBCASE("Independent component management per entity")
     {
-      Entity ent0 = 0;
-      Entity ent1 = 1;
+      [[maybe_unused]] Entity ent0 = 0;
+      [[maybe_unused]] Entity ent1 = 1;
 
-      manager.addComponent(ent0, Position{1.0F, 1.0F});
-      manager.addComponent(ent0, Velocity{2.0F, 2.0F});
+      manager.addComponent(ent0, Position{.x = 1.0F, .y = 1.0F});
+      manager.addComponent(ent0, Velocity{.dx = 2.0F, .dy = 2.0F});
 
-      manager.addComponent(ent1, Position{3.0F, 3.0F});
-      manager.addComponent(ent1, Health{50, 100});
+      manager.addComponent(ent1, Position{.x = 3.0F, .y = 3.0F});
+      manager.addComponent(ent1, Health{.hp = 50, .maxHp = 100});
 
       // Entity 0 checks
       CHECK(manager.hasComponent<Position>(ent0));
@@ -301,8 +303,8 @@ TEST_SUITE("ComponentManager")
       Entity ent0 = 0;
       Entity ent1 = 1;
 
-      manager.addComponent(ent0, Position{1.0F, 1.0F});
-      manager.addComponent(ent1, Position{2.0F, 2.0F});
+      manager.addComponent(ent0, Position{.x = 1.0F, .y = 1.0F});
+      manager.addComponent(ent1, Position{.x = 2.0F, .y = 2.0F});
 
       manager.removeComponent<Position>(ent0);
 
