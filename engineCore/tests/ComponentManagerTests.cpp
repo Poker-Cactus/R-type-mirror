@@ -268,7 +268,7 @@ TEST_SUITE("ComponentManager")
     SUBCASE("Const version also throws")
     {
       const ComponentManager &constManager = manager;
-      CHECK_THROWS_AS([[maybe_unused]] auto &unused = constManager.getComponent<Position>(entity), std::out_of_range);
+      CHECK_THROWS_AS(static_cast<void>(constManager.getComponent<Position>(entity)), std::out_of_range);
     }
   }
 
