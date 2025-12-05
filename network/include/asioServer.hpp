@@ -27,9 +27,12 @@ class AsioServer : public INetworkManager
     ~AsioServer();
 
     void run() override;
-    void send(const std::string &data, const uint32_t &targetEndpointId) override;
+    void send(std::span<const std::byte> data, const uint32_t &targetEndpointId) override;
+    void start() override;
+    void stop() override;
 
   private:
+    std::span<const std::byte> stringToBytes(const std::string &str);
     void startReceive();
     bool getIncomingMessage(MessageQueue &message);
     uint32_t registerOrGetClient(const asio::ip::udp::endpoint &endpoint);
@@ -45,4 +48,5 @@ class AsioServer : public INetworkManager
     bool _running;
     asio::executor_work_guard<asio::io_context::executor_type> _workGuard;
     asio::ip::udp::endpoint _remoteEndpoint;
+    // std::array<std::byte, BUFFER_SIZE> _recvBuffer;
 };

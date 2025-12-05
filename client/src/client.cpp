@@ -9,8 +9,12 @@
 
 Client::Client(std::shared_ptr<INetworkManager> networkManager) : _networkManager(networkManager)
 {
-    if (networkManager)
-        networkManager->run();
+    if (!networkManager) {
+        std::cout << "Invalid Network Manager provided to Client." << std::endl;
+        return;
+    }
+    networkManager->start();
+    networkManager->run();
 }
 
 Client::~Client() {}

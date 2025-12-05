@@ -37,3 +37,8 @@ std::string PacketHandler::deserialize(const std::array<char, 1024> &recvBuffer,
         throw std::runtime_error(std::string("Cap'n Proto error: ") + e.getDescription().cStr());
     }
 }
+
+std::span<const std::byte> PacketHandler::stringToBytes(const std::string &str)
+{
+    return std::span<const std::byte>(reinterpret_cast<const std::byte *>(str.data()), str.size());
+}

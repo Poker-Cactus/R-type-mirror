@@ -27,7 +27,9 @@ class AsioClient : public INetworkManager
     ~AsioClient();
 
     void run() override;
-    void send(const std::string &data, const uint32_t &targetEndpointId) override;
+    void send(std::span<const std::byte> data, const uint32_t &targetEndpointId) override;
+    void start() override;
+    void stop() override;
 
   private:
     void startReceive();
