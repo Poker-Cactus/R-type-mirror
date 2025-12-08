@@ -2,6 +2,8 @@ project(client)
 
 add_executable(client
     src/main.cpp
+    src/Game.cpp
+    src/Menu.cpp
 )
 
 target_include_directories(client PRIVATE include)
@@ -11,3 +13,5 @@ target_link_libraries(client PRIVATE
     common 
     SDL2::SDL2
 )
+
+add_subdirectory(modules)
