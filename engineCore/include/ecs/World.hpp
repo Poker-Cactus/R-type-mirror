@@ -10,9 +10,9 @@
 
 #include "ComponentManager.hpp"
 #include "ComponentSignature.hpp"
+#include "Entity.hpp"
+#include "EntityManager.hpp"
 #include "SystemManager.hpp"
-#include "ecs/Entity.hpp"
-#include "ecs/EntityManager.hpp"
 #include <cstddef>
 #include <vector>
 
@@ -114,7 +114,7 @@ public:
   {
     m_componentManager.addComponent(entity, std::move(component));
 
-    // Update signature in EntityManager
+    // Update signature in EntityManager (single source of truth)
     ComponentSignature signature = m_entityManager.getSignature(entity);
     signature.set(ecs::getComponentId<T>());
     m_entityManager.setSignature(entity, signature);
@@ -146,7 +146,7 @@ public:
   {
     m_componentManager.removeComponent<T>(entity);
 
-    // Update signature in EntityManager
+    // Update signature in EntityManager (single source of truth)
     ComponentSignature signature = m_entityManager.getSignature(entity);
     signature.reset(ecs::getComponentId<T>());
     m_entityManager.setSignature(entity, signature);
@@ -159,7 +159,7 @@ public:
   {
     m_componentManager.removeAllComponents(entity);
 
-    // Reset signature in EntityManager
+    // Reset signature in EntityManager (single source of truth)
     ComponentSignature emptySignature;
     m_entityManager.setSignature(entity, emptySignature);
 

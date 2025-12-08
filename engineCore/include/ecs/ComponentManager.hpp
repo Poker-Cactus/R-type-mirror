@@ -9,7 +9,7 @@
 #define ECS_COMPONENTMANAGER_HPP_
 
 #include "ComponentStorage.hpp"
-#include "ecs/IComponentStorage.hpp"
+#include "IComponentStorage.hpp"
 #include <memory>
 #include <stdexcept>
 #include <typeindex>
@@ -105,4 +105,4 @@ private:
   }
 };
 
-#endif
+#endif // ECS_COMPONENTMANAGER_HPP_

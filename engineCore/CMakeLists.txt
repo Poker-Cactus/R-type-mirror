@@ -11,62 +11,14 @@ endif()
 # Option for code coverage
 option(ENABLE_COVERAGE "Enable code coverage" OFF)
 
-add_library(engineCore STATIC
-    src/ecs/World.cpp
-)
+# Header-only library
+add_library(engineCore INTERFACE)
 
-target_include_directories(engineCore PUBLIC
+target_include_directories(engineCore INTERFACE
     ${CMAKE_CURRENT_SOURCE_DIR}/include/
 )
 
-# Strict compilation flags
-if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
-    target_compile_options(engineCore PRIVATE
-        -Wall              # Enable all common warnings
-        -Wextra            # Enable extra warnings
-        -Wpedantic         # Strict ISO C++ compliance
-        # -Werror          # Treat warnings as errors (disabled to allow compilation)
-        -Wshadow           # Warn about variable shadowing
-        -Wcast-align       # Warn about pointer cast alignment issues
-        -Wunused           # Warn about unused variables/functions
-        # -Wconversion     # Warn about implicit conversions (can be noisy)
-        # -Wsign-conversion # Warn about sign conversions (can be noisy)
-        -Wnull-dereference # Warn about null pointer dereferences
-        -Wdouble-promotion # Warn about float->double promotions
-        -Wformat=2         # Extra format string checks
-    )
-
-    # Additional flags for GCC
-    if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-        target_compile_options(engineCore PRIVATE
-            -Wduplicated-cond     # Warn about duplicated conditions
-            -Wduplicated-branches # Warn about duplicated branches
-            -Wlogical-op          # Warn about logical operations
-        )
-    endif()
-
-    # Additional flags for Clang
-    if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-        target_compile_options(engineCore PRIVATE
-            -Wmost                # Most warnings
-        )
-    endif()
-elseif(MSVC)
-    target_compile_options(engineCore PRIVATE
-        /W4      # Warning level 4
-        # /WX    # Treat warnings as errors (disabled to allow compilation)
-        /permissive- # Strict standard conformance
-    )
-endif()
-
-# Add coverage flags if enabled
-if(ENABLE_COVERAGE)
-    if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
-        target_compile_options(engineCore PRIVATE --coverage -fprofile-arcs -ftest-coverage)
-        target_link_options(engineCore PRIVATE --coverage)
-        message(STATUS "Code coverage enabled for engineCore")
-    endif()
-endif()
+# Note: Strict compilation flags are applied at the test level for header-only library
 
 # Options to control building of tests and examples
 option(BUILD_TESTS "Build the tests" OFF)
