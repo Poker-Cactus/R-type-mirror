@@ -15,4 +15,4 @@ struct Transform {
   float scale;
 };
 
-#endif // ENGINE_CORE_ECS_COMPONENTS_TRANSFORM_HPP
+#endif // ENGINECORE_ECS_COMPONENTS_TRANSFORM_HPP
