@@ -11,6 +11,7 @@ constexpr int KEY_ESCAPE = 2;
 constexpr int KEY_BACKSPACE = 3;
 constexpr int KEY_TAB = 4;
 constexpr int KEY_SPACE = 5;
+constexpr int KEY_DELETE = 8;
 
 // Arrow keys
 constexpr int KEY_UP = 10;

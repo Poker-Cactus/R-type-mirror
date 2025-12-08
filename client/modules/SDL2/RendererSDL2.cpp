@@ -24,6 +24,8 @@ static int mapSDLKeyToGeneric(int sdlKey)
         return KeyCode::KEY_TAB;
     case SDLK_SPACE:
         return KeyCode::KEY_SPACE;
+    case SDLK_DELETE:
+        return KeyCode::KEY_DELETE;
 
     case SDLK_UP:
         return KeyCode::KEY_UP;

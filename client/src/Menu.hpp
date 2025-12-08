@@ -3,7 +3,7 @@
 #include <array>
 #include <string>
 
-enum class MenuState { LOADING, MAIN_MENU, OPTIONS, LOBBY, SETTINGS };
+enum class MenuState { LOADING, MAIN_MENU, LOBBY, SETTINGS, PROFILE };
 
 class Menu
 {
@@ -23,9 +23,16 @@ class Menu
   private:
     void renderLoading(int winWidth, int winHeight);
     void renderMainMenu(int winWidth, int winHeight);
-    void renderOptions(int winWidth, int winHeight);
+    void renderProfile(int winWidth, int winHeight);
     void renderLobby(int winWidth, int winHeight);
     void renderSettings(int winWidth, int winHeight);
+
+    void processLoading();
+    void processMainMenu();
+    void processProfile();
+    void processLobby();
+    void processSettings();
+    void processBack();
 
     // Helper pour afficher du texte centré
     void drawCenteredText(const std::string &text, int yOffset, const Color &color);

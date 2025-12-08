@@ -39,8 +39,8 @@ void Menu::render()
     case MenuState::MAIN_MENU:
         renderMainMenu(winWidth, winHeight);
         break;
-    case MenuState::OPTIONS:
-        renderOptions(winWidth, winHeight);
+    case MenuState::PROFILE:
+        renderProfile(winWidth, winHeight);
         break;
     case MenuState::LOBBY:
         renderLobby(winWidth, winHeight);
@@ -54,90 +54,25 @@ void Menu::render()
 void Menu::processInput()
 {
     switch (currentState) {
-    case MenuState::LOADING:
-        if (renderer->isKeyJustPressed(KeyCode::KEY_RETURN))
-            this->currentState = MenuState::MAIN_MENU;
-        break;
-    case MenuState::MAIN_MENU:
-        // Flèche bas - descendre dans le menu
-        if (renderer->isKeyJustPressed(KeyCode::KEY_DOWN)) {
-            currentMenuIndex = (currentMenuIndex + 1) % mainMenuItems.size();
-        }
-        // Flèche haut - monter dans le menu
-        if (renderer->isKeyJustPressed(KeyCode::KEY_UP)) {
-            currentMenuIndex = (currentMenuIndex - 1 + mainMenuItems.size()) % mainMenuItems.size();
-        }
-        break;
+        case MenuState::LOADING:
+            this->processLoading();
+            break;
+        case MenuState::MAIN_MENU:
+            this->processMainMenu();
+            break;
+        case MenuState::PROFILE:
+            this->processProfile();
+            break;
+        case MenuState::SETTINGS:
+            this->processSettings();
+            break;
+        case MenuState::LOBBY:
+            this->processLobby();
+            break;
     default:
         break;
     }
-}
-
-void Menu::renderLoading(int winWidth, int winHeight)
-{
-    // Afficher le logo
-    if (logo != nullptr) {
-        int logoWidth = winWidth * 40 / 100;
-        int logoHeight = logoWidth / 3;
-
-        int logoX = (winWidth - logoWidth) / 2;
-        int logoY = winHeight / 10;
-        renderer->drawTextureEx(logo, logoX, logoY, logoWidth, logoHeight, 0.0, false, false);
-    }
-
-    if (menu_font != nullptr) {
-        blinkTimer += renderer->getDeltaTime();
-        float opacity = (std::sin(blinkTimer * 3.5f) + 1.0f) / 2.0f;
-        int alpha = static_cast<int>(50 + opacity * 205);
-
-        std::string text = "Press enter to start ...";
-        int textWidth = 0;
-        int textHeight = 0;
-        renderer->getTextSize(menu_font, text, textWidth, textHeight);
-
-        int x = (winWidth - textWidth) / 2;
-        int y = (winHeight - textHeight) / 1.1;
-
-        renderer->drawText(menu_font, text, x, y, {4, 196, 199, static_cast<unsigned char>(alpha)});
-    }
-}
-
-void Menu::renderMainMenu(int winWidth, int winHeight)
-{
-    if (menu_font == nullptr) {
-        return;
-    }
-
-    for (size_t i = 0; i < mainMenuItems.size(); i++) {
-        int textWidth = 0;
-        int textHeight = 0;
-        renderer->getTextSize(menu_font, mainMenuItems[i], textWidth, textHeight);
-
-        int x = (winWidth - textWidth) / 2;
-        int y = (winHeight / 2) + (static_cast<int>(i) * 60) - 90;
-
-        Color color =
-            (i == static_cast<size_t>(currentMenuIndex)) ? Color{4, 196, 199, 255} : Color{255, 255, 255, 255};
-        renderer->drawText(menu_font, mainMenuItems[i], x, y, color);
-    }
-}
-
-void Menu::renderOptions(int winWidth, int winHeight)
-{
-    // TODO: Afficher le menu des options
-    drawCenteredText("OPTIONS - Coming soon", 0, {255, 255, 255, 255});
-}
-
-void Menu::renderLobby(int winWidth, int winHeight)
-{
-    // TODO: Afficher le lobby
-    drawCenteredText("LOBBY - Coming soon", 0, {255, 255, 255, 255});
-}
-
-void Menu::renderSettings(int winWidth, int winHeight)
-{
-    // TODO: Afficher les settings
-    drawCenteredText("SETTINGS - Coming soon", 0, {255, 255, 255, 255});
+    processBack();
 }
 
 void Menu::cleanup()
