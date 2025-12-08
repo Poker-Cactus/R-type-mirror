@@ -6,6 +6,7 @@
 */
 
 #include "Menu.hpp"
+#include "../interface/KeyCodes.hpp"
 #include <cmath>
 #include <iostream>
 
@@ -52,8 +53,24 @@ void Menu::render()
 
 void Menu::processInput()
 {
-    if (renderer->isKeyPressed(13) && this->currentState == MenuState::LOADING)
-        this->currentState = MenuState::MAIN_MENU;
+    switch (currentState) {
+    case MenuState::LOADING:
+        if (renderer->isKeyPressed(KeyCode::KEY_RETURN))
+            this->currentState = MenuState::MAIN_MENU;
+        break;
+    case MenuState::MAIN_MENU:
+        // Flèche bas - descendre dans le menu
+        if (renderer->isKeyPressed(KeyCode::KEY_DOWN)) {
+            currentMenuIndex += 1;
+            std::cout << "Current index: " << currentMenuIndex << std::endl;
+        }
+        // Flèche haut - monter dans le menu
+        if (renderer->isKeyPressed(KeyCode::KEY_UP)) {
+        }
+        break;
+    default:
+        break;
+    }
 }
 
 void Menu::renderLoading(int winWidth, int winHeight)
@@ -88,20 +105,22 @@ void Menu::renderLoading(int winWidth, int winHeight)
 
 void Menu::renderMainMenu(int winWidth, int winHeight)
 {
-    // TODO: Afficher le menu principal
     if (menu_font == nullptr) {
         return;
     }
 
-    for (int i = 0; i < 4; i++) {
+    for (size_t i = 0; i < mainMenuItems.size(); i++) {
         int textWidth = 0;
         int textHeight = 0;
-        renderer->getTextSize(menu_font, mainMenuTexts[i], textWidth, textHeight);
+        renderer->getTextSize(menu_font, mainMenuItems[i], textWidth, textHeight);
 
         int x = (winWidth - textWidth) / 2;
-        int y = (winHeight / 2) + (i * 60) - 90;
+        int y = (winHeight / 2) + (static_cast<int>(i) * 60) - 90;
 
-        renderer->drawText(menu_font, mainMenuTexts[i], x, y, {255, 255, 255, 255});
+        // Couleur différente si c'est l'élément sélectionné
+        Color color =
+            (i == static_cast<size_t>(currentMenuIndex)) ? Color{4, 196, 199, 255} : Color{255, 255, 255, 255};
+        renderer->drawText(menu_font, mainMenuItems[i], x, y, color);
     }
 }
 

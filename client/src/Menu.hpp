@@ -1,5 +1,7 @@
 #pragma once
 #include "../interface/IRenderer.hpp"
+#include <array>
+#include <string>
 
 enum class MenuState { LOADING, MAIN_MENU, OPTIONS, LOBBY, SETTINGS };
 
@@ -36,5 +38,6 @@ class Menu
     MenuState currentState = MenuState::LOADING;
 
     // Textes du menu principal
-    const std::string mainMenuTexts[4] = {"Play", "Settings", "Profile", "Exit"};
+    std::array<std::string, 4> mainMenuItems = {"Play", "Settings", "Profile", "Exit"};
+    int currentMenuIndex = 0;
 };

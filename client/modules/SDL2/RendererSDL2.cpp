@@ -1,12 +1,96 @@
 #include "RendererSDL2.hpp"
+#include "../../interface/KeyCodes.hpp"
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
 #include <SDL2/SDL_ttf.h>
 #include <SDL_events.h>
 #include <SDL_keycode.h>
 #include <cmath>
+#include <iostream>
 #include <stdexcept>
 #include <string>
+
+// Map SDL keycodes to generic keycodes
+static int mapSDLKeyToGeneric(int sdlKey)
+{
+    switch (sdlKey) {
+    case SDLK_RETURN:
+        return KeyCode::KEY_RETURN;
+    case SDLK_ESCAPE:
+        return KeyCode::KEY_ESCAPE;
+    case SDLK_BACKSPACE:
+        return KeyCode::KEY_BACKSPACE;
+    case SDLK_TAB:
+        return KeyCode::KEY_TAB;
+    case SDLK_SPACE:
+        return KeyCode::KEY_SPACE;
+
+    case SDLK_UP:
+        return KeyCode::KEY_UP;
+    case SDLK_DOWN:
+        return KeyCode::KEY_DOWN;
+    case SDLK_LEFT:
+        return KeyCode::KEY_LEFT;
+    case SDLK_RIGHT:
+        return KeyCode::KEY_RIGHT;
+
+    case SDLK_a:
+        return KeyCode::KEY_A;
+    case SDLK_b:
+        return KeyCode::KEY_B;
+    case SDLK_c:
+        return KeyCode::KEY_C;
+    case SDLK_d:
+        return KeyCode::KEY_D;
+    case SDLK_e:
+        return KeyCode::KEY_E;
+    case SDLK_f:
+        return KeyCode::KEY_F;
+    case SDLK_g:
+        return KeyCode::KEY_G;
+    case SDLK_h:
+        return KeyCode::KEY_H;
+    case SDLK_i:
+        return KeyCode::KEY_I;
+    case SDLK_j:
+        return KeyCode::KEY_J;
+    case SDLK_k:
+        return KeyCode::KEY_K;
+    case SDLK_l:
+        return KeyCode::KEY_L;
+    case SDLK_m:
+        return KeyCode::KEY_M;
+    case SDLK_n:
+        return KeyCode::KEY_N;
+    case SDLK_o:
+        return KeyCode::KEY_O;
+    case SDLK_p:
+        return KeyCode::KEY_P;
+    case SDLK_q:
+        return KeyCode::KEY_Q;
+    case SDLK_r:
+        return KeyCode::KEY_R;
+    case SDLK_s:
+        return KeyCode::KEY_S;
+    case SDLK_t:
+        return KeyCode::KEY_T;
+    case SDLK_u:
+        return KeyCode::KEY_U;
+    case SDLK_v:
+        return KeyCode::KEY_V;
+    case SDLK_w:
+        return KeyCode::KEY_W;
+    case SDLK_x:
+        return KeyCode::KEY_X;
+    case SDLK_y:
+        return KeyCode::KEY_Y;
+    case SDLK_z:
+        return KeyCode::KEY_Z;
+
+    default:
+        return KeyCode::KEY_UNKNOWN;
+    }
+}
 
 RendererSDL2::RendererSDL2(int width, int height) : windowWidth(width), windowHeight(height)
 {
@@ -131,13 +215,16 @@ bool RendererSDL2::pollEvents()
             return false;
         }
         if (event.type == SDL_KEYDOWN) {
-            keyStates[event.key.keysym.sym] = true;
+            int genericKey = mapSDLKeyToGeneric(event.key.keysym.sym);
+            keyStates[genericKey] = true;
+            std::cout << "Key pressed - SDL: " << event.key.keysym.sym << " -> Generic: " << genericKey << std::endl;
             if (event.key.keysym.sym == SDLK_ESCAPE) {
                 return false;
             }
         }
         if (event.type == SDL_KEYUP) {
-            keyStates[event.key.keysym.sym] = false;
+            int genericKey = mapSDLKeyToGeneric(event.key.keysym.sym);
+            keyStates[genericKey] = false;
         }
         if (event.type == SDL_MOUSEBUTTONDOWN) {
             mouseButtonStates[event.button.button] = true;
