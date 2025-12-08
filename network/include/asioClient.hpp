@@ -8,32 +8,29 @@
 #pragma once
 
 #include "../../common/include/common.hpp"
-#include "../../common/include/network/messageQueue.hpp"
 #include "../../common/include/network/safeQueue.hpp"
+#include "ANetworkManager.hpp"
 #include "GameMessage.capnp.h"
-#include "INetworkManager.hpp"
-#include "packetHandler.hpp"
+#include "capnpHandler.hpp"
+#include "messageQueue.hpp"
 #include <array>
 #include <asio.hpp>
 #include <iostream>
 #include <thread>
 
-class AsioClient : public INetworkManager
+class AsioClient : public ANetworkManager
 {
   public:
-    static constexpr size_t BUFFER_SIZE = 1024;
-
     AsioClient(const std::string &host, const std::string &port);
     ~AsioClient();
 
-    void run() override;
+    void recv() override;
     void send(std::span<const std::byte> data, const uint32_t &targetEndpointId) override;
     void start() override;
     void stop() override;
+    bool poll(MessageQueue &msg);
 
   private:
-    void startReceive();
-    bool getIncomingMessage(MessageQueue &message);
     std::string buildMessage(uint8_t header, const std::string &data) const;
 
     SafeQueue<MessageQueue> _inComingMessages;

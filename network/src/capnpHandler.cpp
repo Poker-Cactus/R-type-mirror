@@ -5,9 +5,9 @@
 ** server.cpp
 */
 
-#include "../include/packetHandler.hpp"
+#include "../include/capnpHandler.hpp"
 
-std::vector<uint8_t> PacketHandler::serialize(const std::string &data)
+std::vector<uint8_t> CapnpHandler::serialize(const std::string &data) const
 {
     capnp::MallocMessageBuilder message;
     auto netMsg = message.initRoot<NetworkMessage>();
@@ -20,7 +20,8 @@ std::vector<uint8_t> PacketHandler::serialize(const std::string &data)
     return std::vector<uint8_t>(arr.begin(), arr.end());
 }
 
-std::string PacketHandler::deserialize(const std::array<char, 1024> &recvBuffer, const std::size_t bytesTransferred)
+std::string CapnpHandler::deserialize(const std::array<char, BUFFER_SIZE> &recvBuffer,
+                                      const std::size_t bytesTransferred) const
 {
     if (bytesTransferred == 0) {
         throw std::runtime_error("Empty buffer received");
@@ -38,7 +39,8 @@ std::string PacketHandler::deserialize(const std::array<char, 1024> &recvBuffer,
     }
 }
 
-std::span<const std::byte> PacketHandler::stringToBytes(const std::string &str)
+std::vector<std::byte> CapnpHandler::stringToBytes(const std::string &str)
 {
-    return std::span<const std::byte>(reinterpret_cast<const std::byte *>(str.data()), str.size());
+    const std::byte *bytePtr = reinterpret_cast<const std::byte *>(str.data());
+    return std::vector<std::byte>(bytePtr, bytePtr + str.size());
 }

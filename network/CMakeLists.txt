@@ -6,7 +6,8 @@ find_package(asio REQUIRED)
 capnp_generate_cpp(CAPNP_SRCS CAPNP_HDRS include/GameMessage.capnp)
 
 add_library(network
-    src/packetHandler.cpp
+    src/ANetworkManager.cpp
+    src/capnpHandler.cpp
     src/asioServer.cpp
     src/asioClient.cpp
     ${CAPNP_SRCS}

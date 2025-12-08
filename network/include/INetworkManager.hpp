@@ -7,18 +7,28 @@
 
 #pragma once
 
+#include "IPacketHandler.hpp"
+#include "messageQueue.hpp"
 #include <cstdint>
+#include <memory>
+#include <optional>
 #include <span>
-#include <string>
-#include <vector>
+
+typedef struct NetworkEvent_s {
+    enum EventType { DATA, CONNECT, DICONNECT } type;
+    std::vector<std::byte> data;
+    uint32_t endpointId;
+} NetworkEvent_t;
 
 class INetworkManager
 {
   public:
     virtual ~INetworkManager() = default;
 
-    virtual void run() = 0;
     virtual void send(std::span<const std::byte> data, const uint32_t &targetEndpointId) = 0;
     virtual void start() = 0;
     virtual void stop() = 0;
+    virtual bool poll(MessageQueue &msg) = 0;
+    virtual void recv() = 0;
+    virtual std::shared_ptr<IPacketHandler> getPacketHandler() const = 0;
 };

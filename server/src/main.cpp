@@ -12,7 +12,7 @@
 int main()
 {
     try {
-        Server server(std::make_shared<AsioServer>(4242));
+        Server server(std::make_shared<AsioServer>(4241));
     } catch (const std::exception &e) {
         std::cerr << "Exception: " << e.what() << "\n";
     }

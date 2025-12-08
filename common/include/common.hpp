@@ -8,3 +8,4 @@
 #pragma once
 
 #define UNUSED __attribute__((unused))
+#define BUFFER_SIZE 1024

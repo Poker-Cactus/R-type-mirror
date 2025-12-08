@@ -8,8 +8,8 @@
 #include "../include/asioClient.hpp"
 
 AsioClient::AsioClient(const std::string &host, const std::string &port)
-    : _strand(asio::make_strand(_ioContext)), _socket(_ioContext), _running(true),
-      _workGuard(asio::make_work_guard(_ioContext))
+    : ANetworkManager(std::make_shared<CapnpHandler>()), _strand(asio::make_strand(_ioContext)), _socket(_ioContext),
+      _running(true), _workGuard(asio::make_work_guard(_ioContext))
 {
     try {
         asio::ip::udp::resolver resolver(_ioContext);
@@ -32,11 +32,9 @@ void AsioClient::start()
 {
     _recvThread = std::thread([this]() { _ioContext.run(); });
     std::this_thread::sleep_for(std::chrono::milliseconds(10));
-    startReceive();
+    recv();
 
-    // Send initial PING to server
-    std::cout << "[Client] Sending initial PING to server..." << std::endl;
-    auto serialized = PacketHandler::serialize("PING");
+    auto serialized = _packetHandler->serialize("PING");
     send(std::span<const std::byte>(reinterpret_cast<const std::byte *>(serialized.data()), serialized.size()), 0);
 }
 
@@ -47,22 +45,6 @@ void AsioClient::stop()
     _workGuard.reset();
     if (_recvThread.joinable())
         _recvThread.join();
-}
-
-void AsioClient::run()
-{
-    while (_running) {
-        MessageQueue msg;
-        while (getIncomingMessage(msg)) {
-            std::cout << "[Client] Server says: " << msg.getData() << std::endl;
-
-            // Send PING response
-            auto serialized = PacketHandler::serialize("PING");
-            send(std::span<const std::byte>(reinterpret_cast<const std::byte *>(serialized.data()), serialized.size()),
-                 0);
-        }
-        std::this_thread::sleep_for(std::chrono::milliseconds(1));
-    }
 }
 
 std::string AsioClient::buildMessage(uint8_t header, const std::string &data) const
@@ -83,7 +65,7 @@ void AsioClient::send(std::span<const std::byte> data, UNUSED const uint32_t &ta
         }));
 }
 
-void AsioClient::startReceive()
+void AsioClient::recv()
 {
     auto recvBuffer = std::make_shared<std::array<char, BUFFER_SIZE>>();
 
@@ -93,15 +75,15 @@ void AsioClient::startReceive()
             if (!error && bytes_transferred > 0) {
                 std::cout << "[Client] Received " << bytes_transferred << " bytes" << std::endl;
                 try {
-                    const std::string data = PacketHandler::deserialize(*recvBuffer, bytes_transferred);
+                    const std::string data = _packetHandler->deserialize(*recvBuffer, bytes_transferred);
                     std::cout << "[Client] Deserialized message: " << data << std::endl;
                     MessageQueue messageQueue(data, _serverEndpoint);
                     _inComingMessages.push(messageQueue);
 
-                    startReceive();
+                    recv();
                 } catch (const std::exception &e) {
                     std::cerr << "[Client] Deserialization error: " << e.what() << std::endl;
-                    startReceive();
+                    recv();
                 }
             } else if (error) {
                 std::cerr << "[Client] Receive error: " << error.message() << std::endl;
@@ -109,7 +91,7 @@ void AsioClient::startReceive()
         }));
 }
 
-bool AsioClient::getIncomingMessage(MessageQueue &msg)
+bool AsioClient::poll(MessageQueue &msg)
 {
     return _inComingMessages.pop(msg);
 }
