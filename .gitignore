@@ -47,5 +47,8 @@ Makefile
 # clang cache
 .cache/
 
+# CodeQL
+_codeql_detected_source_root
+
 # Vscode workspace
 *.code-workspace

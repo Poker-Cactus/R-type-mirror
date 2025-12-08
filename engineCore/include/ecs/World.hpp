@@ -117,9 +117,7 @@ public:
   void addComponent(Entity entity, T component)
   {
     m_componentManager.addComponent(entity, std::move(component));
-
-    ComponentSignature signature = m_componentManager.getEntitySignature(entity);
-    m_entityManager.setSignature(entity, signature);
+    syncEntitySignature(entity);
   }
 
   template <typename T>
@@ -144,17 +142,13 @@ public:
   void removeComponent(Entity entity)
   {
     m_componentManager.removeComponent<T>(entity);
-
-    ComponentSignature signature = m_componentManager.getEntitySignature(entity);
-    m_entityManager.setSignature(entity, signature);
+    syncEntitySignature(entity);
   }
 
   void removeAllComponents(Entity entity)
   {
     m_componentManager.removeAllComponents(entity);
-
-    ComponentSignature emptySignature;
-    m_entityManager.setSignature(entity, emptySignature);
+    syncEntitySignature(entity);
   }
 
   [[nodiscard]] const ComponentSignature &getEntitySignature(Entity entity) const
@@ -183,6 +177,12 @@ public:
   }
 
 private:
+  void syncEntitySignature(Entity entity)
+  {
+    ComponentSignature signature = m_componentManager.getEntitySignature(entity);
+    m_entityManager.setSignature(entity, signature);
+  }
+
   EntityManager m_entityManager;
   ComponentManager m_componentManager;
   SystemManager m_systemManager;
