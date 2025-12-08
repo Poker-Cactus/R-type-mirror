@@ -8,6 +8,7 @@ class IInput
     // Keyboard
     virtual bool isKeyPressed(int keycode) = 0;
     virtual bool isKeyReleased(int keycode) = 0;
+    virtual bool isKeyJustPressed(int keycode) = 0;
 
     // Mouse
     virtual void getMousePosition(int &x, int &y) = 0;

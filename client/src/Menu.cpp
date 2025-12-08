@@ -55,17 +55,17 @@ void Menu::processInput()
 {
     switch (currentState) {
     case MenuState::LOADING:
-        if (renderer->isKeyPressed(KeyCode::KEY_RETURN))
+        if (renderer->isKeyJustPressed(KeyCode::KEY_RETURN))
             this->currentState = MenuState::MAIN_MENU;
         break;
     case MenuState::MAIN_MENU:
         // Flèche bas - descendre dans le menu
-        if (renderer->isKeyPressed(KeyCode::KEY_DOWN)) {
-            currentMenuIndex += 1;
-            std::cout << "Current index: " << currentMenuIndex << std::endl;
+        if (renderer->isKeyJustPressed(KeyCode::KEY_DOWN)) {
+            currentMenuIndex = (currentMenuIndex + 1) % mainMenuItems.size();
         }
         // Flèche haut - monter dans le menu
-        if (renderer->isKeyPressed(KeyCode::KEY_UP)) {
+        if (renderer->isKeyJustPressed(KeyCode::KEY_UP)) {
+            currentMenuIndex = (currentMenuIndex - 1 + mainMenuItems.size()) % mainMenuItems.size();
         }
         break;
     default:
@@ -85,7 +85,6 @@ void Menu::renderLoading(int winWidth, int winHeight)
         renderer->drawTextureEx(logo, logoX, logoY, logoWidth, logoHeight, 0.0, false, false);
     }
 
-    // Afficher le texte clignotant
     if (menu_font != nullptr) {
         blinkTimer += renderer->getDeltaTime();
         float opacity = (std::sin(blinkTimer * 3.5f) + 1.0f) / 2.0f;
@@ -117,7 +116,6 @@ void Menu::renderMainMenu(int winWidth, int winHeight)
         int x = (winWidth - textWidth) / 2;
         int y = (winHeight / 2) + (static_cast<int>(i) * 60) - 90;
 
-        // Couleur différente si c'est l'élément sélectionné
         Color color =
             (i == static_cast<size_t>(currentMenuIndex)) ? Color{4, 196, 199, 255} : Color{255, 255, 255, 255};
         renderer->drawText(menu_font, mainMenuItems[i], x, y, color);
