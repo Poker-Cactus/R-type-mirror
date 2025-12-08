@@ -18,8 +18,13 @@ Game::~Game()
 bool Game::init()
 {
     try {
-        module =
-            std::make_unique<Module<IRenderer>>("./build/libs/sdl2_module.so", "createRenderer", "destroyRenderer");
+    #ifdef __APPLE__
+            module =
+                std::make_unique<Module<IRenderer>>("./build/libs/sdl2_module.dylib", "createRenderer", "destroyRenderer");
+    #else
+            module =
+                std::make_unique<Module<IRenderer>>("./build/libs/sdl2_module.so", "createRenderer", "destroyRenderer");
+    #endif
         renderer = module->create();
 
         if (renderer == nullptr) {
