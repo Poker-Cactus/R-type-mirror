@@ -51,11 +51,6 @@ public:
   [[nodiscard]] Entity createEntity()
   {
     Entity entity = m_entityManager.createEntity();
-
-    ComponentSignature emptySignature;
-    m_componentManager.setEntitySignature(entity, emptySignature);
-    m_entityManager.setSignature(entity, emptySignature);
-
     return entity;
   }
 
@@ -66,6 +61,7 @@ public:
     }
 
     m_componentManager.removeAllComponents(entity);
+    m_systemManager.onEntityDestroyed(entity);
     m_entityManager.destroyEntity(entity);
   }
 
@@ -118,8 +114,13 @@ public:
   {
     m_componentManager.addComponent(entity, std::move(component));
 
-    ComponentSignature signature = m_componentManager.getEntitySignature(entity);
+    // Update signature in EntityManager
+    ComponentSignature signature = m_entityManager.getSignature(entity);
+    signature.set(ecs::getComponentId<T>());
     m_entityManager.setSignature(entity, signature);
+
+    // Notify systems
+    m_systemManager.onEntitySignatureChanged(entity, signature);
   }
 
   template <typename T>
@@ -145,16 +146,25 @@ public:
   {
     m_componentManager.removeComponent<T>(entity);
 
-    ComponentSignature signature = m_componentManager.getEntitySignature(entity);
+    // Update signature in EntityManager
+    ComponentSignature signature = m_entityManager.getSignature(entity);
+    signature.reset(ecs::getComponentId<T>());
     m_entityManager.setSignature(entity, signature);
+
+    // Notify systems
+    m_systemManager.onEntitySignatureChanged(entity, signature);
   }
 
   void removeAllComponents(Entity entity)
   {
     m_componentManager.removeAllComponents(entity);
 
+    // Reset signature in EntityManager
     ComponentSignature emptySignature;
     m_entityManager.setSignature(entity, emptySignature);
+
+    // Notify systems
+    m_systemManager.onEntitySignatureChanged(entity, emptySignature);
   }
 
   [[nodiscard]] const ComponentSignature &getEntitySignature(Entity entity) const

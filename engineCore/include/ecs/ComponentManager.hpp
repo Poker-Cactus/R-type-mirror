@@ -8,7 +8,6 @@
 #ifndef ECS_COMPONENTMANAGER_HPP_
 #define ECS_COMPONENTMANAGER_HPP_
 
-#include "ComponentSignature.hpp"
 #include "ComponentStorage.hpp"
 #include "ecs/IComponentStorage.hpp"
 #include <memory>
@@ -27,8 +26,6 @@ public:
   {
     auto &storage = ensureStorage<T>();
     storage.addComponent(ent, component);
-
-    entitySignatures[ent].set(ecs::getComponentId<T>());
   }
 
   // ========= GET =========
@@ -78,7 +75,6 @@ public:
     }
 
     iter->second->removeComponent(ent);
-    entitySignatures[ent].reset(ecs::getComponentId<T>());
   }
 
   // ========= REMOVE ALL =========
@@ -87,23 +83,10 @@ public:
     for (auto &pair : storages) {
       pair.second->removeComponent(ent);
     }
-
-    entitySignatures[ent].reset();
   }
-
-  // ========= SIGNATURE =========
-  const ecs::ComponentSignature &getEntitySignature(Entity ent) const
-  {
-    static const ecs::ComponentSignature empty{};
-    auto iter = entitySignatures.find(ent);
-    return (iter != entitySignatures.end()) ? iter->second : empty;
-  }
-
-  void setEntitySignature(Entity ent, const ecs::ComponentSignature &sig) { entitySignatures[ent] = sig; }
 
 private:
   std::unordered_map<std::type_index, std::unique_ptr<IComponentStorage>> storages;
-  std::unordered_map<Entity, ecs::ComponentSignature> entitySignatures;
 
   template <typename T>
   ComponentStorage<T> &ensureStorage()

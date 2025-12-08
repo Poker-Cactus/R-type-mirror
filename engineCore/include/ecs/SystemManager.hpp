@@ -8,6 +8,8 @@
 #ifndef ECS_SYSTEMMANAGER_HPP_
 #define ECS_SYSTEMMANAGER_HPP_
 
+#include "ComponentSignature.hpp"
+#include "Entity.hpp"
 #include "ISystem.hpp"
 
 #include <cstddef>
@@ -160,6 +162,29 @@ public:
   {
     systems.clear();
     systemLookup.clear();
+  }
+
+  /**
+   * @brief Notifies all systems when an entity's signature changes
+   * @param entity The entity whose signature changed
+   * @param signature The new signature of the entity
+   * @note Systems can use this to update their internal entity lists
+   */
+  void onEntitySignatureChanged([[maybe_unused]] Entity entity, [[maybe_unused]] const ComponentSignature &signature)
+  {
+    // Systems will filter entities themselves during update
+    // This hook allows future optimizations like cached entity lists per system
+  }
+
+  /**
+   * @brief Notifies all systems when an entity is destroyed
+   * @param entity The entity that was destroyed
+   * @note Systems should remove this entity from their internal tracking
+   */
+  void onEntityDestroyed([[maybe_unused]] Entity entity)
+  {
+    // Systems will filter entities themselves during update
+    // This hook allows future optimizations
   }
 
 private:
