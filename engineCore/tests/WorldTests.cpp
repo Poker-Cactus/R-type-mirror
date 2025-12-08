@@ -155,7 +155,7 @@ TEST_SUITE("World")
   TEST_CASE("Component management")
   {
     ecs::World world;
-    Entity entity = 0;
+    Entity entity = world.createEntity();
 
     SUBCASE("Add component")
     {
@@ -231,7 +231,7 @@ TEST_SUITE("World")
   TEST_CASE("Entity signature")
   {
     ecs::World world;
-    Entity entity = 0;
+    Entity entity = world.createEntity();
 
     SUBCASE("Get entity signature")
     {
@@ -256,7 +256,7 @@ TEST_SUITE("World")
   TEST_CASE("Const correctness")
   {
     ecs::World world;
-    Entity entity = 0;
+    Entity entity = world.createEntity();
     world.addComponent(entity, Position{.x = 1.0F, .y = 2.0F});
 
     SUBCASE("Const getComponent")
@@ -299,8 +299,8 @@ TEST_SUITE("World")
       world.registerSystem<MovementSystem>();
 
       // Create entities
-      Entity player = 0;
-      Entity enemy = 1;
+      Entity player = world.createEntity();
+      Entity enemy = world.createEntity();
 
       // Add components
       world.addComponent(player, Position{.x = 0.0F, .y = 0.0F});
@@ -338,9 +338,9 @@ TEST_SUITE("World")
 
     SUBCASE("Independent component management per entity")
     {
-      Entity ent0 = 0;
-      Entity ent1 = 1;
-      Entity ent2 = 2;
+      Entity ent0 = world.createEntity();
+      Entity ent1 = world.createEntity();
+      Entity ent2 = world.createEntity();
 
       world.addComponent(ent0, Position{.x = 1.0F, .y = 1.0F});
       world.addComponent(ent1, Position{.x = 2.0F, .y = 2.0F});
@@ -353,8 +353,8 @@ TEST_SUITE("World")
 
     SUBCASE("Different components per entity")
     {
-      Entity ent0 = 0;
-      Entity ent1 = 1;
+      Entity ent0 = world.createEntity();
+      Entity ent1 = world.createEntity();
 
       world.addComponent(ent0, Position{.x = 1.0F, .y = 1.0F});
       world.addComponent(ent0, Velocity{.dx = 2.0F, .dy = 2.0F});
@@ -378,13 +378,13 @@ TEST_SUITE("World")
 
     SUBCASE("Get non-existent component throws")
     {
-      Entity entity = 0;
+      Entity entity = world.createEntity();
       CHECK_THROWS_AS(world.getComponent<Position>(entity), std::out_of_range);
     }
 
     SUBCASE("Remove non-existent component doesn't crash")
     {
-      Entity entity = 0;
+      Entity entity = world.createEntity();
       CHECK_NOTHROW(world.removeComponent<Position>(entity));
     }
   }

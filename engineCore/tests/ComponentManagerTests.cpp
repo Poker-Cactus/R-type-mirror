@@ -88,36 +88,9 @@ TEST_SUITE("ComponentManager")
     }
   }
 
-  TEST_CASE("Component signature tracking")
-  {
-    ComponentManager manager;
-    Entity entity = 0;
-
-    SUBCASE("Signature is updated when adding component")
-    {
-      manager.addComponent(entity, Position{.x = 0.0F, .y = 0.0F});
-
-      const auto &sig = manager.getEntitySignature(entity);
-      CHECK(sig.test(ecs::getComponentId<Position>()));
-    }
-
-    SUBCASE("Signature tracks multiple components")
-    {
-      manager.addComponent(entity, Position{.x = 0.0F, .y = 0.0F});
-      manager.addComponent(entity, Velocity{.dx = 0.0F, .dy = 0.0F});
-
-      const auto &sig = manager.getEntitySignature(entity);
-      CHECK(sig.test(ecs::getComponentId<Position>()));
-      CHECK(sig.test(ecs::getComponentId<Velocity>()));
-      CHECK_FALSE(sig.test(ecs::getComponentId<Health>()));
-    }
-
-    SUBCASE("Empty signature for entity without components")
-    {
-      const auto &sig = manager.getEntitySignature(999);
-      CHECK(sig.none());
-    }
-  }
+  // Component signature tracking tests removed
+  // EntityManager is now the single source of truth for signatures
+  // See WorldTests.cpp for signature-related tests
 
   TEST_CASE("Remove components")
   {
@@ -134,17 +107,7 @@ TEST_SUITE("ComponentManager")
       CHECK_FALSE(manager.hasComponent<Position>(entity));
     }
 
-    SUBCASE("Remove updates signature")
-    {
-      manager.addComponent(entity, Position{.x = 0.0F, .y = 0.0F});
-      manager.addComponent(entity, Velocity{.dx = 0.0F, .dy = 0.0F});
-
-      manager.removeComponent<Position>(entity);
-
-      const auto &sig = manager.getEntitySignature(entity);
-      CHECK_FALSE(sig.test(ecs::getComponentId<Position>()));
-      CHECK(sig.test(ecs::getComponentId<Velocity>()));
-    }
+    // Signature tests removed - EntityManager now handles signatures
 
     SUBCASE("Remove non-existent component (no crash)")
     {
@@ -183,16 +146,7 @@ TEST_SUITE("ComponentManager")
       CHECK_FALSE(manager.hasComponent<Health>(entity));
     }
 
-    SUBCASE("Signature is reset after removing all")
-    {
-      manager.addComponent(entity, Position{.x = 0.0F, .y = 0.0F});
-      manager.addComponent(entity, Velocity{.dx = 0.0F, .dy = 0.0F});
-
-      manager.removeAllComponents(entity);
-
-      const auto &sig = manager.getEntitySignature(entity);
-      CHECK(sig.none());
-    }
+    // Signature tests removed - EntityManager now handles signatures
 
     SUBCASE("Remove all on entity without components (no crash)")
     {
@@ -247,12 +201,7 @@ TEST_SUITE("ComponentManager")
       CHECK_FALSE(constManager.hasComponent<Velocity>(entity));
     }
 
-    SUBCASE("Const getEntitySignature")
-    {
-      const ComponentManager &constManager = manager;
-      const auto &sig = constManager.getEntitySignature(entity);
-      CHECK(sig.test(ecs::getComponentId<Position>()));
-    }
+    // Signature tests removed - EntityManager now handles signatures
   }
 
   TEST_CASE("Error handling")

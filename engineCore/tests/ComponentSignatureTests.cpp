@@ -312,91 +312,11 @@ TEST_CASE("SystemSignature - DifferentSystemsHaveDifferentSignatures")
 }
 
 // ============================================================================
-// COMPONENT MANAGER SIGNATURE TESTS
+// COMPONENT MANAGER SIGNATURE TESTS - REMOVED
 // ============================================================================
-
-TEST_CASE("ComponentManager - TracksEntitySignature")
-{
-  ComponentManager manager;
-  constexpr Entity kTestEntity = 42;
-
-  auto sigBefore = manager.getEntitySignature(kTestEntity);
-  CHECK(sigBefore.none());
-
-  constexpr float kTestPosY = 20.0F;
-  constexpr float kTestPosX = 10.0F;
-  manager.addComponent(kTestEntity, Position{.x = kTestPosX, .y = kTestPosY});
-
-  auto sigAfter = manager.getEntitySignature(kTestEntity);
-  CHECK(sigAfter.test(ecs::getComponentId<Position>()));
-  CHECK_FALSE(sigAfter.test(ecs::getComponentId<Velocity>()));
-}
-
-TEST_CASE("ComponentManager - UpdatesSignatureOnComponentAdd")
-{
-  ComponentManager manager;
-  constexpr Entity kEntity = 1;
-
-  manager.addComponent(kEntity, Position{.x = 0, .y = 0});
-  manager.addComponent(kEntity, Velocity{.vx = 1, .vy = 1});
-
-  auto sig = manager.getEntitySignature(kEntity);
-
-  CHECK(sig.test(ecs::getComponentId<Position>()));
-  CHECK(sig.test(ecs::getComponentId<Velocity>()));
-  CHECK(sig.count() == 2);
-}
-
-TEST_CASE("ComponentManager - UpdatesSignatureOnComponentRemove")
-{
-  ComponentManager manager;
-  constexpr Entity kEntity = 1;
-
-  manager.addComponent(kEntity, Position{.x = 0, .y = 0});
-  manager.addComponent(kEntity, Velocity{.vx = 1, .vy = 1});
-  manager.removeComponent<Velocity>(kEntity);
-
-  auto sig = manager.getEntitySignature(kEntity);
-
-  CHECK(sig.test(ecs::getComponentId<Position>()));
-  CHECK_FALSE(sig.test(ecs::getComponentId<Velocity>()));
-  CHECK(sig.count() == 1);
-}
-
-TEST_CASE("ComponentManager - ClearsSignatureOnRemoveAllComponents")
-{
-  ComponentManager manager;
-  constexpr Entity kEntity = 1;
-  constexpr int kMaxHealth = 100;
-
-  manager.addComponent(kEntity, Position{.x = 0, .y = 0});
-  manager.addComponent(kEntity, Velocity{.vx = 1, .vy = 1});
-  manager.addComponent(kEntity, Health{.current = kMaxHealth, .max = kMaxHealth});
-
-  manager.removeAllComponents(kEntity);
-
-  auto sig = manager.getEntitySignature(kEntity);
-  CHECK(sig.none());
-}
-
-TEST_CASE("ComponentManager - MultipleEntitiesHaveIndependentSignatures")
-{
-  ComponentManager manager;
-  constexpr Entity kEntity1 = 1;
-  constexpr Entity kEntity2 = 2;
-
-  manager.addComponent(kEntity1, Position{.x = 0, .y = 0});
-  manager.addComponent(kEntity2, Velocity{.vx = 1, .vy = 1});
-
-  auto sig1 = manager.getEntitySignature(kEntity1);
-  auto sig2 = manager.getEntitySignature(kEntity2);
-
-  CHECK(sig1.test(ecs::getComponentId<Position>()));
-  CHECK_FALSE(sig1.test(ecs::getComponentId<Velocity>()));
-
-  CHECK_FALSE(sig2.test(ecs::getComponentId<Position>()));
-  CHECK(sig2.test(ecs::getComponentId<Velocity>()));
-}
+// These tests were removed because ComponentManager no longer manages signatures.
+// EntityManager is now the single source of truth for entity signatures.
+// See WorldTests.cpp for signature-related tests using the World class.
 
 // ============================================================================
 // WORLD INTEGRATION TESTS
@@ -405,13 +325,13 @@ TEST_CASE("ComponentManager - MultipleEntitiesHaveIndependentSignatures")
 TEST_CASE("WorldIntegration - ProvidesEntitySignatureAccess")
 {
   ecs::World world;
-  constexpr Entity kEntity = 5;
+  Entity entity = world.createEntity();
   constexpr float kPosX = 5.0F;
   constexpr float kPosY = 10.0F;
 
-  world.addComponent(kEntity, Position{.x = kPosX, .y = kPosY});
+  world.addComponent(entity, Position{.x = kPosX, .y = kPosY});
 
-  auto sig = world.getEntitySignature(kEntity);
+  auto sig = world.getEntitySignature(entity);
 
   CHECK(sig.test(ecs::getComponentId<Position>()));
 }
@@ -419,20 +339,20 @@ TEST_CASE("WorldIntegration - ProvidesEntitySignatureAccess")
 TEST_CASE("WorldIntegration - SignaturePersistsAcrossComponentOperations")
 {
   ecs::World world;
-  constexpr Entity kEntity = 1;
+  Entity entity = world.createEntity();
   constexpr int kMaxHealth = 100;
 
-  world.addComponent(kEntity, Position{.x = 0, .y = 0});
-  CHECK(world.getEntitySignature(kEntity).count() == 1);
+  world.addComponent(entity, Position{.x = 0, .y = 0});
+  CHECK(world.getEntitySignature(entity).count() == 1);
 
-  world.addComponent(kEntity, Velocity{.vx = 0, .vy = 0});
-  CHECK(world.getEntitySignature(kEntity).count() == 2);
+  world.addComponent(entity, Velocity{.vx = 0, .vy = 0});
+  CHECK(world.getEntitySignature(entity).count() == 2);
 
-  world.addComponent(kEntity, Health{.current = kMaxHealth, .max = kMaxHealth});
-  CHECK(world.getEntitySignature(kEntity).count() == 3);
+  world.addComponent(entity, Health{.current = kMaxHealth, .max = kMaxHealth});
+  CHECK(world.getEntitySignature(entity).count() == 3);
 
-  world.removeComponent<Velocity>(kEntity);
-  CHECK(world.getEntitySignature(kEntity).count() == 2);
+  world.removeComponent<Velocity>(entity);
+  CHECK(world.getEntitySignature(entity).count() == 2);
 }
 
 // ============================================================================
