@@ -8,10 +8,9 @@
 #pragma once
 
 #include "../../common/include/common.hpp"
-#include "../../common/include/network/NetworkPacket.hpp"
+#include "../../common/include/network/networkPacket.hpp"
 #include "../../common/include/network/safeQueue.hpp"
 #include "ANetworkManager.hpp"
-#include "GameMessage.capnp.h"
 #include "capnpHandler.hpp"
 #include <array>
 #include <asio.hpp>

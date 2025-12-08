@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include "../../common/include/network/NetworkPacket.hpp"
+#include "../../common/include/network/networkPacket.hpp"
 #include "IPacketHandler.hpp"
 #include <cstdint>
 #include <memory>

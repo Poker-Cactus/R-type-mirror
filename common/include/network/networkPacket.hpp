@@ -2,7 +2,7 @@
 ** EPITECH PROJECT, 2025
 ** R-type-mirror
 ** File description:
-** messageQueue.hpp
+** networkPacket.hpp
 */
 
 #pragma once
