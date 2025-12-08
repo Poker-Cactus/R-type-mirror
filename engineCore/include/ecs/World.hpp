@@ -10,8 +10,9 @@
 
 #include "ComponentManager.hpp"
 #include "ComponentSignature.hpp"
-#include "Entity.hpp"
 #include "SystemManager.hpp"
+#include "ecs/Entity.hpp"
+#include "ecs/EntityManager.hpp"
 #include <cstddef>
 #include <vector>
 
@@ -20,14 +21,17 @@ namespace ecs
 /**
  * @brief Central coordinator for the ECS architecture
  *
- * The World manages both systems and components, providing a unified interface
+ * The World manages entities, systems and components, providing a unified interface
  * for game logic. It orchestrates the update cycle and provides access to
- * both the SystemManager and ComponentManager.
+ * the EntityManager, SystemManager and ComponentManager.
  *
  * @note This is typically instantiated once per game/scene
  *
  * @example
  * World world;
+ * Entity player = world.createEntity();
+ * world.addComponent(player, Position{0.0f, 0.0f});
+ *
  * world.registerSystem<PhysicsSystem>();
  * world.registerSystem<RenderSystem>();
  *
@@ -42,201 +46,148 @@ public:
   World() = default;
   ~World() = default;
 
-  /**
-   * @brief Registers a system in the world
-   * @tparam T System type (must inherit from ISystem)
-   * @tparam Args Constructor argument types
-   * @param args Arguments forwarded to T's constructor
-   * @return Reference to the registered system
-   */
+  // ========== Entity Management ==========
+
+  [[nodiscard]] Entity createEntity()
+  {
+    Entity entity = m_entityManager.createEntity();
+
+    ComponentSignature emptySignature;
+    m_componentManager.setEntitySignature(entity, emptySignature);
+    m_entityManager.setSignature(entity, emptySignature);
+
+    return entity;
+  }
+
+  void destroyEntity(Entity entity)
+  {
+    if (!m_entityManager.isAlive(entity)) {
+      return;
+    }
+
+    m_componentManager.removeAllComponents(entity);
+    m_entityManager.destroyEntity(entity);
+  }
+
+  [[nodiscard]] bool isAlive(Entity entity) const { return m_entityManager.isAlive(entity); }
+
+  [[nodiscard]] std::size_t getEntityCount() const { return m_entityManager.getAliveCount(); }
+
+  // ========== System Management ==========
+
   template <typename T, typename... Args>
   T &registerSystem(Args &&...args)
   {
-    return systemManager.registerSystem<T>(std::forward<Args>(args)...);
+    return m_systemManager.registerSystem<T>(std::forward<Args>(args)...);
   }
 
-  /**
-   * @brief Retrieves a non-const pointer to a registered system
-   * @tparam T System type to retrieve
-   * @return Pointer to the system, or nullptr if not found
-   */
   template <typename T>
   T *getSystem()
   {
-    return systemManager.getSystem<T>();
+    return m_systemManager.getSystem<T>();
   }
 
-  /**
-   * @brief Retrieves a const pointer to a registered system
-   * @tparam T System type to retrieve
-   * @return Const pointer to the system, or nullptr if not found
-   */
   template <typename T>
   [[nodiscard]] const T *getSystem() const
   {
-    return systemManager.getSystem<T>();
+    return m_systemManager.getSystem<T>();
   }
 
-  /**
-   * @brief Checks if a system is registered
-   * @tparam T System type to check
-   * @return true if system is registered, false otherwise
-   */
   template <typename T>
   [[nodiscard]] bool hasSystem() const noexcept
   {
-    return systemManager.hasSystem<T>();
+    return m_systemManager.hasSystem<T>();
   }
 
-  /**
-   * @brief Removes a system from the world
-   * @tparam T System type to remove
-   */
   template <typename T>
   void removeSystem() noexcept
   {
-    systemManager.removeSystem<T>();
+    m_systemManager.removeSystem<T>();
   }
 
-  /**
-   * @brief Updates all registered systems
-   * @param deltaTime Time elapsed since last update (in seconds)
-   */
-  void update(float deltaTime) { systemManager.update(*this, deltaTime); }
+  void update(float deltaTime) { m_systemManager.update(*this, deltaTime); }
+
+  [[nodiscard]] std::size_t getSystemCount() const noexcept { return m_systemManager.getSystemCount(); }
+
+  void clearSystems() noexcept { m_systemManager.clear(); }
 
   // ========== Component Management ==========
 
-  /**
-   * @brief Adds a component to an entity
-   * @tparam T Component type
-   * @param entity Target entity
-   * @param component Component data to add
-   *
-   * @example
-   * Entity player = createEntity();
-   * world.addComponent(player, Position{0.0f, 0.0f});
-   * world.addComponent(player, Velocity{1.0f, 0.0f});
-   */
   template <typename T>
   void addComponent(Entity entity, T component)
   {
-    componentManager.addComponent(entity, std::move(component));
+    m_componentManager.addComponent(entity, std::move(component));
+
+    ComponentSignature signature = m_componentManager.getEntitySignature(entity);
+    m_entityManager.setSignature(entity, signature);
   }
 
-  /**
-   * @brief Gets a reference to an entity's component
-   * @tparam T Component type
-   * @param entity Target entity
-   * @return Reference to the component
-   * @throws std::out_of_range if entity doesn't have the component
-   *
-   * @example
-   * Position& pos = world.getComponent<Position>(player);
-   * pos.x += velocity.x * deltaTime;
-   */
   template <typename T>
   T &getComponent(Entity entity)
   {
-    return componentManager.getComponent<T>(entity);
+    return m_componentManager.getComponent<T>(entity);
   }
 
-  /**
-   * @brief Gets a const reference to an entity's component
-   * @tparam T Component type
-   * @param entity Target entity
-   * @return Const reference to the component
-   * @throws std::out_of_range if entity doesn't have the component
-   */
   template <typename T>
   [[nodiscard]] const T &getComponent(Entity entity) const
   {
-    return componentManager.getComponent<T>(entity);
+    return m_componentManager.getComponent<T>(entity);
   }
 
-  /**
-   * @brief Checks if an entity has a specific component
-   * @tparam T Component type
-   * @param entity Target entity
-   * @return true if entity has the component, false otherwise
-   *
-   * @example
-   * if (world.hasComponent<Health>(enemy)) {
-   *     world.getComponent<Health>(enemy).damage(10);
-   * }
-   */
   template <typename T>
   [[nodiscard]] bool hasComponent(Entity entity) const
   {
-    return componentManager.hasComponent<T>(entity);
+    return m_componentManager.hasComponent<T>(entity);
   }
 
-  /**
-   * @brief Removes a component from an entity
-   * @tparam T Component type
-   * @param entity Target entity
-   *
-   * @example
-   * world.removeComponent<Invulnerable>(player); // Player can take damage again
-   */
   template <typename T>
   void removeComponent(Entity entity)
   {
-    componentManager.removeComponent<T>(entity);
+    m_componentManager.removeComponent<T>(entity);
+
+    ComponentSignature signature = m_componentManager.getEntitySignature(entity);
+    m_entityManager.setSignature(entity, signature);
   }
 
-  /**
-   * @brief Removes all components from an entity
-   * @param entity Target entity
-   *
-   * This is useful when destroying an entity or resetting its state.
-   */
-  void removeAllComponents(Entity entity) { componentManager.removeAllComponents(entity); }
+  void removeAllComponents(Entity entity)
+  {
+    m_componentManager.removeAllComponents(entity);
 
-  /**
-   * @brief Gets the component signature for an entity
-   * @param entity Entity to get signature for
-   * @return Component signature bitset for the entity
-   */
+    ComponentSignature emptySignature;
+    m_entityManager.setSignature(entity, emptySignature);
+  }
+
   [[nodiscard]] const ComponentSignature &getEntitySignature(Entity entity) const
   {
-    return componentManager.getEntitySignature(entity);
+    return m_entityManager.getSignature(entity);
   }
 
   /**
    * @brief Filters entities by component signature (bitwise matching)
-   * @param signature Required component signature
-   * @param entities Vector to store matching entity IDs
-   *
-   * This performs fast bitwise AND operations to find entities that have
-   * all components specified in the signature. This is O(n) where n is the
-   * number of entities, but each check is a single CPU operation.
-   *
-   * @example
-   * ComponentSignature physicsSig;
-   * physicsSig.set(getComponentId<Position>());
-   * physicsSig.set(getComponentId<Velocity>());
-   *
-   * std::vector<Entity> physicsEntities;
-   * World::getEntitiesWithSignature(physicsSig, physicsEntities);
-   * // physicsEntities now contains all entities with Position AND Velocity
    */
-  static void getEntitiesWithSignature(const ComponentSignature &signature, std::vector<Entity> &entities);
+  void getEntitiesWithSignature(const ComponentSignature &signature, std::vector<Entity> &entities) const
+  {
+    entities.clear();
 
-  /**
-   * @brief Returns the number of registered systems
-   * @return Number of systems in the world
-   */
-  [[nodiscard]] std::size_t getSystemCount() const noexcept { return systemManager.getSystemCount(); }
+    for (Entity entity = 0; entity < m_entityManager.getTotalCount(); ++entity) {
+      if (!m_entityManager.isAlive(entity)) {
+        continue;
+      }
 
-  /**
-   * @brief Removes all systems from the world
-   */
-  void clearSystems() noexcept { systemManager.clear(); }
+      const ComponentSignature &entitySignature = m_entityManager.getSignature(entity);
+
+      if ((entitySignature & signature) == signature) {
+        entities.push_back(entity);
+      }
+    }
+  }
 
 private:
-  SystemManager systemManager;
-  ComponentManager componentManager;
+  EntityManager m_entityManager;
+  ComponentManager m_componentManager;
+  SystemManager m_systemManager;
 };
+
 } // namespace ecs
 
 #endif // ECS_WORLD_HPP_
