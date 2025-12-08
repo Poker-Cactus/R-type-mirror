@@ -122,4 +122,4 @@ private:
   }
 };
 
-#endif
+#endif // ECS_COMPONENTMANAGER_HPP_
