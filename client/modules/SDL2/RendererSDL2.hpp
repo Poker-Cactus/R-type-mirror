@@ -26,6 +26,7 @@ class RendererSDL2 : public IRenderer
     // === IInput ===
     bool isKeyPressed(int keycode) override;
     bool isKeyReleased(int keycode) override;
+    bool isKeyJustPressed(int keycode) override;
     void getMousePosition(int &x, int &y) override;
     bool isMouseButtonPressed(int button) override;
     int getNumGamepads() override;
@@ -103,6 +104,7 @@ class RendererSDL2 : public IRenderer
 
     // Input state
     std::map<int, bool> keyStates;
+    std::map<int, bool> previousKeyStates;
     std::map<int, bool> mouseButtonStates;
     int mouseX = 0;
     int mouseY = 0;

@@ -210,6 +210,8 @@ bool RendererSDL2::pollEvents()
 {
     SDL_Event event;
 
+    previousKeyStates = keyStates;
+
     while (SDL_PollEvent(&event) != 0) {
         if (event.type == SDL_QUIT) {
             return false;
@@ -217,7 +219,6 @@ bool RendererSDL2::pollEvents()
         if (event.type == SDL_KEYDOWN) {
             int genericKey = mapSDLKeyToGeneric(event.key.keysym.sym);
             keyStates[genericKey] = true;
-            std::cout << "Key pressed - SDL: " << event.key.keysym.sym << " -> Generic: " << genericKey << std::endl;
             if (event.key.keysym.sym == SDLK_ESCAPE) {
                 return false;
             }
@@ -253,6 +254,11 @@ bool RendererSDL2::isKeyPressed(int keycode)
 bool RendererSDL2::isKeyReleased(int keycode)
 {
     return !keyStates[keycode];
+}
+
+bool RendererSDL2::isKeyJustPressed(int keycode)
+{
+    return keyStates[keycode] && !previousKeyStates[keycode];
 }
 
 void RendererSDL2::getMousePosition(int &x, int &y)
