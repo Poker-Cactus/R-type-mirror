@@ -67,7 +67,8 @@ void AsioClient::recv()
                 try {
                     const std::string data = _packetHandler->deserialize(*recvBuffer, bytes_transferred);
                     std::cout << "[Client] Deserialized message: " << data << std::endl;
-                    MessageQueue messageQueue(data, 0);
+                    std::vector<std::byte> bytes = CapnpHandler::stringToBytes(data);
+                    NetworkPacket messageQueue(bytes, 0);
                     _inComingMessages.push(messageQueue);
 
                     recv();
@@ -81,7 +82,7 @@ void AsioClient::recv()
         }));
 }
 
-bool AsioClient::poll(MessageQueue &msg)
+bool AsioClient::poll(NetworkPacket &msg)
 {
     return _inComingMessages.pop(msg);
 }

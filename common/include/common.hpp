@@ -8,4 +8,4 @@
 #pragma once
 
 #define UNUSED __attribute__((unused))
-#define BUFFER_SIZE 1024
+#define BUFFER_SIZE 65535 // Taille max d'un datagramme UDP

@@ -86,7 +86,8 @@ void AsioServer::recv()
                     std::string data = _packetHandler->deserialize(*recvBuffer, bytes_transferred);
                     std::cout << "[Server] Deserialized message: " << data << std::endl;
                     uint32_t clientId = getOrCreateClientId(_remoteEndpoint);
-                    MessageQueue messageQueue(data, clientId);
+                    std::vector<std::byte> bytes = CapnpHandler::stringToBytes(data);
+                    NetworkPacket messageQueue(bytes, clientId);
                     _inComingMessages.push(messageQueue);
 
                     recv();
@@ -100,9 +101,7 @@ void AsioServer::recv()
         }));
 }
 
-bool AsioServer::poll(MessageQueue &msg)
+bool AsioServer::poll(NetworkPacket &msg)
 {
-    asio::ip::udp::endpoint senderEndpoint;
-
     return _inComingMessages.pop(msg);
 }

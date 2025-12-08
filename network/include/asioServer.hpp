@@ -8,9 +8,10 @@
 #pragma once
 
 #include "../../common/include/common.hpp"
-#include "../../common/include/network/messageQueue.hpp"
+#include "../../common/include/network/NetworkPacket.hpp"
 #include "../../common/include/network/safeQueue.hpp"
 #include "ANetworkManager.hpp"
+#include "GameMessage.capnp.h"
 #include "capnpHandler.hpp"
 #include <asio.hpp>
 #include <iostream>
@@ -26,13 +27,13 @@ class AsioServer : public ANetworkManager
     void send(std::span<const std::byte> data, const uint32_t &targetEndpointId) override;
     void start() override;
     void stop() override;
-    bool poll(MessageQueue &msg);
+    bool poll(NetworkPacket &msg);
 
   private:
     void recv();
     uint32_t getOrCreateClientId(const asio::ip::udp::endpoint &endpoint);
 
-    SafeQueue<MessageQueue> _inComingMessages;
+    SafeQueue<NetworkPacket> _inComingMessages;
     asio::io_context _ioContext;
     asio::strand<asio::io_context::executor_type> _strand;
     asio::ip::udp::socket _socket;

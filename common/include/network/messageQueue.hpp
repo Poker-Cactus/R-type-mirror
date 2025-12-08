@@ -7,42 +7,27 @@
 
 #pragma once
 
+#include <cstddef>
 #include <cstdint>
 #include <iostream>
-#include <string>
+#include <vector>
 
-typedef enum MessageHeader_s : std::uint8_t {
-    MESSAGE_PING = 0x0,
-    MESSAGE_PONG = 0x1,
-} MessageHeader_t;
-
-// namespace Network {
-class MessageQueue
+class NetworkPacket
 {
   public:
-    MessageQueue() = default;
-    MessageQueue(const std::string &msg, uint32_t senderEndpointId) : _msg(msg), _senderEndpointId(senderEndpointId)
+    NetworkPacket() = default;
+    NetworkPacket(std::vector<std::byte> data, uint32_t senderEndpointId)
+        : _data(std::move(data)), _senderEndpointId(senderEndpointId)
     {
-        if (!msg.empty()) {
-            _header = static_cast<std::uint8_t>(msg[0]);
-            if (_header == MESSAGE_PING || _header == MESSAGE_PONG)
-                _data = msg.substr(1);
-            else
-                _data = msg;
-        }
     }
 
-    ~MessageQueue() = default;
+    ~NetworkPacket() = default;
 
-    std::uint8_t getHeader() const { return _header; }
-    std::string getData() const { return _data; }
-    std::string getFullMessage() const { return _msg; }
+    const std::vector<std::byte> &getData() const { return _data; }
     uint32_t getSenderEndpointId() const { return _senderEndpointId; }
 
   private:
-    std::uint8_t _header;
-    std::string _data;
-    std::string _msg;
+    std::vector<std::byte> _data;
     uint32_t _senderEndpointId;
 };
 // }

@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include "../../common/include/network/messageQueue.hpp"
+#include "../../common/include/network/NetworkPacket.hpp"
 #include "IPacketHandler.hpp"
 #include <cstdint>
 #include <memory>
@@ -28,6 +28,6 @@ class INetworkManager
     virtual void send(std::span<const std::byte> data, const uint32_t &targetEndpointId) = 0;
     virtual void start() = 0;
     virtual void stop() = 0;
-    virtual bool poll(MessageQueue &msg) = 0;
+    virtual bool poll(NetworkPacket &msg) = 0;
     virtual std::shared_ptr<IPacketHandler> getPacketHandler() const = 0;
 };
