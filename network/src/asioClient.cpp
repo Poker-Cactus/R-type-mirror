@@ -9,7 +9,7 @@
 
 AsioClient::AsioClient(const std::string &host, const std::string &port)
     : ANetworkManager(std::make_shared<CapnpHandler>()), _strand(asio::make_strand(_ioContext)), _socket(_ioContext),
-      _running(true), _workGuard(asio::make_work_guard(_ioContext))
+      _workGuard(asio::make_work_guard(_ioContext))
 {
     try {
         asio::ip::udp::resolver resolver(_ioContext);
@@ -19,7 +19,6 @@ AsioClient::AsioClient(const std::string &host, const std::string &port)
         _serverEndpoint = serverEndpoint;
     } catch (const std::exception &e) {
         std::cerr << "[Client] Init error: " << e.what() << std::endl;
-        _running = false;
     }
 }
 
@@ -33,23 +32,14 @@ void AsioClient::start()
     _recvThread = std::thread([this]() { _ioContext.run(); });
     std::this_thread::sleep_for(std::chrono::milliseconds(10));
     recv();
-
-    auto serialized = _packetHandler->serialize("PING");
-    send(std::span<const std::byte>(reinterpret_cast<const std::byte *>(serialized.data()), serialized.size()), 0);
 }
 
 void AsioClient::stop()
 {
-    _running = false;
     _ioContext.stop();
     _workGuard.reset();
     if (_recvThread.joinable())
         _recvThread.join();
-}
-
-std::string AsioClient::buildMessage(uint8_t header, const std::string &data) const
-{
-    return std::string(1, static_cast<char>(header)) + data;
 }
 
 void AsioClient::send(std::span<const std::byte> data, UNUSED const uint32_t &targetEndpointId)
@@ -77,7 +67,7 @@ void AsioClient::recv()
                 try {
                     const std::string data = _packetHandler->deserialize(*recvBuffer, bytes_transferred);
                     std::cout << "[Client] Deserialized message: " << data << std::endl;
-                    MessageQueue messageQueue(data, _serverEndpoint);
+                    MessageQueue messageQueue(data, 0);
                     _inComingMessages.push(messageQueue);
 
                     recv();

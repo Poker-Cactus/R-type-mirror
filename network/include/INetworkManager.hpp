@@ -7,8 +7,8 @@
 
 #pragma once
 
+#include "../../common/include/network/messageQueue.hpp"
 #include "IPacketHandler.hpp"
-#include "messageQueue.hpp"
 #include <cstdint>
 #include <memory>
 #include <optional>
@@ -29,6 +29,5 @@ class INetworkManager
     virtual void start() = 0;
     virtual void stop() = 0;
     virtual bool poll(MessageQueue &msg) = 0;
-    virtual void recv() = 0;
     virtual std::shared_ptr<IPacketHandler> getPacketHandler() const = 0;
 };

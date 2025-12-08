@@ -19,6 +19,8 @@ class Client
     Client(std::shared_ptr<INetworkManager> networkManager);
     ~Client();
 
+    void loop();
+
   private:
     std::shared_ptr<INetworkManager> _networkManager;
 };

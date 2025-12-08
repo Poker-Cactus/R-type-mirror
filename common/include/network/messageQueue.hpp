@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include <asio.hpp>
+#include <cstdint>
 #include <iostream>
 #include <string>
 
@@ -21,8 +21,7 @@ class MessageQueue
 {
   public:
     MessageQueue() = default;
-    MessageQueue(const std::string &msg, asio::ip::udp::endpoint _remoteEndpoint)
-        : _fullMessage(msg), _senderEndpoint(_remoteEndpoint)
+    MessageQueue(const std::string &msg, uint32_t senderEndpointId) : _msg(msg), _senderEndpointId(senderEndpointId)
     {
         if (!msg.empty()) {
             _header = static_cast<std::uint8_t>(msg[0]);
@@ -37,13 +36,13 @@ class MessageQueue
 
     std::uint8_t getHeader() const { return _header; }
     std::string getData() const { return _data; }
-    std::string getFullMessage() const { return _fullMessage; }
-    asio::ip::udp::endpoint getSenderEndpoint() const { return _senderEndpoint; }
+    std::string getFullMessage() const { return _msg; }
+    uint32_t getSenderEndpointId() const { return _senderEndpointId; }
 
   private:
-    std::uint8_t _header = 0;
+    std::uint8_t _header;
     std::string _data;
-    std::string _fullMessage;
-    asio::ip::udp::endpoint _senderEndpoint;
+    std::string _msg;
+    uint32_t _senderEndpointId;
 };
 // }

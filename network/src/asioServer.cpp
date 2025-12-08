@@ -9,7 +9,7 @@
 
 AsioServer::AsioServer(const short &port)
     : ANetworkManager(std::make_shared<CapnpHandler>()), _strand(asio::make_strand(_ioContext)),
-      _socket(_ioContext, asio::ip::udp::endpoint(asio::ip::udp::v4(), port)), _running(true),
+      _socket(_ioContext, asio::ip::udp::endpoint(asio::ip::udp::v4(), port)), _nextClientId(0),
       _workGuard(asio::make_work_guard(_ioContext))
 {
 }
@@ -39,21 +39,17 @@ void AsioServer::stop()
     }
 }
 
-void AsioServer::registerClient(const asio::ip::udp::endpoint &endpoint)
+uint32_t AsioServer::getOrCreateClientId(const asio::ip::udp::endpoint &endpoint)
 {
     for (const auto &[id, ep] : _clients) {
         if (ep == endpoint) {
-            return;
+            return id;
         }
     }
     uint32_t clientId = _nextClientId++;
     _clients[clientId] = endpoint;
     std::cout << "[Server] New client connected: " << clientId << std::endl;
-}
-
-std::string AsioServer::buildMessage(uint8_t header, const std::string &data) const
-{
-    return std::string(1, static_cast<char>(header)) + data;
+    return clientId;
 }
 
 void AsioServer::send(std::span<const std::byte> data, const uint32_t &targetEndpointId)
@@ -89,9 +85,9 @@ void AsioServer::recv()
                 try {
                     std::string data = _packetHandler->deserialize(*recvBuffer, bytes_transferred);
                     std::cout << "[Server] Deserialized message: " << data << std::endl;
-                    MessageQueue messageQueue(data, _remoteEndpoint);
+                    uint32_t clientId = getOrCreateClientId(_remoteEndpoint);
+                    MessageQueue messageQueue(data, clientId);
                     _inComingMessages.push(messageQueue);
-                    registerClient(_remoteEndpoint);
 
                     recv();
                 } catch (const std::exception &e) {
@@ -106,5 +102,7 @@ void AsioServer::recv()
 
 bool AsioServer::poll(MessageQueue &msg)
 {
+    asio::ip::udp::endpoint senderEndpoint;
+
     return _inComingMessages.pop(msg);
 }
