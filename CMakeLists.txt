@@ -13,6 +13,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 find_package(SDL2 REQUIRED)
 find_package(asio REQUIRED)
 find_package(CapnProto REQUIRED)
+find_package(doctest REQUIRED)
 
 # Add subdirectories
 add_subdirectory(engine_core)
@@ -20,6 +21,7 @@ add_subdirectory(common)
 add_subdirectory(network)
 add_subdirectory(server)
 add_subdirectory(client)
+add_subdirectory(tests)
 
 find_program(CLANG_TIDY_EXE NAMES clang-tidy)
 if(CLANG_TIDY_EXE)
