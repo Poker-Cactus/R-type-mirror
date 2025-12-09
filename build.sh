@@ -94,6 +94,44 @@ if [ "$1" == "rebuild" ]; then
     exit 0
 fi
 
+# Check if coverage is requested
+if [ "$1" == "coverage" ]; then
+    print_step "${CHECK}" "Running coverage..."
+
+    # Ensure we are in Debug mode
+    print_step "${GEAR}" "Configuring CMake in Debug mode..."
+    conan install . --output-folder=build --build=missing --profile=conan_profile -s build_type=Debug
+
+    # Source the build environment to make kcov available
+    if [ -f "build/conanbuild.sh" ]; then
+        source build/conanbuild.sh
+    fi
+
+    cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -DCMAKE_TOOLCHAIN_FILE=conan_toolchain.cmake
+
+    print_building "tests"
+    cmake --build build --target unit_tests
+
+    print_step "${ROCKET}" "Generating coverage report..."
+    cmake --build build --target coverage
+
+    if [ $? -eq 0 ]; then
+        print_success "Coverage report generated at build/coverage/index.html"
+        # Try to open the report
+        if command -v xdg-open &> /dev/null; then
+            xdg-open build/coverage/index.html
+        elif command -v open &> /dev/null; then
+            open build/coverage/index.html
+        else
+            echo -e "${YELLOW}Open build/coverage/index.html to view the report${RESET}"
+        fi
+    else
+        print_error "Coverage generation failed!"
+        exit 1
+    fi
+    exit 0
+fi
+
 # Full build process
 print_step "${PACKAGE}" "Installing dependencies with Conan..."
 conan install . --output-folder=build --build=missing --profile=conan_profile 2>&1 | grep -E "(Installing|Already installed|Install finished)" | while read -r line; do

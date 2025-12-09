@@ -7,7 +7,9 @@ doctest/2.4.11
 [generators]
 CMakeDeps
 CMakeToolchain
+VirtualBuildEnv
 
 [options]
 
 [tool_requires]
+kcov/42
