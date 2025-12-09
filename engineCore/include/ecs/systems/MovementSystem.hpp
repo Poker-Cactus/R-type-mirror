@@ -13,6 +13,12 @@
 
 namespace ecs
 {
+/**
+ * @brief System that updates entity positions based on their velocity
+ *
+ * This system processes all entities with Transform and Velocity components,
+ * updating their position each frame based on deltaTime.
+ */
 class MovementSystem : public ISystem
 {
 public:
@@ -37,7 +43,7 @@ public:
     sig.set(getComponentId<Transform>());
     sig.set(getComponentId<Velocity>());
     return sig;
-  };
+  }
 };
 } // namespace ecs
 
