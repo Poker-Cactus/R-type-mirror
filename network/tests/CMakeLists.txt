@@ -30,6 +30,20 @@ target_link_libraries(stress_tests PRIVATE
     doctest::doctest
 )
 
+add_executable(robustness_tests
+    Test_robustness.cpp
+)
+
+target_include_directories(robustness_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/network/include
+    ${CMAKE_SOURCE_DIR}/common/include
+)
+
+target_link_libraries(robustness_tests PRIVATE
+    network
+    doctest::doctest
+)
+
 find_program(KCOV_PATH kcov)
 
 if(NOT KCOV_PATH)

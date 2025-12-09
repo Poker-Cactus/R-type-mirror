@@ -79,23 +79,26 @@ void AsioServer::receive()
   m_socket.async_receive_from(
     asio::buffer(*recvBuffer), m_remoteEndpoint,
     asio::bind_executor(m_strand, [this, recvBuffer](const std::error_code &error, std::size_t bytesTransferred) {
-      if (!error && bytesTransferred > 0) {
-        // std::cout << "[Server] Received " << bytesTransferred << " bytes" << std::endl;
-        try {
-          std::string data = getPacketHandler()->deserialize(*recvBuffer, bytesTransferred);
-          // std::cout << "[Server] Deserialized message: " << data << std::endl;
-          std::uint32_t clientId = getOrCreateClientId(m_remoteEndpoint);
-          std::vector<std::byte> bytes = CapnpHandler::stringToBytes(data);
-          NetworkPacket messageQueue(bytes, clientId);
-          m_incomingMessages.push(messageQueue);
-
-          receive();
-        } catch (const std::exception &e) {
-          std::cerr << "[Server] Deserialization error: " << e.what() << std::endl;
+      if (!error) {
+        if (bytesTransferred > 0) {
+          // std::cout << "[Server] Received " << bytesTransferred << " bytes" << std::endl;
+          try {
+            std::string data = getPacketHandler()->deserialize(*recvBuffer, bytesTransferred);
+            // std::cout << "[Server] Deserialized message: " << data << std::endl;
+            std::uint32_t clientId = getOrCreateClientId(m_remoteEndpoint);
+            std::vector<std::byte> bytes = CapnpHandler::stringToBytes(data);
+            NetworkPacket messageQueue(bytes, clientId);
+            m_incomingMessages.push(messageQueue);
+          } catch (const std::exception &e) {
+            std::cerr << "[Server] Deserialization error: " << e.what() << std::endl;
+          }
+        }
+        receive();
+      } else {
+        std::cerr << "[Server] Receive error: " << error.message() << std::endl;
+        if (error != asio::error::operation_aborted) {
           receive();
         }
-      } else if (error) {
-        std::cerr << "[Server] Receive error: " << error.message() << std::endl;
       }
     }));
 }
