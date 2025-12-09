@@ -21,30 +21,30 @@
  */
 class Server
 {
-  public:
-    /**
-     * @brief Construct a server
-     *
-     * @param networkManager The network manager to use
-     */
-    explicit Server(std::shared_ptr<INetworkManager> networkManager);
-    ~Server();
+public:
+  /**
+   * @brief Construct a server
+   *
+   * @param networkManager The network manager to use
+   */
+  explicit Server(std::shared_ptr<INetworkManager> networkManager);
+  ~Server();
 
-    /**
-     * @brief Run the server main loop
-     */
-    void run();
+  /**
+   * @brief Run the server main loop
+   */
+  void run();
 
-    /**
-     * @brief Signal handler to stop the server
-     *
-     * @param signum Signal number
-     */
-    static void signalHandler(int signum);
+  /**
+   * @brief Signal handler to stop the server
+   *
+   * @param signum Signal number
+   */
+  static void signalHandler(int signum);
 
-  private:
-    std::shared_ptr<INetworkManager> m_networkManager;
-    static std::atomic<bool> g_running;
+private:
+  std::shared_ptr<INetworkManager> m_networkManager;
+  static std::atomic<bool> g_running;
 };
 
 #endif // SERVER_HPP_

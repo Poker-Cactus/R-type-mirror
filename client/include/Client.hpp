@@ -23,30 +23,30 @@
  */
 class Client
 {
-  public:
-    /**
-     * @brief Construct a client
-     *
-     * @param networkManager The network manager to use
-     */
-    explicit Client(std::shared_ptr<INetworkManager> networkManager);
-    ~Client();
+public:
+  /**
+   * @brief Construct a client
+   *
+   * @param networkManager The network manager to use
+   */
+  explicit Client(std::shared_ptr<INetworkManager> networkManager);
+  ~Client();
 
-    /**
-     * @brief Run the client main loop
-     */
-    void loop();
+  /**
+   * @brief Run the client main loop
+   */
+  void loop();
 
-    /**
-     * @brief Signal handler to stop the client
-     *
-     * @param signum Signal number
-     */
-    static void signalHandler(int signum);
+  /**
+   * @brief Signal handler to stop the client
+   *
+   * @param signum Signal number
+   */
+  static void signalHandler(int signum);
 
-  private:
-    std::shared_ptr<INetworkManager> m_networkManager;
-    static std::atomic<bool> g_running;
+private:
+  std::shared_ptr<INetworkManager> m_networkManager;
+  static std::atomic<bool> g_running;
 };
 
 #endif // CLIENT_HPP_
