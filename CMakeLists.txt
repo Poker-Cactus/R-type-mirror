@@ -23,6 +23,8 @@ add_subdirectory(network)
 add_subdirectory(server)
 add_subdirectory(client)
 
+
+
 find_program(CLANG_TIDY_EXE NAMES clang-tidy)
 if(CLANG_TIDY_EXE)
     message(STATUS "clang-tidy found: ${CLANG_TIDY_EXE}")

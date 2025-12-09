@@ -6,8 +6,10 @@
 */
 
 #include "../include/Server.hpp"
+#include <chrono>
 #include <csignal>
 #include <iostream>
+#include <thread>
 
 std::atomic<bool> Server::g_running{true};
 
@@ -31,6 +33,10 @@ void Server::loop()
       std::string data(reinterpret_cast<const char *>(msg.getData().data()), msg.getData().size());
       std::cout << "Data: " << data << std::endl;
     }
+    auto serialized = m_networkManager->getPacketHandler()->serialize("PONG");
+    m_networkManager->send(
+      std::span<const std::byte>(reinterpret_cast<const std::byte *>(serialized.data()), serialized.size()), 0);
+    std::this_thread::sleep_for(std::chrono::milliseconds(16));
   }
 }
 

@@ -49,7 +49,7 @@ std::uint32_t AsioServer::getOrCreateClientId(const asio::ip::udp::endpoint &end
   }
   std::uint32_t clientId = m_nextClientId++;
   m_clients[clientId] = endpoint;
-  std::cout << "[Server] New client connected: " << clientId << std::endl;
+  // std::cout << "[Server] New client connected: " << clientId << std::endl;
   return clientId;
 }
 
@@ -67,7 +67,7 @@ void AsioServer::send(std::span<const std::byte> data, const std::uint32_t &targ
       if (error) {
         std::cerr << "[Server] Send error: " << error.message() << std::endl;
       } else {
-        std::cout << "[Server] Sent " << bytesTransferred << " bytes to client " << targetEndpointId << std::endl;
+        // std::cout << "[Server] Sent " << bytesTransferred << " bytes to client " << targetEndpointId << std::endl;
       }
     }));
 }
@@ -79,23 +79,26 @@ void AsioServer::receive()
   m_socket.async_receive_from(
     asio::buffer(*recvBuffer), m_remoteEndpoint,
     asio::bind_executor(m_strand, [this, recvBuffer](const std::error_code &error, std::size_t bytesTransferred) {
-      if (!error && bytesTransferred > 0) {
-        std::cout << "[Server] Received " << bytesTransferred << " bytes" << std::endl;
-        try {
-          std::string data = getPacketHandler()->deserialize(*recvBuffer, bytesTransferred);
-          std::cout << "[Server] Deserialized message: " << data << std::endl;
-          std::uint32_t clientId = getOrCreateClientId(m_remoteEndpoint);
-          std::vector<std::byte> bytes = CapnpHandler::stringToBytes(data);
-          NetworkPacket messageQueue(bytes, clientId);
-          m_incomingMessages.push(messageQueue);
-
-          receive();
-        } catch (const std::exception &e) {
-          std::cerr << "[Server] Deserialization error: " << e.what() << std::endl;
+      if (!error) {
+        if (bytesTransferred > 0) {
+          // std::cout << "[Server] Received " << bytesTransferred << " bytes" << std::endl;
+          try {
+            std::string data = getPacketHandler()->deserialize(*recvBuffer, bytesTransferred);
+            // std::cout << "[Server] Deserialized message: " << data << std::endl;
+            std::uint32_t clientId = getOrCreateClientId(m_remoteEndpoint);
+            std::vector<std::byte> bytes = CapnpHandler::stringToBytes(data);
+            NetworkPacket messageQueue(bytes, clientId);
+            m_incomingMessages.push(messageQueue);
+          } catch (const std::exception &e) {
+            std::cerr << "[Server] Deserialization error: " << e.what() << std::endl;
+          }
+        }
+        receive();
+      } else {
+        std::cerr << "[Server] Receive error: " << error.message() << std::endl;
+        if (error != asio::error::operation_aborted) {
           receive();
         }
-      } else if (error) {
-        std::cerr << "[Server] Receive error: " << error.message() << std::endl;
       }
     }));
 }
