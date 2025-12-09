@@ -14,7 +14,6 @@
 #include <vector>
 
 #include "../../common/include/Common.hpp"
-#include "GameMessage.capnp.h"
 #include <capnp/message.h>
 #include <capnp/serialize.h>
 #include <kj/std/iostream.h>

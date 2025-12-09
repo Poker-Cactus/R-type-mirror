@@ -1,5 +1,7 @@
 project(tests)
 
+option(FETCH_KCOV_IF_MISSING "Download kcov via FetchContent when kcov is not available" OFF)
+
 find_package(doctest REQUIRED)
 
 add_executable(unit_tests
@@ -18,7 +20,7 @@ target_link_libraries(unit_tests PRIVATE
 
 find_program(KCOV_PATH kcov)
 
-if(NOT KCOV_PATH)
+if(NOT KCOV_PATH AND FETCH_KCOV_IF_MISSING)
     message(STATUS "kcov not found on system. Attempting to fetch and build kcov via CMake...")
     include(FetchContent)
     FetchContent_Declare(
@@ -35,6 +37,8 @@ if(NOT KCOV_PATH)
     if(TARGET kcov)
         set(KCOV_PATH $<TARGET_FILE:kcov>)
     endif()
+elseif(NOT KCOV_PATH)
+    message(STATUS "kcov not found and FETCH_KCOV_IF_MISSING is OFF; coverage target will emit a warning")
 endif()
 
 if(KCOV_PATH)

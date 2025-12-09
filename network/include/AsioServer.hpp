@@ -10,18 +10,14 @@
 
 #include <asio.hpp>
 #include <cstdint>
-#include <iostream>
 #include <span>
 #include <thread>
 #include <unordered_map>
 #include <vector>
 
-#include "../../common/include/Common.hpp"
 #include "../../common/include/network/NetworkPacket.hpp"
 #include "../../common/include/network/SafeQueue.hpp"
 #include "ANetworkManager.hpp"
-#include "CapnpHandler.hpp"
-#include "GameMessage.capnp.h"
 
 /**
  * @brief Asynchronous UDP server using ASIO
@@ -42,7 +38,7 @@ public:
   void send(std::span<const std::byte> data, const std::uint32_t &targetEndpointId) override;
   void start() override;
   void stop() override;
-  bool poll(NetworkPacket &msg);
+  bool poll(NetworkPacket &msg) override;
 
 private:
   void receive();

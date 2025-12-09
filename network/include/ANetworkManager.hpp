@@ -34,9 +34,9 @@ public:
    *
    * @return Shared pointer to the packet handler
    */
-  std::shared_ptr<IPacketHandler> getPacketHandler() const override { return m_packetHandler; }
+  [[nodiscard]] std::shared_ptr<IPacketHandler> getPacketHandler() const override { return m_packetHandler; }
 
-protected:
+private:
   std::shared_ptr<IPacketHandler> m_packetHandler;
 };
 

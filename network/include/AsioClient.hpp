@@ -8,19 +8,15 @@
 #ifndef ASIO_CLIENT_HPP_
 #define ASIO_CLIENT_HPP_
 
-#include <array>
 #include <asio.hpp>
 #include <cstdint>
-#include <iostream>
 #include <span>
 #include <string>
 #include <thread>
 
-#include "../../common/include/Common.hpp"
 #include "../../common/include/network/NetworkPacket.hpp"
 #include "../../common/include/network/SafeQueue.hpp"
 #include "ANetworkManager.hpp"
-#include "CapnpHandler.hpp"
 
 /**
  * @brief Asynchronous UDP client using ASIO
@@ -42,7 +38,7 @@ public:
   void send(std::span<const std::byte> data, const std::uint32_t &targetEndpointId) override;
   void start() override;
   void stop() override;
-  bool poll(NetworkPacket &msg);
+  bool poll(NetworkPacket &msg) override;
 
 private:
   void receive();

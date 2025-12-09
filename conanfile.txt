@@ -11,6 +11,3 @@ CMakeToolchain
 VirtualBuildEnv
 
 [options]
-
-[tool_requires]
-kcov/42
