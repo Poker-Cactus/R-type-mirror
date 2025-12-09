@@ -76,37 +76,21 @@ void AsioServer::send(std::span<const std::byte> data, const std::uint32_t &targ
 
 void AsioServer::receive()
 {
-  auto recvBuffer = std::make_shared<std::array<char, BUFFER_SIZE>>();
-  // Créer un endpoint dédié pour cette réception spécifique
+  auto buffer = std::make_shared<std::array<char, BUFFER_SIZE>>();
   auto senderEndpoint = std::make_shared<asio::ip::udp::endpoint>();
 
   m_socket.async_receive_from(
-    asio::buffer(*recvBuffer), *senderEndpoint, // Utilise l'endpoint dédié
+    asio::buffer(*buffer), *senderEndpoint,
     asio::bind_executor(m_strand,
-                        [this, recvBuffer, senderEndpoint](const std::error_code &error, std::size_t bytesTransferred) {
-                          // 1. Relancer l'écoute IMMÉDIATEMENT pour ne pas rater de paquets
-                          // On le fait même en cas d'erreur (sauf arrêt) pour être robuste
+                        [this, buffer, senderEndpoint](const std::error_code &error, std::size_t bytesTransferred) {
                           if (!error || error != asio::error::operation_aborted) {
                             receive();
                           }
-
                           if (!error && bytesTransferred > 0) {
-                            // 2. Traitement (peut être posté sur le pool global pour libérer le strand si nécessaire)
-                            // Pour l'instant, on reste simple mais on utilise senderEndpoint capturé
                             try {
                               std::uint32_t clientId = getOrCreateClientId(*senderEndpoint);
-                              NetworkPacket message(*recvBuffer, clientId, bytesTransferred);
+                              NetworkPacket message(*buffer, clientId, bytesTransferred);
                               m_incomingMessages.push(message);
-                              // std::string data = getPacketHandler()->deserialize(*recvBuffer, bytesTransferred);
-
-                              // // Attention: getOrCreateClientId accède à m_clients (non thread-safe sans mutex ou
-                              // strand)
-                              // // Comme on est dans le strand, c'est safe vis-à-vis des autres handlers receive/send
-                              //   std::uint32_t clientId = getOrCreateClientId(*senderEndpoint);
-
-                              // std::vector<std::byte> bytes = CapnpHandler::stringToBytes(data);
-                              // NetworkPacket message(bytes, clientId);
-                              // m_incomingMessages.push(message);
                             } catch (const std::exception &e) {
                               std::cerr << "[Server] Deserialization error: " << e.what() << std::endl;
                             }

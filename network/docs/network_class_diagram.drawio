@@ -34,7 +34,7 @@
                 <mxCell id="11" value="+serialize(data: string) : : vector&lt;uint8&gt;" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="9">
                     <mxGeometry y="70.25" width="536" height="42" as="geometry"/>
                 </mxCell>
-                <mxCell id="12" value="+deserialize(recvBuffer: array, bytesTransferred: size_t) : : string" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="9">
+                <mxCell id="12" value="+deserialize(buffer: array, bytesTransferred: size_t) : : string" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="9">
                     <mxGeometry y="112.25" width="536" height="42" as="geometry"/>
                 </mxCell>
                 <mxCell id="13" value="&lt;&lt;abstract&gt;&gt;&#xa;ANetworkManager" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=68.57142857142857;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=0;marginBottom=0;" vertex="1" parent="1">
@@ -130,7 +130,7 @@
                 <mxCell id="43" value="+serialize(data: string) : : vector&lt;uint8&gt;" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="41">
                     <mxGeometry y="44.888888888888886" width="533" height="37" as="geometry"/>
                 </mxCell>
-                <mxCell id="44" value="+deserialize(recvBuffer: array, bytesTransferred: size_t) : : string" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="41">
+                <mxCell id="44" value="+deserialize(buffer: array, bytesTransferred: size_t) : : string" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="41">
                     <mxGeometry y="81.88888888888889" width="533" height="37" as="geometry"/>
                 </mxCell>
                 <mxCell id="45" value="+stringToBytes(str: string) : : vector&lt;byte&gt;" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="41">

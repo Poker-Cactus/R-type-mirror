@@ -109,7 +109,5 @@ TEST_CASE("Server Stress Test")
   server->stop();
 
   // 6. Assertions
-  // Since UDP is unreliable, we might lose some packets even on localhost under stress.
-  // But we expect a high success rate. Let's say 90%.
-  CHECK(received_count >= total_expected * 0.9);
+  CHECK(received_count >= total_expected);
 }
