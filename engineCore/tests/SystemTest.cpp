@@ -8,8 +8,8 @@
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
 #include <doctest/doctest.h>
 
-#include "ecs/World.hpp"
 #include "ecs/Entity.hpp"
+#include "ecs/World.hpp"
 #include "ecs/components/Health.hpp"
 #include "ecs/components/Transform.hpp"
 #include "ecs/components/Velocity.hpp"
