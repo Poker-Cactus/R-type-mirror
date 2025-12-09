@@ -6,6 +6,7 @@ add_executable(client
     src/Menu.cpp
     src/Menu/RenderMenus.cpp
     src/Menu/ProcessInputMenu.cpp
+    src/Menu/LoadingScreen.cpp
 )
 
 target_include_directories(client PRIVATE include)

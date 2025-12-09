@@ -6,9 +6,7 @@
 */
 
 #include "Menu.hpp"
-#include "../interface/KeyCodes.hpp"
 #include <cmath>
-#include <iostream>
 
 Menu::Menu(IRenderer *renderer) : renderer(renderer), backgroundTexture(nullptr), blinkTimer(0.0f) {}
 
@@ -20,8 +18,16 @@ Menu::~Menu()
 void Menu::init()
 {
     try {
+        const int menuFontSize = 24;
+        const int titleFontSize = 48;
         logo = renderer->loadTexture("client/assets/logoRTYPE.png");
-        menu_font = renderer->loadFont("client/assets/font.opf/r-type.otf", 24);
+        backgroundTexture = renderer->loadTexture("client/assets/background/starfield.png");
+        menu_font = renderer->loadFont("client/assets/font.opf/r-type.otf", menuFontSize);
+        title_font = renderer->loadFont("client/assets/font.opf/r-type.otf", titleFontSize);
+        planet = renderer->loadTexture("client/assets/moon-pack/moon1.png");
+
+        // Initialiser le LoadingScreen
+        loadingScreen = new LoadingScreen(renderer, menu_font);
     } catch (const std::exception &e) {
         backgroundTexture = nullptr;
     }
@@ -54,21 +60,21 @@ void Menu::render()
 void Menu::processInput()
 {
     switch (currentState) {
-        case MenuState::LOADING:
-            this->processLoading();
-            break;
-        case MenuState::MAIN_MENU:
-            this->processMainMenu();
-            break;
-        case MenuState::PROFILE:
-            this->processProfile();
-            break;
-        case MenuState::SETTINGS:
-            this->processSettings();
-            break;
-        case MenuState::LOBBY:
-            this->processLobby();
-            break;
+    case MenuState::LOADING:
+        this->processLoading();
+        break;
+    case MenuState::MAIN_MENU:
+        this->processMainMenu();
+        break;
+    case MenuState::PROFILE:
+        this->processProfile();
+        break;
+    case MenuState::SETTINGS:
+        this->processSettings();
+        break;
+    case MenuState::LOBBY:
+        this->processLobby();
+        break;
     default:
         break;
     }
@@ -80,6 +86,10 @@ void Menu::cleanup()
     if (backgroundTexture != nullptr) {
         renderer->freeTexture(backgroundTexture);
         backgroundTexture = nullptr;
+    }
+    if (loadingScreen != nullptr) {
+        delete loadingScreen;
+        loadingScreen = nullptr;
     }
 }
 

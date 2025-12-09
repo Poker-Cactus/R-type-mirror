@@ -5,17 +5,20 @@
 ** ProcessInputMenu.cpp
 */
 
-#include "../Menu.hpp"
 #include "../../interface/KeyCodes.hpp"
+#include "../Menu.hpp"
 #include <iostream>
 
-void Menu::processLoading() {
-    if (renderer->isKeyJustPressed(KeyCode::KEY_RETURN)) {
-        currentState = MenuState::MAIN_MENU;
+void Menu::processLoading()
+{
+    if (renderer->isKeyJustPressed(KeyCode::KEY_RETURN) && !isZooming) {
+        isZooming = true;
+        zoomTimer = 0.0f;
     }
 }
 
-void Menu::processMainMenu() {
+void Menu::processMainMenu()
+{
     // Flèche bas - descendre dans le menu
     if (renderer->isKeyJustPressed(KeyCode::KEY_DOWN)) {
         currentMenuIndex = (currentMenuIndex + 1) % mainMenuItems.size();
@@ -33,24 +36,19 @@ void Menu::processMainMenu() {
         } else if (selectedButton == "Profile") {
             currentState = MenuState::PROFILE;
         } else {
-
+            currentState = MenuState::EXIT;
         }
     }
 }
 
-void Menu::processProfile() {
+void Menu::processProfile() {}
 
-}
+void Menu::processLobby() {}
 
-void Menu::processLobby() {
+void Menu::processSettings() {}
 
-}
-
-void Menu::processSettings() {
-
-}
-
-void Menu::processBack() {
+void Menu::processBack()
+{
     if (renderer->isKeyJustPressed(KeyCode::KEY_BACKSPACE)) {
         if (currentState == MenuState::LOADING) {
             return;

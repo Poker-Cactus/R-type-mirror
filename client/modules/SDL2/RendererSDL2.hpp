@@ -36,6 +36,7 @@ class RendererSDL2 : public IRenderer
     // === ITexture ===
     void *loadTexture(const std::string &filepath) override;
     void freeTexture(void *texture) override;
+    void getTextureSize(void *texture, int &width, int &height) override;
     void drawTexture(void *texture, int x, int y) override;
     void drawTextureRegion(void *texture, int srcX, int srcY, int srcW, int srcH, int dstX, int dstY, int dstW,
                            int dstH) override;
