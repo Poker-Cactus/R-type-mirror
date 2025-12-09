@@ -146,9 +146,25 @@ print_success "Dependencies installed!"
 echo ""
 
 print_step "${GEAR}" "Configuring CMake..."
-cmake --preset conan-release > /dev/null 2>&1
-if [ $? -ne 0 ]; then
+cmake --preset conan-release > /tmp/cmake_config.log 2>&1
+CMAKE_STATUS=$?
+
+# If CMake failed, check if it's due to generator mismatch and retry after cleanup
+if [ $CMAKE_STATUS -ne 0 ]; then
+    if grep -q "Does not match the generator used previously" /tmp/cmake_config.log; then
+        print_step "${CLEAN}" "Cleaning incompatible CMake cache..."
+        rm -f build/CMakeCache.txt
+        rm -rf build/CMakeFiles
+        print_step "${GEAR}" "Retrying CMake configuration..."
+        cmake --preset conan-release > /tmp/cmake_config.log 2>&1
+        CMAKE_STATUS=$?
+    fi
+fi
+
+if [ $CMAKE_STATUS -ne 0 ]; then
     print_error "CMake configuration failed!"
+    echo -e "${YELLOW}Error details:${RESET}"
+    cat /tmp/cmake_config.log
     exit 1
 fi
 print_success "CMake configured!"
