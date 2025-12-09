@@ -18,6 +18,11 @@ struct Input : public IComponent {
   bool left;
   bool right;
   bool shoot;
+
+  [[nodiscard]] nlohmann::json toJson() const override
+  {
+    return {{"up", up}, {"down", down}, {"left", left}, {"right", right}, {"shoot", shoot}};
+  }
 };
 } // namespace ecs
 #endif // ENGINECORE_ECS_COMPONENTS_INPUT_HPP
