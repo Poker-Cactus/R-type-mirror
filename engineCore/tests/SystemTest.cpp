@@ -8,12 +8,9 @@
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
 #include <doctest/doctest.h>
 
-#include "ecs/Entity.hpp"
-#include "ecs/World.hpp"
-#include "ecs/components/Health.hpp"
-#include "ecs/components/Transform.hpp"
-#include "ecs/components/Velocity.hpp"
-#include "ecs/systems/MovementSystem.hpp"
+#include "../include/ecs/Entity.hpp"
+#include "../include/ecs/World.hpp"
+#include "../include/ecs/systems/MovementSystem.hpp"
 
 // ============================================================================
 // MOVEMENT SYSTEM TESTS
@@ -38,9 +35,9 @@ TEST_SUITE("MovementSystem")
 
     // Créer un joueur comme dans le main
     Entity player = world.createEntity();
-    world.addComponent(player, Transform{100.0f, 200.0f, 0.0f, 1.0f});
-    world.addComponent(player, Velocity{5.0f, 0.0f});
-    world.addComponent(player, Health{100, 100});
+    world.addComponent(player, ecs::Transform{100.0f, 200.0f, 0.0f, 1.0f});
+    world.addComponent(player, ecs::Velocity{5.0f, 0.0f});
+    world.addComponent(player, ecs::Health{100, 100});
 
     SUBCASE("Player initial position")
     {

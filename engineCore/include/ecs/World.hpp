@@ -13,32 +13,26 @@
 #include "Entity.hpp"
 #include "EntityManager.hpp"
 #include "SystemManager.hpp"
+#include "events/EventBus.hpp"
+#include "events/EventListenerHandle.hpp"
+
 #include <cstddef>
+#include <functional>
 #include <vector>
 
 namespace ecs
 {
+
 /**
  * @brief Central coordinator for the ECS architecture
  *
- * The World manages entities, systems and components, providing a unified interface
- * for game logic. It orchestrates the update cycle and provides access to
- * the EntityManager, SystemManager and ComponentManager.
- *
- * @note This is typically instantiated once per game/scene
- *
- * @example
- * World world;
- * Entity player = world.createEntity();
- * world.addComponent(player, Position{0.0f, 0.0f});
- *
- * world.registerSystem<PhysicsSystem>();
- * world.registerSystem<RenderSystem>();
- *
- * // Game loop
- * while (running) {
- *     world.update(deltaTime);
- * }
+ * The World manages entities, systems, components and events, providing
+ * a unified interface for game logic. It orchestrates the update cycle
+ * and exposes access to:
+ *  - EntityManager
+ *  - ComponentManager
+ *  - SystemManager
+ *  - EventBus
  */
 class World
 {
@@ -46,7 +40,9 @@ public:
   World() = default;
   ~World() = default;
 
-  // ========== Entity Management ==========
+  // ============================================================
+  // =============== ENTITY MANAGEMENT ==========================
+  // ============================================================
 
   [[nodiscard]] Entity createEntity()
   {
@@ -65,11 +61,19 @@ public:
     m_entityManager.destroyEntity(entity);
   }
 
-  [[nodiscard]] bool isAlive(Entity entity) const { return m_entityManager.isAlive(entity); }
+  [[nodiscard]] bool isAlive(Entity entity) const
+  {
+    return m_entityManager.isAlive(entity);
+  }
 
-  [[nodiscard]] std::size_t getEntityCount() const { return m_entityManager.getAliveCount(); }
+  [[nodiscard]] std::size_t getEntityCount() const
+  {
+    return m_entityManager.getAliveCount();
+  }
 
-  // ========== System Management ==========
+  // ============================================================
+  // ================= SYSTEM MANAGEMENT =========================
+  // ============================================================
 
   template <typename T, typename... Args>
   T &registerSystem(Args &&...args)
@@ -101,25 +105,34 @@ public:
     m_systemManager.removeSystem<T>();
   }
 
-  void update(float deltaTime) { m_systemManager.update(*this, deltaTime); }
+  void update(float deltaTime)
+  {
+    m_systemManager.update(*this, deltaTime);
+  }
 
-  [[nodiscard]] std::size_t getSystemCount() const noexcept { return m_systemManager.getSystemCount(); }
+  [[nodiscard]] std::size_t getSystemCount() const noexcept
+  {
+    return m_systemManager.getSystemCount();
+  }
 
-  void clearSystems() noexcept { m_systemManager.clear(); }
+  void clearSystems() noexcept
+  {
+    m_systemManager.clear();
+  }
 
-  // ========== Component Management ==========
+  // ============================================================
+  // ================= COMPONENT MANAGEMENT ======================
+  // ============================================================
 
   template <typename T>
   void addComponent(Entity entity, T component)
   {
     m_componentManager.addComponent(entity, std::move(component));
 
-    // Update signature in EntityManager (single source of truth)
     ComponentSignature signature = m_entityManager.getSignature(entity);
     signature.set(ecs::getComponentId<T>());
     m_entityManager.setSignature(entity, signature);
 
-    // Notify systems
     m_systemManager.onEntitySignatureChanged(entity, signature);
   }
 
@@ -146,12 +159,10 @@ public:
   {
     m_componentManager.removeComponent<T>(entity);
 
-    // Update signature in EntityManager (single source of truth)
     ComponentSignature signature = m_entityManager.getSignature(entity);
     signature.reset(ecs::getComponentId<T>());
     m_entityManager.setSignature(entity, signature);
 
-    // Notify systems
     m_systemManager.onEntitySignatureChanged(entity, signature);
   }
 
@@ -159,11 +170,9 @@ public:
   {
     m_componentManager.removeAllComponents(entity);
 
-    // Reset signature in EntityManager (single source of truth)
-    ComponentSignature emptySignature;
+    ComponentSignature emptySignature{};
     m_entityManager.setSignature(entity, emptySignature);
 
-    // Notify systems
     m_systemManager.onEntitySignatureChanged(entity, emptySignature);
   }
 
@@ -172,9 +181,38 @@ public:
     return m_entityManager.getSignature(entity);
   }
 
+  // ============================================================
+  // ====================== EVENT BUS ===========================
+  // ============================================================
+
   /**
-   * @brief Filters entities by component signature (bitwise matching)
+   * @brief Subscribe to an event type T
    */
+  template <typename T>
+  EventListenerHandle subscribeEvent(std::function<void(const T &)> callback)
+  {
+    return m_eventBus.subscribe<T>(std::move(callback));
+  }
+
+  /**
+   * @brief Emit an event to all listeners
+   */
+  template <typename T>
+  void emitEvent(const T &event)
+  {
+    m_eventBus.emit<T>(event);
+  }
+
+  /**
+   * @brief Access the EventBus directly (advanced usage)
+   */
+  [[nodiscard]] EventBus &getEventBus() { return m_eventBus; }
+  [[nodiscard]] const EventBus &getEventBus() const { return m_eventBus; }
+
+  // ============================================================
+  // ====================== ENTITY QUERIES ======================
+  // ============================================================
+
   void getEntitiesWithSignature(const ComponentSignature &signature, std::vector<Entity> &entities) const
   {
     entities.clear();
@@ -196,6 +234,9 @@ private:
   EntityManager m_entityManager;
   ComponentManager m_componentManager;
   SystemManager m_systemManager;
+
+  // NEW:
+  EventBus m_eventBus;
 };
 
 } // namespace ecs
