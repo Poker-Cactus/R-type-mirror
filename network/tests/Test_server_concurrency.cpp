@@ -6,8 +6,8 @@
 */
 
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
-#include "asioClient.hpp"
-#include "asioServer.hpp"
+#include "AsioClient.hpp"
+#include "AsioServer.hpp"
 #include <atomic>
 #include <chrono>
 #include <doctest/doctest.h>

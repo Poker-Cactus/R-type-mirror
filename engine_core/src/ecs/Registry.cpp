@@ -2,17 +2,17 @@
 ** EPITECH PROJECT, 2025
 ** R-Type
 ** File description:
-** Registry implementation
+** Registry.cpp
 */
 
-#include "ecs/Registry.hpp"
+#include "../../include/ecs/Registry.hpp"
 
-namespace ECS
+namespace rtype::ecs
 {
 
 std::size_t Registry::createEntity()
 {
-    return _nextEntityId++;
+    return m_nextEntityId++;
 }
 
-} // namespace ECS
+} // namespace rtype::ecs

@@ -2,27 +2,50 @@
 ** EPITECH PROJECT, 2025
 ** R-type-mirror
 ** File description:
-** IPacketHandler.hpp
+** IPacketHandler.hpp - Packet serialization interface
 */
 
-#pragma once
+#ifndef I_PACKET_HANDLER_HPP_
+#define I_PACKET_HANDLER_HPP_
 
-#include "../../common/include/common.hpp"
-#include "GameMessage.capnp.h"
 #include <array>
-#include <capnp/message.h>
-#include <capnp/serialize.h>
-#include <kj/std/iostream.h>
-#include <span>
+#include <cstdint>
 #include <string>
 #include <vector>
 
+#include "../../common/include/Common.hpp"
+#include "GameMessage.capnp.h"
+#include <capnp/message.h>
+#include <capnp/serialize.h>
+#include <kj/std/iostream.h>
+
+/**
+ * @brief Interface for packet serialization/deserialization
+ *
+ * Defines contract for converting between message strings and byte arrays.
+ */
 class IPacketHandler
 {
   public:
     virtual ~IPacketHandler() = default;
 
-    virtual std::vector<uint8_t> serialize(const std::string &data) const = 0;
+    /**
+     * @brief Serialize a message string to bytes
+     *
+     * @param data The message string
+     * @return Vector of serialized bytes
+     */
+    virtual std::vector<std::uint8_t> serialize(const std::string &data) const = 0;
+
+    /**
+     * @brief Deserialize bytes to a message string
+     *
+     * @param recvBuffer The receive buffer
+     * @param bytesTransferred Number of bytes received
+     * @return Deserialized message string
+     */
     virtual std::string deserialize(const std::array<char, BUFFER_SIZE> &recvBuffer,
-                                    const std::size_t bytes_transferred) const = 0;
+                                    std::size_t bytesTransferred) const = 0;
 };
+
+#endif // I_PACKET_HANDLER_HPP_

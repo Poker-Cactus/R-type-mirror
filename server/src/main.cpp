@@ -5,8 +5,8 @@
 ** main.cpp
 */
 
-#include "../../network/include/asioServer.hpp"
-#include "../include/server.hpp"
+#include "../../network/include/AsioServer.hpp"
+#include "../include/Server.hpp"
 #include <iostream>
 
 int main()

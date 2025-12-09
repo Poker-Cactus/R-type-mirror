@@ -2,7 +2,7 @@ project(client)
 
 add_executable(client
     src/main.cpp
-    src/client.cpp
+    src/Client.cpp
 )
 
 target_include_directories(client PRIVATE

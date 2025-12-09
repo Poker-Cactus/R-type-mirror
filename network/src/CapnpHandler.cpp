@@ -2,12 +2,12 @@
 ** EPITECH PROJECT, 2025
 ** R-type-mirror
 ** File description:
-** server.cpp
+** CapnpHandler.cpp
 */
 
-#include "../include/capnpHandler.hpp"
+#include "../include/CapnpHandler.hpp"
 
-std::vector<uint8_t> CapnpHandler::serialize(const std::string &data) const
+std::vector<std::uint8_t> CapnpHandler::serialize(const std::string &data) const
 {
     capnp::MallocMessageBuilder message;
     auto netMsg = message.initRoot<NetworkMessage>();
@@ -17,11 +17,11 @@ std::vector<uint8_t> CapnpHandler::serialize(const std::string &data) const
     capnp::writeMessage(output, message);
 
     auto arr = output.getArray();
-    return std::vector<uint8_t>(arr.begin(), arr.end());
+    return std::vector<std::uint8_t>(arr.begin(), arr.end());
 }
 
 std::string CapnpHandler::deserialize(const std::array<char, BUFFER_SIZE> &recvBuffer,
-                                      const std::size_t bytesTransferred) const
+                                      std::size_t bytesTransferred) const
 {
     if (bytesTransferred == 0) {
         throw std::runtime_error("Empty buffer received");
