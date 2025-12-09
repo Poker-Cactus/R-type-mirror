@@ -8,9 +8,16 @@
 #ifndef ENGINECORE_ECS_COMPONENTS_VELOCITY_HPP
 #define ENGINECORE_ECS_COMPONENTS_VELOCITY_HPP
 
-struct Velocity {
+#include "IComponent.hpp"
+
+namespace ecs
+{
+struct Velocity : public IComponent {
   float dx;
   float dy;
+
+  [[nodiscard]] nlohmann::json toJson() const override { return {{"dx", dx}, {"dy", dy}}; }
 };
+} // namespace ecs
 
 #endif // ENGINECORE_ECS_COMPONENTS_VELOCITY_HPP

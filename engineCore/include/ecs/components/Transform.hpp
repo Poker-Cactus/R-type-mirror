@@ -5,14 +5,26 @@
 ** Transform.hpp
 */
 
-#ifndef ENGINECORE_ECS_COMPONENTS_TRANSFORM_HPP
-#define ENGINECORE_ECS_COMPONENTS_TRANSFORM_HPP
+#ifndef ECS_COMPONENTS_TRANSFORM_HPP_
+#define ECS_COMPONENTS_TRANSFORM_HPP_
 
-struct Transform {
-  float x;
-  float y;
-  float rotation;
-  float scale;
+#include "IComponent.hpp"
+
+namespace ecs
+{
+
+struct Transform : public IComponent {
+  float x = 0.F;
+  float y = 0.F;
+  float rotation = 0.F;
+  float scale = 1.F;
+
+  [[nodiscard]] nlohmann::json toJson() const override
+  {
+    return {{"x", x}, {"y", y}, {"rotation", rotation}, {"scale", scale}};
+  }
 };
 
-#endif // ENGINECORE_ECS_COMPONENTS_TRANSFORM_HPP
+} // namespace ecs
+
+#endif // ECS_COMPONENTS_TRANSFORM_HPP_
