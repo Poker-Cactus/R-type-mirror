@@ -9,20 +9,21 @@
 #ifndef CAPNP_VERSION
 #error "CAPNP_VERSION is not defined, is capnp/generated-header-support.h missing?"
 #elif CAPNP_VERSION != 1000001
-#error "Version mismatch between generated code and library headers.  You must use the same version of the Cap'n Proto compiler and library."
+#error                                                                                                                 \
+  "Version mismatch between generated code and library headers.  You must use the same version of the Cap'n Proto compiler and library."
 #endif
-
 
 CAPNP_BEGIN_HEADER
 
-namespace capnp {
-namespace schemas {
+namespace capnp
+{
+namespace schemas
+{
 
 CAPNP_DECLARE_SCHEMA(f4916bfef19ae783);
 
-}  // namespace schemas
-}  // namespace capnp
-
+} // namespace schemas
+} // namespace capnp
 
 struct NetworkMessage {
   NetworkMessage() = delete;
@@ -33,33 +34,30 @@ struct NetworkMessage {
 
   struct _capnpPrivate {
     CAPNP_DECLARE_STRUCT_HEADER(f4916bfef19ae783, 0, 1)
-    #if !CAPNP_LITE
-    static constexpr ::capnp::_::RawBrandedSchema const* brand() { return &schema->defaultBrand; }
-    #endif  // !CAPNP_LITE
+#if !CAPNP_LITE
+    static constexpr ::capnp::_::RawBrandedSchema const *brand() { return &schema->defaultBrand; }
+#endif // !CAPNP_LITE
   };
 };
 
 // =======================================================================================
 
-class NetworkMessage::Reader {
+class NetworkMessage::Reader
+{
 public:
   typedef NetworkMessage Reads;
 
   Reader() = default;
-  inline explicit Reader(::capnp::_::StructReader base): _reader(base) {}
+  inline explicit Reader(::capnp::_::StructReader base) : _reader(base) {}
 
-  inline ::capnp::MessageSize totalSize() const {
-    return _reader.totalSize().asPublic();
-  }
+  inline ::capnp::MessageSize totalSize() const { return _reader.totalSize().asPublic(); }
 
 #if !CAPNP_LITE
-  inline ::kj::StringTree toString() const {
-    return ::capnp::_::structString(_reader, *_capnpPrivate::brand());
-  }
-#endif  // !CAPNP_LITE
+  inline ::kj::StringTree toString() const { return ::capnp::_::structString(_reader, *_capnpPrivate::brand()); }
+#endif // !CAPNP_LITE
 
   inline bool hasMessageType() const;
-  inline  ::capnp::Text::Reader getMessageType() const;
+  inline ::capnp::Text::Reader getMessageType() const;
 
 private:
   ::capnp::_::StructReader _reader;
@@ -73,28 +71,29 @@ private:
   friend class ::capnp::Orphanage;
 };
 
-class NetworkMessage::Builder {
+class NetworkMessage::Builder
+{
 public:
   typedef NetworkMessage Builds;
 
-  Builder() = delete;  // Deleted to discourage incorrect usage.
-                       // You can explicitly initialize to nullptr instead.
+  Builder() = delete; // Deleted to discourage incorrect usage.
+                      // You can explicitly initialize to nullptr instead.
   inline Builder(decltype(nullptr)) {}
-  inline explicit Builder(::capnp::_::StructBuilder base): _builder(base) {}
+  inline explicit Builder(::capnp::_::StructBuilder base) : _builder(base) {}
   inline operator Reader() const { return Reader(_builder.asReader()); }
   inline Reader asReader() const { return *this; }
 
   inline ::capnp::MessageSize totalSize() const { return asReader().totalSize(); }
 #if !CAPNP_LITE
   inline ::kj::StringTree toString() const { return asReader().toString(); }
-#endif  // !CAPNP_LITE
+#endif // !CAPNP_LITE
 
   inline bool hasMessageType();
-  inline  ::capnp::Text::Builder getMessageType();
-  inline void setMessageType( ::capnp::Text::Reader value);
-  inline  ::capnp::Text::Builder initMessageType(unsigned int size);
-  inline void adoptMessageType(::capnp::Orphan< ::capnp::Text>&& value);
-  inline ::capnp::Orphan< ::capnp::Text> disownMessageType();
+  inline ::capnp::Text::Builder getMessageType();
+  inline void setMessageType(::capnp::Text::Reader value);
+  inline ::capnp::Text::Builder initMessageType(unsigned int size);
+  inline void adoptMessageType(::capnp::Orphan<::capnp::Text> &&value);
+  inline ::capnp::Orphan<::capnp::Text> disownMessageType();
 
 private:
   ::capnp::_::StructBuilder _builder;
@@ -106,13 +105,13 @@ private:
 };
 
 #if !CAPNP_LITE
-class NetworkMessage::Pipeline {
+class NetworkMessage::Pipeline
+{
 public:
   typedef NetworkMessage Pipelines;
 
-  inline Pipeline(decltype(nullptr)): _typeless(nullptr) {}
-  inline explicit Pipeline(::capnp::AnyPointer::Pipeline&& typeless)
-      : _typeless(kj::mv(typeless)) {}
+  inline Pipeline(decltype(nullptr)) : _typeless(nullptr) {}
+  inline explicit Pipeline(::capnp::AnyPointer::Pipeline &&typeless) : _typeless(kj::mv(typeless)) {}
 
 private:
   ::capnp::AnyPointer::Pipeline _typeless;
@@ -120,43 +119,47 @@ private:
   template <typename, ::capnp::Kind>
   friend struct ::capnp::ToDynamic_;
 };
-#endif  // !CAPNP_LITE
+#endif // !CAPNP_LITE
 
 // =======================================================================================
 
-inline bool NetworkMessage::Reader::hasMessageType() const {
-  return !_reader.getPointerField(
-      ::capnp::bounded<0>() * ::capnp::POINTERS).isNull();
+inline bool NetworkMessage::Reader::hasMessageType() const
+{
+  return !_reader.getPointerField(::capnp::bounded<0>() * ::capnp::POINTERS).isNull();
 }
-inline bool NetworkMessage::Builder::hasMessageType() {
-  return !_builder.getPointerField(
-      ::capnp::bounded<0>() * ::capnp::POINTERS).isNull();
+inline bool NetworkMessage::Builder::hasMessageType()
+{
+  return !_builder.getPointerField(::capnp::bounded<0>() * ::capnp::POINTERS).isNull();
 }
-inline  ::capnp::Text::Reader NetworkMessage::Reader::getMessageType() const {
-  return ::capnp::_::PointerHelpers< ::capnp::Text>::get(_reader.getPointerField(
-      ::capnp::bounded<0>() * ::capnp::POINTERS));
+inline ::capnp::Text::Reader NetworkMessage::Reader::getMessageType() const
+{
+  return ::capnp::_::PointerHelpers<::capnp::Text>::get(
+    _reader.getPointerField(::capnp::bounded<0>() * ::capnp::POINTERS));
 }
-inline  ::capnp::Text::Builder NetworkMessage::Builder::getMessageType() {
-  return ::capnp::_::PointerHelpers< ::capnp::Text>::get(_builder.getPointerField(
-      ::capnp::bounded<0>() * ::capnp::POINTERS));
+inline ::capnp::Text::Builder NetworkMessage::Builder::getMessageType()
+{
+  return ::capnp::_::PointerHelpers<::capnp::Text>::get(
+    _builder.getPointerField(::capnp::bounded<0>() * ::capnp::POINTERS));
 }
-inline void NetworkMessage::Builder::setMessageType( ::capnp::Text::Reader value) {
-  ::capnp::_::PointerHelpers< ::capnp::Text>::set(_builder.getPointerField(
-      ::capnp::bounded<0>() * ::capnp::POINTERS), value);
+inline void NetworkMessage::Builder::setMessageType(::capnp::Text::Reader value)
+{
+  ::capnp::_::PointerHelpers<::capnp::Text>::set(_builder.getPointerField(::capnp::bounded<0>() * ::capnp::POINTERS),
+                                                 value);
 }
-inline  ::capnp::Text::Builder NetworkMessage::Builder::initMessageType(unsigned int size) {
-  return ::capnp::_::PointerHelpers< ::capnp::Text>::init(_builder.getPointerField(
-      ::capnp::bounded<0>() * ::capnp::POINTERS), size);
+inline ::capnp::Text::Builder NetworkMessage::Builder::initMessageType(unsigned int size)
+{
+  return ::capnp::_::PointerHelpers<::capnp::Text>::init(
+    _builder.getPointerField(::capnp::bounded<0>() * ::capnp::POINTERS), size);
 }
-inline void NetworkMessage::Builder::adoptMessageType(
-    ::capnp::Orphan< ::capnp::Text>&& value) {
-  ::capnp::_::PointerHelpers< ::capnp::Text>::adopt(_builder.getPointerField(
-      ::capnp::bounded<0>() * ::capnp::POINTERS), kj::mv(value));
+inline void NetworkMessage::Builder::adoptMessageType(::capnp::Orphan<::capnp::Text> &&value)
+{
+  ::capnp::_::PointerHelpers<::capnp::Text>::adopt(_builder.getPointerField(::capnp::bounded<0>() * ::capnp::POINTERS),
+                                                   kj::mv(value));
 }
-inline ::capnp::Orphan< ::capnp::Text> NetworkMessage::Builder::disownMessageType() {
-  return ::capnp::_::PointerHelpers< ::capnp::Text>::disown(_builder.getPointerField(
-      ::capnp::bounded<0>() * ::capnp::POINTERS));
+inline ::capnp::Orphan<::capnp::Text> NetworkMessage::Builder::disownMessageType()
+{
+  return ::capnp::_::PointerHelpers<::capnp::Text>::disown(
+    _builder.getPointerField(::capnp::bounded<0>() * ::capnp::POINTERS));
 }
-
 
 CAPNP_END_HEADER

@@ -20,17 +20,17 @@
  */
 class Server
 {
-  public:
-    /**
-     * @brief Construct a server
-     *
-     * @param networkManager The network manager to use
-     */
-    explicit Server(std::shared_ptr<INetworkManager> networkManager);
-    ~Server();
+public:
+  /**
+   * @brief Construct a server
+   *
+   * @param networkManager The network manager to use
+   */
+  explicit Server(std::shared_ptr<INetworkManager> networkManager);
+  ~Server();
 
-  private:
-    std::shared_ptr<INetworkManager> m_networkManager;
+private:
+  std::shared_ptr<INetworkManager> m_networkManager;
 };
 
 #endif // SERVER_HPP_

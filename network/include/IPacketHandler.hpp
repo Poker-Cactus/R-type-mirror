@@ -26,26 +26,26 @@
  */
 class IPacketHandler
 {
-  public:
-    virtual ~IPacketHandler() = default;
+public:
+  virtual ~IPacketHandler() = default;
 
-    /**
-     * @brief Serialize a message string to bytes
-     *
-     * @param data The message string
-     * @return Vector of serialized bytes
-     */
-    virtual std::vector<std::uint8_t> serialize(const std::string &data) const = 0;
+  /**
+   * @brief Serialize a message string to bytes
+   *
+   * @param data The message string
+   * @return Vector of serialized bytes
+   */
+  virtual std::vector<std::uint8_t> serialize(const std::string &data) const = 0;
 
-    /**
-     * @brief Deserialize bytes to a message string
-     *
-     * @param recvBuffer The receive buffer
-     * @param bytesTransferred Number of bytes received
-     * @return Deserialized message string
-     */
-    virtual std::string deserialize(const std::array<char, BUFFER_SIZE> &recvBuffer,
-                                    std::size_t bytesTransferred) const = 0;
+  /**
+   * @brief Deserialize bytes to a message string
+   *
+   * @param recvBuffer The receive buffer
+   * @param bytesTransferred Number of bytes received
+   * @return Deserialized message string
+   */
+  virtual std::string deserialize(const std::array<char, BUFFER_SIZE> &recvBuffer,
+                                  std::size_t bytesTransferred) const = 0;
 };
 
 #endif // I_PACKET_HANDLER_HPP_
