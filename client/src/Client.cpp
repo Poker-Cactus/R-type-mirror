@@ -6,11 +6,13 @@
 */
 
 #include "../include/Client.hpp"
+#include <csignal>
 
 std::atomic<bool> Client::g_running{true};
 
 Client::Client(std::shared_ptr<INetworkManager> networkManager) : m_networkManager(networkManager)
 {
+  std::signal(SIGINT, Client::signalHandler);
   if (!networkManager) {
     std::cout << "Invalid Network Manager provided to Client." << std::endl;
     return;
@@ -37,7 +39,6 @@ void Client::loop()
   m_networkManager->send(
     std::span<const std::byte>(reinterpret_cast<const std::byte *>(serialized.data()), serialized.size()), 0);
   std::this_thread::sleep_for(std::chrono::milliseconds(16));
-}
 }
 
 void Client::signalHandler(int signum)

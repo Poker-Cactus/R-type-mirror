@@ -6,6 +6,7 @@
 */
 
 #include "../include/AsioClient.hpp"
+#include "../include/CapnpHandler.hpp"
 
 AsioClient::AsioClient(const std::string &host, const std::string &port)
     : ANetworkManager(std::make_shared<CapnpHandler>()), m_strand(asio::make_strand(m_ioContext)),
@@ -65,7 +66,7 @@ void AsioClient::receive()
       if (!error && bytesTransferred > 0) {
         std::cout << "[Client] Received " << bytesTransferred << " bytes" << std::endl;
         try {
-          const std::string data = m_packetHandler->deserialize(*recvBuffer, bytesTransferred);
+          const std::string data = getPacketHandler()->deserialize(*recvBuffer, bytesTransferred);
           std::cout << "[Client] Deserialized message: " << data << std::endl;
           std::vector<std::byte> bytes = CapnpHandler::stringToBytes(data);
           NetworkPacket messageQueue(bytes, 0);

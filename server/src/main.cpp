@@ -14,6 +14,7 @@ int main()
 {
   try {
     Server server(std::make_shared<AsioServer>(4241));
+    server.loop();
   } catch (const std::exception &e) {
     std::cerr << "Exception: " << e.what() << "\n";
   }

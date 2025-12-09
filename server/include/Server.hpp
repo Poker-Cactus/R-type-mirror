@@ -33,7 +33,7 @@ public:
   /**
    * @brief Run the server main loop
    */
-  void run();
+  void loop();
 
   /**
    * @brief Signal handler to stop the server

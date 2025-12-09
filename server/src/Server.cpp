@@ -6,12 +6,14 @@
 */
 
 #include "../include/Server.hpp"
+#include <csignal>
 #include <iostream>
 
 std::atomic<bool> Server::g_running{true};
 
 Server::Server(std::shared_ptr<INetworkManager> networkManager) : m_networkManager(networkManager)
 {
+  std::signal(SIGINT, Server::signalHandler);
   if (!networkManager) {
     std::cout << "Invalid Network Manager provided to Server." << std::endl;
     return;
@@ -21,7 +23,7 @@ Server::Server(std::shared_ptr<INetworkManager> networkManager) : m_networkManag
 
 Server::~Server() {}
 
-void Server::run()
+void Server::loop()
 {
   while (g_running) {
     NetworkPacket msg;
@@ -30,7 +32,6 @@ void Server::run()
       std::cout << "Data: " << data << std::endl;
     }
   }
-}
 }
 
 void Server::signalHandler(int signum)
