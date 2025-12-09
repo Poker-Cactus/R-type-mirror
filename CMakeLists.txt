@@ -14,6 +14,7 @@ find_package(SDL2 REQUIRED)
 find_package(asio REQUIRED)
 find_package(CapnProto REQUIRED)
 find_package(doctest REQUIRED)
+find_package(nlohmann_json REQUIRED)
 
 # Add subdirectories
 add_subdirectory(engineCore)

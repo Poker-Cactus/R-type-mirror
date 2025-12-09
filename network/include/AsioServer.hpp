@@ -42,7 +42,7 @@ public:
   void send(std::span<const std::byte> data, const std::uint32_t &targetEndpointId) override;
   void start() override;
   void stop() override;
-  bool poll(NetworkPacket &msg);
+  bool poll(NetworkPacket &msg) override;
 
 private:
   void receive();

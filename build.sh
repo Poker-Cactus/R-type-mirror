@@ -55,10 +55,11 @@ print_building() {
 # Check if clean is requested
 if [ "$1" == "clean" ]; then
     echo -e "\033[1;34m🧹 MrPropre au charbon 🧹\033[0m"
-    rm -rf build CMakeUserPresets.json
+    rm -rf build CMakeUserPresets.json CMakePresets.json
     echo -e "${GRAY}\n  ======== Cleaning ========${RESET}"
     echo -e "${GRAY}  Delete folder build/${RESET}"
-    echo -e "${GRAY}  Delete file CMakeUserPresets.json\n${RESET}"
+    echo -e "${GRAY}  Delete file CMakeUserPresets.json${RESET}"
+    echo -e "${GRAY}  Delete file CMakePresets.json\n${RESET}"
     echo -e "\033[1;33m🪄  Tutty Propo 🪄\033[0m"
     exit 0
 fi
@@ -654,6 +655,20 @@ if [ $? -ne 0 ]; then
     print_error "Conan installation failed!"
     exit 1
 fi
+
+# Fix the toolchain file path in build/CMakePresets.json to be absolute
+if [ -f "build/CMakePresets.json" ]; then
+    if command -v sed &> /dev/null; then
+        if [[ "$OSTYPE" == "darwin"* ]]; then
+            # macOS sed - use absolute path for toolchain file
+            sed -i '' 's|"toolchainFile": "conan_toolchain.cmake"|"toolchainFile": "/Users/neauneau/Documents/tek3/rtype/build/conan_toolchain.cmake"|g' build/CMakePresets.json
+        else
+            # Linux sed
+            sed -i 's|"toolchainFile": "conan_toolchain.cmake"|"toolchainFile": "'$(pwd)'/build/conan_toolchain.cmake"|g' build/CMakePresets.json
+        fi
+    fi
+fi
+
 print_success "Dependencies installed!"
 echo ""
 

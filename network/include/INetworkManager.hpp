@@ -19,7 +19,7 @@
 /**
  * @brief Network event types
  */
-enum class EventType { DATA, CONNECT, DISCONNECT };
+enum class EventType : std::uint8_t { DATA, CONNECT, DISCONNECT };
 
 /**
  * @brief Network event structure

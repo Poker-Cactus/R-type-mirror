@@ -2,6 +2,8 @@ cmake_minimum_required(VERSION 3.14)
 
 project(engineCore)
 
+find_package(nlohmann_json REQUIRED)
+
 # If building standalone and doctest is in parent project's build dir
 if(NOT CMAKE_PREFIX_PATH AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/../build")
     list(APPEND CMAKE_PREFIX_PATH "${CMAKE_CURRENT_SOURCE_DIR}/../build")
@@ -17,6 +19,8 @@ add_library(engineCore INTERFACE)
 target_include_directories(engineCore INTERFACE
     ${CMAKE_CURRENT_SOURCE_DIR}/include/
 )
+
+target_link_libraries(engineCore INTERFACE nlohmann_json::nlohmann_json)
 
 # Note: Strict compilation flags are applied at the test level for header-only library
 
