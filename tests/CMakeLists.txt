@@ -3,7 +3,7 @@ project(tests)
 find_package(doctest REQUIRED)
 
 add_executable(unit_tests
-    test_server_concurrency.cpp
+    Test_server_concurrency.cpp
 )
 
 target_include_directories(unit_tests PRIVATE

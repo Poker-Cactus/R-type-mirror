@@ -8,6 +8,7 @@
 #ifndef SERVER_HPP_
 #define SERVER_HPP_
 
+#include <atomic>
 #include <memory>
 
 #include "../../common/include/Common.hpp"
@@ -28,6 +29,13 @@ class Server
      */
     explicit Server(std::shared_ptr<INetworkManager> networkManager);
     ~Server();
+
+    /**
+     * @brief Run the server main loop
+     *
+     * @param running Atomic flag to control the loop
+     */
+    void run(const std::atomic<bool> &running);
 
   private:
     std::shared_ptr<INetworkManager> m_networkManager;

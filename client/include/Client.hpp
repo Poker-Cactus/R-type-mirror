@@ -8,6 +8,7 @@
 #ifndef CLIENT_HPP_
 #define CLIENT_HPP_
 
+#include <atomic>
 #include <iostream>
 #include <memory>
 #include <thread>
@@ -33,8 +34,10 @@ class Client
 
     /**
      * @brief Run the client main loop
+     *
+     * @param running Atomic flag to control the loop
      */
-    void loop();
+    void loop(const std::atomic<bool> &running);
 
   private:
     std::shared_ptr<INetworkManager> m_networkManager;

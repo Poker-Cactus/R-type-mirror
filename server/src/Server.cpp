@@ -15,9 +15,13 @@ Server::Server(std::shared_ptr<INetworkManager> networkManager) : m_networkManag
         return;
     }
     networkManager->start();
-    while (true) {
+}
+
+void Server::run(const std::atomic<bool> &running)
+{
+    while (running) {
         NetworkPacket msg;
-        if (networkManager->poll(msg)) {
+        if (m_networkManager->poll(msg)) {
             std::string data(reinterpret_cast<const char *>(msg.getData().data()), msg.getData().size());
             std::cout << "Data: " << data << std::endl;
         }

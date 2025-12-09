@@ -16,9 +16,9 @@ Client::Client(std::shared_ptr<INetworkManager> networkManager) : m_networkManag
     m_networkManager->start();
 }
 
-void Client::loop()
+void Client::loop(const std::atomic<bool> &running)
 {
-    while (true) {
+    while (running) {
         NetworkPacket msg;
         while (m_networkManager->poll(msg)) {
             std::string data(reinterpret_cast<const char *>(msg.getData().data()), msg.getData().size());
