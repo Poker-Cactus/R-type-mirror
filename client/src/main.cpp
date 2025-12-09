@@ -5,8 +5,8 @@
 ** Client entry point
 */
 
-#include "../../network/include/asioClient.hpp"
-#include "../include/client.hpp"
+#include "../../network/include/AsioClient.hpp"
+#include "../include/Client.hpp"
 
 int main(UNUSED int argc, char **argv)
 {

@@ -2,13 +2,13 @@
 ** EPITECH PROJECT, 2025
 ** R-type-mirror
 ** File description:
-** server.cpp
+** Server.cpp
 */
 
-#include "../include/server.hpp"
+#include "../include/Server.hpp"
 #include <iostream>
 
-Server::Server(std::shared_ptr<INetworkManager> networkManager) : _networkManager(networkManager)
+Server::Server(std::shared_ptr<INetworkManager> networkManager) : m_networkManager(networkManager)
 {
     if (!networkManager) {
         std::cout << "Invalid Network Manager provided to Server." << std::endl;
