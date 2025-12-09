@@ -6,7 +6,7 @@ project(server)
 
 add_executable(server
     src/main.cpp
-    src/server.cpp
+    src/Server.cpp
 )
 
 target_include_directories(server PRIVATE

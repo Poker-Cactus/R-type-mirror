@@ -2,21 +2,21 @@
 ** EPITECH PROJECT, 2025
 ** R-Type
 ** File description:
-** Registry header
+** Registry.hpp - Main ECS Registry
 */
 
-#ifndef REGISTRY_HPP
-#define REGISTRY_HPP
+#ifndef REGISTRY_HPP_
+#define REGISTRY_HPP_
 
 #include <cstddef>
 
-namespace ECS
+namespace rtype::ecs
 {
 
 /**
  * @brief Main ECS Registry
  *
- * Manages entities, components and systems
+ * Manages entities, components and systems.
  */
 class Registry
 {
@@ -34,14 +34,15 @@ class Registry
 
     /**
      * @brief Create a new entity
+     *
      * @return Entity ID
      */
     std::size_t createEntity();
 
   private:
-    std::size_t _nextEntityId{0};
+    std::size_t m_nextEntityId{0};
 };
 
-} // namespace ECS
+} // namespace rtype::ecs
 
-#endif // REGISTRY_HPP
+#endif // REGISTRY_HPP_

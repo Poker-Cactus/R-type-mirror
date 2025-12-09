@@ -7,4 +7,4 @@
 
 #include "../include/ANetworkManager.hpp"
 
-ANetworkManager::ANetworkManager(std::shared_ptr<IPacketHandler> packetHandler) : _packetHandler(packetHandler) {}
+ANetworkManager::ANetworkManager(std::shared_ptr<IPacketHandler> packetHandler) : m_packetHandler(packetHandler) {}
