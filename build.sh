@@ -493,6 +493,44 @@ if [ "$1" == "test" ]; then
     exit 0
 fi
 
+# Check if coverage is requested
+if [ "$1" == "coverage" ]; then
+    print_step "${CHECK}" "Running coverage..."
+
+    # Ensure we are in Debug mode
+    print_step "${GEAR}" "Configuring CMake in Debug mode..."
+    conan install . --output-folder=build --build=missing --profile=conan_profile -s build_type=Debug
+
+    # Source the build environment to make kcov available
+    if [ -f "build/conanbuild.sh" ]; then
+        source build/conanbuild.sh
+    fi
+
+    cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -DCMAKE_TOOLCHAIN_FILE=conan_toolchain.cmake
+
+    print_building "tests"
+    cmake --build build --target unit_tests
+
+    print_step "${ROCKET}" "Generating coverage report..."
+    cmake --build build --target coverage
+
+    if [ $? -eq 0 ]; then
+        print_success "Coverage report generated at build/coverage/index.html"
+        # Try to open the report
+        if command -v xdg-open &> /dev/null; then
+            xdg-open build/coverage/index.html
+        elif command -v open &> /dev/null; then
+            open build/coverage/index.html
+        else
+            echo -e "${YELLOW}Open build/coverage/index.html to view the report${RESET}"
+        fi
+    else
+        print_error "Coverage generation failed!"
+        exit 1
+    fi
+    exit 0
+fi
+
 # Check if example is requested
 if [ "$1" == "example" ]; then
     EXAMPLE_NAME="$2"
@@ -625,9 +663,25 @@ print_success "Dependencies installed!"
 echo ""
 
 print_step "${GEAR}" "Configuring CMake..."
-cmake --preset conan-release > /dev/null 2>&1
-if [ $? -ne 0 ]; then
+cmake --preset conan-release > /tmp/cmake_config.log 2>&1
+CMAKE_STATUS=$?
+
+# If CMake failed, check if it's due to generator mismatch and retry after cleanup
+if [ $CMAKE_STATUS -ne 0 ]; then
+    if grep -q "Does not match the generator used previously" /tmp/cmake_config.log; then
+        print_step "${CLEAN}" "Cleaning incompatible CMake cache..."
+        rm -f build/CMakeCache.txt
+        rm -rf build/CMakeFiles
+        print_step "${GEAR}" "Retrying CMake configuration..."
+        cmake --preset conan-release > /tmp/cmake_config.log 2>&1
+        CMAKE_STATUS=$?
+    fi
+fi
+
+if [ $CMAKE_STATUS -ne 0 ]; then
     print_error "CMake configuration failed!"
+    echo -e "${YELLOW}Error details:${RESET}"
+    cat /tmp/cmake_config.log
     exit 1
 fi
 print_success "CMake configured!"
