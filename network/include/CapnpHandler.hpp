@@ -37,11 +37,11 @@ public:
   /**
    * @brief Deserialize bytes to string
    *
-   * @param recvBuffer The receive buffer
+   * @param buffer The receive buffer
    * @param bytesTransferred Number of bytes received
    * @return Deserialized message string
    */
-  std::string deserialize(const std::array<char, BUFFER_SIZE> &recvBuffer, std::size_t bytesTransferred) const override;
+  std::string deserialize(const std::array<char, BUFFER_SIZE> &buffer, std::size_t bytesTransferred) const override;
 
   /**
    * @brief Convert string to byte vector
