@@ -3,6 +3,7 @@ sdl/2.28.3
 asio/1.28.0
 capnproto/1.0.1
 doctest/2.4.11
+nlohmann_json/3.11.2
 
 [generators]
 CMakeDeps
