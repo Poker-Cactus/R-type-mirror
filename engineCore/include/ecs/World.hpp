@@ -61,15 +61,9 @@ public:
     m_entityManager.destroyEntity(entity);
   }
 
-  [[nodiscard]] bool isAlive(Entity entity) const
-  {
-    return m_entityManager.isAlive(entity);
-  }
+  [[nodiscard]] bool isAlive(Entity entity) const { return m_entityManager.isAlive(entity); }
 
-  [[nodiscard]] std::size_t getEntityCount() const
-  {
-    return m_entityManager.getAliveCount();
-  }
+  [[nodiscard]] std::size_t getEntityCount() const { return m_entityManager.getAliveCount(); }
 
   // ============================================================
   // ================= SYSTEM MANAGEMENT =========================
@@ -105,20 +99,11 @@ public:
     m_systemManager.removeSystem<T>();
   }
 
-  void update(float deltaTime)
-  {
-    m_systemManager.update(*this, deltaTime);
-  }
+  void update(float deltaTime) { m_systemManager.update(*this, deltaTime); }
 
-  [[nodiscard]] std::size_t getSystemCount() const noexcept
-  {
-    return m_systemManager.getSystemCount();
-  }
+  [[nodiscard]] std::size_t getSystemCount() const noexcept { return m_systemManager.getSystemCount(); }
 
-  void clearSystems() noexcept
-  {
-    m_systemManager.clear();
-  }
+  void clearSystems() noexcept { m_systemManager.clear(); }
 
   // ============================================================
   // ================= COMPONENT MANAGEMENT ======================
