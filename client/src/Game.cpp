@@ -8,7 +8,7 @@
 #include "Game.hpp"
 #include <iostream>
 
-Game::Game() : module(nullptr), renderer(nullptr), isRunning(false), currentState(GameState::MENU) {}
+Game::Game() : module(nullptr), renderer(nullptr), isRunning(false), currentState(GameState::PLAYING) {}
 
 Game::~Game()
 {
@@ -35,6 +35,12 @@ bool Game::init()
 
         menu = std::make_unique<Menu>(renderer);
         menu->init();
+
+        playingState = std::make_unique<PlayingState>(renderer);
+        if (!playingState->init()) {
+            std::cerr << "Failed to initialize playing state" << std::endl;
+            return false;
+        }
 
         isRunning = true;
         return true;
@@ -66,6 +72,11 @@ void Game::shutdown()
         menu.reset();
     }
 
+    if (playingState) {
+        playingState->cleanup();
+        playingState.reset();
+    }
+
     if (module && renderer) {
         module->destroy(renderer);
         renderer = nullptr;
@@ -79,13 +90,39 @@ void Game::processInput()
     if (!renderer->pollEvents()) {
         isRunning = false;
     }
-    if (this->menu && this->currentState == GameState::MENU)
-        this->menu->processInput();
+    
+    switch (currentState) {
+    case GameState::MENU:
+        if (menu) {
+            menu->processInput();
+        }
+        break;
+    case GameState::PLAYING:
+        if (playingState) {
+            playingState->processInput();
+        }
+        break;
+    case GameState::PAUSED:
+        // TODO: handle pause input
+        break;
+    }
 }
 
 void Game::update(float dt)
 {
-    (void)dt;
+    switch (currentState) {
+    case GameState::MENU:
+        // Menu est statique, pas besoin d'update
+        break;
+    case GameState::PLAYING:
+        if (playingState) {
+            playingState->update(dt);
+        }
+        break;
+    case GameState::PAUSED:
+        // Pause ne met pas à jour le jeu
+        break;
+    }
 }
 
 void Game::render()
@@ -99,10 +136,15 @@ void Game::render()
         }
         break;
     case GameState::PLAYING:
-        // TODO: render game
+        if (playingState) {
+            playingState->render();
+        }
         break;
     case GameState::PAUSED:
         // TODO: render pause menu
+        if (playingState) {
+            playingState->render();
+        }
         break;
     }
 

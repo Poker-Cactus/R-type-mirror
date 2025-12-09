@@ -4,6 +4,8 @@ add_executable(client
     src/main.cpp
     src/Game.cpp
     src/Menu.cpp
+    src/PlayingState.cpp
+    src/ParallaxBackground.cpp
 )
 
 target_include_directories(client PRIVATE include)
