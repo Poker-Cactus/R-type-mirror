@@ -16,6 +16,20 @@ target_link_libraries(unit_tests PRIVATE
     doctest::doctest
 )
 
+add_executable(stress_tests
+    Test_server_stress.cpp
+)
+
+target_include_directories(stress_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/network/include
+    ${CMAKE_SOURCE_DIR}/common/include
+)
+
+target_link_libraries(stress_tests PRIVATE
+    network
+    doctest::doctest
+)
+
 find_program(KCOV_PATH kcov)
 
 if(NOT KCOV_PATH)
