@@ -7,24 +7,15 @@
 
 #include "../../network/include/AsioServer.hpp"
 #include "../include/Server.hpp"
-#include <atomic>
 #include <csignal>
 #include <iostream>
 
-std::atomic<bool> g_running{true};
-
-void signalHandler(int signum)
-{
-    (void)signum;
-    g_running = false;
-}
-
 int main()
 {
-    std::signal(SIGINT, signalHandler);
+    std::signal(SIGINT, Server::signalHandler);
     try {
         Server server(std::make_shared<AsioServer>(4241));
-        server.run(g_running);
+        server.run();
     } catch (const std::exception &e) {
         std::cerr << "Exception: " << e.what() << "\n";
     }

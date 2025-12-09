@@ -8,6 +8,8 @@
 #include "../include/Server.hpp"
 #include <iostream>
 
+std::atomic<bool> Server::g_running{true};
+
 Server::Server(std::shared_ptr<INetworkManager> networkManager) : m_networkManager(networkManager)
 {
     if (!networkManager) {
@@ -17,9 +19,11 @@ Server::Server(std::shared_ptr<INetworkManager> networkManager) : m_networkManag
     networkManager->start();
 }
 
-void Server::run(const std::atomic<bool> &running)
+Server::~Server() {}
+
+void Server::run()
 {
-    while (running) {
+    while (g_running) {
         NetworkPacket msg;
         if (m_networkManager->poll(msg)) {
             std::string data(reinterpret_cast<const char *>(msg.getData().data()), msg.getData().size());
@@ -28,4 +32,8 @@ void Server::run(const std::atomic<bool> &running)
     }
 }
 
-Server::~Server() {}
+void Server::signalHandler(int signum)
+{
+    (void)signum;
+    g_running = false;
+}

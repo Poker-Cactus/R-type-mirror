@@ -32,13 +32,19 @@ class Server
 
     /**
      * @brief Run the server main loop
-     *
-     * @param running Atomic flag to control the loop
      */
-    void run(const std::atomic<bool> &running);
+    void run();
+
+    /**
+     * @brief Signal handler to stop the server
+     *
+     * @param signum Signal number
+     */
+    static void signalHandler(int signum);
 
   private:
     std::shared_ptr<INetworkManager> m_networkManager;
+    static std::atomic<bool> g_running;
 };
 
 #endif // SERVER_HPP_

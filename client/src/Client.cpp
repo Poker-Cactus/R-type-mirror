@@ -7,6 +7,8 @@
 
 #include "../include/Client.hpp"
 
+std::atomic<bool> Client::g_running{true};
+
 Client::Client(std::shared_ptr<INetworkManager> networkManager) : m_networkManager(networkManager)
 {
     if (!networkManager) {
@@ -16,9 +18,11 @@ Client::Client(std::shared_ptr<INetworkManager> networkManager) : m_networkManag
     m_networkManager->start();
 }
 
-void Client::loop(const std::atomic<bool> &running)
+Client::~Client() {}
+
+void Client::loop()
 {
-    while (running) {
+    while (g_running) {
         NetworkPacket msg;
         while (m_networkManager->poll(msg)) {
             std::string data(reinterpret_cast<const char *>(msg.getData().data()), msg.getData().size());
@@ -31,4 +35,8 @@ void Client::loop(const std::atomic<bool> &running)
     }
 }
 
-Client::~Client() {}
+void Client::signalHandler(int signum)
+{
+    (void)signum;
+    g_running = false;
+}
