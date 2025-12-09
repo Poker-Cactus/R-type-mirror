@@ -38,7 +38,7 @@ TEST_SUITE("MovementSystem")
 
     // Créer un joueur comme dans le main
     Entity player = world.createEntity();
-    world.addComponent(player, Transform{100.0f, 200.0f, 0.0f});
+    world.addComponent(player, Transform{100.0f, 200.0f, 0.0f, 1.0f});
     world.addComponent(player, Velocity{5.0f, 0.0f});
     world.addComponent(player, Health{100, 100});
 
@@ -92,7 +92,7 @@ TEST_SUITE("MovementSystem")
 
     // Créer un ennemi comme dans le main
     Entity enemy = world.createEntity();
-    world.addComponent(enemy, Transform{500.0f, 300.0f, 0.0f});
+    world.addComponent(enemy, Transform{500.0f, 300.0f, 0.0f, 1.0f});
     world.addComponent(enemy, Velocity{-2.0f, 0.0f});
 
     SUBCASE("Enemy initial position")
@@ -159,16 +159,16 @@ TEST_SUITE("MovementSystem")
 
     // Recréer le scénario complet du main
     Entity player = world.createEntity();
-    world.addComponent(player, Transform{100.0f, 200.0f, 0.0f});
+    world.addComponent(player, Transform{100.0f, 200.0f, 0.0f, 1.0f});
     world.addComponent(player, Velocity{5.0f, 0.0f});
     world.addComponent(player, Health{100, 100});
 
     Entity enemy = world.createEntity();
-    world.addComponent(enemy, Transform{500.0f, 300.0f, 0.0f});
+    world.addComponent(enemy, Transform{500.0f, 300.0f, 0.0f, 1.0f});
     world.addComponent(enemy, Velocity{-2.0f, 0.0f});
 
     Entity background = world.createEntity();
-    world.addComponent(background, Transform{0.0f, 0.0f, 0.0f});
+    world.addComponent(background, Transform{0.0f, 0.0f, 0.0f, 1.0f});
 
     SUBCASE("Only entities with Velocity move")
     {
@@ -220,7 +220,7 @@ TEST_SUITE("MovementSystem")
     world.registerSystem<ecs::MovementSystem>();
 
     Entity entity = world.createEntity();
-    world.addComponent(entity, Transform{0.0f, 0.0f, 0.0f});
+    world.addComponent(entity, Transform{0.0f, 0.0f, 0.0f, 1.0f});
     world.addComponent(entity, Velocity{100.0f, 50.0f});
 
     SUBCASE("Movement at 60 FPS over 1 second")
@@ -249,7 +249,7 @@ TEST_SUITE("MovementSystem")
     world.registerSystem<ecs::MovementSystem>();
 
     Entity entity = world.createEntity();
-    world.addComponent(entity, Transform{0.0f, 0.0f, 0.0f});
+    world.addComponent(entity, Transform{0.0f, 0.0f, 0.0f, 1.0f});
     world.addComponent(entity, Velocity{3.0f, 4.0f}); // Diagonal
 
     SUBCASE("Entity moves diagonally")
@@ -276,7 +276,7 @@ TEST_SUITE("MovementSystem")
     world.registerSystem<ecs::MovementSystem>();
 
     Entity entity = world.createEntity();
-    world.addComponent(entity, Transform{50.0f, 100.0f, 45.0f});
+    world.addComponent(entity, Transform{50.0f, 100.0f, 45.0f, 1.0f});
     world.addComponent(entity, Velocity{0.0f, 0.0f});
 
     SUBCASE("Entity with zero velocity stays still")
@@ -300,7 +300,7 @@ TEST_SUITE("MovementSystem")
     world.registerSystem<ecs::MovementSystem>();
 
     Entity entity = world.createEntity();
-    world.addComponent(entity, Transform{0.0f, 0.0f, 0.0f});
+    world.addComponent(entity, Transform{0.0f, 0.0f, 0.0f, 1.0f});
     world.addComponent(entity, Velocity{10.0f, 0.0f});
 
     SUBCASE("Change velocity during runtime")
@@ -348,7 +348,7 @@ TEST_SUITE("MovementSystem")
     world.registerSystem<ecs::MovementSystem>();
 
     Entity entity = world.createEntity();
-    world.addComponent(entity, Transform{0.0f, 0.0f, 0.0f});
+    world.addComponent(entity, Transform{0.0f, 0.0f, 0.0f, 1.0f});
     world.addComponent(entity, Velocity{1000.0f, 2000.0f});
 
     SUBCASE("Handle large velocity values")
@@ -366,7 +366,7 @@ TEST_SUITE("MovementSystem")
     world.registerSystem<ecs::MovementSystem>();
 
     Entity entity = world.createEntity();
-    world.addComponent(entity, Transform{0.0f, 0.0f, 0.0f});
+    world.addComponent(entity, Transform{0.0f, 0.0f, 0.0f, 1.0f});
     world.addComponent(entity, Velocity{0.1f, 0.1f});
 
     SUBCASE("Small incremental movements maintain precision")
