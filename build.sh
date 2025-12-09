@@ -124,11 +124,6 @@ if [ "$1" == "test" ]; then
         exit 1
     fi
 
-
-    # Always run a full build before tests
-    print_step "🔨" "Running full build before tests..."
-    ./build.sh
-
     # Clean coverage_report before building tests
     if [ -d "build/coverage_report" ]; then
         print_step "🧹" "Cleaning coverage_report directory..."
