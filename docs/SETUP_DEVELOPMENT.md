@@ -40,7 +40,7 @@ git push origin feat/your-feature
 ## Project Structure
 
 ```
-engine_core/    # ECS engine
+engineCore/    # ECS engine
 common/         # Shared components & protocols
 server/         # Game server
 client/         # Game client
