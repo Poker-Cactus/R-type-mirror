@@ -1,0 +1,44 @@
+/*
+** EPITECH PROJECT, 2025
+** R-type-mirror
+** File description:
+** MovementSystem
+*/
+
+#ifndef MOVEMENTSYSTEM_HPP_
+#define MOVEMENTSYSTEM_HPP_
+#include "../ISystem.hpp"
+#include "../components/Transform.hpp"
+#include "../components/Velocity.hpp"
+
+namespace ecs
+{
+class MovementSystem : public ISystem
+{
+public:
+  MovementSystem() = default;
+  void update(World &world, float deltaTime) override
+  {
+    std::vector<Entity> entities;
+    world.getEntitiesWithSignature(getSignature(), entities);
+
+    for (auto entity : entities) {
+      auto &transform = world.getComponent<Transform>(entity);
+      auto &velocity = world.getComponent<Velocity>(entity);
+
+      transform.x += velocity.dx * deltaTime;
+      transform.y += velocity.dy * deltaTime;
+    }
+  };
+
+  [[nodiscard]] ComponentSignature getSignature() const override
+  {
+    ComponentSignature sig;
+    sig.set(getComponentId<Transform>());
+    sig.set(getComponentId<Velocity>());
+    return sig;
+  };
+};
+} // namespace ecs
+
+#endif /* !MOVEMENTSYSTEM_HPP_ */
