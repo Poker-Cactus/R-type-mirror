@@ -6,22 +6,36 @@
 */
 
 #include "../include/Server.hpp"
+#include <csignal>
 #include <iostream>
+
+std::atomic<bool> Server::g_running{true};
 
 Server::Server(std::shared_ptr<INetworkManager> networkManager) : m_networkManager(networkManager)
 {
+  std::signal(SIGINT, Server::signalHandler);
   if (!networkManager) {
     std::cout << "Invalid Network Manager provided to Server." << std::endl;
     return;
   }
   networkManager->start();
-  while (true) {
+}
+
+Server::~Server() {}
+
+void Server::loop()
+{
+  while (g_running) {
     NetworkPacket msg;
-    if (networkManager->poll(msg)) {
+    if (m_networkManager->poll(msg)) {
       std::string data(reinterpret_cast<const char *>(msg.getData().data()), msg.getData().size());
       std::cout << "Data: " << data << std::endl;
     }
   }
 }
 
-Server::~Server() {}
+void Server::signalHandler(int signum)
+{
+  (void)signum;
+  g_running = false;
+}

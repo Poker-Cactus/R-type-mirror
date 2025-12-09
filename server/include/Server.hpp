@@ -8,6 +8,7 @@
 #ifndef SERVER_HPP_
 #define SERVER_HPP_
 
+#include <atomic>
 #include <memory>
 
 #include "../../common/include/Common.hpp"
@@ -29,8 +30,21 @@ public:
   explicit Server(std::shared_ptr<INetworkManager> networkManager);
   ~Server();
 
+  /**
+   * @brief Run the server main loop
+   */
+  void loop();
+
+  /**
+   * @brief Signal handler to stop the server
+   *
+   * @param signum Signal number
+   */
+  static void signalHandler(int signum);
+
 private:
   std::shared_ptr<INetworkManager> m_networkManager;
+  static std::atomic<bool> g_running;
 };
 
 #endif // SERVER_HPP_

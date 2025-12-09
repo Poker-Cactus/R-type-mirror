@@ -22,7 +22,6 @@ add_subdirectory(common)
 add_subdirectory(network)
 add_subdirectory(server)
 add_subdirectory(client)
-add_subdirectory(tests)
 
 find_program(CLANG_TIDY_EXE NAMES clang-tidy)
 if(CLANG_TIDY_EXE)

@@ -6,6 +6,7 @@
 */
 
 #include "../include/AsioServer.hpp"
+#include "../include/CapnpHandler.hpp"
 
 AsioServer::AsioServer(std::uint16_t port)
     : ANetworkManager(std::make_shared<CapnpHandler>()), m_strand(asio::make_strand(m_ioContext)),
@@ -81,7 +82,7 @@ void AsioServer::receive()
       if (!error && bytesTransferred > 0) {
         std::cout << "[Server] Received " << bytesTransferred << " bytes" << std::endl;
         try {
-          std::string data = m_packetHandler->deserialize(*recvBuffer, bytesTransferred);
+          std::string data = getPacketHandler()->deserialize(*recvBuffer, bytesTransferred);
           std::cout << "[Server] Deserialized message: " << data << std::endl;
           std::uint32_t clientId = getOrCreateClientId(m_remoteEndpoint);
           std::vector<std::byte> bytes = CapnpHandler::stringToBytes(data);
