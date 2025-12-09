@@ -30,7 +30,7 @@ void Server::loop()
   while (g_running) {
     NetworkPacket msg;
     if (m_networkManager->poll(msg)) {
-      std::string data(reinterpret_cast<const char *>(msg.getData().data()), msg.getData().size());
+      std::string data = m_networkManager->getPacketHandler()->deserialize(msg.getData(), msg.getBytesTransferred());
       std::cout << "Data: " << data << std::endl;
     }
     auto serialized = m_networkManager->getPacketHandler()->serialize("PONG");
