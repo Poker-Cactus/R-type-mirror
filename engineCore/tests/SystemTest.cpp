@@ -135,7 +135,7 @@ TEST_SUITE("MovementSystem")
 
     // Créer un background sans Velocity
     Entity background = world.createEntity();
-    world.addComponent(background, Transform{0.0f, 0.0f, 0.0f});
+    world.addComponent(background, Transform{0.0f, 0.0f, 0.0f, 1.0f});
 
     SUBCASE("Background does not move (no Velocity component)")
     {
