@@ -1,13 +1,14 @@
 /*
-** EPITECH PROJECT, 2025
-** R-type-mirror
-** File description:
-** Client.hpp - Game client wrapper
-*/
+ ** EPITECH PROJECT, 2025
+ ** R-type-mirror
+ ** File description:
+ ** Client.hpp - Game client wrapper
+ */
 
 #ifndef CLIENT_HPP_
 #define CLIENT_HPP_
 
+#include <atomic>
 #include <iostream>
 #include <memory>
 #include <thread>
@@ -36,8 +37,16 @@ public:
    */
   void loop();
 
+  /**
+   * @brief Signal handler to stop the client
+   *
+   * @param signum Signal number
+   */
+  static void signalHandler(int signum);
+
 private:
   std::shared_ptr<INetworkManager> m_networkManager;
+  static std::atomic<bool> g_running;
 };
 
 #endif // CLIENT_HPP_

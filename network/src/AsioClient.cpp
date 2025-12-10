@@ -6,6 +6,7 @@
 */
 
 #include "../include/AsioClient.hpp"
+#include "../include/CapnpHandler.hpp"
 
 AsioClient::AsioClient(const std::string &host, const std::string &port)
     : ANetworkManager(std::make_shared<CapnpHandler>()), m_strand(asio::make_strand(m_ioContext)),
@@ -50,36 +51,34 @@ void AsioClient::send(std::span<const std::byte> data, UNUSED const std::uint32_
       if (error) {
         std::cerr << "[Client] Send error: " << error.message() << std::endl;
       } else {
-        std::cout << "[Client] Sent " << bytesTransferred << " bytes" << std::endl;
+        // std::cout << "[Client] Sent " << bytesTransferred << " bytes" << std::endl;
       }
     }));
 }
 
 void AsioClient::receive()
 {
-  auto recvBuffer = std::make_shared<std::array<char, BUFFER_SIZE>>();
+  auto buffer = std::make_shared<std::array<char, BUFFER_SIZE>>();
+  auto senderEndpoint = std::make_shared<asio::ip::udp::endpoint>();
 
   m_socket.async_receive_from(
-    asio::buffer(*recvBuffer), m_serverEndpoint,
-    asio::bind_executor(m_strand, [this, recvBuffer](const std::error_code &error, std::size_t bytesTransferred) {
-      if (!error && bytesTransferred > 0) {
-        std::cout << "[Client] Received " << bytesTransferred << " bytes" << std::endl;
-        try {
-          const std::string data = m_packetHandler->deserialize(*recvBuffer, bytesTransferred);
-          std::cout << "[Client] Deserialized message: " << data << std::endl;
-          std::vector<std::byte> bytes = CapnpHandler::stringToBytes(data);
-          NetworkPacket messageQueue(bytes, 0);
-          m_incomingMessages.push(messageQueue);
-
-          receive();
-        } catch (const std::exception &e) {
-          std::cerr << "[Client] Deserialization error: " << e.what() << std::endl;
-          receive();
-        }
-      } else if (error) {
-        std::cerr << "[Client] Receive error: " << error.message() << std::endl;
-      }
-    }));
+    asio::buffer(*buffer), *senderEndpoint,
+    asio::bind_executor(m_strand,
+                        [this, buffer, senderEndpoint](const std::error_code &error, std::size_t bytesTransferred) {
+                          if (!error || error != asio::error::operation_aborted) {
+                            receive();
+                          }
+                          if (!error && bytesTransferred > 0) {
+                            try {
+                              NetworkPacket message(*buffer, 0, bytesTransferred);
+                              m_incomingMessages.push(message);
+                            } catch (const std::exception &e) {
+                              std::cerr << "[Server] Deserialization error: " << e.what() << std::endl;
+                            }
+                          } else if (error) {
+                            std::cerr << "[Server] Receive error: " << error.message() << std::endl;
+                          }
+                        }));
 }
 
 bool AsioClient::poll(NetworkPacket &msg)

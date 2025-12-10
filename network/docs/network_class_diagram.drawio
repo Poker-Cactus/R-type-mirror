@@ -1,191 +1,171 @@
-<mxfile host="app.diagrams.net" modified="2025-12-09T00:00:00.000Z" agent="draw.io" version="21.0.0" type="device">
-  <diagram name="Class Diagram - Network" id="class-diagram-network">
-    <mxGraphModel dx="1434" dy="836" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="827" math="0" shadow="0">
-      <root>
-        <mxCell id="0"/>
-        <mxCell id="1" parent="0"/>
-
-        <!-- INetworkManager Interface -->
-        <mxCell id="inetworkmanager" value="&lt;&lt;interface&gt;&gt;&#xa;INetworkManager" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=40;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
-          <mxGeometry x="440" y="40" width="280" height="160" as="geometry"/>
-        </mxCell>
-        <mxCell id="inetworkmanager-attrs" value="" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="inetworkmanager">
-          <mxGeometry y="40" width="280" height="20" as="geometry"/>
-        </mxCell>
-        <mxCell id="inetworkmanager-line" value="" style="line;strokeWidth=1;fillColor=none;align=left;verticalAlign=middle;spacingTop=-1;spacingLeft=3;spacingRight=3;rotatable=0;labelPosition=right;points=[];portConstraint=eastwest;strokeColor=inherit;" vertex="1" parent="inetworkmanager">
-          <mxGeometry y="60" width="280" height="8" as="geometry"/>
-        </mxCell>
-        <mxCell id="inetworkmanager-methods" value="+ ~INetworkManager() : virtual&#xa;+ send(data: span&lt;byte&gt;, targetId: uint32_t) : void&#xa;+ start() : void&#xa;+ stop() : void&#xa;+ poll(msg: NetworkPacket&amp;) : bool&#xa;+ getPacketHandler() : shared_ptr&lt;IPacketHandler&gt;" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontStyle=2" vertex="1" parent="inetworkmanager">
-          <mxGeometry y="68" width="280" height="92" as="geometry"/>
-        </mxCell>
-
-        <!-- ANetworkManager Abstract Class -->
-        <mxCell id="anetworkmanager" value="&lt;&lt;abstract&gt;&gt;&#xa;ANetworkManager" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=40;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
-          <mxGeometry x="440" y="260" width="280" height="120" as="geometry"/>
-        </mxCell>
-        <mxCell id="anetworkmanager-attrs" value="# _packetHandler : shared_ptr&lt;IPacketHandler&gt;" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="anetworkmanager">
-          <mxGeometry y="40" width="280" height="26" as="geometry"/>
-        </mxCell>
-        <mxCell id="anetworkmanager-line" value="" style="line;strokeWidth=1;fillColor=none;align=left;verticalAlign=middle;spacingTop=-1;spacingLeft=3;spacingRight=3;rotatable=0;labelPosition=right;points=[];portConstraint=eastwest;strokeColor=inherit;" vertex="1" parent="anetworkmanager">
-          <mxGeometry y="66" width="280" height="8" as="geometry"/>
-        </mxCell>
-        <mxCell id="anetworkmanager-methods" value="+ ANetworkManager(handler: shared_ptr&lt;IPacketHandler&gt;)&#xa;+ getPacketHandler() : shared_ptr&lt;IPacketHandler&gt;" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="anetworkmanager">
-          <mxGeometry y="74" width="280" height="46" as="geometry"/>
-        </mxCell>
-
-        <!-- AsioServer Class -->
-        <mxCell id="asioserver" value="AsioServer" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=26;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
-          <mxGeometry x="200" y="460" width="300" height="220" as="geometry"/>
-        </mxCell>
-        <mxCell id="asioserver-attrs" value="- _inComingMessages : SafeQueue&lt;NetworkPacket&gt;&#xa;- _ioContext : asio::io_context&#xa;- _strand : asio::strand&lt;...&gt;&#xa;- _socket : asio::ip::udp::socket&#xa;- _threadPool : vector&lt;thread&gt;&#xa;- _clients : unordered_map&lt;uint32_t, endpoint&gt;&#xa;- _nextClientId : uint32_t&#xa;- _workGuard : executor_work_guard&lt;...&gt;" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="asioserver">
-          <mxGeometry y="26" width="300" height="110" as="geometry"/>
-        </mxCell>
-        <mxCell id="asioserver-line" value="" style="line;strokeWidth=1;fillColor=none;align=left;verticalAlign=middle;spacingTop=-1;spacingLeft=3;spacingRight=3;rotatable=0;labelPosition=right;points=[];portConstraint=eastwest;strokeColor=inherit;" vertex="1" parent="asioserver">
-          <mxGeometry y="136" width="300" height="8" as="geometry"/>
-        </mxCell>
-        <mxCell id="asioserver-methods" value="+ AsioServer(port: short)&#xa;+ send(), start(), stop(), poll() : override&#xa;- recv()&#xa;- getOrCreateClientId(endpoint) : uint32_t" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="asioserver">
-          <mxGeometry y="144" width="300" height="76" as="geometry"/>
-        </mxCell>
-
-        <!-- AsioClient Class -->
-        <mxCell id="asioclient" value="AsioClient" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=26;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
-          <mxGeometry x="560" y="460" width="300" height="200" as="geometry"/>
-        </mxCell>
-        <mxCell id="asioclient-attrs" value="- _inComingMessages : SafeQueue&lt;NetworkPacket&gt;&#xa;- _ioContext : asio::io_context&#xa;- _strand : asio::strand&lt;...&gt;&#xa;- _socket : asio::ip::udp::socket&#xa;- _serverEndpoint : asio::ip::udp::endpoint&#xa;- _workGuard : executor_work_guard&lt;...&gt;&#xa;- _recvThread : thread" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="asioclient">
-          <mxGeometry y="26" width="300" height="100" as="geometry"/>
-        </mxCell>
-        <mxCell id="asioclient-line" value="" style="line;strokeWidth=1;fillColor=none;align=left;verticalAlign=middle;spacingTop=-1;spacingLeft=3;spacingRight=3;rotatable=0;labelPosition=right;points=[];portConstraint=eastwest;strokeColor=inherit;" vertex="1" parent="asioclient">
-          <mxGeometry y="126" width="300" height="8" as="geometry"/>
-        </mxCell>
-        <mxCell id="asioclient-methods" value="+ AsioClient(host: string, port: string)&#xa;+ send(), start(), stop(), poll() : override&#xa;- recv()" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="asioclient">
-          <mxGeometry y="134" width="300" height="66" as="geometry"/>
-        </mxCell>
-
-        <!-- IPacketHandler Interface -->
-        <mxCell id="ipackethandler" value="&lt;&lt;interface&gt;&gt;&#xa;IPacketHandler" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=40;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
-          <mxGeometry x="800" y="40" width="280" height="120" as="geometry"/>
-        </mxCell>
-        <mxCell id="ipackethandler-attrs" value="" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="ipackethandler">
-          <mxGeometry y="40" width="280" height="10" as="geometry"/>
-        </mxCell>
-        <mxCell id="ipackethandler-line" value="" style="line;strokeWidth=1;fillColor=none;align=left;verticalAlign=middle;spacingTop=-1;spacingLeft=3;spacingRight=3;rotatable=0;labelPosition=right;points=[];portConstraint=eastwest;strokeColor=inherit;" vertex="1" parent="ipackethandler">
-          <mxGeometry y="50" width="280" height="8" as="geometry"/>
-        </mxCell>
-        <mxCell id="ipackethandler-methods" value="+ serialize(data: string) : vector&lt;uint8_t&gt;&#xa;+ deserialize(buffer, size) : string" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontStyle=2" vertex="1" parent="ipackethandler">
-          <mxGeometry y="58" width="280" height="62" as="geometry"/>
-        </mxCell>
-
-        <!-- CapnpHandler Class -->
-        <mxCell id="capnphandler" value="CapnpHandler" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=26;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
-          <mxGeometry x="800" y="200" width="280" height="100" as="geometry"/>
-        </mxCell>
-        <mxCell id="capnphandler-attrs" value="" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="capnphandler">
-          <mxGeometry y="26" width="280" height="10" as="geometry"/>
-        </mxCell>
-        <mxCell id="capnphandler-line" value="" style="line;strokeWidth=1;fillColor=none;align=left;verticalAlign=middle;spacingTop=-1;spacingLeft=3;spacingRight=3;rotatable=0;labelPosition=right;points=[];portConstraint=eastwest;strokeColor=inherit;" vertex="1" parent="capnphandler">
-          <mxGeometry y="36" width="280" height="8" as="geometry"/>
-        </mxCell>
-        <mxCell id="capnphandler-methods" value="+ serialize(data: string) : vector&lt;uint8_t&gt;&#xa;+ deserialize(buffer, size) : string&#xa;+ stringToBytes(str: string) : vector&lt;byte&gt;" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="capnphandler">
-          <mxGeometry y="44" width="280" height="56" as="geometry"/>
-        </mxCell>
-
-        <!-- NetworkPacket Class -->
-        <mxCell id="networkpacket" value="NetworkPacket" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=26;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="1">
-          <mxGeometry x="40" y="40" width="240" height="130" as="geometry"/>
-        </mxCell>
-        <mxCell id="networkpacket-attrs" value="- _data : vector&lt;byte&gt;&#xa;- _senderEndpointId : uint32_t" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="networkpacket">
-          <mxGeometry y="26" width="240" height="40" as="geometry"/>
-        </mxCell>
-        <mxCell id="networkpacket-line" value="" style="line;strokeWidth=1;fillColor=none;align=left;verticalAlign=middle;spacingTop=-1;spacingLeft=3;spacingRight=3;rotatable=0;labelPosition=right;points=[];portConstraint=eastwest;strokeColor=inherit;" vertex="1" parent="networkpacket">
-          <mxGeometry y="66" width="240" height="8" as="geometry"/>
-        </mxCell>
-        <mxCell id="networkpacket-methods" value="+ NetworkPacket(data, senderId)&#xa;+ getData() : vector&lt;byte&gt;&amp;&#xa;+ getSenderEndpointId() : uint32_t" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="networkpacket">
-          <mxGeometry y="74" width="240" height="56" as="geometry"/>
-        </mxCell>
-
-        <!-- SafeQueue Template Class -->
-        <mxCell id="safequeue" value="SafeQueue&lt;T&gt;" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=26;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="1">
-          <mxGeometry x="40" y="200" width="200" height="140" as="geometry"/>
-        </mxCell>
-        <mxCell id="safequeue-attrs" value="- q : deque&lt;T&gt;&#xa;- mtx : mutex&#xa;- cv : condition_variable" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="safequeue">
-          <mxGeometry y="26" width="200" height="50" as="geometry"/>
-        </mxCell>
-        <mxCell id="safequeue-line" value="" style="line;strokeWidth=1;fillColor=none;align=left;verticalAlign=middle;spacingTop=-1;spacingLeft=3;spacingRight=3;rotatable=0;labelPosition=right;points=[];portConstraint=eastwest;strokeColor=inherit;" vertex="1" parent="safequeue">
-          <mxGeometry y="76" width="200" height="8" as="geometry"/>
-        </mxCell>
-        <mxCell id="safequeue-methods" value="+ push(value: T&amp;) : void&#xa;+ pop(value: T&amp;) : bool&#xa;+ pop_wait() : T" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="safequeue">
-          <mxGeometry y="84" width="200" height="56" as="geometry"/>
-        </mxCell>
-
-        <!-- Server Class -->
-        <mxCell id="server" value="Server" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=26;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="1">
-          <mxGeometry x="200" y="740" width="280" height="100" as="geometry"/>
-        </mxCell>
-        <mxCell id="server-attrs" value="- _networkManager : shared_ptr&lt;INetworkManager&gt;" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="server">
-          <mxGeometry y="26" width="280" height="26" as="geometry"/>
-        </mxCell>
-        <mxCell id="server-line" value="" style="line;strokeWidth=1;fillColor=none;align=left;verticalAlign=middle;spacingTop=-1;spacingLeft=3;spacingRight=3;rotatable=0;labelPosition=right;points=[];portConstraint=eastwest;strokeColor=inherit;" vertex="1" parent="server">
-          <mxGeometry y="52" width="280" height="8" as="geometry"/>
-        </mxCell>
-        <mxCell id="server-methods" value="+ Server(networkManager: shared_ptr&lt;INetworkManager&gt;)&#xa;+ ~Server()" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="server">
-          <mxGeometry y="60" width="280" height="40" as="geometry"/>
-        </mxCell>
-
-        <!-- Client Class -->
-        <mxCell id="client" value="Client" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=26;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="1">
-          <mxGeometry x="560" y="740" width="280" height="100" as="geometry"/>
-        </mxCell>
-        <mxCell id="client-attrs" value="- _networkManager : shared_ptr&lt;INetworkManager&gt;" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="client">
-          <mxGeometry y="26" width="280" height="26" as="geometry"/>
-        </mxCell>
-        <mxCell id="client-line" value="" style="line;strokeWidth=1;fillColor=none;align=left;verticalAlign=middle;spacingTop=-1;spacingLeft=3;spacingRight=3;rotatable=0;labelPosition=right;points=[];portConstraint=eastwest;strokeColor=inherit;" vertex="1" parent="client">
-          <mxGeometry y="52" width="280" height="8" as="geometry"/>
-        </mxCell>
-        <mxCell id="client-methods" value="+ Client(networkManager: shared_ptr&lt;INetworkManager&gt;)&#xa;+ loop() : void" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="client">
-          <mxGeometry y="60" width="280" height="40" as="geometry"/>
-        </mxCell>
-
-        <!-- Inheritance: ANetworkManager -> INetworkManager -->
-        <mxCell id="inherit1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=0;strokeWidth=2;" edge="1" parent="1" source="anetworkmanager" target="inetworkmanager">
-          <mxGeometry relative="1" as="geometry"/>
-        </mxCell>
-
-        <!-- Inheritance: AsioServer -> ANetworkManager -->
-        <mxCell id="inherit2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=0;strokeWidth=2;" edge="1" parent="1" source="asioserver" target="anetworkmanager">
-          <mxGeometry relative="1" as="geometry"/>
-        </mxCell>
-
-        <!-- Inheritance: AsioClient -> ANetworkManager -->
-        <mxCell id="inherit3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=0;strokeWidth=2;" edge="1" parent="1" source="asioclient" target="anetworkmanager">
-          <mxGeometry relative="1" as="geometry"/>
-        </mxCell>
-
-        <!-- Inheritance: CapnpHandler -> IPacketHandler -->
-        <mxCell id="inherit4" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=0;strokeWidth=2;" edge="1" parent="1" source="capnphandler" target="ipackethandler">
-          <mxGeometry relative="1" as="geometry"/>
-        </mxCell>
-
-        <!-- Composition: ANetworkManager --◆ IPacketHandler -->
-        <mxCell id="comp1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=diamondThin;endFill=1;strokeWidth=2;startArrow=none;" edge="1" parent="1" source="ipackethandler" target="anetworkmanager">
-          <mxGeometry relative="1" as="geometry"/>
-        </mxCell>
-
-        <!-- Composition: AsioServer --◆ SafeQueue -->
-        <mxCell id="comp2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=diamondThin;endFill=1;strokeWidth=2;startArrow=none;" edge="1" parent="1" source="safequeue" target="asioserver">
-          <mxGeometry relative="1" as="geometry"/>
-        </mxCell>
-
-        <!-- Dependency: Server --> INetworkManager -->
-        <mxCell id="dep1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;dashed=1;endArrow=open;strokeWidth=1;" edge="1" parent="1" source="server" target="asioserver">
-          <mxGeometry relative="1" as="geometry"/>
-        </mxCell>
-
-        <!-- Dependency: Client --> INetworkManager -->
-        <mxCell id="dep2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;dashed=1;endArrow=open;strokeWidth=1;" edge="1" parent="1" source="client" target="asioclient">
-          <mxGeometry relative="1" as="geometry"/>
-        </mxCell>
-
-      </root>
-    </mxGraphModel>
-  </diagram>
+<mxfile host="65bd71144e">
+    <diagram name="Page-1" id="wKS36Cu_Cer0T6t3G_X7">
+        <mxGraphModel dx="544" dy="505" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+            <root>
+                <mxCell id="0"/>
+                <mxCell id="1" parent="0"/>
+                <mxCell id="2" value="&lt;&lt;interface&gt;&gt;&#xa;INetworkManager" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=51;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=0;marginBottom=0;" vertex="1" parent="1">
+                    <mxGeometry x="593" y="238" width="491" height="229" as="geometry"/>
+                </mxCell>
+                <mxCell id="3" style="line;strokeWidth=1;fillColor=none;align=left;verticalAlign=middle;spacingTop=-1;spacingLeft=3;spacingRight=3;rotatable=0;labelPosition=right;points=[];portConstraint=eastwest;strokeColor=inherit;" vertex="1" parent="2">
+                    <mxGeometry y="51" width="491" height="8" as="geometry"/>
+                </mxCell>
+                <mxCell id="4" value="+send(data: span&lt;const byte&gt;, targetEndpointId: uint32)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="2">
+                    <mxGeometry y="59" width="491" height="34" as="geometry"/>
+                </mxCell>
+                <mxCell id="5" value="+start()" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="2">
+                    <mxGeometry y="93" width="491" height="34" as="geometry"/>
+                </mxCell>
+                <mxCell id="6" value="+stop()" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="2">
+                    <mxGeometry y="127" width="491" height="34" as="geometry"/>
+                </mxCell>
+                <mxCell id="7" value="+poll(msg: NetworkPacket&amp;) : : bool" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="2">
+                    <mxGeometry y="161" width="491" height="34" as="geometry"/>
+                </mxCell>
+                <mxCell id="8" value="+getPacketHandler() : : shared_ptr&lt;IPacketHandler&gt;" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="2">
+                    <mxGeometry y="195" width="491" height="34" as="geometry"/>
+                </mxCell>
+                <mxCell id="9" value="&lt;&lt;interface&gt;&gt;&#xa;IPacketHandler" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=62.25;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=0;marginBottom=0;" vertex="1" parent="1">
+                    <mxGeometry x="20" y="881" width="536" height="154.25" as="geometry"/>
+                </mxCell>
+                <mxCell id="10" style="line;strokeWidth=1;fillColor=none;align=left;verticalAlign=middle;spacingTop=-1;spacingLeft=3;spacingRight=3;rotatable=0;labelPosition=right;points=[];portConstraint=eastwest;strokeColor=inherit;" vertex="1" parent="9">
+                    <mxGeometry y="62.25" width="536" height="8" as="geometry"/>
+                </mxCell>
+                <mxCell id="11" value="+serialize(data: string) : : vector&lt;uint8&gt;" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="9">
+                    <mxGeometry y="70.25" width="536" height="42" as="geometry"/>
+                </mxCell>
+                <mxCell id="12" value="+deserialize(buffer: array, bytesTransferred: size_t) : : string" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="9">
+                    <mxGeometry y="112.25" width="536" height="42" as="geometry"/>
+                </mxCell>
+                <mxCell id="13" value="&lt;&lt;abstract&gt;&gt;&#xa;ANetworkManager" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=68.57142857142857;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=0;marginBottom=0;" vertex="1" parent="1">
+                    <mxGeometry x="604" y="558" width="468" height="168.57142857142856" as="geometry"/>
+                </mxCell>
+                <mxCell id="14" value="#m_packetHandler: shared_ptr&lt;IPacketHandler&gt;" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="13">
+                    <mxGeometry y="68.57142857142857" width="468" height="46" as="geometry"/>
+                </mxCell>
+                <mxCell id="15" style="line;strokeWidth=1;fillColor=none;align=left;verticalAlign=middle;spacingTop=-1;spacingLeft=3;spacingRight=3;rotatable=0;labelPosition=right;points=[];portConstraint=eastwest;strokeColor=inherit;" vertex="1" parent="13">
+                    <mxGeometry y="114.57142857142857" width="468" height="8" as="geometry"/>
+                </mxCell>
+                <mxCell id="16" value="+getPacketHandler() : : shared_ptr&lt;IPacketHandler&gt;" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="13">
+                    <mxGeometry y="122.57142857142857" width="468" height="46" as="geometry"/>
+                </mxCell>
+                <mxCell id="17" value="AsioClient" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=29.818181818181817;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=0;marginBottom=0;" vertex="1" parent="1">
+                    <mxGeometry x="606" y="800" width="464" height="337.8181818181818" as="geometry"/>
+                </mxCell>
+                <mxCell id="18" value="-m_incomingMessages: SafeQueue&lt;NetworkPacket&gt;" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="17">
+                    <mxGeometry y="29.818181818181817" width="464" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="19" value="-m_ioContext: asio::io_context" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="17">
+                    <mxGeometry y="59.81818181818181" width="464" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="20" value="-m_socket: asio::ip::udp::socket" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="17">
+                    <mxGeometry y="89.81818181818181" width="464" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="21" value="-m_serverEndpoint: asio::ip::udp::endpoint" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="17">
+                    <mxGeometry y="119.81818181818181" width="464" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="22" value="-m_recvThread: thread" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="17">
+                    <mxGeometry y="149.8181818181818" width="464" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="23" style="line;strokeWidth=1;fillColor=none;align=left;verticalAlign=middle;spacingTop=-1;spacingLeft=3;spacingRight=3;rotatable=0;labelPosition=right;points=[];portConstraint=eastwest;strokeColor=inherit;" vertex="1" parent="17">
+                    <mxGeometry y="179.8181818181818" width="464" height="8" as="geometry"/>
+                </mxCell>
+                <mxCell id="24" value="+send(data: span&lt;const byte&gt;, targetEndpointId: uint32)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="17">
+                    <mxGeometry y="187.8181818181818" width="464" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="25" value="+start()" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="17">
+                    <mxGeometry y="217.8181818181818" width="464" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="26" value="+stop()" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="17">
+                    <mxGeometry y="247.8181818181818" width="464" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="27" value="+poll(msg: NetworkPacket&amp;) : : bool" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="17">
+                    <mxGeometry y="277.8181818181818" width="464" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="28" value="-receive()" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="17">
+                    <mxGeometry y="307.8181818181818" width="464" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="29" value="AsioServer" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=29.818181818181817;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=0;marginBottom=0;" vertex="1" parent="1">
+                    <mxGeometry x="1120" y="800" width="466" height="337.8181818181818" as="geometry"/>
+                </mxCell>
+                <mxCell id="30" value="-m_clients: unordered_map&lt;uint32, endpoint&gt;" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="29">
+                    <mxGeometry y="29.818181818181817" width="466" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="31" value="-m_socket: asio::ip::udp::socket" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="29">
+                    <mxGeometry y="59.81818181818181" width="466" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="32" value="-m_ioContext: asio::io_context" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="29">
+                    <mxGeometry y="89.81818181818181" width="466" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="33" value="-m_nextClientId: uint32" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="29">
+                    <mxGeometry y="119.81818181818181" width="466" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="34" style="line;strokeWidth=1;fillColor=none;align=left;verticalAlign=middle;spacingTop=-1;spacingLeft=3;spacingRight=3;rotatable=0;labelPosition=right;points=[];portConstraint=eastwest;strokeColor=inherit;" vertex="1" parent="29">
+                    <mxGeometry y="149.8181818181818" width="466" height="8" as="geometry"/>
+                </mxCell>
+                <mxCell id="35" value="+send(data: span&lt;const byte&gt;, targetEndpointId: uint32)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="29">
+                    <mxGeometry y="157.8181818181818" width="466" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="36" value="+start()" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="29">
+                    <mxGeometry y="187.8181818181818" width="466" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="37" value="+stop()" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="29">
+                    <mxGeometry y="217.8181818181818" width="466" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="38" value="+poll(msg: NetworkPacket&amp;) : : bool" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="29">
+                    <mxGeometry y="247.8181818181818" width="466" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="39" value="-receive()" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="29">
+                    <mxGeometry y="277.8181818181818" width="466" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="40" value="-getOrCreateClientId(endpoint: endpoint) : : uint32" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="29">
+                    <mxGeometry y="307.8181818181818" width="466" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="41" value="CapnpHandler" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=36.888888888888886;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=0;marginBottom=0;" vertex="1" parent="1">
+                    <mxGeometry x="21" y="1210" width="533" height="155.88888888888889" as="geometry"/>
+                </mxCell>
+                <mxCell id="42" style="line;strokeWidth=1;fillColor=none;align=left;verticalAlign=middle;spacingTop=-1;spacingLeft=3;spacingRight=3;rotatable=0;labelPosition=right;points=[];portConstraint=eastwest;strokeColor=inherit;" vertex="1" parent="41">
+                    <mxGeometry y="36.888888888888886" width="533" height="8" as="geometry"/>
+                </mxCell>
+                <mxCell id="43" value="+serialize(data: string) : : vector&lt;uint8&gt;" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="41">
+                    <mxGeometry y="44.888888888888886" width="533" height="37" as="geometry"/>
+                </mxCell>
+                <mxCell id="44" value="+deserialize(buffer: array, bytesTransferred: size_t) : : string" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="41">
+                    <mxGeometry y="81.88888888888889" width="533" height="37" as="geometry"/>
+                </mxCell>
+                <mxCell id="45" value="+stringToBytes(str: string) : : vector&lt;byte&gt;" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="41">
+                    <mxGeometry y="118.88888888888889" width="533" height="37" as="geometry"/>
+                </mxCell>
+                <mxCell id="46" value="implements" style="curved=1;startArrow=block;startSize=16;startFill=0;endArrow=none;exitX=0.5;exitY=1;entryX=0.5;entryY=0;rounded=0;" edge="1" parent="1" source="2" target="13">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="47" value="inherits" style="curved=1;startArrow=block;startSize=16;startFill=0;endArrow=none;exitX=0.5;exitY=1;entryX=0.5;entryY=0;rounded=0;" edge="1" parent="1" source="13" target="17">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="48" value="inherits" style="curved=1;startArrow=block;startSize=16;startFill=0;endArrow=none;exitX=1;exitY=0.83;entryX=0.5;entryY=0;rounded=0;" edge="1" parent="1" source="13" target="29">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="1353" y="763"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="49" value="implements" style="curved=1;startArrow=block;startSize=16;startFill=0;endArrow=none;exitX=0.5;exitY=1;entryX=0.5;entryY=0;rounded=0;" edge="1" parent="1" source="9" target="41">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="50" value="uses" style="curved=1;startArrow=diamondThin;startSize=14;startFill=0;endArrow=none;exitX=0;exitY=0.81;entryX=0.5;entryY=0;rounded=0;" edge="1" parent="1" source="13" target="9">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="288" y="763"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+            </root>
+        </mxGraphModel>
+    </diagram>
 </mxfile>

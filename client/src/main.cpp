@@ -7,6 +7,7 @@
 
 #include "../../network/include/AsioClient.hpp"
 #include "../include/Client.hpp"
+#include <csignal>
 
 int main(UNUSED int argc, char **argv)
 {

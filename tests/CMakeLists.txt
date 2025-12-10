@@ -5,7 +5,7 @@ option(FETCH_KCOV_IF_MISSING "Download kcov via FetchContent when kcov is not av
 find_package(doctest REQUIRED)
 
 add_executable(unit_tests
-    test_server_concurrency.cpp
+    Test_server_concurrency.cpp
 )
 
 target_include_directories(unit_tests PRIVATE

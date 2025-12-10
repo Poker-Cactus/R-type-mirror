@@ -8,6 +8,7 @@
 #ifndef NETWORK_PACKET_HPP_
 #define NETWORK_PACKET_HPP_
 
+#include "../Common.hpp"
 #include <cstdint>
 #include <vector>
 
@@ -27,8 +28,21 @@ public:
    * @param data Message data as bytes
    * @param senderEndpointId ID of the sending endpoint
    */
-  NetworkPacket(std::vector<std::byte> data, std::uint32_t senderEndpointId)
-      : m_data(std::move(data)), m_senderEndpointId(senderEndpointId)
+  NetworkPacket(const std::array<char, BUFFER_SIZE> &data, std::uint32_t senderEndpointId)
+      : m_data(data), m_senderEndpointId(senderEndpointId)
+  {
+  }
+
+  /**
+   * @brief Construct a network packet
+   *
+   * @param data Message data as bytes
+   * @param senderEndpointId ID of the sending endpoint
+   * @param bytesTransferred Number of bytes transferred
+   */
+  NetworkPacket(const std::array<char, BUFFER_SIZE> &data, std::uint32_t senderEndpointId,
+                std::uint32_t bytesTransferred)
+      : m_data(data), m_senderEndpointId(senderEndpointId), m_bytesTransferred(bytesTransferred)
   {
   }
 
@@ -37,9 +51,16 @@ public:
   /**
    * @brief Get the message data
    *
-   * @return Const reference to the data vector
+   * @return Const reference to the data template
    */
-  const std::vector<std::byte> &getData() const { return m_data; }
+  std::array<char, BUFFER_SIZE> getData() const { return m_data; }
+
+  /**
+   * @brief Set the message data
+   *
+   * @param data The data to set
+   */
+  void setData(const std::array<char, BUFFER_SIZE> &data) { m_data = data; }
 
   /**
    * @brief Get the sender endpoint ID
@@ -48,9 +69,24 @@ public:
    */
   std::uint32_t getSenderEndpointId() const { return m_senderEndpointId; }
 
+  /**
+   * @brief Get the number of bytes transferred
+   *
+   * @return The bytes transferred
+   */
+  std::uint32_t getBytesTransferred() const { return m_bytesTransferred; }
+
+  /**
+   * @brief Set the number of bytes transferred
+   *
+   * @param bytesTransferred The bytes transferred to set
+   */
+  void setBytesTransferred(std::uint32_t bytesTransferred) { m_bytesTransferred = bytesTransferred; }
+
 private:
-  std::vector<std::byte> m_data;
+  std::array<char, BUFFER_SIZE> m_data;
   std::uint32_t m_senderEndpointId{0};
+  std::uint32_t m_bytesTransferred{0};
 };
 
 #endif // NETWORK_PACKET_HPP_
