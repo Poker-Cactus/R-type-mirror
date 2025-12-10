@@ -7,6 +7,7 @@ project(server)
 add_executable(server
     src/main.cpp
     src/Server.cpp
+    src/Game.cpp
 )
 
 target_include_directories(server PRIVATE
