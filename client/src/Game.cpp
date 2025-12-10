@@ -6,6 +6,7 @@
 */
 
 #include "Game.hpp"
+#include "Menu.hpp"
 #include <iostream>
 
 Game::Game() : module(nullptr), renderer(nullptr), isRunning(false), currentState(GameState::MENU) {}
@@ -76,6 +77,8 @@ void Game::processInput()
     }
     if (this->menu && this->currentState == GameState::MENU)
         this->menu->processInput();
+    if (this->menu && this->currentState == GameState::MENU && this->menu->getState() == MenuState::EXIT)
+        this->isRunning = false;
 }
 
 void Game::update(float dt)
