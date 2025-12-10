@@ -21,10 +21,11 @@ std::vector<std::uint8_t> CapnpHandler::serialize(const std::string &data) const
   return std::vector<std::uint8_t>(arr.begin(), arr.end());
 }
 
-std::string CapnpHandler::deserialize(const std::array<char, BUFFER_SIZE> &buffer, std::size_t bytesTransferred) const
+std::optional<std::string> CapnpHandler::deserialize(const std::array<char, BUFFER_SIZE> &buffer,
+                                                     std::size_t bytesTransferred) const
 {
   if (bytesTransferred == 0) {
-    throw std::runtime_error("Empty buffer received");
+    return std::nullopt;
   }
   kj::ArrayPtr<const kj::byte> bytes(reinterpret_cast<const kj::byte *>(buffer.data()), bytesTransferred);
   kj::ArrayInputStream stream(bytes);
@@ -35,7 +36,7 @@ std::string CapnpHandler::deserialize(const std::array<char, BUFFER_SIZE> &buffe
     auto type = netMsg.getMessageType();
     return std::string(type.cStr(), type.size());
   } catch (const kj::Exception &e) {
-    throw std::runtime_error(std::string("Cap'n Proto error: ") + e.getDescription().cStr());
+    return std::nullopt;
   }
 }
 

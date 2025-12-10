@@ -13,7 +13,7 @@ AsioServer::AsioServer(std::uint16_t port)
       m_socket(m_ioContext, asio::ip::udp::endpoint(asio::ip::udp::v4(), port)), m_nextClientId(0),
       m_workGuard(asio::make_work_guard(m_ioContext))
 {
-  asio::socket_base::receive_buffer_size option(1024 * 1024 * 16);
+  asio::socket_base::receive_buffer_size option(1024 * 1024 * 8);
   m_socket.set_option(option);
 }
 
@@ -26,7 +26,7 @@ void AsioServer::start()
 {
   std::size_t nbOfThreads = std::thread::hardware_concurrency();
 
-  for (std::size_t i = 0; i < nbOfThreads; ++i) {
+  for (std::size_t i = 0; i < nbOfThreads; i++) {
     m_threadPool.emplace_back([this]() { m_ioContext.run(); });
   }
   receive();
@@ -87,13 +87,9 @@ void AsioServer::receive()
                             receive();
                           }
                           if (!error && bytesTransferred > 0) {
-                            try {
-                              std::uint32_t clientId = getOrCreateClientId(*senderEndpoint);
-                              NetworkPacket message(*buffer, clientId, bytesTransferred);
-                              m_incomingMessages.push(message);
-                            } catch (const std::exception &e) {
-                              std::cerr << "[Server] Deserialization error: " << e.what() << std::endl;
-                            }
+                            std::uint32_t clientId = getOrCreateClientId(*senderEndpoint);
+                            NetworkPacket message(*buffer, clientId, bytesTransferred);
+                            m_incomingMessages.push(message);
                           } else if (error) {
                             std::cerr << "[Server] Receive error: " << error.message() << std::endl;
                           }

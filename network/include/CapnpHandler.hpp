@@ -41,7 +41,8 @@ public:
    * @param bytesTransferred Number of bytes received
    * @return Deserialized message string
    */
-  std::string deserialize(const std::array<char, BUFFER_SIZE> &buffer, std::size_t bytesTransferred) const override;
+  std::optional<std::string> deserialize(const std::array<char, BUFFER_SIZE> &buffer,
+                                         std::size_t bytesTransferred) const override;
 
   /**
    * @brief Convert string to byte vector

@@ -27,18 +27,18 @@ void Client::loop()
   while (g_running) {
     NetworkPacket msg;
     while (m_networkManager->poll(msg)) {
-      std::string data = m_networkManager->getPacketHandler()->deserialize(msg.getData(), msg.getBytesTransferred());
-      std::cout << "Data: " << data << std::endl;
+      auto data = m_networkManager->getPacketHandler()->deserialize(msg.getData(), msg.getBytesTransferred());
+      if (!data.has_value()) {
+        std::cout << "Failed to deserialize incoming packet." << std::endl;
+        continue;
+      }
+      std::cout << "Data: " << data.value() << std::endl;
     }
     auto serialized = m_networkManager->getPacketHandler()->serialize("PING");
     m_networkManager->send(
       std::span<const std::byte>(reinterpret_cast<const std::byte *>(serialized.data()), serialized.size()), 0);
     std::this_thread::sleep_for(std::chrono::milliseconds(16));
   }
-  auto serialized = m_networkManager->getPacketHandler()->serialize("PING");
-  m_networkManager->send(
-    std::span<const std::byte>(reinterpret_cast<const std::byte *>(serialized.data()), serialized.size()), 0);
-  std::this_thread::sleep_for(std::chrono::milliseconds(16));
 }
 
 void Client::signalHandler(int signum)
