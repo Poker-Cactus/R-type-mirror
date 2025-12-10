@@ -39,6 +39,10 @@ void Client::loop()
       std::span<const std::byte>(reinterpret_cast<const std::byte *>(serialized.data()), serialized.size()), 0);
     std::this_thread::sleep_for(std::chrono::milliseconds(16));
   }
+  auto serialized = m_networkManager->getPacketHandler()->serialize("PING");
+  m_networkManager->send(
+    std::span<const std::byte>(reinterpret_cast<const std::byte *>(serialized.data()), serialized.size()), 0);
+  std::this_thread::sleep_for(std::chrono::milliseconds(16));
 }
 
 void Client::signalHandler(int signum)
