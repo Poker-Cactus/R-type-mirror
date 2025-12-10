@@ -17,6 +17,7 @@
 #include <capnp/message.h>
 #include <capnp/serialize.h>
 #include <kj/std/iostream.h>
+#include <optional>
 
 /**
  * @brief Interface for packet serialization/deserialization
@@ -43,7 +44,8 @@ public:
    * @param bytesTransferred Number of bytes received
    * @return Deserialized message string
    */
-  virtual std::string deserialize(const std::array<char, BUFFER_SIZE> &buffer, std::size_t bytesTransferred) const = 0;
+  virtual std::optional<std::string> deserialize(const std::array<char, BUFFER_SIZE> &buffer,
+                                                 std::size_t bytesTransferred) const = 0;
 };
 
 #endif // I_PACKET_HANDLER_HPP_
