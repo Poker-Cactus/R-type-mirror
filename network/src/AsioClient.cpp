@@ -7,6 +7,27 @@
 
 #include "../include/AsioClient.hpp"
 #include "../include/CapnpHandler.hpp"
+#include "ANetworkManager.hpp"
+#include "Common.hpp"
+#include "network/NetworkPacket.hpp"
+#include <array>
+#include <asio/bind_executor.hpp>
+#include <asio/buffer.hpp>
+#include <asio/error.hpp>
+#include <asio/executor_work_guard.hpp>
+#include <asio/ip/udp.hpp>
+#include <asio/strand.hpp>
+#include <chrono>
+#include <cstddef>
+#include <cstdint>
+#include <exception>
+#include <iostream>
+#include <memory>
+#include <ostream>
+#include <span>
+#include <string>
+#include <system_error>
+#include <thread>
 
 AsioClient::AsioClient(const std::string &host, const std::string &port)
     : ANetworkManager(std::make_shared<CapnpHandler>()), m_strand(asio::make_strand(m_ioContext)),
@@ -39,8 +60,9 @@ void AsioClient::stop()
 {
   m_ioContext.stop();
   m_workGuard.reset();
-  if (m_recvThread.joinable())
+  if (m_recvThread.joinable()) {
     m_recvThread.join();
+  }
 }
 
 void AsioClient::send(std::span<const std::byte> data, UNUSED const std::uint32_t &targetEndpointId)

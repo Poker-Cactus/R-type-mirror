@@ -6,9 +6,15 @@
 */
 
 #include "../include/Server.hpp"
+#include "INetworkManager.hpp"
+#include "network/NetworkPacket.hpp"
+#include <atomic>
 #include <chrono>
 #include <csignal>
+#include <cstddef>
 #include <iostream>
+#include <memory>
+#include <span>
 #include <thread>
 
 std::atomic<bool> Server::g_running{true};
@@ -27,6 +33,8 @@ Server::~Server() {}
 
 void Server::loop()
 {
+  const int TICK_RATE_MS = 16;
+
   while (g_running) {
     NetworkPacket msg;
     if (m_networkManager->poll(msg)) {
@@ -40,7 +48,7 @@ void Server::loop()
     auto serialized = m_networkManager->getPacketHandler()->serialize("PONG");
     m_networkManager->send(
       std::span<const std::byte>(reinterpret_cast<const std::byte *>(serialized.data()), serialized.size()), 0);
-    std::this_thread::sleep_for(std::chrono::milliseconds(16));
+    std::this_thread::sleep_for(std::chrono::milliseconds(TICK_RATE_MS));
   }
 }
 

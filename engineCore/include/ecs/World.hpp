@@ -13,17 +13,26 @@
 #include "Entity.hpp"
 #include "EntityManager.hpp"
 #include "SystemManager.hpp"
+#include "events/EventBus.hpp"
+#include "events/EventListenerHandle.hpp"
+
 #include <cstddef>
+#include <functional>
 #include <vector>
 
 namespace ecs
 {
+
 /**
  * @brief Central coordinator for the ECS architecture
  *
- * The World manages entities, systems and components, providing a unified interface
- * for game logic. It orchestrates the update cycle and provides access to
- * the EntityManager, SystemManager and ComponentManager.
+ * The World manages entities, systems, components and events, providing
+ * a unified interface for game logic. It orchestrates the update cycle
+ * and exposes access to:
+ *  - EntityManager
+ *  - ComponentManager
+ *  - SystemManager
+ *  - EventBus
  *
  * @note This is typically instantiated once per game/scene
  *
@@ -46,7 +55,8 @@ public:
   World() = default;
   ~World() = default;
 
-  // ========== Entity Management ==========
+  // ============================================================
+  // =============== ENTITY MANAGEMENT ==========================
 
   [[nodiscard]] Entity createEntity()
   {
@@ -69,7 +79,8 @@ public:
 
   [[nodiscard]] std::size_t getEntityCount() const { return m_entityManager.getAliveCount(); }
 
-  // ========== System Management ==========
+  // ============================================================
+  // ================= SYSTEM MANAGEMENT =========================
 
   template <typename T, typename... Args>
   T &registerSystem(Args &&...args)
@@ -107,7 +118,8 @@ public:
 
   void clearSystems() noexcept { m_systemManager.clear(); }
 
-  // ========== Component Management ==========
+  // ============================================================
+  // ================= COMPONENT MANAGEMENT ======================
 
   template <typename T>
   void addComponent(Entity entity, T component)
@@ -160,7 +172,7 @@ public:
     m_componentManager.removeAllComponents(entity);
 
     // Reset signature in EntityManager (single source of truth)
-    ComponentSignature emptySignature;
+    ComponentSignature emptySignature{};
     m_entityManager.setSignature(entity, emptySignature);
 
     // Notify systems
@@ -171,6 +183,38 @@ public:
   {
     return m_entityManager.getSignature(entity);
   }
+
+  // ============================================================
+  // ====================== EVENT BUS ===========================
+  // ============================================================
+
+  /**
+   * @brief Subscribe to an event type T
+   */
+  template <typename T>
+  EventListenerHandle subscribeEvent(std::function<void(const T &)> callback)
+  {
+    return m_eventBus.subscribe<T>(std::move(callback));
+  }
+
+  /**
+   * @brief Emit an event to all listeners
+   */
+  template <typename T>
+  void emitEvent(const T &event)
+  {
+    m_eventBus.emit<T>(event);
+  }
+
+  /**
+   * @brief Access the EventBus directly (advanced usage)
+   */
+  [[nodiscard]] EventBus &getEventBus() { return m_eventBus; }
+  [[nodiscard]] const EventBus &getEventBus() const { return m_eventBus; }
+
+  // ============================================================
+  // ====================== ENTITY QUERIES ======================
+  // ============================================================
 
   /**
    * @brief Filters entities by component signature (bitwise matching)
@@ -196,6 +240,7 @@ private:
   EntityManager m_entityManager;
   ComponentManager m_componentManager;
   SystemManager m_systemManager;
+  EventBus m_eventBus;
 };
 
 } // namespace ecs
