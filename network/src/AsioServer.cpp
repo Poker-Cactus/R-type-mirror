@@ -26,7 +26,7 @@ void AsioServer::start()
 {
   std::size_t nbOfThreads = std::thread::hardware_concurrency();
 
-  for (std::size_t i = 0; i < nbOfThreads; i++) {
+  for (std::size_t i = 0; i < nbOfThreads; ++i) {
     m_threadPool.emplace_back([this]() { m_ioContext.run(); });
   }
   receive();

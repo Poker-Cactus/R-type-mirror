@@ -36,7 +36,7 @@ public:
    */
   [[nodiscard]] std::shared_ptr<IPacketHandler> getPacketHandler() const override { return m_packetHandler; }
 
-private:
+protected:
   std::shared_ptr<IPacketHandler> m_packetHandler;
 };
 
