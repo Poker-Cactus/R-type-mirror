@@ -7,6 +7,25 @@
 
 #include "../include/AsioServer.hpp"
 #include "../include/CapnpHandler.hpp"
+#include "ANetworkManager.hpp"
+#include "Common.hpp"
+#include "network/NetworkPacket.hpp"
+#include <array>
+#include <asio/bind_executor.hpp>
+#include <asio/buffer.hpp>
+#include <asio/error.hpp>
+#include <asio/executor_work_guard.hpp>
+#include <asio/ip/udp.hpp>
+#include <asio/socket_base.hpp>
+#include <asio/strand.hpp>
+#include <cstddef>
+#include <cstdint>
+#include <iostream>
+#include <memory>
+#include <ostream>
+#include <span>
+#include <system_error>
+#include <thread>
 
 AsioServer::AsioServer(std::uint16_t port)
     : ANetworkManager(std::make_shared<CapnpHandler>()), m_strand(asio::make_strand(m_ioContext)),
@@ -26,7 +45,7 @@ void AsioServer::start()
 {
   std::size_t nbOfThreads = std::thread::hardware_concurrency();
 
-  for (std::size_t i = 0; i < nbOfThreads; i++) {
+  for (std::size_t i = 0; i < nbOfThreads; ++i) {
     m_threadPool.emplace_back([this]() { m_ioContext.run(); });
   }
   receive();
