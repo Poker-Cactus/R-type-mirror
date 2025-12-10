@@ -6,7 +6,6 @@
 */
 
 #include "ProfileMenu.hpp"
-#include "../../../interface/KeyCodes.hpp"
 #include <cmath>
 
 void ProfileMenu::init(IRenderer *renderer)

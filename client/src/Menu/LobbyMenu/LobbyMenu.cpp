@@ -6,7 +6,6 @@
 */
 
 #include "LobbyMenu.hpp"
-#include "../../../interface/KeyCodes.hpp"
 #include <cmath>
 
 void LobbyMenu::init(IRenderer *renderer)
@@ -21,6 +20,4 @@ void LobbyMenu::render(int winWidth, int winHeight, IRenderer *renderer)
     // TODO: Afficher le lobby
 }
 
-void LobbyMenu::process(IRenderer *renderer)
-{
-}
+void LobbyMenu::process(IRenderer *renderer) {}
