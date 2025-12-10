@@ -21,7 +21,6 @@ class Menu
     void processInput();
 
   private:
-    // Classe interne pour gérer l'écran de chargement
     class LoadingScreen
     {
       public:
@@ -55,13 +54,8 @@ class Menu
     void processSettings();
     void processBack();
 
-    // Helper pour afficher du texte centré
     void drawCenteredText(const std::string &text, int yOffset, const Color &color);
-
-    // Helper pour dessiner un rectangle avec bordure épaisse
     void drawThickBorderedRect(int x, int y, int width, int height, const Color &color, int thickness);
-
-    // Helper pour dessiner les rectangles des settings
     void drawSettingsRectangles(int winWidth, int winHeight, int titleHeight);
 
     IRenderer *renderer;
@@ -71,6 +65,11 @@ class Menu
     void *title_font = nullptr;
     float blinkTimer = 0.0f;
     float backgroundOffsetX = 0.0f;
+    float parallaxOffsetSky = 0.0f;
+    float parallaxOffsetBack = 0.0f;
+    float parallaxOffsetMid = 0.0f;
+    float parallaxOffsetFront = 0.0f;
+    float parallaxOffsetFloor = 0.0f;
     void *planet = nullptr;
     bool isZooming = false;
     float zoomTimer = 0.0f;
@@ -79,6 +78,11 @@ class Menu
     LoadingScreen *loadingScreen = nullptr;
     MenuState currentState = MenuState::LOADING;
 
+    void *moonFloor = nullptr;
+    void *moonSky = nullptr;
+    void *moonMid = nullptr;
+    void *moonFront = nullptr;
+    void *moonBack = nullptr;
     // Textes du menu principal
     std::array<std::string, 4> mainMenuItems = {"Play", "Settings", "Profile", "Exit"};
     int currentMenuIndex = 0;

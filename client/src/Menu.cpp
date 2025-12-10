@@ -25,6 +25,11 @@ void Menu::init()
         menu_font = renderer->loadFont("client/assets/font.opf/r-type.otf", menuFontSize);
         title_font = renderer->loadFont("client/assets/font.opf/r-type.otf", titleFontSize);
         planet = renderer->loadTexture("client/assets/moon-pack/moon1.png");
+        moonSky = renderer->loadTexture("client/assets/moon-para/moon_sky.png");
+        moonBack = renderer->loadTexture("client/assets/moon-para/moon_back.png");
+        moonMid = renderer->loadTexture("client/assets/moon-para/moon_mid.png");
+        moonFront = renderer->loadTexture("client/assets/moon-para/moon_front.png");
+        moonFloor = renderer->loadTexture("client/assets/moon-para/moon_floor.png");
 
         // Initialiser le LoadingScreen
         loadingScreen = new LoadingScreen(renderer, menu_font);

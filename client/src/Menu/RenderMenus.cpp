@@ -14,6 +14,60 @@ void Menu::renderMainMenu(int winWidth, int winHeight)
         return;
     }
 
+    float deltaTime = renderer->getDeltaTime();
+
+    parallaxOffsetSky += deltaTime * 5.0f;
+    parallaxOffsetBack += deltaTime * 15.0f;
+    parallaxOffsetMid += deltaTime * 30.0f;
+    parallaxOffsetFront += deltaTime * 50.0f;
+    parallaxOffsetFloor += deltaTime * 70.0f;
+
+    if (parallaxOffsetSky >= winWidth)
+        parallaxOffsetSky = 0.0f;
+    if (parallaxOffsetBack >= winWidth)
+        parallaxOffsetBack = 0.0f;
+    if (parallaxOffsetMid >= winWidth)
+        parallaxOffsetMid = 0.0f;
+    if (parallaxOffsetFront >= winWidth)
+        parallaxOffsetFront = 0.0f;
+    if (parallaxOffsetFloor >= winWidth)
+        parallaxOffsetFloor = 0.0f;
+
+    if (moonSky != nullptr) {
+        renderer->drawTextureEx(moonSky, static_cast<int>(parallaxOffsetSky), 0, winWidth, winHeight, 0.0, false,
+                                false);
+        renderer->drawTextureEx(moonSky, static_cast<int>(parallaxOffsetSky - winWidth), 0, winWidth, winHeight, 0.0,
+                                false, false);
+    }
+
+    if (moonBack != nullptr) {
+        renderer->drawTextureEx(moonBack, static_cast<int>(parallaxOffsetBack), 0, winWidth, winHeight, 0.0, false,
+                                false);
+        renderer->drawTextureEx(moonBack, static_cast<int>(parallaxOffsetBack - winWidth), 0, winWidth, winHeight, 0.0,
+                                false, false);
+    }
+
+    if (moonMid != nullptr) {
+        renderer->drawTextureEx(moonMid, static_cast<int>(parallaxOffsetMid), 0, winWidth, winHeight, 0.0, false,
+                                false);
+        renderer->drawTextureEx(moonMid, static_cast<int>(parallaxOffsetMid - winWidth), 0, winWidth, winHeight, 0.0,
+                                false, false);
+    }
+
+    if (moonFront != nullptr) {
+        renderer->drawTextureEx(moonFront, static_cast<int>(parallaxOffsetFront), 0, winWidth, winHeight, 0.0, false,
+                                false);
+        renderer->drawTextureEx(moonFront, static_cast<int>(parallaxOffsetFront - winWidth), 0, winWidth, winHeight,
+                                0.0, false, false);
+    }
+
+    if (moonFloor != nullptr) {
+        renderer->drawTextureEx(moonFloor, static_cast<int>(parallaxOffsetFloor), 0, winWidth, winHeight, 0.0, false,
+                                false);
+        renderer->drawTextureEx(moonFloor, static_cast<int>(parallaxOffsetFloor - winWidth), 0, winWidth, winHeight,
+                                0.0, false, false);
+    }
+
     for (size_t i = 0; i < mainMenuItems.size(); i++) {
         int textWidth = 0;
         int textHeight = 0;
