@@ -10,6 +10,7 @@
 
 #include "ComponentStorage.hpp"
 #include "IComponentStorage.hpp"
+#include "ecs/Entity.hpp"
 #include <memory>
 #include <stdexcept>
 #include <typeindex>
@@ -22,7 +23,7 @@ public:
 
   // ========= ADD =========
   template <typename T>
-  void addComponent(Entity ent, const T &component)
+  void addComponent(ecs::Entity ent, const T &component)
   {
     auto &storage = ensureStorage<T>();
     storage.addComponent(ent, component);
@@ -30,14 +31,14 @@ public:
 
   // ========= GET =========
   template <typename T>
-  T &getComponent(Entity ent)
+  T &getComponent(ecs::Entity ent)
   {
     auto &storage = ensureStorage<T>();
     return storage.getComponent(ent);
   }
 
   template <typename T>
-  const T &getComponent(Entity ent) const
+  const T &getComponent(ecs::Entity ent) const
   {
     auto key = std::type_index(typeid(T));
     auto iter = storages.find(key);
@@ -51,7 +52,7 @@ public:
 
   // ========= HAS =========
   template <typename T>
-  bool hasComponent(Entity ent) const
+  bool hasComponent(ecs::Entity ent) const
   {
     auto key = std::type_index(typeid(T));
     auto iter = storages.find(key);
@@ -65,7 +66,7 @@ public:
 
   // ========= REMOVE =========
   template <typename T>
-  void removeComponent(Entity ent)
+  void removeComponent(ecs::Entity ent)
   {
     auto key = std::type_index(typeid(T));
     auto iter = storages.find(key);
@@ -78,7 +79,7 @@ public:
   }
 
   // ========= REMOVE ALL =========
-  void removeAllComponents(Entity ent)
+  void removeAllComponents(ecs::Entity ent)
   {
     for (auto &pair : storages) {
       pair.second->removeComponent(ent);

@@ -19,7 +19,7 @@ template <typename T>
 class ComponentStorage : public IComponentStorage
 {
 public:
-  void addComponent(Entity ent, const T &component)
+  void addComponent(ecs::Entity ent, const T &component)
   {
     if (ent >= sparseArray.size()) {
       sparseArray.resize(ent + 1, INVALID);
@@ -34,7 +34,7 @@ public:
     }
   }
 
-  void removeComponent(Entity ent) override
+  void removeComponent(ecs::Entity ent) override
   {
     if (ent >= sparseArray.size() || sparseArray[ent] == INVALID) {
       return;
@@ -44,7 +44,7 @@ public:
 
     // recuperer le dernier element pour le mettre a la place de celui qu'on supp
     std::size_t lastIndex = denseComponentArray.size() - 1;
-    Entity lastEntity = denseEntityArray[lastIndex];
+    ecs::Entity lastEntity = denseEntityArray[lastIndex];
     auto lastComponent = denseComponentArray[lastIndex];
 
     // deplacer le dernier a la place de ent si c'est pas le dernier
@@ -59,12 +59,12 @@ public:
     sparseArray[ent] = INVALID;
   }
 
-  [[nodiscard]] bool hasComponent(Entity ent) const override
+  [[nodiscard]] bool hasComponent(ecs::Entity ent) const override
   {
     return ent < sparseArray.size() && sparseArray[ent] != INVALID;
   }
 
-  T &getComponent(Entity ent)
+  T &getComponent(ecs::Entity ent)
   {
     if (!hasComponent(ent)) {
       throw std::out_of_range("Entity does not have this component");
@@ -72,7 +72,7 @@ public:
     return denseComponentArray[sparseArray[ent]];
   }
 
-  [[nodiscard]] const T &getComponent(Entity ent) const
+  [[nodiscard]] const T &getComponent(ecs::Entity ent) const
   {
     if (!hasComponent(ent)) {
       throw std::out_of_range("Entity does not have this component");
@@ -84,7 +84,7 @@ private:
   static constexpr std::size_t INVALID = std::numeric_limits<std::size_t>::max();
 
   std::vector<std::size_t> sparseArray;
-  std::vector<Entity> denseEntityArray;
+  std::vector<ecs::Entity> denseEntityArray;
   std::vector<T> denseComponentArray;
 };
 

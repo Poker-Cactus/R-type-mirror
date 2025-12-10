@@ -11,7 +11,6 @@
 #include <atomic>
 #include <memory>
 
-#include "../../common/include/Common.hpp"
 #include "../../network/include/INetworkManager.hpp"
 
 /**

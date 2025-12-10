@@ -14,8 +14,8 @@ class IComponentStorage
 {
 public:
   virtual ~IComponentStorage() = default;
-  virtual void removeComponent(Entity ent) = 0;
-  [[nodiscard]] virtual bool hasComponent(Entity ent) const = 0;
+  virtual void removeComponent(ecs::Entity ent) = 0;
+  [[nodiscard]] virtual bool hasComponent(ecs::Entity ent) const = 0;
 };
 
 #endif // ECS_ICOMPONENTSTORAGE_HPP_

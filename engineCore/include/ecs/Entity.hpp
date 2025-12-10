@@ -5,11 +5,16 @@
 ** Entity.hpp
 */
 
-#include <cstdint>
-
 #ifndef ECS_ENTITY_HPP_
 #define ECS_ENTITY_HPP_
 
+#include <cstdint>
+
+namespace ecs
+{
+
 using Entity = std::uint32_t;
+
+} // namespace ecs
 
 #endif
