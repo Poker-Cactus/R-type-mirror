@@ -2,7 +2,7 @@ project(client)
 
 add_executable(client
     src/main.cpp
-    src/client.cpp
+    src/Client.cpp
 )
 
 target_include_directories(client PRIVATE
@@ -10,8 +10,8 @@ target_include_directories(client PRIVATE
     ${CMAKE_CURRENT_BINARY_DIR}/include
 )
 
-target_link_libraries(client PRIVATE 
-    engine_core
+target_link_libraries(client PRIVATE
+    engineCore
     common
     network
     SDL2::SDL2

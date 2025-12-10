@@ -7,9 +7,9 @@ capnp_generate_cpp(CAPNP_SRCS CAPNP_HDRS include/GameMessage.capnp)
 
 add_library(network
     src/ANetworkManager.cpp
-    src/capnpHandler.cpp
-    src/asioServer.cpp
-    src/asioClient.cpp
+    src/CapnpHandler.cpp
+    src/AsioServer.cpp
+    src/AsioClient.cpp
     ${CAPNP_SRCS}
     ${CAPNP_HDRS}
 )

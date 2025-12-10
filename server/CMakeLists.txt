@@ -6,7 +6,7 @@ project(server)
 
 add_executable(server
     src/main.cpp
-    src/server.cpp
+    src/Server.cpp
 )
 
 target_include_directories(server PRIVATE
@@ -14,7 +14,9 @@ target_include_directories(server PRIVATE
     ${CMAKE_CURRENT_BINARY_DIR}/include
 )
 
-target_link_libraries(server PRIVATE 
-    engine_core
+target_link_libraries(server PRIVATE
+    engineCore
+    common
     network
+    asio::asio
 )
