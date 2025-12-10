@@ -320,6 +320,16 @@ void RendererSDL2::freeTexture(void *texture)
     }
 }
 
+void RendererSDL2::getTextureSize(void *texture, int &width, int &height)
+{
+    if (texture == nullptr) {
+        width = 0;
+        height = 0;
+        return;
+    }
+    SDL_QueryTexture(static_cast<SDL_Texture *>(texture), nullptr, nullptr, &width, &height);
+}
+
 void RendererSDL2::drawTexture(void *texture, int x, int y)
 {
     if (texture == nullptr) {

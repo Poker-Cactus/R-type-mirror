@@ -18,7 +18,10 @@ struct ParallaxLayer
     void *texture = nullptr;      // Texture de la couche
     float scrollSpeed = 0.0f;     // Vitesse de défilement (plus élevée = plus rapide)
     float offsetX = 0.0f;         // Décalage horizontal actuel
+    int offsetY = 0;              // Décalage vertical (position Y)
     float scale = 1.0f;           // Échelle de la texture
+    int textureWidth = 0;         // Largeur native de la texture
+    int textureHeight = 0;        // Hauteur native de la texture
 };
 
 /**
@@ -61,8 +64,9 @@ class ParallaxBackground
      * @param texturePath Chemin vers la texture
      * @param scrollSpeed Vitesse de défilement (pixels/seconde)
      * @param scale Échelle de la texture
+     * @param offsetY Décalage vertical (position Y)
      */
-    void addLayer(const std::string &texturePath, float scrollSpeed, float scale = 1.0f);
+    void addLayer(const std::string &texturePath, float scrollSpeed, float scale = 1.0f, int offsetY = 0);
 
   private:
     IRenderer *renderer;

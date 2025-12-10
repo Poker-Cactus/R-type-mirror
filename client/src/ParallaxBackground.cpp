@@ -26,20 +26,21 @@ bool ParallaxBackground::init()
     windowWidth = renderer->getWindowWidth();
     windowHeight = renderer->getWindowHeight();
 
-    // Ajouter les 3 couches de background avec des vitesses différentes
-    // Couche 1 (arrière-plan lointain) - la plus lente
-    addLayer("./client/assets/background/starfield.png", 20.0f, 1.0f);
+    // Responsive 
+    addLayer("./client/assets/background/iceberg/0-water.png", 50.0f, 1.0f, 0);
+    addLayer("./client/assets/background/iceberg/1-Sky.png", 5.0f, 1.0f, -300);
+    addLayer("./client/assets/background/iceberg/2-cloud.png", 10.0f, 1.0f, -150);
+    addLayer("./client/assets/background/iceberg/3-mountains.png", 40.0f, 0.02f, -240);
+    addLayer("./client/assets/background/iceberg/2-2-water reflex back.png", 250.0f, 1.0f, -200);
+    addLayer("./client/assets/background/iceberg/2-1-water reflex.png", 800.0f, 1.0f, -200);
+    addLayer("./client/assets/background/iceberg/4-icebergreflex.png", 220.0f, 1.0f, 120);
+    addLayer("./client/assets/background/iceberg/5-iceberg.png", 220.0f, 1.0f, 120);
     
-    // Couche 2 (plan intermédiaire) - vitesse moyenne
-    addLayer("./client/assets/background/diagonal.png", 50.0f, 1.0f);
-    
-    // Couche 3 (premier plan) - la plus rapide
-    addLayer("./client/assets/background/basic.png", 100.0f, 1.0f);
 
     return !layers.empty();
 }
 
-void ParallaxBackground::addLayer(const std::string &texturePath, float scrollSpeed, float scale)
+void ParallaxBackground::addLayer(const std::string &texturePath, float scrollSpeed, float scale, int offsetY)
 {
     if (!renderer) {
         return;
@@ -53,9 +54,13 @@ void ParallaxBackground::addLayer(const std::string &texturePath, float scrollSp
         return;
     }
 
+    // Récupérer les dimensions réelles de la texture via l'interface
+    renderer->getTextureSize(layer.texture, layer.textureWidth, layer.textureHeight);
+
     layer.scrollSpeed = scrollSpeed;
     layer.scale = scale;
     layer.offsetX = 0.0f;
+    layer.offsetY = offsetY;
 
     layers.push_back(layer);
 }
@@ -66,10 +71,10 @@ void ParallaxBackground::update(float dt)
     for (auto &layer : layers) {
         layer.offsetX += layer.scrollSpeed * dt;
         
-        // Utiliser la largeur de l'écran comme référence pour la répétition
-        // Réinitialiser l'offset pour créer l'effet infini
-        if (layer.offsetX >= windowWidth) {
-            layer.offsetX = std::fmod(layer.offsetX, static_cast<float>(windowWidth));
+        // Utiliser la largeur réelle de la texture pour la répétition seamless
+        // Réinitialiser l'offset quand on a dépassé une largeur de texture
+        if (layer.offsetX >= layer.textureWidth) {
+            layer.offsetX = std::fmod(layer.offsetX, static_cast<float>(layer.textureWidth));
         }
     }
 }
@@ -92,16 +97,14 @@ void ParallaxBackground::renderLayer(const ParallaxLayer &layer)
         return;
     }
 
-    // On dessine la texture 3 fois côte à côte pour assurer la couverture complète
     // Position de départ (décalée par l'offset)
     int startX = -static_cast<int>(layer.offsetX);
 
-    // Dessiner 3 copies de la texture pour couvrir l'écran + défilement
-    for (int i = 0; i < 3; ++i) {
-        int x = startX + (i * windowWidth);
-        
-        // Dessiner la texture en plein écran
-        renderer->drawTextureEx(layer.texture, x, 0, windowWidth, windowHeight, 0.0, false, false);
+    // Dessiner plusieurs copies de la texture pour couvrir l'écran
+    // Utiliser la largeur réelle de la texture pour les mettre bout à bout sans overlap
+    for (int i = 0; i < 5; ++i) {
+        int x = startX + (i * layer.textureWidth);
+        renderer->drawTexture(layer.texture, x, layer.offsetY);
     }
 }
 
