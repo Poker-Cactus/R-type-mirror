@@ -8,11 +8,11 @@
 #ifndef SERVER_COLLISION_SYSTEM_HPP_
 #define SERVER_COLLISION_SYSTEM_HPP_
 
+#include "../../../engineCore/include/ecs/Entity.hpp"
 #include "../../../engineCore/include/ecs/ISystem.hpp"
 #include "../../../engineCore/include/ecs/World.hpp"
-#include "../../../engineCore/include/ecs/Entity.hpp"
-#include "../../../engineCore/include/ecs/components/Transform.hpp"
 #include "../../../engineCore/include/ecs/components/Collider.hpp"
+#include "../../../engineCore/include/ecs/components/Transform.hpp"
 #include "../../../engineCore/include/ecs/events/GameEvents.hpp"
 #include "ecs/ComponentSignature.hpp"
 #include <algorithm>
@@ -34,7 +34,7 @@ public:
   void update(ecs::World &world, float deltaTime) override
   {
     (void)deltaTime;
-    
+
     std::vector<ecs::Entity> entities;
     world.getEntitiesWithSignature(getSignature(), entities);
 
@@ -67,8 +67,8 @@ public:
   }
 
 private:
-  static bool checkCollision(const ecs::Transform &transA, const ecs::Collider &colA,
-                      const ecs::Transform &transB, const ecs::Collider &colB) 
+  static bool checkCollision(const ecs::Transform &transA, const ecs::Collider &colA, const ecs::Transform &transB,
+                             const ecs::Collider &colB)
   {
     if (colA.shape == ecs::Collider::Shape::BOX && colB.shape == ecs::Collider::Shape::BOX) {
       return checkBoxBox(transA, colA, transB, colB);
@@ -79,17 +79,15 @@ private:
     return checkBoxCircle(transA, colA, transB, colB);
   }
 
-  static bool checkBoxBox(const ecs::Transform &transA, const ecs::Collider &colA,
-                   const ecs::Transform &transB, const ecs::Collider &colB) 
+  static bool checkBoxBox(const ecs::Transform &transA, const ecs::Collider &colA, const ecs::Transform &transB,
+                          const ecs::Collider &colB)
   {
-    return transA.x < transB.x + colB.width &&
-           transA.x + colA.width > transB.x &&
-           transA.y < transB.y + colB.height &&
-           transA.y + colA.height > transB.y;
+    return transA.x < transB.x + colB.width && transA.x + colA.width > transB.x && transA.y < transB.y + colB.height &&
+      transA.y + colA.height > transB.y;
   }
 
-  static bool checkCircleCircle(const ecs::Transform &transA, const ecs::Collider &colA,
-                         const ecs::Transform &transB, const ecs::Collider &colB) 
+  static bool checkCircleCircle(const ecs::Transform &transA, const ecs::Collider &colA, const ecs::Transform &transB,
+                                const ecs::Collider &colB)
   {
     float dx = transB.x - transA.x;
     float dy = transB.y - transA.y;
@@ -97,8 +95,8 @@ private:
     return distance < (colA.radius + colB.radius);
   }
 
-  static bool checkBoxCircle(const ecs::Transform &transA, const ecs::Collider &colA,
-                      const ecs::Transform &transB, const ecs::Collider &colB) 
+  static bool checkBoxCircle(const ecs::Transform &transA, const ecs::Collider &colA, const ecs::Transform &transB,
+                             const ecs::Collider &colB)
   {
     const ecs::Transform *box = &transA;
     const ecs::Collider *boxCol = &colA;

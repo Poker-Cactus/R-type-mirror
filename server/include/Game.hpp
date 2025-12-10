@@ -31,7 +31,7 @@ private:
   std::chrono::steady_clock::time_point currentTime;
   std::chrono::steady_clock::time_point nextTick;
   std::chrono::milliseconds tickRate{16};
-  
+
   // System pointers for initialization
   server::DamageSystem *damageSystem = nullptr;
   server::DeathSystem *deathSystem = nullptr;

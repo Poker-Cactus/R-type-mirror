@@ -8,13 +8,13 @@
 #ifndef SERVER_SHOOTING_SYSTEM_HPP_
 #define SERVER_SHOOTING_SYSTEM_HPP_
 
+#include "../../../engineCore/include/ecs/Entity.hpp"
 #include "../../../engineCore/include/ecs/ISystem.hpp"
 #include "../../../engineCore/include/ecs/World.hpp"
-#include "../../../engineCore/include/ecs/Entity.hpp"
-#include "../../../engineCore/include/ecs/components/Transform.hpp"
 #include "../../../engineCore/include/ecs/components/Input.hpp"
-#include "../../../engineCore/include/ecs/events/GameEvents.hpp"
+#include "../../../engineCore/include/ecs/components/Transform.hpp"
 #include "../../../engineCore/include/ecs/events/EventListenerHandle.hpp"
+#include "../../../engineCore/include/ecs/events/GameEvents.hpp"
 #include "ecs/ComponentSignature.hpp"
 #include <unordered_map>
 #include <vector>
@@ -33,7 +33,7 @@ public:
   void update(ecs::World &world, float deltaTime) override
   {
     (void)deltaTime;
-    
+
     std::vector<ecs::Entity> entities;
     world.getEntitiesWithSignature(getSignature(), entities);
 
@@ -45,11 +45,11 @@ public:
         // Emit shoot event
         ecs::ShootEvent shootEvent(entity, 1.0F, 0.0F);
         world.emitEvent(shootEvent);
-        
+
         m_lastShootTime[entity] = m_currentTime;
       }
     }
-    
+
     m_currentTime += deltaTime;
   }
 
@@ -58,10 +58,8 @@ public:
    */
   void initialize(ecs::World &world)
   {
-    m_shootHandle = world.subscribeEvent<ecs::ShootEvent>(
-      [&world](const ecs::ShootEvent &event) {
-        spawnProjectile(world, event);
-      });
+    m_shootHandle =
+      world.subscribeEvent<ecs::ShootEvent>([&world](const ecs::ShootEvent &event) { spawnProjectile(world, event); });
   }
 
   [[nodiscard]] ecs::ComponentSignature getSignature() const override
@@ -96,12 +94,9 @@ private:
     const auto &transform = world.getComponent<ecs::Transform>(event.shooter);
 
     // Emit spawn event for projectile
-    ecs::SpawnEntityEvent spawnEvent(
-      ecs::SpawnEntityEvent::EntityType::PROJECTILE,
-      transform.x + 20.0F, // Offset from shooter
-      transform.y,
-      event.shooter
-    );
+    ecs::SpawnEntityEvent spawnEvent(ecs::SpawnEntityEvent::EntityType::PROJECTILE,
+                                     transform.x + 20.0F, // Offset from shooter
+                                     transform.y, event.shooter);
     world.emitEvent(spawnEvent);
   }
 };

@@ -8,9 +8,9 @@
 #ifndef SERVER_ENEMY_AI_SYSTEM_HPP_
 #define SERVER_ENEMY_AI_SYSTEM_HPP_
 
+#include "../../../engineCore/include/ecs/Entity.hpp"
 #include "../../../engineCore/include/ecs/ISystem.hpp"
 #include "../../../engineCore/include/ecs/World.hpp"
-#include "../../../engineCore/include/ecs/Entity.hpp"
 #include "../../../engineCore/include/ecs/components/Transform.hpp"
 #include "../../../engineCore/include/ecs/components/Velocity.hpp"
 #include "../../../engineCore/include/ecs/events/GameEvents.hpp"

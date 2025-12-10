@@ -8,13 +8,13 @@
 #ifndef SERVER_DAMAGE_SYSTEM_HPP_
 #define SERVER_DAMAGE_SYSTEM_HPP_
 
+#include "../../../engineCore/include/ecs/Entity.hpp"
 #include "../../../engineCore/include/ecs/ISystem.hpp"
 #include "../../../engineCore/include/ecs/World.hpp"
-#include "../../../engineCore/include/ecs/Entity.hpp"
 #include "../../../engineCore/include/ecs/components/Health.hpp"
 #include "../../../engineCore/include/ecs/components/Velocity.hpp"
-#include "../../../engineCore/include/ecs/events/GameEvents.hpp"
 #include "../../../engineCore/include/ecs/events/EventListenerHandle.hpp"
+#include "../../../engineCore/include/ecs/events/GameEvents.hpp"
 #include "ecs/ComponentSignature.hpp"
 
 namespace server
@@ -42,9 +42,7 @@ public:
   {
     // Subscribe to collision events
     m_collisionHandle = world.subscribeEvent<ecs::CollisionEvent>(
-      [&world](const ecs::CollisionEvent &event) {
-        handleCollision(world, event);
-      });
+      [&world](const ecs::CollisionEvent &event) { handleCollision(world, event); });
   }
 
   [[nodiscard]] ecs::ComponentSignature getSignature() const override
@@ -80,8 +78,7 @@ private:
     }
   }
 
-  static void applyDamage(ecs::World &world, ecs::Entity target, ecs::Entity source, 
-                         int damage)
+  static void applyDamage(ecs::World &world, ecs::Entity target, ecs::Entity source, int damage)
   {
     if (!world.hasComponent<ecs::Health>(target)) {
       return;

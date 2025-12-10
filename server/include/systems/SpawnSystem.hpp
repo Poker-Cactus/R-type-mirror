@@ -8,15 +8,15 @@
 #ifndef SERVER_SPAWN_SYSTEM_HPP_
 #define SERVER_SPAWN_SYSTEM_HPP_
 
+#include "../../../engineCore/include/ecs/Entity.hpp"
 #include "../../../engineCore/include/ecs/ISystem.hpp"
 #include "../../../engineCore/include/ecs/World.hpp"
-#include "../../../engineCore/include/ecs/Entity.hpp"
+#include "../../../engineCore/include/ecs/components/Collider.hpp"
+#include "../../../engineCore/include/ecs/components/Health.hpp"
 #include "../../../engineCore/include/ecs/components/Transform.hpp"
 #include "../../../engineCore/include/ecs/components/Velocity.hpp"
-#include "../../../engineCore/include/ecs/components/Health.hpp"
-#include "../../../engineCore/include/ecs/components/Collider.hpp"
-#include "../../../engineCore/include/ecs/events/GameEvents.hpp"
 #include "../../../engineCore/include/ecs/events/EventListenerHandle.hpp"
+#include "../../../engineCore/include/ecs/events/GameEvents.hpp"
 #include "ecs/ComponentSignature.hpp"
 #include <random>
 
@@ -34,7 +34,7 @@ public:
   void update(ecs::World &world, float deltaTime) override
   {
     m_spawnTimer += deltaTime;
-    
+
     // Spawn enemies periodically
     if (m_spawnTimer >= SPAWN_INTERVAL) {
       spawnRandomEnemy(world);
@@ -46,15 +46,10 @@ public:
   {
     // Subscribe to spawn events
     m_spawnHandle = world.subscribeEvent<ecs::SpawnEntityEvent>(
-      [&world](const ecs::SpawnEntityEvent &event) {
-        handleSpawnEvent(world, event);
-      });
+      [&world](const ecs::SpawnEntityEvent &event) { handleSpawnEvent(world, event); });
   }
 
-  [[nodiscard]] ecs::ComponentSignature getSignature() const override
-  {
-    return {};
-  }
+  [[nodiscard]] ecs::ComponentSignature getSignature() const override { return {}; }
 
 private:
   ecs::EventListenerHandle m_spawnHandle;
@@ -65,55 +60,52 @@ private:
   void spawnRandomEnemy(ecs::World &world)
   {
     std::uniform_real_distribution<float> yDist(100.0F, 500.0F);
-    
-    ecs::SpawnEntityEvent event(
-      ecs::SpawnEntityEvent::EntityType::ENEMY,
-      800.0F, // Right side of screen
-      yDist(m_rng),
-      0
-    );
+
+    ecs::SpawnEntityEvent event(ecs::SpawnEntityEvent::EntityType::ENEMY,
+                                800.0F, // Right side of screen
+                                yDist(m_rng), 0);
     world.emitEvent(event);
   }
 
   static void handleSpawnEvent(ecs::World &world, const ecs::SpawnEntityEvent &event)
   {
     switch (event.type) {
-      case ecs::SpawnEntityEvent::EntityType::ENEMY:
-        spawnEnemy(world, event.x, event.y);
-        break;
-      case ecs::SpawnEntityEvent::EntityType::PROJECTILE:
-        spawnProjectile(world, event.x, event.y, event.spawner);
-        break;
-      case ecs::SpawnEntityEvent::EntityType::POWERUP:
-        spawnPowerup(world, event.x, event.y);
-        break;
-      case ecs::SpawnEntityEvent::EntityType::EXPLOSION:
-        spawnExplosion(world, event.x, event.y);
-        break;
+    case ecs::SpawnEntityEvent::EntityType::ENEMY:
+      spawnEnemy(world, event.x, event.y);
+      break;
+    case ecs::SpawnEntityEvent::EntityType::PROJECTILE:
+      spawnProjectile(world, event.x, event.y, event.spawner);
+      break;
+    case ecs::SpawnEntityEvent::EntityType::POWERUP:
+      spawnPowerup(world, event.x, event.y);
+      break;
+    case ecs::SpawnEntityEvent::EntityType::EXPLOSION:
+      spawnExplosion(world, event.x, event.y);
+      break;
     }
   }
 
   static void spawnEnemy(ecs::World &world, float x, float y)
   {
     ecs::Entity enemy = world.createEntity();
-    
+
     ecs::Transform transform;
     transform.x = x;
     transform.y = y;
     transform.rotation = 0.0F;
     transform.scale = 1.0F;
     world.addComponent(enemy, transform);
-    
+
     ecs::Velocity velocity;
     velocity.dx = -50.0F;
     velocity.dy = 0.0F;
     world.addComponent(enemy, velocity);
-    
+
     ecs::Health health;
     health.hp = 30;
     health.maxHp = 30;
     world.addComponent(enemy, health);
-    
+
     world.addComponent(enemy, ecs::Collider{32.0F, 32.0F});
   }
 
@@ -128,21 +120,21 @@ private:
         projectileVelocity = -300.0F;
       }
     }
-    
+
     ecs::Entity projectile = world.createEntity();
-    
+
     ecs::Transform transform;
     transform.x = x;
     transform.y = y;
     transform.rotation = 0.0F;
     transform.scale = 1.0F;
     world.addComponent(projectile, transform);
-    
+
     ecs::Velocity velocity;
     velocity.dx = projectileVelocity;
     velocity.dy = 0.0F;
     world.addComponent(projectile, velocity);
-    
+
     world.addComponent(projectile, ecs::Collider{8.0F, 8.0F});
   }
 

@@ -18,25 +18,24 @@ namespace ecs
  */
 struct Collider : public IComponent {
   enum class Shape { BOX, CIRCLE };
-  
+
   Shape shape;
   float width;
   float height;
   float radius;
-  bool isTrigger;     // If true, doesn't apply physics, just emits events
-  
-  Collider(float w = 32.0F, float h = 32.0F)
-    : shape(Shape::BOX), width(w), height(h), radius(16.0F), isTrigger(false) {}
-  
+  bool isTrigger; // If true, doesn't apply physics, just emits events
+
+  Collider(float w = 32.0F, float h = 32.0F) : shape(Shape::BOX), width(w), height(h), radius(16.0F), isTrigger(false)
+  {
+  }
+
   [[nodiscard]] nlohmann::json toJson() const override
   {
-    return {
-      {"shape", shape == Shape::BOX ? "box" : "circle"},
-      {"width", width},
-      {"height", height},
-      {"radius", radius},
-      {"isTrigger", isTrigger}
-    };
+    return {{"shape", shape == Shape::BOX ? "box" : "circle"},
+            {"width", width},
+            {"height", height},
+            {"radius", radius},
+            {"isTrigger", isTrigger}};
   }
 };
 
