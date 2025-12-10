@@ -6,9 +6,14 @@
 */
 
 #include "Menu.hpp"
+#include "Menu/LoadingMenu/LoadingMenu.hpp"
+#include "Menu/LobbyMenu/LobbyMenu.hpp"
+#include "Menu/MainMenu/MainMenu.hpp"
+#include "Menu/ProfileMenu/ProfileMenu.hpp"
+#include "Menu/SettingsMenu/SettingsMenu.hpp"
 #include <cmath>
 
-Menu::Menu(IRenderer *renderer) : renderer(renderer), backgroundTexture(nullptr), blinkTimer(0.0f) {}
+Menu::Menu(IRenderer *renderer) : renderer(renderer) {}
 
 Menu::~Menu()
 {
@@ -20,21 +25,27 @@ void Menu::init()
     try {
         const int menuFontSize = 24;
         const int titleFontSize = 48;
-        logo = renderer->loadTexture("client/assets/logoRTYPE.png");
-        backgroundTexture = renderer->loadTexture("client/assets/background/starfield.png");
         menu_font = renderer->loadFont("client/assets/font.opf/r-type.otf", menuFontSize);
-        title_font = renderer->loadFont("client/assets/font.opf/r-type.otf", titleFontSize);
-        planet = renderer->loadTexture("client/assets/moon-pack/moon1.png");
-        moonSky = renderer->loadTexture("client/assets/moon-para/moon_sky.png");
-        moonBack = renderer->loadTexture("client/assets/moon-para/moon_back.png");
-        moonMid = renderer->loadTexture("client/assets/moon-para/moon_mid.png");
-        moonFront = renderer->loadTexture("client/assets/moon-para/moon_front.png");
-        moonFloor = renderer->loadTexture("client/assets/moon-para/moon_floor.png");
+
+        loadingMenu = new LoadingMenu();
+        loadingMenu->init(renderer);
+
+        // Initialiser MainMenu
+        mainMenu = new MainMenu();
+        mainMenu->init(renderer);
+
+        lobbyMenu = new LobbyMenu();
+        lobbyMenu->init(renderer);
+
+        profileMenu = new ProfileMenu();
+        profileMenu->init(renderer);
+
+        settingsMenu = new SettingsMenu();
+        settingsMenu->init(renderer);
 
         // Initialiser le LoadingScreen
         loadingScreen = new LoadingScreen(renderer, menu_font);
     } catch (const std::exception &e) {
-        backgroundTexture = nullptr;
     }
 }
 
@@ -45,19 +56,19 @@ void Menu::render()
 
     switch (currentState) {
     case MenuState::LOADING:
-        renderLoading(winWidth, winHeight);
+        loadingMenu->render(winWidth, winHeight, renderer, loadingScreen, &currentState);
         break;
     case MenuState::MAIN_MENU:
-        renderMainMenu(winWidth, winHeight);
+        mainMenu->render(winWidth, winHeight, renderer);
         break;
     case MenuState::PROFILE:
-        renderProfile(winWidth, winHeight);
+        profileMenu->render(winWidth, winHeight, renderer);
         break;
     case MenuState::LOBBY:
-        renderLobby(winWidth, winHeight);
+        lobbyMenu->render(winWidth, winHeight, renderer);
         break;
     case MenuState::SETTINGS:
-        renderSettings(winWidth, winHeight);
+        settingsMenu->render(winWidth, winHeight, renderer);
         break;
     }
 }
@@ -66,19 +77,19 @@ void Menu::processInput()
 {
     switch (currentState) {
     case MenuState::LOADING:
-        this->processLoading();
+        loadingMenu->process(renderer);
         break;
     case MenuState::MAIN_MENU:
-        this->processMainMenu();
+        mainMenu->process(&currentState, renderer);
         break;
     case MenuState::PROFILE:
-        this->processProfile();
+        profileMenu->process(renderer);
         break;
     case MenuState::SETTINGS:
-        this->processSettings();
+        settingsMenu->process(renderer);
         break;
     case MenuState::LOBBY:
-        this->processLobby();
+        lobbyMenu->process(renderer);
         break;
     default:
         break;
@@ -88,14 +99,7 @@ void Menu::processInput()
 
 void Menu::cleanup()
 {
-    if (backgroundTexture != nullptr) {
-        renderer->freeTexture(backgroundTexture);
-        backgroundTexture = nullptr;
-    }
-    if (loadingScreen != nullptr) {
-        delete loadingScreen;
-        loadingScreen = nullptr;
-    }
+
 }
 
 void Menu::setState(MenuState newState)
