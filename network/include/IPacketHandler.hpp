@@ -39,12 +39,11 @@ public:
   /**
    * @brief Deserialize bytes to a message string
    *
-   * @param recvBuffer The receive buffer
+   * @param buffer The receive buffer
    * @param bytesTransferred Number of bytes received
    * @return Deserialized message string
    */
-  virtual std::string deserialize(const std::array<char, BUFFER_SIZE> &recvBuffer,
-                                  std::size_t bytesTransferred) const = 0;
+  virtual std::string deserialize(const std::array<char, BUFFER_SIZE> &buffer, std::size_t bytesTransferred) const = 0;
 };
 
 #endif // I_PACKET_HANDLER_HPP_

@@ -6,22 +6,42 @@
 */
 
 #include "../include/Server.hpp"
+#include <chrono>
+#include <csignal>
 #include <iostream>
+#include <thread>
+
+std::atomic<bool> Server::g_running{true};
 
 Server::Server(std::shared_ptr<INetworkManager> networkManager) : m_networkManager(networkManager)
 {
+  std::signal(SIGINT, Server::signalHandler);
   if (!networkManager) {
     std::cout << "Invalid Network Manager provided to Server." << std::endl;
     return;
   }
   networkManager->start();
-  while (true) {
-    NetworkPacket msg;
-    if (networkManager->poll(msg)) {
-      std::string data(reinterpret_cast<const char *>(msg.getData().data()), msg.getData().size());
-      std::cout << "Data: " << data << std::endl;
-    }
-  }
 }
 
 Server::~Server() {}
+
+void Server::loop()
+{
+  while (g_running) {
+    NetworkPacket msg;
+    if (m_networkManager->poll(msg)) {
+      std::string data = m_networkManager->getPacketHandler()->deserialize(msg.getData(), msg.getBytesTransferred());
+      std::cout << "Data: " << data << std::endl;
+    }
+    auto serialized = m_networkManager->getPacketHandler()->serialize("PONG");
+    m_networkManager->send(
+      std::span<const std::byte>(reinterpret_cast<const std::byte *>(serialized.data()), serialized.size()), 0);
+    std::this_thread::sleep_for(std::chrono::milliseconds(16));
+  }
+}
+
+void Server::signalHandler(int signum)
+{
+  (void)signum;
+  g_running = false;
+}

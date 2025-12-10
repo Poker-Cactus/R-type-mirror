@@ -6,6 +6,7 @@
 */
 
 #include "../include/CapnpHandler.hpp"
+#include "../include/GameMessage.capnp.h"
 
 std::vector<std::uint8_t> CapnpHandler::serialize(const std::string &data) const
 {
@@ -20,13 +21,12 @@ std::vector<std::uint8_t> CapnpHandler::serialize(const std::string &data) const
   return std::vector<std::uint8_t>(arr.begin(), arr.end());
 }
 
-std::string CapnpHandler::deserialize(const std::array<char, BUFFER_SIZE> &recvBuffer,
-                                      std::size_t bytesTransferred) const
+std::string CapnpHandler::deserialize(const std::array<char, BUFFER_SIZE> &buffer, std::size_t bytesTransferred) const
 {
   if (bytesTransferred == 0) {
     throw std::runtime_error("Empty buffer received");
   }
-  kj::ArrayPtr<const kj::byte> bytes(reinterpret_cast<const kj::byte *>(recvBuffer.data()), bytesTransferred);
+  kj::ArrayPtr<const kj::byte> bytes(reinterpret_cast<const kj::byte *>(buffer.data()), bytesTransferred);
   kj::ArrayInputStream stream(bytes);
 
   try {
