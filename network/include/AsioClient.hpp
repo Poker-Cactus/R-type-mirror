@@ -39,6 +39,7 @@ public:
   void start() override;
   void stop() override;
   bool poll(NetworkPacket &msg) override;
+  std::unordered_map<std::uint32_t, asio::ip::udp::endpoint> getClients() const override;
 
 private:
   void receive();

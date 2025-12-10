@@ -15,6 +15,7 @@
 
 #include "../../common/include/network/NetworkPacket.hpp"
 #include "IPacketHandler.hpp"
+#include <asio.hpp>
 
 /**
  * @brief Network event types
@@ -72,6 +73,8 @@ public:
    * @return Shared pointer to the packet handler
    */
   virtual std::shared_ptr<IPacketHandler> getPacketHandler() const = 0;
+
+  virtual std::unordered_map<std::uint32_t, asio::ip::udp::endpoint> getClients() const = 0;
 };
 
 #endif // I_NETWORK_MANAGER_HPP_

@@ -85,3 +85,8 @@ bool AsioClient::poll(NetworkPacket &msg)
 {
   return m_incomingMessages.pop(msg);
 }
+
+std::unordered_map<std::uint32_t, asio::ip::udp::endpoint> AsioClient::getClients() const
+{
+  return {};
+}
