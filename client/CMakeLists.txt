@@ -3,6 +3,8 @@ project(client)
 add_executable(client
     src/main.cpp
     src/Client.cpp
+    src/systems/NetworkSendSystem.cpp
+    src/systems/NetworkReceiveSystem.cpp
 )
 
 target_include_directories(client PRIVATE

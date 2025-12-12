@@ -155,7 +155,7 @@ TEST_SUITE("World")
   TEST_CASE("Component management")
   {
     ecs::World world;
-    Entity entity = world.createEntity();
+    ecs::Entity entity = world.createEntity();
 
     SUBCASE("Add component")
     {
@@ -231,7 +231,7 @@ TEST_SUITE("World")
   TEST_CASE("Entity signature")
   {
     ecs::World world;
-    Entity entity = world.createEntity();
+    ecs::Entity entity = world.createEntity();
 
     SUBCASE("Get entity signature")
     {
@@ -256,7 +256,7 @@ TEST_SUITE("World")
   TEST_CASE("Const correctness")
   {
     ecs::World world;
-    Entity entity = world.createEntity();
+    ecs::Entity entity = world.createEntity();
     world.addComponent(entity, Position{.x = 1.0F, .y = 2.0F});
 
     SUBCASE("Const getComponent")
@@ -299,8 +299,8 @@ TEST_SUITE("World")
       world.registerSystem<MovementSystem>();
 
       // Create entities
-      Entity player = world.createEntity();
-      Entity enemy = world.createEntity();
+      ecs::Entity player = world.createEntity();
+      ecs::Entity enemy = world.createEntity();
 
       // Add components
       world.addComponent(player, Position{.x = 0.0F, .y = 0.0F});
@@ -338,9 +338,9 @@ TEST_SUITE("World")
 
     SUBCASE("Independent component management per entity")
     {
-      Entity ent0 = world.createEntity();
-      Entity ent1 = world.createEntity();
-      Entity ent2 = world.createEntity();
+      ecs::Entity ent0 = world.createEntity();
+      ecs::Entity ent1 = world.createEntity();
+      ecs::Entity ent2 = world.createEntity();
 
       world.addComponent(ent0, Position{.x = 1.0F, .y = 1.0F});
       world.addComponent(ent1, Position{.x = 2.0F, .y = 2.0F});
@@ -353,8 +353,8 @@ TEST_SUITE("World")
 
     SUBCASE("Different components per entity")
     {
-      Entity ent0 = world.createEntity();
-      Entity ent1 = world.createEntity();
+      ecs::Entity ent0 = world.createEntity();
+      ecs::Entity ent1 = world.createEntity();
 
       world.addComponent(ent0, Position{.x = 1.0F, .y = 1.0F});
       world.addComponent(ent0, Velocity{.dx = 2.0F, .dy = 2.0F});
@@ -378,13 +378,13 @@ TEST_SUITE("World")
 
     SUBCASE("Get non-existent component throws")
     {
-      Entity entity = world.createEntity();
+      ecs::Entity entity = world.createEntity();
       CHECK_THROWS_AS(world.getComponent<Position>(entity), std::out_of_range);
     }
 
     SUBCASE("Remove non-existent component doesn't crash")
     {
-      Entity entity = world.createEntity();
+      ecs::Entity entity = world.createEntity();
       CHECK_NOTHROW(world.removeComponent<Position>(entity));
     }
   }
@@ -396,15 +396,15 @@ TEST_SUITE("World")
     SUBCASE("Entities matching the signature are returned")
     {
       // Create entities with different component combinations
-      Entity player = world.createEntity();
+      ecs::Entity player = world.createEntity();
       world.addComponent(player, Position{.x = 1.0F, .y = 2.0F});
       world.addComponent(player, Velocity{.dx = 3.0F, .dy = 4.0F});
 
-      Entity enemy = world.createEntity();
+      ecs::Entity enemy = world.createEntity();
       world.addComponent(enemy, Position{.x = 5.0F, .y = 6.0F});
       world.addComponent(enemy, Velocity{.dx = 7.0F, .dy = 8.0F});
 
-      Entity staticObj = world.createEntity();
+      ecs::Entity staticObj = world.createEntity();
       world.addComponent(staticObj, Position{.x = 9.0F, .y = 10.0F});
 
       // Query for entities with Position and Velocity
@@ -412,7 +412,7 @@ TEST_SUITE("World")
       signature.set(ecs::getComponentId<Position>());
       signature.set(ecs::getComponentId<Velocity>());
 
-      std::vector<Entity> entities;
+      std::vector<ecs::Entity> entities;
       world.getEntitiesWithSignature(signature, entities);
 
       // Both player and enemy should be returned
@@ -424,13 +424,13 @@ TEST_SUITE("World")
 
     SUBCASE("Entities not matching the signature are excluded")
     {
-      Entity ent1 = world.createEntity();
+      ecs::Entity ent1 = world.createEntity();
       world.addComponent(ent1, Position{.x = 1.0F, .y = 1.0F});
 
-      Entity ent2 = world.createEntity();
+      ecs::Entity ent2 = world.createEntity();
       world.addComponent(ent2, Velocity{.dx = 2.0F, .dy = 2.0F});
 
-      Entity ent3 = world.createEntity();
+      ecs::Entity ent3 = world.createEntity();
       world.addComponent(ent3, Health{100});
 
       // Query for Position + Velocity
@@ -438,7 +438,7 @@ TEST_SUITE("World")
       signature.set(ecs::getComponentId<Position>());
       signature.set(ecs::getComponentId<Velocity>());
 
-      std::vector<Entity> entities;
+      std::vector<ecs::Entity> entities;
       world.getEntitiesWithSignature(signature, entities);
 
       // No entity has both Position and Velocity
@@ -447,13 +447,13 @@ TEST_SUITE("World")
 
     SUBCASE("Dead entities are not included in results")
     {
-      Entity alive1 = world.createEntity();
+      ecs::Entity alive1 = world.createEntity();
       world.addComponent(alive1, Position{.x = 1.0F, .y = 1.0F});
 
-      Entity toDestroy = world.createEntity();
+      ecs::Entity toDestroy = world.createEntity();
       world.addComponent(toDestroy, Position{.x = 2.0F, .y = 2.0F});
 
-      Entity alive2 = world.createEntity();
+      ecs::Entity alive2 = world.createEntity();
       world.addComponent(alive2, Position{.x = 3.0F, .y = 3.0F});
 
       // Destroy one entity
@@ -463,7 +463,7 @@ TEST_SUITE("World")
       ecs::ComponentSignature signature;
       signature.set(ecs::getComponentId<Position>());
 
-      std::vector<Entity> entities;
+      std::vector<ecs::Entity> entities;
       world.getEntitiesWithSignature(signature, entities);
 
       // Only alive entities should be returned
@@ -475,16 +475,16 @@ TEST_SUITE("World")
 
     SUBCASE("The output vector is properly cleared before populating")
     {
-      Entity ent1 = world.createEntity();
+      ecs::Entity ent1 = world.createEntity();
       world.addComponent(ent1, Position{.x = 1.0F, .y = 1.0F});
 
-      Entity ent2 = world.createEntity();
+      ecs::Entity ent2 = world.createEntity();
       world.addComponent(ent2, Position{.x = 2.0F, .y = 2.0F});
 
       ecs::ComponentSignature signature;
       signature.set(ecs::getComponentId<Position>());
 
-      std::vector<Entity> entities;
+      std::vector<ecs::Entity> entities;
       entities.push_back(999); // Pre-populate vector with invalid entity
       entities.push_back(888);
 
@@ -500,19 +500,19 @@ TEST_SUITE("World")
 
     SUBCASE("Edge case: empty signature returns all alive entities")
     {
-      Entity ent1 = world.createEntity();
+      ecs::Entity ent1 = world.createEntity();
       world.addComponent(ent1, Position{.x = 1.0F, .y = 1.0F});
 
-      Entity ent2 = world.createEntity();
+      ecs::Entity ent2 = world.createEntity();
       world.addComponent(ent2, Velocity{.dx = 2.0F, .dy = 2.0F});
 
-      Entity ent3 = world.createEntity();
+      ecs::Entity ent3 = world.createEntity();
       world.addComponent(ent3, Health{100});
 
       // Empty signature (no components required)
       ecs::ComponentSignature emptySignature;
 
-      std::vector<Entity> entities;
+      std::vector<ecs::Entity> entities;
       world.getEntitiesWithSignature(emptySignature, entities);
 
       // All alive entities should match an empty signature
@@ -524,10 +524,10 @@ TEST_SUITE("World")
 
     SUBCASE("Edge case: no matching entities returns empty vector")
     {
-      Entity ent1 = world.createEntity();
+      ecs::Entity ent1 = world.createEntity();
       world.addComponent(ent1, Position{.x = 1.0F, .y = 1.0F});
 
-      Entity ent2 = world.createEntity();
+      ecs::Entity ent2 = world.createEntity();
       world.addComponent(ent2, Velocity{.dx = 2.0F, .dy = 2.0F});
 
       // Query for Position + Velocity + Health (no entity has all three)
@@ -536,7 +536,7 @@ TEST_SUITE("World")
       signature.set(ecs::getComponentId<Velocity>());
       signature.set(ecs::getComponentId<Health>());
 
-      std::vector<Entity> entities;
+      std::vector<ecs::Entity> entities;
       world.getEntitiesWithSignature(signature, entities);
 
       // No entities match
@@ -548,7 +548,7 @@ TEST_SUITE("World")
       ecs::ComponentSignature signature;
       signature.set(ecs::getComponentId<Position>());
 
-      std::vector<Entity> entities;
+      std::vector<ecs::Entity> entities;
       world.getEntitiesWithSignature(signature, entities);
 
       // No entities exist
@@ -557,14 +557,14 @@ TEST_SUITE("World")
 
     SUBCASE("Multiple queries with the same vector reuse")
     {
-      Entity ent1 = world.createEntity();
+      ecs::Entity ent1 = world.createEntity();
       world.addComponent(ent1, Position{.x = 1.0F, .y = 1.0F});
 
-      Entity ent2 = world.createEntity();
+      ecs::Entity ent2 = world.createEntity();
       world.addComponent(ent2, Position{.x = 2.0F, .y = 2.0F});
       world.addComponent(ent2, Velocity{.dx = 3.0F, .dy = 3.0F});
 
-      std::vector<Entity> entities;
+      std::vector<ecs::Entity> entities;
 
       // First query: Position only
       ecs::ComponentSignature posSignature;

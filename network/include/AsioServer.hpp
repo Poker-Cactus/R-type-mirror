@@ -10,14 +10,21 @@
 
 #include <asio.hpp>
 #include <cstdint>
+#include <memory>
 #include <span>
 #include <thread>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 
 #include "../../common/include/network/NetworkPacket.hpp"
 #include "../../common/include/network/SafeQueue.hpp"
 #include "ANetworkManager.hpp"
+
+namespace ecs
+{
+class World;
+}
 
 /**
  * @brief Asynchronous UDP server using ASIO
@@ -40,10 +47,13 @@ public:
   void stop() override;
   bool poll(NetworkPacket &msg) override;
   [[nodiscard]] std::unordered_map<std::uint32_t, asio::ip::udp::endpoint> getClients() const override;
+  void setWorld(const std::shared_ptr<ecs::World> &world);
+  [[nodiscard]] std::size_t getConnectedPlayersCount() const;
 
 private:
   void receive();
-  std::uint32_t getOrCreateClientId(const asio::ip::udp::endpoint &endpoint);
+  std::pair<std::uint32_t, bool> getOrCreateClientId(const asio::ip::udp::endpoint &endpoint);
+  void createPlayerEntity(std::uint32_t clientId);
 
   SafeQueue<NetworkPacket> m_incomingMessages;
   asio::io_context m_ioContext;
@@ -54,6 +64,8 @@ private:
   std::uint32_t m_nextClientId;
   asio::executor_work_guard<asio::io_context::executor_type> m_workGuard;
   asio::ip::udp::endpoint m_remoteEndpoint;
+  std::shared_ptr<ecs::World> m_world;
+  std::size_t m_connectedPlayersCount{0};
 };
 
 #endif // ASIO_SERVER_HPP_

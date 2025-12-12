@@ -6,6 +6,13 @@
 */
 
 #include "../include/AsioServer.hpp"
+#include "../../engineCore/include/ecs/World.hpp"
+#include "../../engineCore/include/ecs/components/Collider.hpp"
+#include "../../engineCore/include/ecs/components/Health.hpp"
+#include "../../engineCore/include/ecs/components/Input.hpp"
+#include "../../engineCore/include/ecs/components/Networked.hpp"
+#include "../../engineCore/include/ecs/components/Transform.hpp"
+#include "../../engineCore/include/ecs/components/Velocity.hpp"
 #include "../include/CapnpHandler.hpp"
 #include "ANetworkManager.hpp"
 #include "Common.hpp"
@@ -61,17 +68,27 @@ void AsioServer::stop()
   }
 }
 
-std::uint32_t AsioServer::getOrCreateClientId(const asio::ip::udp::endpoint &endpoint)
+void AsioServer::setWorld(const std::shared_ptr<ecs::World> &world)
+{
+  m_world = world;
+}
+
+std::size_t AsioServer::getConnectedPlayersCount() const
+{
+  return m_connectedPlayersCount;
+}
+
+std::pair<std::uint32_t, bool> AsioServer::getOrCreateClientId(const asio::ip::udp::endpoint &endpoint)
 {
   for (const auto &[id, ep] : m_clients) {
     if (ep == endpoint) {
-      return id;
+      return {id, false};
     }
   }
   std::uint32_t clientId = m_nextClientId++;
   m_clients[clientId] = endpoint;
-  // std::cout << "[Server] New client connected: " << clientId << std::endl;
-  return clientId;
+  std::cout << "[Server] New client connected: " << clientId << std::endl;
+  return {clientId, true};
 }
 
 void AsioServer::send(std::span<const std::byte> data, const std::uint32_t &targetEndpointId)
@@ -102,16 +119,30 @@ void AsioServer::receive()
     asio::buffer(*buffer), *senderEndpoint,
     asio::bind_executor(m_strand,
                         [this, buffer, senderEndpoint](const std::error_code &error, std::size_t bytesTransferred) {
-                          if (!error || error != asio::error::operation_aborted) {
+                          if (error) {
+                            if (error != asio::error::operation_aborted) {
+                              std::cerr << "[Server] Receive error: " << error.message() << std::endl;
+                              receive();
+                            }
+                            return;
+                          }
+
+                          if (bytesTransferred == 0) {
                             receive();
+                            return;
                           }
-                          if (!error && bytesTransferred > 0) {
-                            std::uint32_t clientId = getOrCreateClientId(*senderEndpoint);
-                            NetworkPacket message(*buffer, clientId, bytesTransferred);
-                            m_incomingMessages.push(message);
-                          } else if (error) {
-                            std::cerr << "[Server] Receive error: " << error.message() << std::endl;
+
+                          auto [clientId, isNewClient] = getOrCreateClientId(*senderEndpoint);
+
+                          if (isNewClient) {
+                            ++m_connectedPlayersCount;
+                            createPlayerEntity(clientId);
                           }
+
+                          NetworkPacket message(*buffer, clientId, bytesTransferred);
+                          m_incomingMessages.push(message);
+
+                          receive();
                         }));
 }
 
@@ -123,4 +154,47 @@ bool AsioServer::poll(NetworkPacket &msg)
 std::unordered_map<std::uint32_t, asio::ip::udp::endpoint> AsioServer::getClients() const
 {
   return m_clients;
+}
+
+void AsioServer::createPlayerEntity(std::uint32_t clientId)
+{
+  if (!m_world) {
+    std::cerr << "[Server] Cannot create player entity: world not set." << std::endl;
+    return;
+  }
+
+  ecs::Entity player = m_world->createEntity();
+
+  ecs::Transform transform;
+  transform.x = 100.0F;
+  transform.y = 300.0F + static_cast<float>(m_connectedPlayersCount) * 50.0F;
+  transform.rotation = 0.0F;
+  transform.scale = 1.0F;
+  m_world->addComponent(player, transform);
+
+  ecs::Velocity velocity;
+  velocity.dx = 0.0F;
+  velocity.dy = 0.0F;
+  m_world->addComponent(player, velocity);
+
+  ecs::Health health;
+  health.hp = 100;
+  health.maxHp = 100;
+  m_world->addComponent(player, health);
+
+  ecs::Input input{};
+  input.up = false;
+  input.down = false;
+  input.left = false;
+  input.right = false;
+  input.shoot = false;
+  m_world->addComponent(player, input);
+
+  m_world->addComponent(player, ecs::Collider{32.0F, 32.0F});
+
+  ecs::Networked networked;
+  networked.networkId = player;
+  m_world->addComponent(player, networked);
+
+  std::cout << "[Server] Player entity " << player << " created for client " << clientId << std::endl;
 }

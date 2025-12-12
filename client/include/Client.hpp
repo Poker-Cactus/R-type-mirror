@@ -14,12 +14,13 @@
 #include <thread>
 
 #include "../../common/include/Common.hpp"
+#include "../../engineCore/include/ecs/World.hpp"
 #include "../../network/include/INetworkManager.hpp"
 
 /**
  * @brief High-level client wrapper
  *
- * Provides main game loop for client-side networking.
+ * Provides main game loop for client-side networking with ECS architecture.
  */
 class Client
 {
@@ -45,7 +46,10 @@ public:
   static void signalHandler(int signum);
 
 private:
+  void initializeSystems();
+
   std::shared_ptr<INetworkManager> m_networkManager;
+  std::shared_ptr<ecs::World> m_world;
   static std::atomic<bool> g_running;
 };
 

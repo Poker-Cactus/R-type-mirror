@@ -10,7 +10,7 @@
 
 #include "ComponentStorage.hpp"
 #include "IComponentStorage.hpp"
-#include "ecs/Entity.hpp"
+#include "Entity.hpp"
 #include <memory>
 #include <stdexcept>
 #include <typeindex>

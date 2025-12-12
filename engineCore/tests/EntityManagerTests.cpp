@@ -26,7 +26,7 @@ TEST_SUITE("EntityManager")
 
     SUBCASE("Create single entity")
     {
-      Entity entity = manager.createEntity();
+      ecs::Entity entity = manager.createEntity();
       CHECK(entity == 0);
       CHECK(manager.isAlive(entity));
       CHECK(manager.getAliveCount() == 1);
@@ -34,9 +34,9 @@ TEST_SUITE("EntityManager")
 
     SUBCASE("Create multiple entities")
     {
-      Entity ent0 = manager.createEntity();
-      Entity ent1 = manager.createEntity();
-      Entity ent2 = manager.createEntity();
+      ecs::Entity ent0 = manager.createEntity();
+      ecs::Entity ent1 = manager.createEntity();
+      ecs::Entity ent2 = manager.createEntity();
 
       CHECK(ent0 == 0);
       CHECK(ent1 == 1);
@@ -52,7 +52,7 @@ TEST_SUITE("EntityManager")
     SUBCASE("Entity IDs are sequential")
     {
       constexpr int entityCount = 10;
-      std::vector<Entity> entities;
+      std::vector<ecs::Entity> entities;
       entities.reserve(entityCount);
       for (int i = 0; i < entityCount; ++i) {
         entities.push_back(manager.createEntity());
@@ -70,7 +70,7 @@ TEST_SUITE("EntityManager")
 
     SUBCASE("Destroy single entity")
     {
-      Entity entity = manager.createEntity();
+      ecs::Entity entity = manager.createEntity();
       CHECK(manager.isAlive(entity));
 
       manager.destroyEntity(entity);
@@ -81,9 +81,9 @@ TEST_SUITE("EntityManager")
 
     SUBCASE("Destroy multiple entities")
     {
-      Entity ent0 = manager.createEntity();
-      Entity ent1 = manager.createEntity();
-      Entity ent2 = manager.createEntity();
+      ecs::Entity ent0 = manager.createEntity();
+      ecs::Entity ent1 = manager.createEntity();
+      ecs::Entity ent2 = manager.createEntity();
 
       manager.destroyEntity(ent1);
 
@@ -100,7 +100,7 @@ TEST_SUITE("EntityManager")
 
     SUBCASE("Destroy already destroyed entity (no crash)")
     {
-      Entity entity = manager.createEntity();
+      ecs::Entity entity = manager.createEntity();
       manager.destroyEntity(entity);
       CHECK_NOTHROW(manager.destroyEntity(entity));
     }
@@ -112,29 +112,29 @@ TEST_SUITE("EntityManager")
 
     SUBCASE("Reuse destroyed entity ID")
     {
-      [[maybe_unused]] Entity ent0 = manager.createEntity();
-      Entity ent1 = manager.createEntity();
-      [[maybe_unused]] Entity ent2 = manager.createEntity();
+      [[maybe_unused]] ecs::Entity ent0 = manager.createEntity();
+      ecs::Entity ent1 = manager.createEntity();
+      [[maybe_unused]] ecs::Entity ent2 = manager.createEntity();
 
       manager.destroyEntity(ent1);
       CHECK_FALSE(manager.isAlive(ent1));
 
-      Entity ent3 = manager.createEntity();
+      ecs::Entity ent3 = manager.createEntity();
       CHECK(ent3 == ent1); // Should reuse ent1's ID
       CHECK(manager.isAlive(ent3));
     }
 
     SUBCASE("LIFO order for recycled IDs")
     {
-      [[maybe_unused]] Entity ent0 = manager.createEntity();
-      Entity ent1 = manager.createEntity();
-      [[maybe_unused]] Entity ent2 = manager.createEntity();
+      [[maybe_unused]] ecs::Entity ent0 = manager.createEntity();
+      ecs::Entity ent1 = manager.createEntity();
+      [[maybe_unused]] ecs::Entity ent2 = manager.createEntity();
 
       manager.destroyEntity(ent0);
       manager.destroyEntity(ent1);
 
-      Entity ent3 = manager.createEntity(); // Should get ent1 (last destroyed)
-      Entity ent4 = manager.createEntity(); // Should get ent0
+      ecs::Entity ent3 = manager.createEntity(); // Should get ent1 (last destroyed)
+      ecs::Entity ent4 = manager.createEntity(); // Should get ent0
 
       CHECK(ent3 == ent1);
       CHECK(ent4 == ent0);
@@ -147,14 +147,14 @@ TEST_SUITE("EntityManager")
 
     SUBCASE("New entity has empty signature")
     {
-      Entity entity = manager.createEntity();
+      ecs::Entity entity = manager.createEntity();
       const auto &sig = manager.getSignature(entity);
       CHECK(sig.none());
     }
 
     SUBCASE("Set and get signature")
     {
-      Entity entity = manager.createEntity();
+      ecs::Entity entity = manager.createEntity();
       ecs::ComponentSignature signature;
       signature.set(0);
       signature.set(2);
@@ -169,7 +169,7 @@ TEST_SUITE("EntityManager")
 
     SUBCASE("Signature is reset when entity is destroyed")
     {
-      Entity entity = manager.createEntity();
+      ecs::Entity entity = manager.createEntity();
       ecs::ComponentSignature signature;
       signature.set(1);
       signature.set(3);
@@ -177,7 +177,7 @@ TEST_SUITE("EntityManager")
       manager.setSignature(entity, signature);
       manager.destroyEntity(entity);
 
-      Entity newEntity = manager.createEntity(); // Reuses same ID
+      ecs::Entity newEntity = manager.createEntity(); // Reuses same ID
       const auto &sig = manager.getSignature(newEntity);
       CHECK(sig.none()); // Should be reset
     }
@@ -195,7 +195,7 @@ TEST_SUITE("EntityManager")
 
     SUBCASE("Get signature of destroyed entity throws")
     {
-      Entity entity = manager.createEntity();
+      ecs::Entity entity = manager.createEntity();
       manager.destroyEntity(entity);
       CHECK_THROWS_AS((void)manager.getSignature(entity), std::out_of_range);
     }
@@ -223,9 +223,9 @@ TEST_SUITE("EntityManager")
 
     SUBCASE("Count after destroying entities")
     {
-      [[maybe_unused]] Entity ent0 = manager.createEntity();
-      Entity ent1 = manager.createEntity();
-      [[maybe_unused]] Entity ent2 = manager.createEntity();
+      [[maybe_unused]] ecs::Entity ent0 = manager.createEntity();
+      ecs::Entity ent1 = manager.createEntity();
+      [[maybe_unused]] ecs::Entity ent2 = manager.createEntity();
 
       manager.destroyEntity(ent1);
 
@@ -235,7 +235,7 @@ TEST_SUITE("EntityManager")
 
     SUBCASE("Count after recycling")
     {
-      Entity ent0 = manager.createEntity();
+      ecs::Entity ent0 = manager.createEntity();
       manager.destroyEntity(ent0);
       (void)manager.createEntity(); // Reuses ent0
 
@@ -256,9 +256,9 @@ TEST_SUITE("EntityManager")
 
     SUBCASE("Returns all living entities")
     {
-      Entity ent0 = manager.createEntity();
-      Entity ent1 = manager.createEntity();
-      Entity ent2 = manager.createEntity();
+      ecs::Entity ent0 = manager.createEntity();
+      ecs::Entity ent1 = manager.createEntity();
+      ecs::Entity ent2 = manager.createEntity();
 
       auto entities = manager.getAllEntities();
       CHECK(entities.size() == 3);
@@ -269,9 +269,9 @@ TEST_SUITE("EntityManager")
 
     SUBCASE("Excludes destroyed entities")
     {
-      Entity ent0 = manager.createEntity();
-      Entity ent1 = manager.createEntity();
-      Entity ent2 = manager.createEntity();
+      ecs::Entity ent0 = manager.createEntity();
+      ecs::Entity ent1 = manager.createEntity();
+      ecs::Entity ent2 = manager.createEntity();
 
       manager.destroyEntity(ent1);
 
@@ -299,7 +299,7 @@ TEST_SUITE("EntityManager")
       CHECK(manager.getTotalCount() == 0);
 
       // New entities should start from 0 again
-      Entity newEntity = manager.createEntity();
+      ecs::Entity newEntity = manager.createEntity();
       CHECK(newEntity == 0);
     }
   }
@@ -342,16 +342,16 @@ TEST_SUITE("EntityManager")
 
     SUBCASE("isAlive returns false after destruction")
     {
-      Entity entity = manager.createEntity();
+      ecs::Entity entity = manager.createEntity();
       manager.destroyEntity(entity);
       CHECK_FALSE(manager.isAlive(entity));
     }
 
     SUBCASE("isAlive returns true for recycled entity")
     {
-      Entity ent0 = manager.createEntity();
+      ecs::Entity ent0 = manager.createEntity();
       manager.destroyEntity(ent0);
-      Entity ent1 = manager.createEntity(); // Reuses ent0
+      ecs::Entity ent1 = manager.createEntity(); // Reuses ent0
       CHECK(manager.isAlive(ent1));
     }
   }

@@ -9,6 +9,7 @@
 #include "../../engineCore/include/ecs/components/Collider.hpp"
 #include "../../engineCore/include/ecs/components/Health.hpp"
 #include "../../engineCore/include/ecs/components/Input.hpp"
+#include "../../engineCore/include/ecs/components/Networked.hpp"
 #include "../../engineCore/include/ecs/components/Transform.hpp"
 #include "../../engineCore/include/ecs/components/Velocity.hpp"
 #include "ecs/Entity.hpp"
@@ -97,6 +98,11 @@ void Game::spawnPlayer()
   world->addComponent(player, input);
 
   world->addComponent(player, ecs::Collider{32.0F, 32.0F});
+
+  // Add Networked component for network synchronization
+  ecs::Networked networked;
+  networked.networkId = player;
+  world->addComponent(player, networked);
 }
 
 void Game::runGameLoop()

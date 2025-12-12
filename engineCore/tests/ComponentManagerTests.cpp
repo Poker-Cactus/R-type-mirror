@@ -49,7 +49,7 @@ TEST_SUITE("ComponentManager")
   TEST_CASE("Add and retrieve components")
   {
     ComponentManager manager;
-    Entity entity = 0;
+    ecs::Entity entity = 0;
 
     SUBCASE("Add single component")
     {
@@ -74,9 +74,9 @@ TEST_SUITE("ComponentManager")
 
     SUBCASE("Add same component type to multiple entities")
     {
-      Entity ent0 = 0;
-      Entity ent1 = 1;
-      Entity ent2 = 2;
+      ecs::Entity ent0 = 0;
+      ecs::Entity ent1 = 1;
+      ecs::Entity ent2 = 2;
 
       manager.addComponent(ent0, Position{.x = 1.0F, .y = 1.0F});
       manager.addComponent(ent1, Position{.x = 2.0F, .y = 2.0F});
@@ -95,7 +95,7 @@ TEST_SUITE("ComponentManager")
   TEST_CASE("Remove components")
   {
     ComponentManager manager;
-    Entity entity = 0;
+    ecs::Entity entity = 0;
 
     SUBCASE("Remove existing component")
     {
@@ -131,7 +131,7 @@ TEST_SUITE("ComponentManager")
   TEST_CASE("Remove all components")
   {
     ComponentManager manager;
-    Entity entity = 0;
+    ecs::Entity entity = 0;
 
     SUBCASE("Remove all components from entity")
     {
@@ -157,7 +157,7 @@ TEST_SUITE("ComponentManager")
   TEST_CASE("Modify components")
   {
     ComponentManager manager;
-    Entity entity = 0;
+    ecs::Entity entity = 0;
 
     SUBCASE("Modify component through reference")
     {
@@ -183,7 +183,7 @@ TEST_SUITE("ComponentManager")
   TEST_CASE("Const correctness")
   {
     ComponentManager manager;
-    Entity entity = 0;
+    ecs::Entity entity = 0;
     manager.addComponent(entity, Position{.x = 1.0F, .y = 2.0F});
 
     SUBCASE("Const getComponent")
@@ -207,7 +207,7 @@ TEST_SUITE("ComponentManager")
   TEST_CASE("Error handling")
   {
     ComponentManager manager;
-    Entity entity = 0;
+    ecs::Entity entity = 0;
 
     SUBCASE("Get non-existent component throws")
     {
@@ -227,8 +227,8 @@ TEST_SUITE("ComponentManager")
 
     SUBCASE("Independent component management per entity")
     {
-      [[maybe_unused]] Entity ent0 = 0;
-      [[maybe_unused]] Entity ent1 = 1;
+      [[maybe_unused]] ecs::Entity ent0 = 0;
+      [[maybe_unused]] ecs::Entity ent1 = 1;
 
       manager.addComponent(ent0, Position{.x = 1.0F, .y = 1.0F});
       manager.addComponent(ent0, Velocity{.dx = 2.0F, .dy = 2.0F});
@@ -249,8 +249,8 @@ TEST_SUITE("ComponentManager")
 
     SUBCASE("Removing from one entity doesn't affect others")
     {
-      Entity ent0 = 0;
-      Entity ent1 = 1;
+      ecs::Entity ent0 = 0;
+      ecs::Entity ent1 = 1;
 
       manager.addComponent(ent0, Position{.x = 1.0F, .y = 1.0F});
       manager.addComponent(ent1, Position{.x = 2.0F, .y = 2.0F});
@@ -265,7 +265,7 @@ TEST_SUITE("ComponentManager")
   TEST_CASE("Complex component types")
   {
     ComponentManager manager;
-    Entity entity = 0;
+    ecs::Entity entity = 0;
 
     SUBCASE("String components")
     {
