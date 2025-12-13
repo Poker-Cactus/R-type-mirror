@@ -19,6 +19,7 @@ class Menu
 
     void setState(MenuState newState);
     [[nodiscard]] MenuState getState() const;
+    [[nodiscard]] bool shouldStartGame() const;
 
     void processInput();
 

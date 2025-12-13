@@ -130,3 +130,8 @@ MenuState Menu::getState() const
 {
     return currentState;
 }
+
+bool Menu::shouldStartGame() const
+{
+    return currentState == MenuState::LOBBY;
+}
