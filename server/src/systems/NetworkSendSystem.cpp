@@ -7,6 +7,8 @@
 
 #include "systems/NetworkSendSystem.hpp"
 #include "../../engineCore/include/ecs/World.hpp"
+#include "../../engineCore/include/ecs/components/Collider.hpp"
+#include "../../engineCore/include/ecs/components/EntityKind.hpp"
 #include "../../engineCore/include/ecs/components/Networked.hpp"
 #include "../../engineCore/include/ecs/components/Transform.hpp"
 #include "INetworkManager.hpp"
@@ -50,10 +52,36 @@ void NetworkSendSystem::update(ecs::World &world, float deltaTime)
       const auto &networked = world.getComponent<ecs::Networked>(entity);
       const auto &transform = world.getComponent<ecs::Transform>(entity);
 
-      snapshot["entities"].push_back({
-        {"id", networked.networkId},
-        {"transform", {{"x", transform.x}, {"y", transform.y}, {"rotation", transform.rotation}, {"scale", transform.scale}}}
-      });
+      nlohmann::json entityJson;
+      entityJson["id"] = networked.networkId;
+      entityJson["transform"] = {{"x", transform.x}, {"y", transform.y}, {"rotation", transform.rotation}, {"scale", transform.scale}};
+
+      if (world.hasComponent<ecs::Collider>(entity)) {
+        const auto &col = world.getComponent<ecs::Collider>(entity);
+        entityJson["collider"] = {{"w", col.width}, {"h", col.height}};
+      }
+
+      if (world.hasComponent<ecs::EntityKind>(entity)) {
+        const auto &k = world.getComponent<ecs::EntityKind>(entity);
+        const char *s = "unknown";
+        switch (k.kind) {
+        case ecs::EntityKind::Kind::PLAYER:
+          s = "player";
+          break;
+        case ecs::EntityKind::Kind::ENEMY:
+          s = "enemy";
+          break;
+        case ecs::EntityKind::Kind::PROJECTILE:
+          s = "projectile";
+          break;
+        default:
+          s = "unknown";
+          break;
+        }
+        entityJson["kind"] = s;
+      }
+
+      snapshot["entities"].push_back(entityJson);
     }
 
     const std::string jsonStr = snapshot.dump();

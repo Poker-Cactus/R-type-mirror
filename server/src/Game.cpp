@@ -7,6 +7,7 @@
 
 #include "Game.hpp"
 #include "../../engineCore/include/ecs/components/Collider.hpp"
+#include "../../engineCore/include/ecs/components/EntityKind.hpp"
 #include "../../engineCore/include/ecs/components/Health.hpp"
 #include "../../engineCore/include/ecs/components/Input.hpp"
 #include "../../engineCore/include/ecs/components/Networked.hpp"
@@ -20,6 +21,7 @@
 #include "systems/DeathSystem.hpp"
 #include "systems/EnemyAISystem.hpp"
 #include "systems/InputMovementSystem.hpp"
+#include "systems/EntityLifetimeSystem.hpp"
 #include "systems/LifetimeSystem.hpp"
 #include "systems/ShootingSystem.hpp"
 #include "systems/SpawnSystem.hpp"
@@ -45,6 +47,7 @@ Game::Game()
   world->registerSystem<server::EnemyAISystem>();
 
   spawnSystem = &world->registerSystem<server::SpawnSystem>();
+  world->registerSystem<server::EntityLifetimeSystem>();
   world->registerSystem<server::LifetimeSystem>();
 
   // Initialize event-based systems
@@ -75,6 +78,8 @@ void Game::initializeSystems()
 void Game::spawnPlayer()
 {
   ecs::Entity player = world->createEntity();
+
+  world->addComponent(player, ecs::EntityKind{ecs::EntityKind::Kind::PLAYER});
 
   ecs::Transform transform;
   transform.x = 100.0F;
@@ -112,6 +117,8 @@ void Game::spawnPlayer()
 void Game::spawnPlayer(std::uint32_t networkId)
 {
   ecs::Entity player = world->createEntity();
+
+  world->addComponent(player, ecs::EntityKind{ecs::EntityKind::Kind::PLAYER});
 
   ecs::Transform transform;
   transform.x = 100.0F;

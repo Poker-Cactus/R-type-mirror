@@ -6,6 +6,8 @@
 */
 
 #include "PlayingState.hpp"
+#include "../../engineCore/include/ecs/components/Collider.hpp"
+#include "../../engineCore/include/ecs/components/EntityKind.hpp"
 #include "../../engineCore/include/ecs/components/Transform.hpp"
 #include <iostream>
 
@@ -78,7 +80,36 @@ void PlayingState::render()
 
     for (auto entity : entities) {
         const auto &t = world->getComponent<ecs::Transform>(entity);
-        renderer->drawRect(static_cast<int>(t.x), static_cast<int>(t.y), 32, 32, {255, 0, 0, 255});
+
+        int w = 32;
+        int h = 32;
+        if (world->hasComponent<ecs::Collider>(entity)) {
+            const auto &c = world->getComponent<ecs::Collider>(entity);
+            w = static_cast<int>(c.width);
+            h = static_cast<int>(c.height);
+        }
+
+        // Prototype identification based on server-replicated kind.
+        Color color{200, 200, 200, 255}; // unknown
+        if (world->hasComponent<ecs::EntityKind>(entity)) {
+            const auto &k = world->getComponent<ecs::EntityKind>(entity);
+            switch (k.kind) {
+            case ecs::EntityKind::Kind::PLAYER:
+                color = {0, 128, 255, 255};
+                break;
+            case ecs::EntityKind::Kind::ENEMY:
+                color = {0, 255, 0, 255};
+                break;
+            case ecs::EntityKind::Kind::PROJECTILE:
+                color = {255, 220, 0, 255};
+                break;
+            default:
+                color = {200, 200, 200, 255};
+                break;
+            }
+        }
+
+        renderer->drawRect(static_cast<int>(t.x), static_cast<int>(t.y), w, h, color);
     }
 }
 

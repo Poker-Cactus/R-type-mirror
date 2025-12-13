@@ -8,6 +8,8 @@
 #include "../../include/systems/NetworkReceiveSystem.hpp"
 #include "../../include/systems/NetworkSendSystem.hpp"
 #include "../../engineCore/include/ecs/World.hpp"
+#include "../../engineCore/include/ecs/components/Collider.hpp"
+#include "../../engineCore/include/ecs/components/EntityKind.hpp"
 #include "../../engineCore/include/ecs/components/Transform.hpp"
 #include "../../engineCore/include/ecs/components/Networked.hpp"
 #include <iostream>
@@ -18,6 +20,7 @@ namespace
 {
 bool g_loggedFirstSnapshot = false;
 std::unordered_map<std::uint32_t, ecs::Entity> g_networkIdToEntity;
+float g_debugLogAcc = 0.0F;
 }
 
 ClientNetworkReceiveSystem::ClientNetworkReceiveSystem(std::shared_ptr<INetworkManager> networkManager)
@@ -29,7 +32,7 @@ ClientNetworkReceiveSystem::~ClientNetworkReceiveSystem() = default;
 
 void ClientNetworkReceiveSystem::update(ecs::World &world, float deltaTime)
 {
-  (void)deltaTime;
+  g_debugLogAcc += deltaTime;
 
   NetworkPacket packet;
   while (m_networkManager->poll(packet)) {
@@ -116,7 +119,6 @@ void ClientNetworkReceiveSystem::handleSnapshot(ecs::World &world, const nlohman
       transform.rotation = rotation;
       transform.scale = scale;
       world.addComponent(entity, transform);
-      continue;
     }
 
     auto &transform = world.getComponent<ecs::Transform>(entity);
@@ -124,6 +126,46 @@ void ClientNetworkReceiveSystem::handleSnapshot(ecs::World &world, const nlohman
     transform.y = y;
     transform.rotation = rotation;
     transform.scale = scale;
+
+    if (entityJson.contains("collider") && entityJson["collider"].is_object()) {
+      const auto &colJ = entityJson["collider"];
+      const float w = colJ.value("w", 0.0F);
+      const float h = colJ.value("h", 0.0F);
+      if (w > 0.0F && h > 0.0F) {
+        if (!world.hasComponent<ecs::Collider>(entity)) {
+          world.addComponent(entity, ecs::Collider{w, h});
+        } else {
+          auto &col = world.getComponent<ecs::Collider>(entity);
+          col.width = w;
+          col.height = h;
+        }
+      }
+    }
+
+    if (entityJson.contains("kind") && entityJson["kind"].is_string()) {
+      const std::string kindStr = entityJson["kind"].get<std::string>();
+      ecs::EntityKind::Kind kind = ecs::EntityKind::Kind::UNKNOWN;
+      if (kindStr == "player") {
+        kind = ecs::EntityKind::Kind::PLAYER;
+      } else if (kindStr == "enemy") {
+        kind = ecs::EntityKind::Kind::ENEMY;
+      } else if (kindStr == "projectile") {
+        kind = ecs::EntityKind::Kind::PROJECTILE;
+      }
+      if (!world.hasComponent<ecs::EntityKind>(entity)) {
+        world.addComponent(entity, ecs::EntityKind{kind});
+      } else {
+        world.getComponent<ecs::EntityKind>(entity).kind = kind;
+      }
+
+      if (kind == ecs::EntityKind::Kind::PROJECTILE && g_debugLogAcc >= 1.0F) {
+        std::cout << "[Client] Projectile id=" << networkId << " x=" << x << " y=" << y << std::endl;
+      }
+    }
+  }
+
+  if (g_debugLogAcc >= 1.0F) {
+    g_debugLogAcc = 0.0F;
   }
 }
 
