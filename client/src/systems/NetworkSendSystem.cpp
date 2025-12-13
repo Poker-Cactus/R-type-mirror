@@ -67,7 +67,6 @@ void NetworkSendSystem::sendInputToServer(ecs::Entity entity, const ecs::Input &
   m_networkManager->send(
     std::span<const std::byte>(reinterpret_cast<const std::byte *>(serialized.data()), serialized.size()), 0);
 
-  // Optional: Log for debugging
-  std::cout << "📤 Client: Envoi input entity " << entity << " [up:" << input.up << " down:" << input.down
-            << " left:" << input.left << " right:" << input.right << " shoot:" << input.shoot << "]" << std::endl;
+  (void)entity;
+  (void)input;
 }

@@ -39,11 +39,53 @@ void ClientNetworkReceiveSystem::update(ecs::World &world, float deltaTime)
         handleEntityCreated(world, json);
       } else if (type == "entity_update") {
         handleEntityUpdate(world, json);
+      } else if (type == "snapshot") {
+        handleSnapshot(world, json);
       }
 
     } catch (const std::exception &e) {
       std::cerr << "Client: Erreur parsing: " << e.what() << std::endl;
     }
+  }
+}
+
+void ClientNetworkReceiveSystem::handleSnapshot(ecs::World &world, const nlohmann::json &json)
+{
+  if (!json.contains("entities") || !json["entities"].is_array()) {
+    return;
+  }
+
+  for (const auto &entityJson : json["entities"]) {
+    if (!entityJson.contains("id") || !entityJson.contains("transform")) {
+      continue;
+    }
+    if (!entityJson["transform"].is_object()) {
+      continue;
+    }
+
+    const ecs::Entity entity = entityJson["id"].get<ecs::Entity>();
+    const auto &transformJson = entityJson["transform"];
+
+    const float x = transformJson.value("x", 0.0F);
+    const float y = transformJson.value("y", 0.0F);
+    const float rotation = transformJson.value("rotation", 0.0F);
+    const float scale = transformJson.value("scale", 1.0F);
+
+    if (!world.hasComponent<ecs::Transform>(entity)) {
+      ecs::Transform transform;
+      transform.x = x;
+      transform.y = y;
+      transform.rotation = rotation;
+      transform.scale = scale;
+      world.addComponent(entity, transform);
+      continue;
+    }
+
+    auto &transform = world.getComponent<ecs::Transform>(entity);
+    transform.x = x;
+    transform.y = y;
+    transform.rotation = rotation;
+    transform.scale = scale;
   }
 }
 
@@ -58,8 +100,6 @@ void ClientNetworkReceiveSystem::handleEntityCreated(ecs::World &world, const nl
   transform.x = x;
   transform.y = y;
   world.addComponent(entity, transform);
-
-  std::cout << "✓ Client: Entité " << entity << " créée à (" << x << ", " << y << ")" << std::endl;
 }
 
 void ClientNetworkReceiveSystem::handleEntityUpdate(ecs::World &world, const nlohmann::json &json)
@@ -80,8 +120,7 @@ void ClientNetworkReceiveSystem::handleEntityUpdate(ecs::World &world, const nlo
   transform.y = y;
   transform.rotation = rotation;
 
-  std::cout << "📥 Client: Entité " << entity << " mise à jour -> (" << x << ", " << y << ") [input #" << lastProcessed
-            << "]" << std::endl;
+  (void)lastProcessed;
 }
 
 ecs::ComponentSignature ClientNetworkReceiveSystem::getSignature() const

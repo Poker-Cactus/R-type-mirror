@@ -26,6 +26,7 @@ private:
 
   void handleEntityCreated(ecs::World &world, const nlohmann::json &json);
   void handleEntityUpdate(ecs::World &world, const nlohmann::json &json);
+  void handleSnapshot(ecs::World &world, const nlohmann::json &json);
 };
 
 #endif /* !CLIENT_NETWORKRECEIVESYSTEM_HPP_ */
