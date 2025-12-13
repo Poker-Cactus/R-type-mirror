@@ -30,7 +30,21 @@ foreach(module_dir ${MODULE_DIRS})
             
             # Dépendances spécifiques selon le module
             if(module_dir STREQUAL "SDL2")
-                target_link_libraries(${LIB_NAME} PRIVATE SDL2::SDL2 SDL2_ttf::SDL2_ttf SDL2_image::SDL2_image)
+                # Conan's sdl_ttf may export different target names depending on version/options.
+                set(_ttf_target "")
+                if(TARGET SDL2_ttf::SDL2_ttf)
+                    set(_ttf_target SDL2_ttf::SDL2_ttf)
+                elseif(TARGET SDL2_ttf::SDL2_ttf-static)
+                    set(_ttf_target SDL2_ttf::SDL2_ttf-static)
+                elseif(TARGET sdl_ttf::sdl_ttf)
+                    set(_ttf_target sdl_ttf::sdl_ttf)
+                endif()
+
+                if(_ttf_target STREQUAL "")
+                    message(FATAL_ERROR "No SDL2_ttf target found (expected SDL2_ttf::SDL2_ttf, SDL2_ttf::SDL2_ttf-static or sdl_ttf::sdl_ttf)")
+                endif()
+
+                target_link_libraries(${LIB_NAME} PRIVATE SDL2::SDL2 ${_ttf_target} SDL2_image::SDL2_image)
             endif()
             
             # Place les .so/.dll dans build/
