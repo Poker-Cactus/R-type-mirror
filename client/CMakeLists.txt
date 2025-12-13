@@ -11,6 +11,8 @@ add_executable(client
     src/Menu/LobbyMenu/LobbyMenu.cpp
     src/Menu/SettingsMenu/SettingsMenu.cpp
     src/Menu/ProfileMenu/ProfileMenu.cpp
+    src/PlayingState.cpp
+    src/ParallaxBackground.cpp
 )
 
 target_include_directories(client PRIVATE include)

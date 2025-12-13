@@ -2,6 +2,7 @@
 #include "../ModuleLoader.hpp"
 #include "../interface/IRenderer.hpp"
 #include "Menu.hpp"
+#include "PlayingState.hpp"
 #include <memory>
 
 class Game
@@ -28,6 +29,7 @@ class Game
     IRenderer *renderer = nullptr;
 
     bool isRunning = false;
-    GameState currentState = GameState::MENU;
+    GameState currentState = GameState::PLAYING;
     std::unique_ptr<Menu> menu;
+    std::unique_ptr<PlayingState> playingState;
 };

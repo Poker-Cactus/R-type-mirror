@@ -19,8 +19,13 @@ Game::~Game()
 bool Game::init()
 {
     try {
-        module =
-            std::make_unique<Module<IRenderer>>("./build/libs/sdl2_module.so", "createRenderer", "destroyRenderer");
+    #ifdef __APPLE__
+            module =
+                std::make_unique<Module<IRenderer>>("./build/libs/sdl2_module.dylib", "createRenderer", "destroyRenderer");
+    #else
+            module =
+                std::make_unique<Module<IRenderer>>("./build/libs/sdl2_module.so", "createRenderer", "destroyRenderer");
+    #endif
         renderer = module->create();
 
         if (renderer == nullptr) {
@@ -31,6 +36,12 @@ bool Game::init()
 
         menu = std::make_unique<Menu>(renderer);
         menu->init();
+
+        playingState = std::make_unique<PlayingState>(renderer);
+        if (!playingState->init()) {
+            std::cerr << "Failed to initialize playing state" << std::endl;
+            return false;
+        }
 
         isRunning = true;
         return true;
@@ -62,6 +73,11 @@ void Game::shutdown()
         menu.reset();
     }
 
+    if (playingState) {
+        playingState->cleanup();
+        playingState.reset();
+    }
+
     if (module && renderer) {
         module->destroy(renderer);
         renderer = nullptr;
@@ -75,15 +91,48 @@ void Game::processInput()
     if (!renderer->pollEvents()) {
         isRunning = false;
     }
-    if (this->menu && this->currentState == GameState::MENU)
-        this->menu->processInput();
+    // if (this->menu && this->currentState == GameState::MENU)
+    //     this->menu->processInput();
     if (this->menu && this->currentState == GameState::MENU && this->menu->getState() == MenuState::EXIT)
         this->isRunning = false;
+    
+    // Vérifier si le menu veut lancer le jeu
+    if (this->menu && this->currentState == GameState::MENU && this->menu->shouldStartGame()) {
+        this->currentState = GameState::PLAYING;
+    }
+    
+    switch (currentState) {
+    case GameState::MENU:
+        if (menu) {
+            menu->processInput();
+        }
+        break;
+    case GameState::PLAYING:
+        if (playingState) {
+            playingState->processInput();
+        }
+        break;
+    case GameState::PAUSED:
+        // TODO: handle pause input
+        break;
+    }
 }
 
 void Game::update(float dt)
 {
-    (void)dt;
+    switch (currentState) {
+    case GameState::MENU:
+        // Menu est statique, pas besoin d'update
+        break;
+    case GameState::PLAYING:
+        if (playingState) {
+            playingState->update(dt);
+        }
+        break;
+    case GameState::PAUSED:
+        // Pause ne met pas à jour le jeu
+        break;
+    }
 }
 
 void Game::render()
@@ -97,10 +146,15 @@ void Game::render()
         }
         break;
     case GameState::PLAYING:
-        // TODO: render game
+        if (playingState) {
+            playingState->render();
+        }
         break;
     case GameState::PAUSED:
         // TODO: render pause menu
+        if (playingState) {
+            playingState->render();
+        }
         break;
     }
 
