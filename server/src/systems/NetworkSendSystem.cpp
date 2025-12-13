@@ -5,11 +5,20 @@
 ** NetworkSendSystem
 */
 
-#include "NetworkSendSystem.hpp"
+#include "systems/NetworkSendSystem.hpp"
 #include "../../engineCore/include/ecs/World.hpp"
 #include "../../engineCore/include/ecs/components/Networked.hpp"
 #include "../../engineCore/include/ecs/components/Transform.hpp"
+#include "INetworkManager.hpp"
+#include "ecs/ComponentSignature.hpp"
+#include "ecs/Entity.hpp"
+#include <cstddef>
+#include <memory>
 #include <nlohmann/json.hpp>
+#include <nlohmann/json_fwd.hpp>
+#include <span>
+#include <string>
+#include <vector>
 
 NetworkSendSystem::NetworkSendSystem(std::shared_ptr<INetworkManager> networkManager)
 {

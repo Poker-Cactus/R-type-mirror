@@ -5,7 +5,7 @@
 ** NetworkReceiveSystem
 */
 
-#include "NetworkReceiveSystem.hpp"
+#include "systems/NetworkReceiveSystem.hpp"
 #include "../../engineCore/include/ecs/World.hpp"
 #include "../../engineCore/include/ecs/components/Input.hpp"
 #include "../../engineCore/include/ecs/components/Networked.hpp"
@@ -23,12 +23,21 @@ void NetworkReceiveSystem::update(ecs::World &world, float deltaTime)
 {
   NetworkPacket packet;
   while (m_networkManager->poll(packet)) {
-    std::string message =
-      m_networkManager->getPacketHandler()->deserialize(packet.getData(), packet.getBytesTransferred());
+    std::string message = m_networkManager->getPacketHandler()
+                            ->deserialize(packet.getData(), packet.getBytesTransferred())
+                            .value_or("");
 
-    auto type = nlohmann::json::parse(message)["type"].get<std::string>(); // A definir un protocol
-    if (type == "player_input") {
-      handlePlayerInput(world, message, packet.getSenderEndpointId());
+    if (message.empty()) {
+      continue;
+    }
+
+    try {
+      auto type = nlohmann::json::parse(message)["type"].get<std::string>(); // A definir un protocol
+      if (type == "player_input") {
+        handlePlayerInput(world, message, packet.getSenderEndpointId());
+      }
+    } catch (const std::exception &) {
+      continue;
     }
   }
 }
