@@ -6,9 +6,13 @@
 */
 
 #include "PlayingState.hpp"
+#include "../../engineCore/include/ecs/components/Transform.hpp"
 #include <iostream>
 
-PlayingState::PlayingState(IRenderer *renderer) : renderer(renderer), background(nullptr) {}
+PlayingState::PlayingState(IRenderer *renderer, const std::shared_ptr<ecs::World> &world)
+    : renderer(renderer), world(world), background(nullptr)
+{
+}
 
 PlayingState::~PlayingState()
 {
@@ -61,10 +65,21 @@ void PlayingState::render()
         background->render();
     }
 
-    // TODO: Dessiner les éléments de jeu
-    // - Dessiner les entités (joueur, ennemis, projectiles)
-    // - Dessiner les effets visuels
-    // - Dessiner le HUD (score, vie, etc.)
+    // Minimal prototype rendering: draw all entities that have a Transform.
+    if (!world || !renderer) {
+        return;
+    }
+
+    ecs::ComponentSignature sig;
+    sig.set(ecs::getComponentId<ecs::Transform>());
+
+    std::vector<ecs::Entity> entities;
+    world->getEntitiesWithSignature(sig, entities);
+
+    for (auto entity : entities) {
+        const auto &t = world->getComponent<ecs::Transform>(entity);
+        renderer->drawRect(static_cast<int>(t.x), static_cast<int>(t.y), 32, 32, {255, 0, 0, 255});
+    }
 }
 
 void PlayingState::processInput()

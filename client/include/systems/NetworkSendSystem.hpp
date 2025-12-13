@@ -31,9 +31,12 @@ public:
   void update(ecs::World &world, float deltaTime) override;
   [[nodiscard]] ecs::ComponentSignature getSignature() const override;
 
+  void setClientId(std::uint32_t clientId) { m_clientId = clientId; }
+
 protected:
 private:
   std::shared_ptr<INetworkManager> m_networkManager;
+  std::uint32_t m_clientId = 0;
 
   /**
    * @brief Send input data to server

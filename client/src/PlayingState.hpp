@@ -7,6 +7,7 @@
 
 #pragma once
 #include "../interface/IRenderer.hpp"
+#include "../../engineCore/include/ecs/World.hpp"
 #include "ParallaxBackground.hpp"
 #include <memory>
 
@@ -21,7 +22,7 @@
 class PlayingState
 {
   public:
-    PlayingState(IRenderer *renderer);
+    PlayingState(IRenderer *renderer, const std::shared_ptr<ecs::World> &world);
     ~PlayingState();
 
     /**
@@ -53,6 +54,7 @@ class PlayingState
 
   private:
     IRenderer *renderer;
+    std::shared_ptr<ecs::World> world;
     std::unique_ptr<ParallaxBackground> background;
     
     // TODO: Ajouter les systèmes de jeu

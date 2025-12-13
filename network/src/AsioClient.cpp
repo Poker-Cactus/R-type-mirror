@@ -51,9 +51,8 @@ AsioClient::~AsioClient()
 
 void AsioClient::start()
 {
-  m_recvThread = std::thread([this]() { m_ioContext.run(); });
-  std::this_thread::sleep_for(std::chrono::milliseconds(10));
   receive();
+  m_recvThread = std::thread([this]() { m_ioContext.run(); });
 }
 
 void AsioClient::stop()

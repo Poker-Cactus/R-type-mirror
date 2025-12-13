@@ -11,7 +11,9 @@
 #include "../../engineCore/include/ecs/World.hpp"
 #include "../../engineCore/include/ecs/components/Input.hpp"
 #include "../../network/include/AsioClient.hpp"
+#include "../interface/KeyCodes.hpp"
 #include <iostream>
+#include <nlohmann/json.hpp>
 
 Game::Game() : module(nullptr), renderer(nullptr), isRunning(false), currentState(GameState::MENU) {}
 
@@ -41,22 +43,47 @@ bool Game::init()
         menu = std::make_unique<Menu>(renderer);
         menu->init();
 
-        playingState = std::make_unique<PlayingState>(renderer);
+        // Networking + ECS: run network systems in the same loop as the graphical game.
+        m_world = std::make_shared<ecs::World>();
+        auto asioClient = std::make_shared<AsioClient>("127.0.0.1", "4242");
+        asioClient->start();
+        {
+            auto ep = asioClient->getServerEndpoint();
+            std::cout << "[Client] Networking to " << ep.address().to_string() << ":" << ep.port() << std::endl;
+        }
+        // Ensure the server learns our UDP endpoint.
+        {
+            const auto serialized = asioClient->getPacketHandler()->serialize("PING");
+            asioClient->send(
+                std::span<const std::byte>(reinterpret_cast<const std::byte *>(serialized.data()), serialized.size()),
+                0);
+        }
+
+        // Send our current viewport size so the server can clamp us correctly.
+        {
+            nlohmann::json viewport;
+            viewport["type"] = "viewport";
+            viewport["width"] = static_cast<std::uint32_t>(renderer->getWindowWidth());
+            viewport["height"] = static_cast<std::uint32_t>(renderer->getWindowHeight());
+            const std::string jsonStr = viewport.dump();
+            const auto serialized = asioClient->getPacketHandler()->serialize(jsonStr);
+            asioClient->send(
+                std::span<const std::byte>(reinterpret_cast<const std::byte *>(serialized.data()), serialized.size()),
+                0);
+            std::cout << "[Client] Sent viewport " << viewport["width"] << "x" << viewport["height"] << std::endl;
+        }
+
+
+
+        m_networkManager = asioClient;
+        m_world->registerSystem<NetworkSendSystem>(m_networkManager);
+        m_world->registerSystem<ClientNetworkReceiveSystem>(m_networkManager);
+
+        playingState = std::make_unique<PlayingState>(renderer, m_world);
         if (!playingState->init()) {
             std::cerr << "Failed to initialize playing state" << std::endl;
             return false;
         }
-
-        // Networking + ECS: run network systems in the same loop as the graphical game.
-        m_world = std::make_shared<ecs::World>();
-        m_networkManager = std::make_shared<AsioClient>("127.0.0.1", "4242");
-        m_networkManager->start();
-        m_world->registerSystem<NetworkSendSystem>(m_networkManager);
-        m_world->registerSystem<ClientNetworkReceiveSystem>(m_networkManager);
-
-        // Local input entity so NetworkSendSystem has something to transmit.
-        auto localEntity = m_world->createEntity();
-        m_world->addComponent(localEntity, ecs::Input{});
         isRunning = true;
         return true;
     } catch (const std::exception &e) {
@@ -119,6 +146,20 @@ void Game::processInput()
     if (this->menu && this->currentState == GameState::MENU && this->menu->shouldStartGame()) {
         this->currentState = GameState::PLAYING;
     }
+
+    if (this->currentState == GameState::PLAYING) {
+        ensureInputEntity();
+        if (m_world && m_inputEntity != 0 && m_world->hasComponent<ecs::Input>(m_inputEntity)) {
+            auto &input = m_world->getComponent<ecs::Input>(m_inputEntity);
+            input.up = renderer->isKeyPressed(KeyCode::KEY_UP) || renderer->isKeyPressed(KeyCode::KEY_W) ||
+                       renderer->isKeyPressed(KeyCode::KEY_Z);
+            input.down = renderer->isKeyPressed(KeyCode::KEY_DOWN) || renderer->isKeyPressed(KeyCode::KEY_S);
+            input.left = renderer->isKeyPressed(KeyCode::KEY_LEFT) || renderer->isKeyPressed(KeyCode::KEY_A) ||
+                         renderer->isKeyPressed(KeyCode::KEY_Q);
+            input.right = renderer->isKeyPressed(KeyCode::KEY_RIGHT) || renderer->isKeyPressed(KeyCode::KEY_D);
+            input.shoot = renderer->isKeyPressed(KeyCode::KEY_SPACE);
+        }
+    }
     
     switch (currentState) {
     case GameState::MENU:
@@ -135,6 +176,22 @@ void Game::processInput()
         // TODO: handle pause input
         break;
     }
+}
+
+void Game::ensureInputEntity()
+{
+    if (!m_world) {
+        return;
+    }
+    if (m_inputEntity != 0 && m_world->isAlive(m_inputEntity)) {
+        if (!m_world->hasComponent<ecs::Input>(m_inputEntity)) {
+            m_world->addComponent(m_inputEntity, ecs::Input{});
+        }
+        return;
+    }
+
+    m_inputEntity = m_world->createEntity();
+    m_world->addComponent(m_inputEntity, ecs::Input{});
 }
 
 void Game::update(float dt)

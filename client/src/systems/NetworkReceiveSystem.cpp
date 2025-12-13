@@ -6,14 +6,18 @@
 */
 
 #include "../../include/systems/NetworkReceiveSystem.hpp"
+#include "../../include/systems/NetworkSendSystem.hpp"
 #include "../../engineCore/include/ecs/World.hpp"
 #include "../../engineCore/include/ecs/components/Transform.hpp"
+#include "../../engineCore/include/ecs/components/Networked.hpp"
 #include <iostream>
 #include <nlohmann/json.hpp>
+#include <unordered_map>
 
 namespace
 {
 bool g_loggedFirstSnapshot = false;
+std::unordered_map<std::uint32_t, ecs::Entity> g_networkIdToEntity;
 }
 
 ClientNetworkReceiveSystem::ClientNetworkReceiveSystem(std::shared_ptr<INetworkManager> networkManager)
@@ -39,6 +43,18 @@ void ClientNetworkReceiveSystem::update(ecs::World &world, float deltaTime)
     try {
       auto json = nlohmann::json::parse(message);
       std::string type = json["type"].get<std::string>();
+
+      if (type == "assign_id") {
+        if (json.contains("client_id") && json["client_id"].is_number_unsigned()) {
+          const std::uint32_t clientId = json["client_id"].get<std::uint32_t>();
+          // Inform the send system about our server-assigned id.
+          if (auto *sendSys = world.getSystem<NetworkSendSystem>()) {
+            sendSys->setClientId(clientId);
+          }
+          std::cout << "[Client] Assigned client_id=" << clientId << std::endl;
+        }
+        continue;
+      }
 
       if (type == "entity_created") {
         handleEntityCreated(world, json);
@@ -73,13 +89,25 @@ void ClientNetworkReceiveSystem::handleSnapshot(ecs::World &world, const nlohman
       continue;
     }
 
-    const ecs::Entity entity = entityJson["id"].get<ecs::Entity>();
+    const std::uint32_t networkId = entityJson["id"].get<std::uint32_t>();
     const auto &transformJson = entityJson["transform"];
 
     const float x = transformJson.value("x", 0.0F);
     const float y = transformJson.value("y", 0.0F);
     const float rotation = transformJson.value("rotation", 0.0F);
     const float scale = transformJson.value("scale", 1.0F);
+
+    ecs::Entity entity = 0;
+    auto it = g_networkIdToEntity.find(networkId);
+    if (it != g_networkIdToEntity.end()) {
+      entity = it->second;
+    } else {
+      entity = world.createEntity();
+      g_networkIdToEntity.emplace(networkId, entity);
+      ecs::Networked net;
+      net.networkId = static_cast<ecs::Entity>(networkId);
+      world.addComponent(entity, net);
+    }
 
     if (!world.hasComponent<ecs::Transform>(entity)) {
       ecs::Transform transform;
@@ -101,20 +129,46 @@ void ClientNetworkReceiveSystem::handleSnapshot(ecs::World &world, const nlohman
 
 void ClientNetworkReceiveSystem::handleEntityCreated(ecs::World &world, const nlohmann::json &json)
 {
-  ecs::Entity entity = json["entity_id"].get<ecs::Entity>();
+  const std::uint32_t networkId = json["entity_id"].get<std::uint32_t>();
   float x = json["position"]["x"].get<float>();
   float y = json["position"]["y"].get<float>();
 
-  // Créer l'entité côté client avec le même ID
-  ecs::Transform transform;
-  transform.x = x;
-  transform.y = y;
-  world.addComponent(entity, transform);
+  ecs::Entity entity = 0;
+  auto it = g_networkIdToEntity.find(networkId);
+  if (it != g_networkIdToEntity.end()) {
+    entity = it->second;
+  } else {
+    entity = world.createEntity();
+    g_networkIdToEntity.emplace(networkId, entity);
+    ecs::Networked net;
+    net.networkId = static_cast<ecs::Entity>(networkId);
+    world.addComponent(entity, net);
+  }
+
+  if (!world.hasComponent<ecs::Transform>(entity)) {
+    ecs::Transform transform;
+    transform.x = x;
+    transform.y = y;
+    transform.rotation = 0.0F;
+    transform.scale = 1.0F;
+    world.addComponent(entity, transform);
+  } else {
+    auto &transform = world.getComponent<ecs::Transform>(entity);
+    transform.x = x;
+    transform.y = y;
+  }
 }
 
 void ClientNetworkReceiveSystem::handleEntityUpdate(ecs::World &world, const nlohmann::json &json)
 {
-  ecs::Entity entity = json["entity_id"].get<ecs::Entity>();
+  const std::uint32_t networkId = json["entity_id"].get<std::uint32_t>();
+
+  auto it = g_networkIdToEntity.find(networkId);
+  if (it == g_networkIdToEntity.end()) {
+    return;
+  }
+
+  const ecs::Entity entity = it->second;
 
   if (!world.hasComponent<ecs::Transform>(entity)) {
     return;

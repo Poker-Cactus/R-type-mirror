@@ -19,6 +19,7 @@
 #include "systems/DamageSystem.hpp"
 #include "systems/DeathSystem.hpp"
 #include "systems/EnemyAISystem.hpp"
+#include "systems/InputMovementSystem.hpp"
 #include "systems/LifetimeSystem.hpp"
 #include "systems/ShootingSystem.hpp"
 #include "systems/SpawnSystem.hpp"
@@ -33,6 +34,7 @@ Game::Game()
   world = std::make_shared<ecs::World>();
 
   // Register all systems
+  world->registerSystem<server::InputMovementSystem>();
   world->registerSystem<ecs::MovementSystem>();
   world->registerSystem<server::CollisionSystem>();
 
@@ -49,7 +51,7 @@ Game::Game()
   initializeSystems();
 
   // Spawn initial player
-  spawnPlayer();
+  // Players are spawned on client connection (see AsioServer::createPlayerEntity).
 }
 
 Game::~Game() {}

@@ -11,6 +11,7 @@
 #include "../../engineCore/include/ecs/components/Health.hpp"
 #include "../../engineCore/include/ecs/components/Input.hpp"
 #include "../../engineCore/include/ecs/components/Networked.hpp"
+#include "../../engineCore/include/ecs/components/PlayerId.hpp"
 #include "../../engineCore/include/ecs/components/Transform.hpp"
 #include "../../engineCore/include/ecs/components/Velocity.hpp"
 #include "../include/CapnpHandler.hpp"
@@ -33,6 +34,7 @@
 #include <span>
 #include <system_error>
 #include <thread>
+#include <nlohmann/json.hpp>
 
 AsioServer::AsioServer(std::uint16_t port)
     : ANetworkManager(std::make_shared<CapnpHandler>()), m_strand(asio::make_strand(m_ioContext)),
@@ -51,11 +53,11 @@ AsioServer::~AsioServer()
 void AsioServer::start()
 {
   std::size_t nbOfThreads = std::thread::hardware_concurrency();
+  receive();
 
   for (std::size_t i = 0; i < nbOfThreads; ++i) {
     m_threadPool.emplace_back([this]() { m_ioContext.run(); });
   }
-  receive();
 }
 
 void AsioServer::stop()
@@ -71,6 +73,7 @@ void AsioServer::stop()
 void AsioServer::setWorld(const std::shared_ptr<ecs::World> &world)
 {
   m_world = world;
+  std::cout << "[Server] World set on network manager" << std::endl;
 }
 
 std::size_t AsioServer::getConnectedPlayersCount() const
@@ -137,6 +140,20 @@ void AsioServer::receive()
                           if (isNewClient) {
                             ++m_connectedPlayersCount;
                             createPlayerEntity(clientId);
+
+                            // Handshake: tell the client its assigned id.
+                            try {
+                              nlohmann::json hello;
+                              hello["type"] = "assign_id";
+                              hello["client_id"] = clientId;
+                              const std::string jsonStr = hello.dump();
+                              const auto serialized = getPacketHandler()->serialize(jsonStr);
+                              send(std::span<const std::byte>(reinterpret_cast<const std::byte *>(serialized.data()),
+                                                           serialized.size()),
+                                   clientId);
+                            } catch (...) {
+                              // Best-effort handshake
+                            }
                           }
 
                           NetworkPacket message(*buffer, clientId, bytesTransferred);
@@ -193,8 +210,13 @@ void AsioServer::createPlayerEntity(std::uint32_t clientId)
   m_world->addComponent(player, ecs::Collider{32.0F, 32.0F});
 
   ecs::Networked networked;
-  networked.networkId = player;
+  // Use clientId as the stable network id so the client can address its player.
+  networked.networkId = static_cast<ecs::Entity>(clientId);
   m_world->addComponent(player, networked);
+
+  ecs::PlayerId owner;
+  owner.clientId = clientId;
+  m_world->addComponent(player, owner);
 
   std::cout << "[Server] Player entity " << player << " created for client " << clientId << std::endl;
 }

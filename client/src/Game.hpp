@@ -4,6 +4,7 @@
 #include "Menu.hpp"
 #include "PlayingState.hpp"
 #include <memory>
+ #include "../../engineCore/include/ecs/Entity.hpp"
 namespace ecs
 {
 class World;
@@ -29,12 +30,14 @@ class Game
     void processInput();
     void update(float dt);
     void render();
+    void ensureInputEntity();
 
     std::unique_ptr<Module<IRenderer>> module;
     IRenderer *renderer = nullptr;
 
     std::shared_ptr<ecs::World> m_world;
     std::shared_ptr<INetworkManager> m_networkManager;
+    ecs::Entity m_inputEntity{0};
     bool isRunning = false;
     GameState currentState = GameState::MENU;
     std::unique_ptr<Menu> menu;
