@@ -11,6 +11,8 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 # Dependencies setup via Conan
 find_package(SDL2 REQUIRED)
+find_package(SDL2_ttf REQUIRED)
+find_package(SDL2_image REQUIRED)
 find_package(asio REQUIRED)
 find_package(CapnProto REQUIRED)
 find_package(doctest REQUIRED)
