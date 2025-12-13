@@ -12,26 +12,26 @@
 
 int main()
 {
-    Game game;
-    if (!game.init()) {
-        return EXIT_FAILURE;
-    }
+  Game game;
+  if (!game.init()) {
+    return EXIT_FAILURE;
+  }
 
-    game.run();
-    return 0;
+  game.run();
+  return 0;
 }
-// Network commented out, il faudra qu'on merge vraiment les deux (juste avoir les deux trucs dans le main quoi), c'est juste pour la PR
-// #include "../../network/include/AsioClient.hpp"
-//#include "../include/Client.hpp"
-//#include <csignal>
+// Network commented out, il faudra qu'on merge vraiment les deux (juste avoir les deux trucs dans le main quoi), c'est
+// juste pour la PR #include "../../network/include/AsioClient.hpp"
+// #include "../include/Client.hpp"
+// #include <csignal>
 
-//int main(UNUSED int argc, char **argv)
+// int main(UNUSED int argc, char **argv)
 //{
- // try {
- //   Client client(std::make_shared<AsioClient>("127.0.0.1", "4241"));
- //   client.loop();
- // } catch (std::exception &e) {
- //   std::cerr << e.what() << std::endl;
- // }
- // return 0;
+//  try {
+//    Client client(std::make_shared<AsioClient>("127.0.0.1", "4241"));
+//    client.loop();
+//  } catch (std::exception &e) {
+//    std::cerr << e.what() << std::endl;
+//  }
+//  return 0;
 //}

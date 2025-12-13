@@ -12,15 +12,15 @@
 #include "../../engineCore/include/ecs/components/PlayerId.hpp"
 #include "../../engineCore/include/ecs/components/Transform.hpp"
 #include "../../engineCore/include/ecs/components/Viewport.hpp"
-#include <nlohmann/json.hpp>
 #include <iostream>
+#include <nlohmann/json.hpp>
 #include <unordered_set>
 
 namespace
 {
 std::unordered_set<std::uint32_t> g_loggedFirstInputFromClient;
 float g_inputLogAccumulator = 0.0f;
-}
+} // namespace
 
 NetworkReceiveSystem::NetworkReceiveSystem(std::shared_ptr<INetworkManager> networkManager)
 {
@@ -35,9 +35,8 @@ void NetworkReceiveSystem::update(ecs::World &world, float deltaTime)
 
   NetworkPacket packet;
   while (m_networkManager->poll(packet)) {
-    std::string message = m_networkManager->getPacketHandler()
-                            ->deserialize(packet.getData(), packet.getBytesTransferred())
-                            .value_or("");
+    std::string message =
+      m_networkManager->getPacketHandler()->deserialize(packet.getData(), packet.getBytesTransferred()).value_or("");
 
     if (message.empty()) {
       continue;
@@ -131,9 +130,8 @@ void NetworkReceiveSystem::handlePlayerInput(ecs::World &world, std::string mess
       matched = true;
 
       if (g_inputLogAccumulator >= 0.5f) {
-        std::cout << "[Server] Applied input client=" << clientId
-                  << " up=" << input.up << " down=" << input.down << " left=" << input.left
-                  << " right=" << input.right << " shoot=" << input.shoot << std::endl;
+        std::cout << "[Server] Applied input client=" << clientId << " up=" << input.up << " down=" << input.down
+                  << " left=" << input.left << " right=" << input.right << " shoot=" << input.shoot << std::endl;
         g_inputLogAccumulator = 0.0f;
       }
 

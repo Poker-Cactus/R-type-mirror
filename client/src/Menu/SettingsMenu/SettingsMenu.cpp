@@ -10,13 +10,11 @@
 
 void SettingsMenu::init(IRenderer *renderer)
 {
-    try {
-    } catch (const std::exception &e) {
-    }
+  try {
+  } catch (const std::exception &e) {
+  }
 }
 
-void SettingsMenu::render(int winWidth, int winHeight, IRenderer *renderer)
-{}
+void SettingsMenu::render(int winWidth, int winHeight, IRenderer *renderer) {}
 
-void SettingsMenu::process(IRenderer *renderer)
-{}
+void SettingsMenu::process(IRenderer *renderer) {}

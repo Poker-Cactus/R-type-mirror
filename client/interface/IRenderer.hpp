@@ -22,6 +22,6 @@ class IRenderer : public IRender,
                   public ITime,
                   public ICollision
 {
-  public:
-    virtual ~IRenderer() = default;
+public:
+  virtual ~IRenderer() = default;
 };

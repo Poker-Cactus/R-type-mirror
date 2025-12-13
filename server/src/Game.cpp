@@ -20,13 +20,13 @@
 #include "systems/DamageSystem.hpp"
 #include "systems/DeathSystem.hpp"
 #include "systems/EnemyAISystem.hpp"
-#include "systems/InputMovementSystem.hpp"
 #include "systems/EntityLifetimeSystem.hpp"
+#include "systems/InputMovementSystem.hpp"
 #include "systems/LifetimeSystem.hpp"
-#include "systems/ShootingSystem.hpp"
-#include "systems/SpawnSystem.hpp"
 #include "systems/NetworkReceiveSystem.hpp"
 #include "systems/NetworkSendSystem.hpp"
+#include "systems/ShootingSystem.hpp"
+#include "systems/SpawnSystem.hpp"
 #include <chrono>
 #include <memory>
 #include <thread>

@@ -72,7 +72,7 @@ void NetworkSendSystem::sendInputToServer(ecs::Entity entity, const ecs::Input &
 
   const InputState now{input.up, input.down, input.left, input.right, input.shoot};
   const bool changed = !last.has_value() || last->up != now.up || last->down != now.down || last->left != now.left ||
-                       last->right != now.right || last->shoot != now.shoot;
+    last->right != now.right || last->shoot != now.shoot;
 
   // Create JSON message with player input
   nlohmann::json message;

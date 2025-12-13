@@ -6,14 +6,14 @@
 */
 
 #pragma once
-#include "../interface/IRenderer.hpp"
 #include "../../engineCore/include/ecs/World.hpp"
+#include "../interface/IRenderer.hpp"
 #include "ParallaxBackground.hpp"
 #include <memory>
 
 /**
  * @brief Gère l'état du jeu en cours (gameplay)
- * 
+ *
  * Cette classe gère tous les aspects du jeu actif, incluant:
  * - Le background parallaxe animé
  * - Les entités de jeu (joueur, ennemis, projectiles)
@@ -21,45 +21,45 @@
  */
 class PlayingState
 {
-  public:
-    PlayingState(IRenderer *renderer, const std::shared_ptr<ecs::World> &world);
-    ~PlayingState();
+public:
+  PlayingState(IRenderer *renderer, const std::shared_ptr<ecs::World> &world);
+  ~PlayingState();
 
-    /**
-     * @brief Initialise l'état de jeu
-     * @return true si l'initialisation a réussi
-     */
-    bool init();
+  /**
+   * @brief Initialise l'état de jeu
+   * @return true si l'initialisation a réussi
+   */
+  bool init();
 
-    /**
-     * @brief Met à jour la logique du jeu
-     * @param dt Delta time en secondes
-     */
-    void update(float dt);
+  /**
+   * @brief Met à jour la logique du jeu
+   * @param dt Delta time en secondes
+   */
+  void update(float dt);
 
-    /**
-     * @brief Dessine tous les éléments du jeu
-     */
-    void render();
+  /**
+   * @brief Dessine tous les éléments du jeu
+   */
+  void render();
 
-    /**
-     * @brief Gère les entrées utilisateur pendant le jeu
-     */
-    void processInput();
+  /**
+   * @brief Gère les entrées utilisateur pendant le jeu
+   */
+  void processInput();
 
-    /**
-     * @brief Nettoie les ressources
-     */
-    void cleanup();
+  /**
+   * @brief Nettoie les ressources
+   */
+  void cleanup();
 
-  private:
-    IRenderer *renderer;
-    std::shared_ptr<ecs::World> world;
-    std::unique_ptr<ParallaxBackground> background;
-    
-    // TODO: Ajouter les systèmes de jeu
-    // - Gestion des entités (ECS)
-    // - Système de collision
-    // - Système de spawn d'ennemis
-    // - Interface de jeu (HUD)
+private:
+  IRenderer *renderer;
+  std::shared_ptr<ecs::World> world;
+  std::unique_ptr<ParallaxBackground> background;
+
+  // TODO: Ajouter les systèmes de jeu
+  // - Gestion des entités (ECS)
+  // - Système de collision
+  // - Système de spawn d'ennemis
+  // - Interface de jeu (HUD)
 };

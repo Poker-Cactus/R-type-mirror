@@ -30,11 +30,11 @@
 #include <cstdint>
 #include <iostream>
 #include <memory>
+#include <nlohmann/json.hpp>
 #include <ostream>
 #include <span>
 #include <system_error>
 #include <thread>
-#include <nlohmann/json.hpp>
 
 AsioServer::AsioServer(std::uint16_t port)
     : ANetworkManager(std::make_shared<CapnpHandler>()), m_strand(asio::make_strand(m_ioContext)),
@@ -120,47 +120,46 @@ void AsioServer::receive()
 
   m_socket.async_receive_from(
     asio::buffer(*buffer), *senderEndpoint,
-    asio::bind_executor(m_strand,
-                        [this, buffer, senderEndpoint](const std::error_code &error, std::size_t bytesTransferred) {
-                          if (error) {
-                            if (error != asio::error::operation_aborted) {
-                              std::cerr << "[Server] Receive error: " << error.message() << std::endl;
-                              receive();
-                            }
-                            return;
-                          }
+    asio::bind_executor(
+      m_strand, [this, buffer, senderEndpoint](const std::error_code &error, std::size_t bytesTransferred) {
+        if (error) {
+          if (error != asio::error::operation_aborted) {
+            std::cerr << "[Server] Receive error: " << error.message() << std::endl;
+            receive();
+          }
+          return;
+        }
 
-                          if (bytesTransferred == 0) {
-                            receive();
-                            return;
-                          }
+        if (bytesTransferred == 0) {
+          receive();
+          return;
+        }
 
-                          auto [clientId, isNewClient] = getOrCreateClientId(*senderEndpoint);
+        auto [clientId, isNewClient] = getOrCreateClientId(*senderEndpoint);
 
-                          if (isNewClient) {
-                            ++m_connectedPlayersCount;
-                            createPlayerEntity(clientId);
+        if (isNewClient) {
+          ++m_connectedPlayersCount;
+          createPlayerEntity(clientId);
 
-                            // Handshake: tell the client its assigned id.
-                            try {
-                              nlohmann::json hello;
-                              hello["type"] = "assign_id";
-                              hello["client_id"] = clientId;
-                              const std::string jsonStr = hello.dump();
-                              const auto serialized = getPacketHandler()->serialize(jsonStr);
-                              send(std::span<const std::byte>(reinterpret_cast<const std::byte *>(serialized.data()),
-                                                           serialized.size()),
-                                   clientId);
-                            } catch (...) {
-                              // Best-effort handshake
-                            }
-                          }
+          // Handshake: tell the client its assigned id.
+          try {
+            nlohmann::json hello;
+            hello["type"] = "assign_id";
+            hello["client_id"] = clientId;
+            const std::string jsonStr = hello.dump();
+            const auto serialized = getPacketHandler()->serialize(jsonStr);
+            send(std::span<const std::byte>(reinterpret_cast<const std::byte *>(serialized.data()), serialized.size()),
+                 clientId);
+          } catch (...) {
+            // Best-effort handshake
+          }
+        }
 
-                          NetworkPacket message(*buffer, clientId, bytesTransferred);
-                          m_incomingMessages.push(message);
+        NetworkPacket message(*buffer, clientId, bytesTransferred);
+        m_incomingMessages.push(message);
 
-                          receive();
-                        }));
+        receive();
+      }));
 }
 
 bool AsioServer::poll(NetworkPacket &msg)

@@ -6,12 +6,12 @@
 */
 
 #include "../../include/systems/NetworkReceiveSystem.hpp"
-#include "../../include/systems/NetworkSendSystem.hpp"
 #include "../../engineCore/include/ecs/World.hpp"
 #include "../../engineCore/include/ecs/components/Collider.hpp"
 #include "../../engineCore/include/ecs/components/EntityKind.hpp"
-#include "../../engineCore/include/ecs/components/Transform.hpp"
 #include "../../engineCore/include/ecs/components/Networked.hpp"
+#include "../../engineCore/include/ecs/components/Transform.hpp"
+#include "../../include/systems/NetworkSendSystem.hpp"
 #include <iostream>
 #include <nlohmann/json.hpp>
 #include <unordered_map>
@@ -21,7 +21,7 @@ namespace
 bool g_loggedFirstSnapshot = false;
 std::unordered_map<std::uint32_t, ecs::Entity> g_networkIdToEntity;
 float g_debugLogAcc = 0.0F;
-}
+} // namespace
 
 ClientNetworkReceiveSystem::ClientNetworkReceiveSystem(std::shared_ptr<INetworkManager> networkManager)
     : m_networkManager(networkManager)

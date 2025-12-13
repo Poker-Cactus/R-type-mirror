@@ -12,8 +12,8 @@
 #include "systems/DeathSystem.hpp"
 #include "systems/ShootingSystem.hpp"
 #include "systems/SpawnSystem.hpp"
-#include <cstdint>
 #include <chrono>
+#include <cstdint>
 #include <memory>
 
 class NetworkReceiveSystem;

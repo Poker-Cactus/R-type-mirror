@@ -44,7 +44,7 @@ void Client::initializeSystems()
   std::cout << "✓ Client: Systèmes réseau initialisés" << std::endl;
   std::cout << "⏳ Client: En attente des entités du serveur..." << std::endl;
 
-  //send packet to the server to notify client is ready
+  // send packet to the server to notify client is ready
   auto serialized = m_networkManager->getPacketHandler()->serialize("PING");
   m_networkManager->send(
     std::span<const std::byte>(reinterpret_cast<const std::byte *>(serialized.data()), serialized.size()), 0);

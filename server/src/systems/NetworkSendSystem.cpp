@@ -15,13 +15,13 @@
 #include "ecs/ComponentSignature.hpp"
 #include "ecs/Entity.hpp"
 #include <cstddef>
+#include <iostream>
 #include <memory>
 #include <nlohmann/json.hpp>
 #include <nlohmann/json_fwd.hpp>
 #include <span>
 #include <string>
 #include <vector>
-#include <iostream>
 
 NetworkSendSystem::NetworkSendSystem(std::shared_ptr<INetworkManager> networkManager)
 {
@@ -54,7 +54,8 @@ void NetworkSendSystem::update(ecs::World &world, float deltaTime)
 
       nlohmann::json entityJson;
       entityJson["id"] = networked.networkId;
-      entityJson["transform"] = {{"x", transform.x}, {"y", transform.y}, {"rotation", transform.rotation}, {"scale", transform.scale}};
+      entityJson["transform"] = {
+        {"x", transform.x}, {"y", transform.y}, {"rotation", transform.rotation}, {"scale", transform.scale}};
 
       if (world.hasComponent<ecs::Collider>(entity)) {
         const auto &col = world.getComponent<ecs::Collider>(entity);
@@ -90,12 +91,13 @@ void NetworkSendSystem::update(ecs::World &world, float deltaTime)
     const auto clients = m_networkManager->getClients();
     for (const auto &[clientId, _endpoint] : clients) {
       m_networkManager->send(
-        std::span<const std::byte>(reinterpret_cast<const std::byte *>(serialized.data()), serialized.size()), clientId);
+        std::span<const std::byte>(reinterpret_cast<const std::byte *>(serialized.data()), serialized.size()),
+        clientId);
     }
 
     if (logAccumulator >= 1.0f) {
-      std::cout << "[Server] Snapshot broadcast: entities=" << snapshot["entities"].size() << " clients="
-                << clients.size() << std::endl;
+      std::cout << "[Server] Snapshot broadcast: entities=" << snapshot["entities"].size()
+                << " clients=" << clients.size() << std::endl;
       logAccumulator = 0.0f;
     }
 
