@@ -39,6 +39,10 @@ public:
   void start() override;
   void stop() override;
   bool poll(NetworkPacket &msg) override;
+  std::unordered_map<std::uint32_t, asio::ip::udp::endpoint> getClients() const override;
+
+  // Client always talks to a single server endpoint.
+  [[nodiscard]] asio::ip::udp::endpoint getServerEndpoint() const { return m_serverEndpoint; }
 
 private:
   void receive();

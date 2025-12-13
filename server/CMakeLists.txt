@@ -8,6 +8,9 @@ add_executable(server
     src/main.cpp
     src/Server.cpp
     src/Game.cpp
+
+    src/systems/NetworkReceiveSystem.cpp
+    src/systems/NetworkSendSystem.cpp
 )
 
 target_include_directories(server PRIVATE

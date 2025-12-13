@@ -12,7 +12,10 @@
 #include "../../../engineCore/include/ecs/ISystem.hpp"
 #include "../../../engineCore/include/ecs/World.hpp"
 #include "../../../engineCore/include/ecs/components/Collider.hpp"
+#include "../../../engineCore/include/ecs/components/EntityKind.hpp"
 #include "../../../engineCore/include/ecs/components/Health.hpp"
+#include "../../../engineCore/include/ecs/components/Lifetime.hpp"
+#include "../../../engineCore/include/ecs/components/Networked.hpp"
 #include "../../../engineCore/include/ecs/components/Transform.hpp"
 #include "../../../engineCore/include/ecs/components/Velocity.hpp"
 #include "../../../engineCore/include/ecs/events/EventListenerHandle.hpp"
@@ -33,13 +36,13 @@ public:
 
   void update(ecs::World &world, float deltaTime) override
   {
+    (void)world;
     m_spawnTimer += deltaTime;
 
     // Spawn enemies periodically
-    if (m_spawnTimer >= SPAWN_INTERVAL) {
-      spawnRandomEnemy(world);
-      m_spawnTimer = 0.0F;
-    }
+    // Disabled by default for prototype (avoids unexpected red squares on client).
+    // Re-enable when you want enemies:
+    // if (m_spawnTimer >= SPAWN_INTERVAL) { spawnRandomEnemy(world); m_spawnTimer = 0.0F; }
   }
 
   void initialize(ecs::World &world)
@@ -89,6 +92,8 @@ private:
   {
     ecs::Entity enemy = world.createEntity();
 
+    world.addComponent(enemy, ecs::EntityKind{ecs::EntityKind::Kind::ENEMY});
+
     ecs::Transform transform;
     transform.x = x;
     transform.y = y;
@@ -112,16 +117,18 @@ private:
   static void spawnProjectile(ecs::World &world, float x, float y, ecs::Entity owner)
   {
     // Determine direction based on owner's velocity
-    float projectileVelocity = 300.0F; // Default to right (player)
+    float projectileVelocity = 850.0F; // Fast, R-Type-like projectile
     if (world.hasComponent<ecs::Velocity>(owner)) {
       const auto &ownerVel = world.getComponent<ecs::Velocity>(owner);
       // If owner moves left (enemy), projectile goes left
       if (ownerVel.dx < 0) {
-        projectileVelocity = -300.0F;
+        projectileVelocity = -850.0F;
       }
     }
 
     ecs::Entity projectile = world.createEntity();
+
+    world.addComponent(projectile, ecs::EntityKind{ecs::EntityKind::Kind::PROJECTILE});
 
     ecs::Transform transform;
     transform.x = x;
@@ -135,7 +142,14 @@ private:
     velocity.dy = 0.0F;
     world.addComponent(projectile, velocity);
 
+    // Despawn is handled by LifetimeSystem when projectile leaves the viewport.
+
     world.addComponent(projectile, ecs::Collider{8.0F, 8.0F});
+
+    // Mark as networked so the snapshot system replicates it to clients.
+    ecs::Networked net;
+    net.networkId = projectile;
+    world.addComponent(projectile, net);
   }
 
   static void spawnPowerup(ecs::World &world, float x, float y)

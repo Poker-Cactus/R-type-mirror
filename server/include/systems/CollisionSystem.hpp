@@ -44,6 +44,15 @@ public:
         ecs::Entity entityA = entities[i];
         ecs::Entity entityB = entities[j];
 
+        if (!world.isAlive(entityA) || !world.isAlive(entityB)) {
+          continue;
+        }
+
+        if (!world.hasComponent<ecs::Transform>(entityA) || !world.hasComponent<ecs::Transform>(entityB) ||
+            !world.hasComponent<ecs::Collider>(entityA) || !world.hasComponent<ecs::Collider>(entityB)) {
+          continue;
+        }
+
         const auto &transformA = world.getComponent<ecs::Transform>(entityA);
         const auto &transformB = world.getComponent<ecs::Transform>(entityB);
         const auto &colliderA = world.getComponent<ecs::Collider>(entityA);

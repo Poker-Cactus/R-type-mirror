@@ -10,14 +10,14 @@
 
 void LobbyMenu::init(IRenderer *renderer)
 {
-    try {
-    } catch (const std::exception &e) {
-    }
+  try {
+  } catch (const std::exception &e) {
+  }
 }
 
 void LobbyMenu::render(int winWidth, int winHeight, IRenderer *renderer)
 {
-    // TODO: Afficher le lobby
+  // TODO: Afficher le lobby
 }
 
 void LobbyMenu::process(IRenderer *renderer) {}

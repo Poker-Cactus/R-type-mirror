@@ -9,8 +9,8 @@
 #define ECS_COMPONENTMANAGER_HPP_
 
 #include "ComponentStorage.hpp"
+#include "Entity.hpp"
 #include "IComponentStorage.hpp"
-#include "ecs/Entity.hpp"
 #include <memory>
 #include <stdexcept>
 #include <typeindex>

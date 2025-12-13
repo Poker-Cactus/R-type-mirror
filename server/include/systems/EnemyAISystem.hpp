@@ -11,6 +11,7 @@
 #include "../../../engineCore/include/ecs/Entity.hpp"
 #include "../../../engineCore/include/ecs/ISystem.hpp"
 #include "../../../engineCore/include/ecs/World.hpp"
+#include "../../../engineCore/include/ecs/components/PlayerId.hpp"
 #include "../../../engineCore/include/ecs/components/Transform.hpp"
 #include "../../../engineCore/include/ecs/components/Velocity.hpp"
 #include "../../../engineCore/include/ecs/events/GameEvents.hpp"
@@ -37,6 +38,10 @@ public:
     world.getEntitiesWithSignature(getSignature(), entities);
 
     for (auto entity : entities) {
+      // Only run AI on enemies; never on player-controlled entities.
+      if (world.hasComponent<ecs::PlayerId>(entity)) {
+        continue;
+      }
       auto &transform = world.getComponent<ecs::Transform>(entity);
       auto &velocity = world.getComponent<ecs::Velocity>(entity);
 
@@ -66,6 +71,7 @@ public:
   {
     ecs::ComponentSignature sig;
     sig.set(ecs::getComponentId<ecs::Velocity>());
+    sig.set(ecs::getComponentId<ecs::Transform>());
     return sig;
   }
 

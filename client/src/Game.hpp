@@ -1,35 +1,45 @@
 #pragma once
+#include "../../engineCore/include/ecs/Entity.hpp"
 #include "../ModuleLoader.hpp"
 #include "../interface/IRenderer.hpp"
 #include "Menu.hpp"
 #include "PlayingState.hpp"
 #include <memory>
+namespace ecs
+{
+class World;
+}
 
+class INetworkManager;
 class Game
 {
-  public:
-    enum class GameState { MENU, PLAYING, PAUSED };
+public:
+  enum class GameState { MENU, PLAYING, PAUSED };
 
-    Game();
-    ~Game();
+  Game();
+  ~Game();
 
-    bool init();
-    void run();
-    void shutdown();
+  bool init();
+  void run();
+  void shutdown();
 
-    void setState(GameState newState);
-    GameState getState() const;
+  void setState(GameState newState);
+  GameState getState() const;
 
-  private:
-    void processInput();
-    void update(float dt);
-    void render();
+private:
+  void processInput();
+  void update(float dt);
+  void render();
+  void ensureInputEntity();
 
-    std::unique_ptr<Module<IRenderer>> module;
-    IRenderer *renderer = nullptr;
+  std::unique_ptr<Module<IRenderer>> module;
+  IRenderer *renderer = nullptr;
 
-    bool isRunning = false;
-    GameState currentState = GameState::PLAYING;
-    std::unique_ptr<Menu> menu;
-    std::unique_ptr<PlayingState> playingState;
+  std::shared_ptr<ecs::World> m_world;
+  std::shared_ptr<INetworkManager> m_networkManager;
+  ecs::Entity m_inputEntity{0};
+  bool isRunning = false;
+  GameState currentState = GameState::MENU;
+  std::unique_ptr<Menu> menu;
+  std::unique_ptr<PlayingState> playingState;
 };

@@ -51,9 +51,8 @@ AsioClient::~AsioClient()
 
 void AsioClient::start()
 {
-  m_recvThread = std::thread([this]() { m_ioContext.run(); });
-  std::this_thread::sleep_for(std::chrono::milliseconds(10));
   receive();
+  m_recvThread = std::thread([this]() { m_ioContext.run(); });
 }
 
 void AsioClient::stop()
@@ -106,4 +105,9 @@ void AsioClient::receive()
 bool AsioClient::poll(NetworkPacket &msg)
 {
   return m_incomingMessages.pop(msg);
+}
+
+std::unordered_map<std::uint32_t, asio::ip::udp::endpoint> AsioClient::getClients() const
+{
+  return {};
 }

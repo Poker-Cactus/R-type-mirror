@@ -1,18 +1,20 @@
 #include "RendererSDL2.hpp"
 
 #if defined(_WIN32)
-    #define EXPORT_FUNC __declspec(dllexport)
+#define EXPORT_FUNC __declspec(dllexport)
 #else
-    #define EXPORT_FUNC
+#define EXPORT_FUNC
 #endif
 
 extern "C" {
 
-    EXPORT_FUNC IRenderer* createRenderer() {
-        return new RendererSDL2();
-    }
+EXPORT_FUNC IRenderer *createRenderer()
+{
+  return new RendererSDL2();
+}
 
-    EXPORT_FUNC void destroyRenderer(IRenderer* r) {
-        delete r;
-    }
+EXPORT_FUNC void destroyRenderer(IRenderer *r)
+{
+  delete r;
+}
 }

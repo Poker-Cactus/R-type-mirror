@@ -8,8 +8,12 @@
 #ifndef MOVEMENTSYSTEM_HPP_
 #define MOVEMENTSYSTEM_HPP_
 #include "../ISystem.hpp"
+#include "../World.hpp"
 #include "../components/Transform.hpp"
 #include "../components/Velocity.hpp"
+#include "ecs/ComponentSignature.hpp"
+#include "ecs/Entity.hpp"
+#include <vector>
 
 namespace ecs
 {

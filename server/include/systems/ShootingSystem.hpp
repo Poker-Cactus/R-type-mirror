@@ -32,7 +32,7 @@ public:
 
   void update(ecs::World &world, float deltaTime) override
   {
-    (void)deltaTime;
+    m_currentTime += deltaTime;
 
     std::vector<ecs::Entity> entities;
     world.getEntitiesWithSignature(getSignature(), entities);
@@ -41,16 +41,19 @@ public:
       const auto &input = world.getComponent<ecs::Input>(entity);
       const auto &transform = world.getComponent<ecs::Transform>(entity);
 
-      if (input.shoot && canShoot(entity)) {
+      const bool wasShooting = m_prevShootState.contains(entity) ? m_prevShootState[entity] : false;
+      const bool justPressed = input.shoot && !wasShooting;
+
+      if (justPressed && canShoot(entity)) {
         // Emit shoot event
         ecs::ShootEvent shootEvent(entity, 1.0F, 0.0F);
         world.emitEvent(shootEvent);
 
         m_lastShootTime[entity] = m_currentTime;
       }
-    }
 
-    m_currentTime += deltaTime;
+      m_prevShootState[entity] = input.shoot;
+    }
   }
 
   /**
@@ -73,8 +76,9 @@ public:
 private:
   ecs::EventListenerHandle m_shootHandle;
   std::unordered_map<ecs::Entity, float> m_lastShootTime;
+  std::unordered_map<ecs::Entity, bool> m_prevShootState;
   float m_currentTime = 0.0F;
-  const float SHOOT_COOLDOWN = 0.2F; // 5 shots per second
+  const float SHOOT_COOLDOWN = 0.05F; // 5 shots per second
 
   bool canShoot(ecs::Entity entity)
   {
