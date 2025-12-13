@@ -45,7 +45,27 @@ jobs:
       run: cmake --build build -- -j4
 
     - name: Copy compile_commands.json
-      run: cp -f build/compile_commands.json .
+      shell: bash
+      run: |
+        set -euo pipefail
+        src="build/compile_commands.json"
+        dst="./compile_commands.json"
+
+        # Some setups already generate `compile_commands.json` at repo root (or as a symlink).
+        # Avoid copying a file onto itself (cp exits non-zero and fails the job).
+        if [ ! -f "$src" ]; then
+          echo "No $src to copy (skipping)."
+          exit 0
+        fi
+
+        src_real="$(readlink -f "$src" 2>/dev/null || echo "$src")"
+        dst_real="$(readlink -f "$dst" 2>/dev/null || echo "$dst")"
+        if [ "$src_real" = "$dst_real" ]; then
+          echo "compile_commands.json already at destination (skipping)."
+          exit 0
+        fi
+
+        cp -f "$src" "$dst"
 
     - name: Run clang-format check
       run: ./scripts/format-check.sh
