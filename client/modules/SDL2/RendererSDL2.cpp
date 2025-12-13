@@ -24,6 +24,8 @@ static int mapSDLKeyToGeneric(int sdlKey)
         return KeyCode::KEY_TAB;
     case SDLK_SPACE:
         return KeyCode::KEY_SPACE;
+    case SDLK_DELETE:
+        return KeyCode::KEY_DELETE;
 
     case SDLK_UP:
         return KeyCode::KEY_UP;
@@ -322,12 +324,12 @@ void RendererSDL2::freeTexture(void *texture)
 
 void RendererSDL2::getTextureSize(void *texture, int &width, int &height)
 {
-    if (texture == nullptr) {
+    if (texture != nullptr) {
+        SDL_QueryTexture(static_cast<SDL_Texture *>(texture), nullptr, nullptr, &width, &height);
+    } else {
         width = 0;
         height = 0;
-        return;
     }
-    SDL_QueryTexture(static_cast<SDL_Texture *>(texture), nullptr, nullptr, &width, &height);
 }
 
 void RendererSDL2::drawTexture(void *texture, int x, int y)

@@ -4,14 +4,12 @@
 #include "Menu.hpp"
 #include "PlayingState.hpp"
 #include <memory>
-
 namespace ecs
 {
 class World;
 }
 
 class INetworkManager;
-
 class Game
 {
   public:
@@ -37,9 +35,8 @@ class Game
 
     std::shared_ptr<ecs::World> m_world;
     std::shared_ptr<INetworkManager> m_networkManager;
-
     bool isRunning = false;
-    GameState currentState = GameState::PLAYING;
+    GameState currentState = GameState::MENU;
     std::unique_ptr<Menu> menu;
     std::unique_ptr<PlayingState> playingState;
 };

@@ -6,11 +6,14 @@
 */
 
 #include "Menu.hpp"
-#include "../interface/KeyCodes.hpp"
+#include "Menu/LoadingMenu/LoadingMenu.hpp"
+#include "Menu/LobbyMenu/LobbyMenu.hpp"
+#include "Menu/MainMenu/MainMenu.hpp"
+#include "Menu/ProfileMenu/ProfileMenu.hpp"
+#include "Menu/SettingsMenu/SettingsMenu.hpp"
 #include <cmath>
-#include <iostream>
 
-Menu::Menu(IRenderer *renderer) : renderer(renderer), backgroundTexture(nullptr), blinkTimer(0.0f) {}
+Menu::Menu(IRenderer *renderer) : renderer(renderer) {}
 
 Menu::~Menu()
 {
@@ -20,10 +23,29 @@ Menu::~Menu()
 void Menu::init()
 {
     try {
-        logo = renderer->loadTexture("client/assets/logoRTYPE.png");
-        menu_font = renderer->loadFont("client/assets/font.opf/r-type.otf", 24);
+        const int menuFontSize = 24;
+        const int titleFontSize = 48;
+        menu_font = renderer->loadFont("client/assets/font.opf/r-type.otf", menuFontSize);
+
+        loadingMenu = new LoadingMenu();
+        loadingMenu->init(renderer);
+
+        // Initialiser MainMenu
+        mainMenu = new MainMenu();
+        mainMenu->init(renderer);
+
+        lobbyMenu = new LobbyMenu();
+        lobbyMenu->init(renderer);
+
+        profileMenu = new ProfileMenu();
+        profileMenu->init(renderer);
+
+        settingsMenu = new SettingsMenu();
+        settingsMenu->init(renderer);
+
+        // Initialiser le LoadingScreen
+        loadingScreen = new LoadingScreen(renderer, menu_font);
     } catch (const std::exception &e) {
-        backgroundTexture = nullptr;
     }
 }
 
@@ -34,19 +56,19 @@ void Menu::render()
 
     switch (currentState) {
     case MenuState::LOADING:
-        renderLoading(winWidth, winHeight);
+        loadingMenu->render(winWidth, winHeight, renderer, loadingScreen, &currentState);
         break;
     case MenuState::MAIN_MENU:
-        renderMainMenu(winWidth, winHeight);
+        mainMenu->render(winWidth, winHeight, renderer);
         break;
-    case MenuState::OPTIONS:
-        renderOptions(winWidth, winHeight);
+    case MenuState::PROFILE:
+        profileMenu->render(winWidth, winHeight, renderer);
         break;
     case MenuState::LOBBY:
-        renderLobby(winWidth, winHeight);
+        lobbyMenu->render(winWidth, winHeight, renderer);
         break;
     case MenuState::SETTINGS:
-        renderSettings(winWidth, winHeight);
+        settingsMenu->render(winWidth, winHeight, renderer);
         break;
     }
 }
@@ -55,97 +77,28 @@ void Menu::processInput()
 {
     switch (currentState) {
     case MenuState::LOADING:
-        if (renderer->isKeyJustPressed(KeyCode::KEY_RETURN))
-            this->currentState = MenuState::MAIN_MENU;
+        loadingMenu->process(renderer);
         break;
     case MenuState::MAIN_MENU:
-        // Flèche bas - descendre dans le menu
-        if (renderer->isKeyJustPressed(KeyCode::KEY_DOWN)) {
-            currentMenuIndex = (currentMenuIndex + 1) % mainMenuItems.size();
-        }
-        // Flèche haut - monter dans le menu
-        if (renderer->isKeyJustPressed(KeyCode::KEY_UP)) {
-            currentMenuIndex = (currentMenuIndex - 1 + mainMenuItems.size()) % mainMenuItems.size();
-        }
+        mainMenu->process(&currentState, renderer);
+        break;
+    case MenuState::PROFILE:
+        profileMenu->process(renderer);
+        break;
+    case MenuState::SETTINGS:
+        settingsMenu->process(renderer);
+        break;
+    case MenuState::LOBBY:
+        lobbyMenu->process(renderer);
         break;
     default:
         break;
     }
-}
-
-void Menu::renderLoading(int winWidth, int winHeight)
-{
-    // Afficher le logo
-    if (logo != nullptr) {
-        int logoWidth = winWidth * 40 / 100;
-        int logoHeight = logoWidth / 3;
-
-        int logoX = (winWidth - logoWidth) / 2;
-        int logoY = winHeight / 10;
-        renderer->drawTextureEx(logo, logoX, logoY, logoWidth, logoHeight, 0.0, false, false);
-    }
-
-    if (menu_font != nullptr) {
-        blinkTimer += renderer->getDeltaTime();
-        float opacity = (std::sin(blinkTimer * 3.5f) + 1.0f) / 2.0f;
-        int alpha = static_cast<int>(50 + opacity * 205);
-
-        std::string text = "Press enter to start ...";
-        int textWidth = 0;
-        int textHeight = 0;
-        renderer->getTextSize(menu_font, text, textWidth, textHeight);
-
-        int x = (winWidth - textWidth) / 2;
-        int y = (winHeight - textHeight) / 1.1;
-
-        renderer->drawText(menu_font, text, x, y, {4, 196, 199, static_cast<unsigned char>(alpha)});
-    }
-}
-
-void Menu::renderMainMenu(int winWidth, int winHeight)
-{
-    if (menu_font == nullptr) {
-        return;
-    }
-
-    for (size_t i = 0; i < mainMenuItems.size(); i++) {
-        int textWidth = 0;
-        int textHeight = 0;
-        renderer->getTextSize(menu_font, mainMenuItems[i], textWidth, textHeight);
-
-        int x = (winWidth - textWidth) / 2;
-        int y = (winHeight / 2) + (static_cast<int>(i) * 60) - 90;
-
-        Color color =
-            (i == static_cast<size_t>(currentMenuIndex)) ? Color{4, 196, 199, 255} : Color{255, 255, 255, 255};
-        renderer->drawText(menu_font, mainMenuItems[i], x, y, color);
-    }
-}
-
-void Menu::renderOptions(int winWidth, int winHeight)
-{
-    // TODO: Afficher le menu des options
-    drawCenteredText("OPTIONS - Coming soon", 0, {255, 255, 255, 255});
-}
-
-void Menu::renderLobby(int winWidth, int winHeight)
-{
-    // TODO: Afficher le lobby
-    drawCenteredText("LOBBY - Coming soon", 0, {255, 255, 255, 255});
-}
-
-void Menu::renderSettings(int winWidth, int winHeight)
-{
-    // TODO: Afficher les settings
-    drawCenteredText("SETTINGS - Coming soon", 0, {255, 255, 255, 255});
+    processBack();
 }
 
 void Menu::cleanup()
 {
-    if (backgroundTexture != nullptr) {
-        renderer->freeTexture(backgroundTexture);
-        backgroundTexture = nullptr;
-    }
 }
 
 void Menu::setState(MenuState newState)
@@ -175,4 +128,9 @@ void Menu::drawCenteredText(const std::string &text, int yOffset, const Color &c
 MenuState Menu::getState() const
 {
     return currentState;
+}
+
+bool Menu::shouldStartGame() const
+{
+    return currentState == MenuState::LOBBY;
 }

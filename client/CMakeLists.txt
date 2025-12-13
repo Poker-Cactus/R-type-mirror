@@ -2,6 +2,17 @@ project(client)
 
 add_executable(client
     src/main.cpp
+    src/Game.cpp
+    src/Menu.cpp
+    src/Menu/ProcessInputMenu.cpp
+    src/Menu/LoadingScreen.cpp
+    src/Menu/MainMenu/MainMenu.cpp
+    src/Menu/LoadingMenu/LoadingMenu.cpp
+    src/Menu/LobbyMenu/LobbyMenu.cpp
+    src/Menu/SettingsMenu/SettingsMenu.cpp
+    src/Menu/ProfileMenu/ProfileMenu.cpp
+    src/PlayingState.cpp
+    src/ParallaxBackground.cpp
     src/Client.cpp
     src/systems/NetworkSendSystem.cpp
     src/systems/NetworkReceiveSystem.cpp

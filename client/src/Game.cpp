@@ -13,7 +13,7 @@
 #include "../../network/include/AsioClient.hpp"
 #include <iostream>
 
-Game::Game() : module(nullptr), renderer(nullptr), isRunning(false), currentState(GameState::PLAYING) {}
+Game::Game() : module(nullptr), renderer(nullptr), isRunning(false), currentState(GameState::MENU) {}
 
 Game::~Game()
 {
@@ -57,7 +57,6 @@ bool Game::init()
         // Local input entity so NetworkSendSystem has something to transmit.
         auto localEntity = m_world->createEntity();
         m_world->addComponent(localEntity, ecs::Input{});
-
         isRunning = true;
         return true;
     } catch (const std::exception &e) {
@@ -98,7 +97,6 @@ void Game::shutdown()
         m_networkManager.reset();
     }
     m_world.reset();
-
     if (module && renderer) {
         module->destroy(renderer);
         renderer = nullptr;
@@ -111,6 +109,15 @@ void Game::processInput()
 {
     if (!renderer->pollEvents()) {
         isRunning = false;
+    }
+    // if (this->menu && this->currentState == GameState::MENU)
+    //     this->menu->processInput();
+    if (this->menu && this->currentState == GameState::MENU && this->menu->getState() == MenuState::EXIT)
+        this->isRunning = false;
+    
+    // Vérifier si le menu veut lancer le jeu
+    if (this->menu && this->currentState == GameState::MENU && this->menu->shouldStartGame()) {
+        this->currentState = GameState::PLAYING;
     }
     
     switch (currentState) {
@@ -135,7 +142,6 @@ void Game::update(float dt)
     if (m_world) {
         m_world->update(dt);
     }
-
     switch (currentState) {
     case GameState::MENU:
         // Menu est statique, pas besoin d'update

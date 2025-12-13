@@ -1,9 +1,10 @@
 #pragma once
-#include "../interface/IRenderer.hpp"
-#include <array>
+#include "Menu/MainMenu/MainMenu.hpp"
+#include "Menu/LoadingMenu/LoadingMenu.hpp"
+#include "Menu/LobbyMenu/LobbyMenu.hpp"
+#include "Menu/ProfileMenu/ProfileMenu.hpp"
+#include "Menu/SettingsMenu/SettingsMenu.hpp"
 #include <string>
-
-enum class MenuState { LOADING, MAIN_MENU, OPTIONS, LOBBY, SETTINGS };
 
 class Menu
 {
@@ -16,28 +17,26 @@ class Menu
     void cleanup();
 
     void setState(MenuState newState);
-    MenuState getState() const;
+    [[nodiscard]] MenuState getState() const;
+    [[nodiscard]] bool shouldStartGame() const;
 
     void processInput();
 
   private:
-    void renderLoading(int winWidth, int winHeight);
-    void renderMainMenu(int winWidth, int winHeight);
-    void renderOptions(int winWidth, int winHeight);
-    void renderLobby(int winWidth, int winHeight);
-    void renderSettings(int winWidth, int winHeight);
+    void processBack();
 
-    // Helper pour afficher du texte centré
     void drawCenteredText(const std::string &text, int yOffset, const Color &color);
+    void drawThickBorderedRect(int x, int y, int width, int height, const Color &color, int thickness);
+    void drawSettingsRectangles(int winWidth, int winHeight, int titleHeight);
 
     IRenderer *renderer;
-    void *logo = nullptr;
-    void *backgroundTexture = nullptr;
-    void *menu_font = nullptr;
-    float blinkTimer = 0.0f;
-    MenuState currentState = MenuState::LOADING;
+    MainMenu *mainMenu;
+    LoadingMenu *loadingMenu;
+    ProfileMenu *profileMenu;
+    SettingsMenu *settingsMenu;
 
-    // Textes du menu principal
-    std::array<std::string, 4> mainMenuItems = {"Play", "Settings", "Profile", "Exit"};
-    int currentMenuIndex = 0;
+    void *menu_font = nullptr;
+    LoadingScreen *loadingScreen = nullptr;
+    LobbyMenu *lobbyMenu;
+    MenuState currentState = MenuState::LOADING;
 };
