@@ -1,0 +1,8 @@
+CompileFlags:
+  CompilationDatabase: build
+  Add:
+    - "-isystem/Users/neauneau/.conan2/p/nlohmd014ef7748f4b/p/include"
+
+Diagnostics:
+  UnusedIncludes: Strict
+  MissingIncludes: Strict

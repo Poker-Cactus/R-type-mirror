@@ -1,0 +1,8 @@
+# Configuration clang-tidy spécifique pour les tests
+# Hérite de la config parent mais désactive les magic numbers
+InheritParentConfig: true
+
+Checks: >
+  -cppcoreguidelines-avoid-magic-numbers,
+  -readability-magic-numbers,
+  -readability-function-cognitive-complexity
