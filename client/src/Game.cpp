@@ -6,6 +6,11 @@
 */
 
 #include "Game.hpp"
+#include "../include/systems/NetworkReceiveSystem.hpp"
+#include "../include/systems/NetworkSendSystem.hpp"
+#include "../../engineCore/include/ecs/World.hpp"
+#include "../../engineCore/include/ecs/components/Input.hpp"
+#include "../../network/include/AsioClient.hpp"
 #include <iostream>
 
 Game::Game() : module(nullptr), renderer(nullptr), isRunning(false), currentState(GameState::PLAYING) {}
@@ -42,6 +47,17 @@ bool Game::init()
             return false;
         }
 
+        // Networking + ECS: run network systems in the same loop as the graphical game.
+        m_world = std::make_shared<ecs::World>();
+        m_networkManager = std::make_shared<AsioClient>("127.0.0.1", "4242");
+        m_networkManager->start();
+        m_world->registerSystem<NetworkSendSystem>(m_networkManager);
+        m_world->registerSystem<ClientNetworkReceiveSystem>(m_networkManager);
+
+        // Local input entity so NetworkSendSystem has something to transmit.
+        auto localEntity = m_world->createEntity();
+        m_world->addComponent(localEntity, ecs::Input{});
+
         isRunning = true;
         return true;
     } catch (const std::exception &e) {
@@ -77,6 +93,12 @@ void Game::shutdown()
         playingState.reset();
     }
 
+    if (m_networkManager) {
+        m_networkManager->stop();
+        m_networkManager.reset();
+    }
+    m_world.reset();
+
     if (module && renderer) {
         module->destroy(renderer);
         renderer = nullptr;
@@ -110,6 +132,10 @@ void Game::processInput()
 
 void Game::update(float dt)
 {
+    if (m_world) {
+        m_world->update(dt);
+    }
+
     switch (currentState) {
     case GameState::MENU:
         // Menu est statique, pas besoin d'update

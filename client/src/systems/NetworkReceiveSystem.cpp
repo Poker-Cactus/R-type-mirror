@@ -11,6 +11,11 @@
 #include <iostream>
 #include <nlohmann/json.hpp>
 
+namespace
+{
+bool g_loggedFirstSnapshot = false;
+}
+
 ClientNetworkReceiveSystem::ClientNetworkReceiveSystem(std::shared_ptr<INetworkManager> networkManager)
     : m_networkManager(networkManager)
 {
@@ -53,6 +58,11 @@ void ClientNetworkReceiveSystem::handleSnapshot(ecs::World &world, const nlohman
 {
   if (!json.contains("entities") || !json["entities"].is_array()) {
     return;
+  }
+
+  if (!g_loggedFirstSnapshot) {
+    std::cout << "[Client] Snapshot received (entities=" << json["entities"].size() << ")" << std::endl;
+    g_loggedFirstSnapshot = true;
   }
 
   for (const auto &entityJson : json["entities"]) {

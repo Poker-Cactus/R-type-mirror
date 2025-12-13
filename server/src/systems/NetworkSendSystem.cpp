@@ -19,6 +19,7 @@
 #include <span>
 #include <string>
 #include <vector>
+#include <iostream>
 
 NetworkSendSystem::NetworkSendSystem(std::shared_ptr<INetworkManager> networkManager)
 {
@@ -29,6 +30,9 @@ NetworkSendSystem::~NetworkSendSystem() {}
 
 void NetworkSendSystem::update(ecs::World &world, float deltaTime)
 {
+  static float logAccumulator = 0.0f;
+  logAccumulator += deltaTime;
+
   m_timeSinceLastSend += deltaTime;
   if (m_timeSinceLastSend >= SEND_INTERVAL) {
     std::vector<ecs::Entity> entities;
@@ -59,6 +63,12 @@ void NetworkSendSystem::update(ecs::World &world, float deltaTime)
     for (const auto &[clientId, _endpoint] : clients) {
       m_networkManager->send(
         std::span<const std::byte>(reinterpret_cast<const std::byte *>(serialized.data()), serialized.size()), clientId);
+    }
+
+    if (logAccumulator >= 1.0f) {
+      std::cout << "[Server] Snapshot broadcast: entities=" << snapshot["entities"].size() << " clients="
+                << clients.size() << std::endl;
+      logAccumulator = 0.0f;
     }
 
     m_timeSinceLastSend = 0.0f;

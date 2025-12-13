@@ -22,6 +22,8 @@
 #include "systems/LifetimeSystem.hpp"
 #include "systems/ShootingSystem.hpp"
 #include "systems/SpawnSystem.hpp"
+#include "systems/NetworkReceiveSystem.hpp"
+#include "systems/NetworkSendSystem.hpp"
 #include <chrono>
 #include <memory>
 #include <thread>
@@ -103,6 +105,53 @@ void Game::spawnPlayer()
   ecs::Networked networked;
   networked.networkId = player;
   world->addComponent(player, networked);
+}
+
+void Game::spawnPlayer(std::uint32_t networkId)
+{
+  ecs::Entity player = world->createEntity();
+
+  ecs::Transform transform;
+  transform.x = 100.0F;
+  transform.y = 300.0F;
+  transform.rotation = 0.0F;
+  transform.scale = 1.0F;
+  world->addComponent(player, transform);
+
+  ecs::Velocity velocity;
+  velocity.dx = 0.0F;
+  velocity.dy = 0.0F;
+  world->addComponent(player, velocity);
+
+  ecs::Health health;
+  health.hp = 100;
+  health.maxHp = 100;
+  world->addComponent(player, health);
+
+  ecs::Input input;
+  input.up = false;
+  input.down = false;
+  input.left = false;
+  input.right = false;
+  input.shoot = false;
+  world->addComponent(player, input);
+
+  world->addComponent(player, ecs::Collider{32.0F, 32.0F});
+
+  ecs::Networked networked;
+  networked.networkId = static_cast<ecs::Entity>(networkId);
+  world->addComponent(player, networked);
+}
+
+void Game::setNetworkManager(const std::shared_ptr<INetworkManager> &networkManager)
+{
+  m_networkManager = networkManager;
+  if (!m_networkManager || !world) {
+    return;
+  }
+
+  m_networkReceiveSystem = &world->registerSystem<NetworkReceiveSystem>(m_networkManager);
+  m_networkSendSystem = &world->registerSystem<NetworkSendSystem>(m_networkManager);
 }
 
 void Game::runGameLoop()

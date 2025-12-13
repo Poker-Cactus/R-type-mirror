@@ -30,7 +30,7 @@ foreach(module_dir ${MODULE_DIRS})
             
             # Dépendances spécifiques selon le module
             if(module_dir STREQUAL "SDL2")
-                target_link_libraries(${LIB_NAME} PRIVATE SDL2::SDL2 sdl_ttf::sdl_ttf SDL2_image::SDL2_image)
+                target_link_libraries(${LIB_NAME} PRIVATE SDL2::SDL2 SDL2_ttf::SDL2_ttf SDL2_image::SDL2_image)
             endif()
             
             # Place les .so/.dll dans build/

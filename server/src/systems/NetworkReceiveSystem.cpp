@@ -11,6 +11,13 @@
 #include "../../engineCore/include/ecs/components/Networked.hpp"
 #include "../../engineCore/include/ecs/components/Transform.hpp"
 #include <nlohmann/json.hpp>
+#include <iostream>
+#include <unordered_set>
+
+namespace
+{
+std::unordered_set<std::uint32_t> g_loggedFirstInputFromClient;
+}
 
 NetworkReceiveSystem::NetworkReceiveSystem(std::shared_ptr<INetworkManager> networkManager)
 {
@@ -91,6 +98,12 @@ void NetworkReceiveSystem::handlePlayerInput(ecs::World &world, std::string mess
       input.left = inputJson.value("left", false);
       input.right = inputJson.value("right", false);
       input.shoot = inputJson.value("shoot", false);
+
+      if (!g_loggedFirstInputFromClient.contains(clientId)) {
+        std::cout << "[Server] First input received from client " << clientId << " (entity=" << networked.networkId
+                  << ")" << std::endl;
+        g_loggedFirstInputFromClient.insert(clientId);
+      }
       return;
     }
   } catch (const std::exception &) {

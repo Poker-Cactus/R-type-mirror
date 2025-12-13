@@ -25,7 +25,9 @@ Client::Client(std::shared_ptr<INetworkManager> networkManager)
   }
 
   // Initialize network manager
+  std::cout << "[Client] Starting network manager..." << std::endl;
   m_networkManager->start();
+  std::cout << "[Client] Network manager started." << std::endl;
 
   // Setup ECS systems
   initializeSystems();

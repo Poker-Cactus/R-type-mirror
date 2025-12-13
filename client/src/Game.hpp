@@ -5,6 +5,13 @@
 #include "PlayingState.hpp"
 #include <memory>
 
+namespace ecs
+{
+class World;
+}
+
+class INetworkManager;
+
 class Game
 {
   public:
@@ -27,6 +34,9 @@ class Game
 
     std::unique_ptr<Module<IRenderer>> module;
     IRenderer *renderer = nullptr;
+
+    std::shared_ptr<ecs::World> m_world;
+    std::shared_ptr<INetworkManager> m_networkManager;
 
     bool isRunning = false;
     GameState currentState = GameState::PLAYING;

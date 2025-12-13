@@ -21,6 +21,8 @@ int main()
     Game game;
     std::cout << "Game initialized with all systems" << std::endl;
 
+    game.setNetworkManager(networkManager);
+
     // Create some initial entities via spawn events
     auto world = game.getWorld();
     if (world) {
