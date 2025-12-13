@@ -45,7 +45,7 @@ jobs:
       run: cmake --build build -- -j4
 
     - name: Copy compile_commands.json
-      run: cp build/compile_commands.json .
+      run: cp -f build/compile_commands.json .
 
     - name: Run clang-format check
       run: ./scripts/format-check.sh
