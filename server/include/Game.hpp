@@ -10,6 +10,7 @@
 #include "../../engineCore/include/ecs/World.hpp"
 #include "systems/DamageSystem.hpp"
 #include "systems/DeathSystem.hpp"
+#include "systems/ScoreSystem.hpp"
 #include "systems/ShootingSystem.hpp"
 #include "systems/SpawnSystem.hpp"
 #include <chrono>
@@ -47,6 +48,7 @@ private:
   server::DamageSystem *damageSystem = nullptr;
   server::DeathSystem *deathSystem = nullptr;
   server::ShootingSystem *shootingSystem = nullptr;
+  server::ScoreSystem *scoreSystem = nullptr;
   server::SpawnSystem *spawnSystem = nullptr;
 };
 

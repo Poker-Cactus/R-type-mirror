@@ -10,6 +10,7 @@
 #include "../interface/IRenderer.hpp"
 #include "ParallaxBackground.hpp"
 #include <memory>
+#include <unordered_map>
 
 /**
  * @brief Gère l'état du jeu en cours (gameplay)
@@ -52,14 +53,27 @@ public:
    */
   void cleanup();
 
+  /**
+   * @brief Check if player is dead and should return to menu
+   */
+  bool shouldReturnToMenu() const { return m_playerHealth <= 0; }
+
 private:
   IRenderer *renderer;
   std::shared_ptr<ecs::World> world;
   std::unique_ptr<ParallaxBackground> background;
 
-  // TODO: Ajouter les systèmes de jeu
-  // - Gestion des entités (ECS)
-  // - Système de collision
-  // - Système de spawn d'ennemis
-  // - Interface de jeu (HUD)
+  // Texture management for sprite rendering
+  std::unordered_map<std::uint32_t, void *> m_spriteTextures;
+
+  void loadSpriteTextures();
+  void freeSpriteTextures();
+
+  // HUD state
+  void *m_hudFont = nullptr;
+  int m_playerHealth = 100;
+  int m_playerScore = 0;
+
+  void renderHUD();
+  void updateHUDFromWorld();
 };

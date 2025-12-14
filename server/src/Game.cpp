@@ -7,12 +7,15 @@
 
 #include "Game.hpp"
 #include "../../engineCore/include/ecs/components/Collider.hpp"
-#include "../../engineCore/include/ecs/components/EntityKind.hpp"
+#include "../../engineCore/include/ecs/components/GunOffset.hpp"
 #include "../../engineCore/include/ecs/components/Health.hpp"
 #include "../../engineCore/include/ecs/components/Input.hpp"
 #include "../../engineCore/include/ecs/components/Networked.hpp"
+#include "../../engineCore/include/ecs/components/Score.hpp"
+#include "../../engineCore/include/ecs/components/Sprite.hpp"
 #include "../../engineCore/include/ecs/components/Transform.hpp"
 #include "../../engineCore/include/ecs/components/Velocity.hpp"
+#include "../../engineCore/include/ecs/components/roles/PlayerControlled.hpp"
 #include "ecs/Entity.hpp"
 #include "ecs/World.hpp"
 #include "ecs/systems/MovementSystem.hpp"
@@ -25,6 +28,7 @@
 #include "systems/LifetimeSystem.hpp"
 #include "systems/NetworkReceiveSystem.hpp"
 #include "systems/NetworkSendSystem.hpp"
+#include "systems/ScoreSystem.hpp"
 #include "systems/ShootingSystem.hpp"
 #include "systems/SpawnSystem.hpp"
 #include <chrono>
@@ -43,6 +47,7 @@ Game::Game()
   damageSystem = &world->registerSystem<server::DamageSystem>();
   deathSystem = &world->registerSystem<server::DeathSystem>();
   shootingSystem = &world->registerSystem<server::ShootingSystem>();
+  scoreSystem = &world->registerSystem<server::ScoreSystem>();
 
   world->registerSystem<server::EnemyAISystem>();
 
@@ -70,6 +75,9 @@ void Game::initializeSystems()
   if (shootingSystem != nullptr) {
     shootingSystem->initialize(*world);
   }
+  if (scoreSystem != nullptr) {
+    scoreSystem->initialize(*world);
+  }
   if (spawnSystem != nullptr) {
     spawnSystem->initialize(*world);
   }
@@ -79,7 +87,8 @@ void Game::spawnPlayer()
 {
   ecs::Entity player = world->createEntity();
 
-  world->addComponent(player, ecs::EntityKind{ecs::EntityKind::Kind::PLAYER});
+  world->addComponent(player, ecs::PlayerControlled{});
+  world->addComponent(player, ecs::GunOffset{20.0F});
 
   ecs::Transform transform;
   transform.x = 100.0F;
@@ -108,17 +117,31 @@ void Game::spawnPlayer()
 
   world->addComponent(player, ecs::Collider{32.0F, 32.0F});
 
+  // SERVER ASSIGNS VISUAL IDENTITY AS DATA
+  // Player sprite decided at creation time
+  ecs::Sprite sprite;
+  sprite.spriteId = ecs::SpriteId::PLAYER_SHIP;
+  sprite.width = 140; // 350x150 aspect ratio, scaled down 2.5x
+  sprite.height = 60;
+  world->addComponent(player, sprite);
+
   // Add Networked component for network synchronization
   ecs::Networked networked;
   networked.networkId = player;
   world->addComponent(player, networked);
+
+  // Add Score component for tracking player score
+  ecs::Score score;
+  score.points = 0;
+  world->addComponent(player, score);
 }
 
 void Game::spawnPlayer(std::uint32_t networkId)
 {
   ecs::Entity player = world->createEntity();
 
-  world->addComponent(player, ecs::EntityKind{ecs::EntityKind::Kind::PLAYER});
+  world->addComponent(player, ecs::PlayerControlled{});
+  world->addComponent(player, ecs::GunOffset{20.0F});
 
   ecs::Transform transform;
   transform.x = 100.0F;
@@ -147,9 +170,22 @@ void Game::spawnPlayer(std::uint32_t networkId)
 
   world->addComponent(player, ecs::Collider{32.0F, 32.0F});
 
+  // SERVER ASSIGNS VISUAL IDENTITY AS DATA
+  // Player sprite decided at creation time
+  ecs::Sprite sprite;
+  sprite.spriteId = ecs::SpriteId::PLAYER_SHIP;
+  sprite.width = 140; // 350x150 aspect ratio, scaled down 2.5x
+  sprite.height = 60;
+  world->addComponent(player, sprite);
+
   ecs::Networked networked;
   networked.networkId = static_cast<ecs::Entity>(networkId);
   world->addComponent(player, networked);
+
+  // Add Score component for tracking player score
+  ecs::Score score;
+  score.points = 0;
+  world->addComponent(player, score);
 }
 
 void Game::setNetworkManager(const std::shared_ptr<INetworkManager> &networkManager)

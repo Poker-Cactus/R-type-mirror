@@ -15,6 +15,7 @@
 #include "../../../engineCore/include/ecs/events/EventListenerHandle.hpp"
 #include "../../../engineCore/include/ecs/events/GameEvents.hpp"
 #include "ecs/ComponentSignature.hpp"
+#include <iostream>
 #include <vector>
 
 namespace server
@@ -38,6 +39,9 @@ public:
     std::vector<ecs::Entity> toDie;
 
     for (auto entity : entities) {
+      if (!world.isAlive(entity)) {
+        continue;
+      }
       const auto &health = world.getComponent<ecs::Health>(entity);
       if (health.hp <= 0) {
         toDie.push_back(entity);
@@ -46,10 +50,6 @@ public:
 
     // Destroy dead entities
     for (auto entity : toDie) {
-      // Emit score event for destroyed entity
-      ecs::ScoreEvent scoreEvent(0, 100);
-      world.emitEvent(scoreEvent);
-
       world.destroyEntity(entity);
     }
   }
@@ -75,10 +75,18 @@ private:
 
   static void handleDeath(ecs::World &world, const ecs::DeathEvent &event)
   {
-    (void)world;
-    (void)event;
-    // Could spawn explosion effect, play sound, etc.
-    // For now, the actual destruction happens in update()
+    // When an entity dies, award score to the killer
+    if (world.isAlive(event.killer)) {
+      // Award 100 points to the killer
+      ecs::ScoreEvent scoreEvent(event.killer, 100);
+      world.emitEvent(scoreEvent);
+      std::cout << "[DeathSystem] Entity " << event.entity << " killed by " << event.killer << " - awarding 100 points"
+                << std::endl;
+    } else {
+      std::cout << "[DeathSystem] Entity " << event.entity << " died but killer " << event.killer << " is not alive"
+                << std::endl;
+    }
+    // Actual destruction happens in update()
   }
 };
 

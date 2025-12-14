@@ -8,8 +8,10 @@
 #include "../../include/systems/NetworkReceiveSystem.hpp"
 #include "../../engineCore/include/ecs/World.hpp"
 #include "../../engineCore/include/ecs/components/Collider.hpp"
-#include "../../engineCore/include/ecs/components/EntityKind.hpp"
+#include "../../engineCore/include/ecs/components/Health.hpp"
 #include "../../engineCore/include/ecs/components/Networked.hpp"
+#include "../../engineCore/include/ecs/components/Score.hpp"
+#include "../../engineCore/include/ecs/components/Sprite.hpp"
 #include "../../engineCore/include/ecs/components/Transform.hpp"
 #include "../../include/systems/NetworkSendSystem.hpp"
 #include <iostream>
@@ -142,24 +144,68 @@ void ClientNetworkReceiveSystem::handleSnapshot(ecs::World &world, const nlohman
       }
     }
 
-    if (entityJson.contains("kind") && entityJson["kind"].is_string()) {
-      const std::string kindStr = entityJson["kind"].get<std::string>();
-      ecs::EntityKind::Kind kind = ecs::EntityKind::Kind::UNKNOWN;
-      if (kindStr == "player") {
-        kind = ecs::EntityKind::Kind::PLAYER;
-      } else if (kindStr == "enemy") {
-        kind = ecs::EntityKind::Kind::ENEMY;
-      } else if (kindStr == "projectile") {
-        kind = ecs::EntityKind::Kind::PROJECTILE;
-      }
-      if (!world.hasComponent<ecs::EntityKind>(entity)) {
-        world.addComponent(entity, ecs::EntityKind{kind});
+    // CLIENT RECEIVES SERVER-DRIVEN SPRITE DATA
+    // Visual identity is never inferred - only applied from server
+    if (entityJson.contains("sprite") && entityJson["sprite"].is_object()) {
+      const auto &spriteJson = entityJson["sprite"];
+      ecs::Sprite sprite = ecs::Sprite::fromJson(spriteJson);
+
+      if (!world.hasComponent<ecs::Sprite>(entity)) {
+        world.addComponent(entity, sprite);
       } else {
-        world.getComponent<ecs::EntityKind>(entity).kind = kind;
+        world.getComponent<ecs::Sprite>(entity) = sprite;
+      }
+    }
+
+    // Receive health data for HUD display
+    if (entityJson.contains("health") && entityJson["health"].is_object()) {
+      const auto &healthJson = entityJson["health"];
+      const int hp = healthJson.value("hp", 0);
+      const int maxHp = healthJson.value("maxHp", 100);
+
+      if (!world.hasComponent<ecs::Health>(entity)) {
+        ecs::Health health;
+        health.hp = hp;
+        health.maxHp = maxHp;
+        world.addComponent(entity, health);
+      } else {
+        auto &health = world.getComponent<ecs::Health>(entity);
+        health.hp = hp;
+        health.maxHp = maxHp;
+      }
+    }
+
+    // Receive score data for HUD display
+    if (entityJson.contains("score") && entityJson["score"].is_object()) {
+      const auto &scoreJson = entityJson["score"];
+      const int points = scoreJson.value("points", 0);
+
+      if (!world.hasComponent<ecs::Score>(entity)) {
+        ecs::Score score;
+        score.points = points;
+        world.addComponent(entity, score);
+      } else {
+        auto &score = world.getComponent<ecs::Score>(entity);
+        score.points = points;
+      }
+    }
+  }
+
+  // Handle destroyed entities
+  if (json.contains("destroyed") && json["destroyed"].is_array()) {
+    for (const auto &destroyedId : json["destroyed"]) {
+      if (!destroyedId.is_number_unsigned()) {
+        continue;
       }
 
-      if (kind == ecs::EntityKind::Kind::PROJECTILE && g_debugLogAcc >= 1.0F) {
-        std::cout << "[Client] Projectile id=" << networkId << " x=" << x << " y=" << y << std::endl;
+      const std::uint32_t networkId = destroyedId.get<std::uint32_t>();
+      auto it = g_networkIdToEntity.find(networkId);
+      if (it != g_networkIdToEntity.end()) {
+        ecs::Entity entity = it->second;
+        if (world.isAlive(entity)) {
+          world.destroyEntity(entity);
+        }
+        g_networkIdToEntity.erase(it);
       }
     }
   }

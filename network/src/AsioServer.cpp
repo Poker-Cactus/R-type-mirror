@@ -8,12 +8,16 @@
 #include "../include/AsioServer.hpp"
 #include "../../engineCore/include/ecs/World.hpp"
 #include "../../engineCore/include/ecs/components/Collider.hpp"
+#include "../../engineCore/include/ecs/components/GunOffset.hpp"
 #include "../../engineCore/include/ecs/components/Health.hpp"
 #include "../../engineCore/include/ecs/components/Input.hpp"
 #include "../../engineCore/include/ecs/components/Networked.hpp"
 #include "../../engineCore/include/ecs/components/PlayerId.hpp"
+#include "../../engineCore/include/ecs/components/Score.hpp"
+#include "../../engineCore/include/ecs/components/Sprite.hpp"
 #include "../../engineCore/include/ecs/components/Transform.hpp"
 #include "../../engineCore/include/ecs/components/Velocity.hpp"
+#include "../../engineCore/include/ecs/components/roles/PlayerControlled.hpp"
 #include "../include/CapnpHandler.hpp"
 #include "ANetworkManager.hpp"
 #include "Common.hpp"
@@ -181,6 +185,10 @@ void AsioServer::createPlayerEntity(std::uint32_t clientId)
 
   ecs::Entity player = m_world->createEntity();
 
+  // Server-authoritative role assignment.
+  m_world->addComponent(player, ecs::PlayerControlled{});
+  m_world->addComponent(player, ecs::GunOffset{20.0F});
+
   ecs::Transform transform;
   transform.x = 100.0F;
   transform.y = 300.0F + static_cast<float>(m_connectedPlayersCount) * 50.0F;
@@ -208,10 +216,22 @@ void AsioServer::createPlayerEntity(std::uint32_t clientId)
 
   m_world->addComponent(player, ecs::Collider{32.0F, 32.0F});
 
+  // SERVER ASSIGNS VISUAL IDENTITY AS DATA
+  // Player sprite decided at creation time
+  ecs::Sprite sprite;
+  sprite.spriteId = ecs::SpriteId::PLAYER_SHIP;
+  sprite.width = 140; // 350x150 aspect ratio, scaled down 2.5x
+  sprite.height = 60;
+  m_world->addComponent(player, sprite);
+
   ecs::Networked networked;
   // Use clientId as the stable network id so the client can address its player.
   networked.networkId = static_cast<ecs::Entity>(clientId);
   m_world->addComponent(player, networked);
+
+  ecs::Score score;
+  score.points = 0;
+  m_world->addComponent(player, score);
 
   ecs::PlayerId owner;
   owner.clientId = clientId;

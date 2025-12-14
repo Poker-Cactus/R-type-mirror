@@ -30,12 +30,6 @@ int main()
       networkManager->start();
 
       std::cout << "Spawning initial entities..." << std::endl;
-      // Spawn two enemies at different Y positions
-      world->emitEvent(ecs::SpawnEntityEvent(ecs::SpawnEntityEvent::EntityType::ENEMY, 800.0F, 200.0F));
-      world->emitEvent(ecs::SpawnEntityEvent(ecs::SpawnEntityEvent::EntityType::ENEMY, 800.0F, 350.0F));
-
-      // Spawn a projectile (no explicit spawner)
-      world->emitEvent(ecs::SpawnEntityEvent(ecs::SpawnEntityEvent::EntityType::PROJECTILE, 150.0F, 300.0F, 0));
     }
 
     // Run game in separate thread for now

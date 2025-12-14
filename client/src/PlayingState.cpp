@@ -7,7 +7,10 @@
 
 #include "PlayingState.hpp"
 #include "../../engineCore/include/ecs/components/Collider.hpp"
-#include "../../engineCore/include/ecs/components/EntityKind.hpp"
+#include "../../engineCore/include/ecs/components/Health.hpp"
+#include "../../engineCore/include/ecs/components/Networked.hpp"
+#include "../../engineCore/include/ecs/components/Score.hpp"
+#include "../../engineCore/include/ecs/components/Sprite.hpp"
 #include "../../engineCore/include/ecs/components/Transform.hpp"
 #include <iostream>
 
@@ -35,12 +38,16 @@ bool PlayingState::init()
     return false;
   }
 
-  std::cout << "PlayingState: Initialized successfully" << std::endl;
+  // Load sprite textures
+  loadSpriteTextures();
 
-  // TODO: Initialiser les autres systèmes de jeu
-  // - Créer le joueur
-  // - Initialiser le système de spawn
-  // - Charger le niveau
+  // Load HUD font
+  m_hudFont = renderer->loadFont("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 18);
+  if (!m_hudFont) {
+    std::cerr << "PlayingState: Warning - Could not load HUD font, text will not display" << std::endl;
+  }
+
+  std::cout << "PlayingState: Initialized successfully" << std::endl;
 
   return true;
 }
@@ -52,12 +59,8 @@ void PlayingState::update(float dt)
     background->update(dt);
   }
 
-  // TODO: Mettre à jour les systèmes de jeu
-  // - Mettre à jour les entités
-  // - Vérifier les collisions
-  // - Spawn des ennemis
-  // - Mettre à jour l'IA
-  // - Mettre à jour les projectiles
+  // Update HUD data from world state
+  updateHUDFromWorld();
 }
 
 void PlayingState::render()
@@ -67,49 +70,154 @@ void PlayingState::render()
     background->render();
   }
 
-  // Minimal prototype rendering: draw all entities that have a Transform.
+  // CLIENT PURE RENDERER - NO GAMEPLAY INFERENCE
+  // Visual identity is replicated data decided by the server.
+  // The client is a pure renderer and must never infer game roles.
+
   if (!world || !renderer) {
     return;
   }
 
+  // Render all entities that have Transform + Sprite
   ecs::ComponentSignature sig;
   sig.set(ecs::getComponentId<ecs::Transform>());
+  sig.set(ecs::getComponentId<ecs::Sprite>());
 
   std::vector<ecs::Entity> entities;
   world->getEntitiesWithSignature(sig, entities);
 
   for (auto entity : entities) {
     const auto &t = world->getComponent<ecs::Transform>(entity);
+    const auto &sprite = world->getComponent<ecs::Sprite>(entity);
 
-    int w = 32;
-    int h = 32;
-    if (world->hasComponent<ecs::Collider>(entity)) {
-      const auto &c = world->getComponent<ecs::Collider>(entity);
-      w = static_cast<int>(c.width);
-      h = static_cast<int>(c.height);
-    }
+    // Try to use texture if available, otherwise fall back to colored rectangle
+    auto textureIt = m_spriteTextures.find(sprite.spriteId);
 
-    // Prototype identification based on server-replicated kind.
-    Color color{200, 200, 200, 255}; // unknown
-    if (world->hasComponent<ecs::EntityKind>(entity)) {
-      const auto &k = world->getComponent<ecs::EntityKind>(entity);
-      switch (k.kind) {
-      case ecs::EntityKind::Kind::PLAYER:
-        color = {0, 128, 255, 255};
+    if (textureIt != m_spriteTextures.end() && textureIt->second != nullptr) {
+      // Draw using actual texture
+      if (sprite.spriteId == ecs::SpriteId::PLAYER_SHIP) {
+        // Player ship is a spritesheet: 2450x150 with 7 frames
+        // Each frame is 350x150 (2450/7 = 350)
+        // Extract only the first frame (x=0, y=0, w=350, h=150)
+        renderer->drawTextureRegion(textureIt->second, 0, 0, 350, 150, // Source: first frame
+                                    static_cast<int>(t.x), static_cast<int>(t.y), static_cast<int>(sprite.width),
+                                    static_cast<int>(sprite.height)); // Destination
+      } else if (sprite.spriteId == ecs::SpriteId::PROJECTILE) {
+        // Projectile is a spritesheet: 422x92 with 2 frames
+        // Each frame is 211x92 (422/2 = 211)
+        // Extract only the first frame (x=0, y=0, w=211, h=92)
+        renderer->drawTextureRegion(textureIt->second, 0, 0, 211, 92, // Source: first frame
+                                    static_cast<int>(t.x), static_cast<int>(t.y), static_cast<int>(sprite.width),
+                                    static_cast<int>(sprite.height)); // Destination
+      } else {
+        // Other sprites: draw full texture
+        renderer->drawTextureEx(textureIt->second, static_cast<int>(t.x), static_cast<int>(t.y),
+                                static_cast<int>(sprite.width), static_cast<int>(sprite.height), 0.0, false, false);
+      }
+    } else {
+      // Fallback: colored rectangles for missing textures
+      Color color{255, 255, 255, 255};
+
+      switch (sprite.spriteId) {
+      case ecs::SpriteId::PLAYER_SHIP:
+        color = {100, 150, 255, 255}; // Blue
         break;
-      case ecs::EntityKind::Kind::ENEMY:
-        color = {0, 255, 0, 255};
+      case ecs::SpriteId::ENEMY_SHIP:
+        color = {255, 100, 100, 255}; // Red
         break;
-      case ecs::EntityKind::Kind::PROJECTILE:
-        color = {255, 220, 0, 255};
+      case ecs::SpriteId::PROJECTILE:
+        color = {255, 255, 100, 255}; // Yellow
+        break;
+      case ecs::SpriteId::POWERUP:
+        color = {100, 255, 100, 255}; // Green
+        break;
+      case ecs::SpriteId::EXPLOSION:
+        color = {255, 150, 50, 255}; // Orange
         break;
       default:
-        color = {200, 200, 200, 255};
+        color = {200, 200, 200, 255}; // Gray
         break;
       }
-    }
 
-    renderer->drawRect(static_cast<int>(t.x), static_cast<int>(t.y), w, h, color);
+      renderer->drawRect(static_cast<int>(t.x), static_cast<int>(t.y), static_cast<int>(sprite.width),
+                         static_cast<int>(sprite.height), color);
+    }
+  }
+
+  // Draw HUD on top of everything
+  renderHUD();
+}
+
+void PlayingState::renderHUD()
+{
+  if (!renderer || !m_hudFont) {
+    return;
+  }
+
+  // Draw health bar
+  const int healthBarX = 20;
+  const int healthBarY = 20;
+  const int healthBarWidth = 200;
+  const int healthBarHeight = 20;
+
+  // Background (dark gray)
+  renderer->drawRect(healthBarX, healthBarY, healthBarWidth, healthBarHeight, {50, 50, 50, 200});
+
+  // Health fill (green to red based on health)
+  int healthWidth = (m_playerHealth * healthBarWidth) / 100;
+  Color healthColor;
+  if (m_playerHealth > 60) {
+    healthColor = {100, 255, 100, 255}; // Green
+  } else if (m_playerHealth > 30) {
+    healthColor = {255, 255, 100, 255}; // Yellow
+  } else {
+    healthColor = {255, 100, 100, 255}; // Red
+  }
+  renderer->drawRect(healthBarX, healthBarY, healthWidth, healthBarHeight, healthColor);
+
+  // Health text
+  std::string healthText = "HP: " + std::to_string(m_playerHealth) + "/100";
+  renderer->drawText(m_hudFont, healthText, healthBarX + 5, healthBarY + 2, {255, 255, 255, 255});
+
+  // Score text
+  std::string scoreText = "Score: " + std::to_string(m_playerScore);
+  renderer->drawText(m_hudFont, scoreText, healthBarX, healthBarY + 30, {255, 255, 255, 255});
+}
+
+void PlayingState::updateHUDFromWorld()
+{
+  if (!world) {
+    return;
+  }
+
+  // Find the player entity (the one with our client's network ID)
+  ecs::ComponentSignature playerSig;
+  playerSig.set(ecs::getComponentId<ecs::Networked>());
+  playerSig.set(ecs::getComponentId<ecs::Health>());
+
+  std::vector<ecs::Entity> entities;
+  world->getEntitiesWithSignature(playerSig, entities);
+
+  // Update health and score from the first player entity found
+  for (auto entity : entities) {
+    if (world->hasComponent<ecs::Health>(entity)) {
+      const auto &health = world->getComponent<ecs::Health>(entity);
+      m_playerHealth = health.hp;
+
+      // Debug: log when health is critically low
+      if (m_playerHealth <= 0 && m_playerHealth != -1000) {
+        static bool loggedDeath = false;
+        if (!loggedDeath) {
+          std::cout << "[PlayingState] Player health is " << m_playerHealth << " - should return to menu" << std::endl;
+          loggedDeath = true;
+        }
+      }
+    }
+    if (world->hasComponent<ecs::Score>(entity)) {
+      const auto &score = world->getComponent<ecs::Score>(entity);
+      m_playerScore = score.points;
+    }
+    break; // Use first player for now
   }
 }
 
@@ -128,10 +236,109 @@ void PlayingState::cleanup()
     background.reset();
   }
 
-  // TODO: Nettoyer les autres ressources
-  // - Détruire les entités
-  // - Libérer les textures
-  // - Nettoyer les systèmes
+  // Free all loaded sprite textures
+  freeSpriteTextures();
+
+  // Free HUD font
+  if (m_hudFont && renderer) {
+    renderer->freeFont(m_hudFont);
+    m_hudFont = nullptr;
+  }
 
   std::cout << "PlayingState: Cleaned up" << std::endl;
+}
+
+void PlayingState::loadSpriteTextures()
+{
+  if (!renderer) {
+    return;
+  }
+
+  std::cout << "[PlayingState] Loading sprite textures..." << std::endl;
+
+  // Load each texture individually with error handling
+  // PLAYER_SHIP = 1 (spritesheet: 2450x150, 7 frames, using first frame only)
+  try {
+    void *playerTex = renderer->loadTexture("client/assets/sprites/player_ship.png");
+    if (playerTex) {
+      m_spriteTextures[ecs::SpriteId::PLAYER_SHIP] = playerTex;
+      std::cout << "[PlayingState] ✓ Loaded player_ship.png" << std::endl;
+    } else {
+      std::cerr << "[PlayingState] ✗ Failed to load player_ship.png (returned null)" << std::endl;
+    }
+  } catch (const std::exception &e) {
+    std::cerr << "[PlayingState] ✗ Failed to load player_ship.png: " << e.what() << std::endl;
+  }
+
+  // ENEMY_SHIP = 2
+  try {
+    void *enemyTex = renderer->loadTexture("client/assets/sprites/enemy_ship.png");
+    if (enemyTex) {
+      m_spriteTextures[ecs::SpriteId::ENEMY_SHIP] = enemyTex;
+      std::cout << "[PlayingState] ✓ Loaded enemy_ship.png" << std::endl;
+    } else {
+      std::cerr << "[PlayingState] ✗ Failed to load enemy_ship.png (returned null)" << std::endl;
+    }
+  } catch (const std::exception &e) {
+    std::cerr << "[PlayingState] ✗ Failed to load enemy_ship.png: " << e.what() << std::endl;
+  }
+
+  // PROJECTILE = 3 (spritesheet: 422x92, 2 frames, using first frame only)
+  try {
+    void *projectileTex = renderer->loadTexture("client/assets/sprites/projectile.png");
+    if (projectileTex) {
+      m_spriteTextures[ecs::SpriteId::PROJECTILE] = projectileTex;
+      std::cout << "[PlayingState] ✓ Loaded projectile.png" << std::endl;
+    } else {
+      std::cerr << "[PlayingState] ✗ Failed to load projectile.png (returned null)" << std::endl;
+    }
+  } catch (const std::exception &e) {
+    std::cerr << "[PlayingState] ✗ Failed to load projectile.png: " << e.what() << std::endl;
+  }
+
+  // POWERUP = 5
+  try {
+    void *powerupTex = renderer->loadTexture("client/assets/sprites/powerup.png");
+    if (powerupTex) {
+      m_spriteTextures[ecs::SpriteId::POWERUP] = powerupTex;
+      std::cout << "[PlayingState] ✓ Loaded powerup.png" << std::endl;
+    } else {
+      std::cerr << "[PlayingState] ✗ Failed to load powerup.png (returned null)" << std::endl;
+    }
+  } catch (const std::exception &e) {
+    std::cerr << "[PlayingState] ✗ Failed to load powerup.png: " << e.what() << std::endl;
+  }
+
+  // EXPLOSION = 4
+  try {
+    void *explosionTex = renderer->loadTexture("client/assets/sprites/explosion.png");
+    if (explosionTex) {
+      m_spriteTextures[ecs::SpriteId::EXPLOSION] = explosionTex;
+      std::cout << "[PlayingState] ✓ Loaded explosion.png" << std::endl;
+    } else {
+      std::cerr << "[PlayingState] ✗ Failed to load explosion.png (returned null)" << std::endl;
+    }
+  } catch (const std::exception &e) {
+    std::cerr << "[PlayingState] ✗ Failed to load explosion.png: " << e.what() << std::endl;
+  }
+
+  std::cout << "[PlayingState] Successfully loaded " << m_spriteTextures.size() << " / 5 sprite textures" << std::endl;
+  if (m_spriteTextures.size() < 5) {
+    std::cerr << "[PlayingState] Missing textures will use fallback colored rectangles" << std::endl;
+  }
+}
+
+void PlayingState::freeSpriteTextures()
+{
+  if (!renderer) {
+    return;
+  }
+
+  for (auto &[spriteId, texture] : m_spriteTextures) {
+    if (texture) {
+      renderer->freeTexture(texture);
+    }
+  }
+
+  m_spriteTextures.clear();
 }

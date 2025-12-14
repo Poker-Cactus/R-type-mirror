@@ -14,6 +14,7 @@
 #include "../../../engineCore/include/ecs/components/PlayerId.hpp"
 #include "../../../engineCore/include/ecs/components/Transform.hpp"
 #include "../../../engineCore/include/ecs/components/Velocity.hpp"
+#include "../../../engineCore/include/ecs/components/roles/EnemyAI.hpp"
 #include "../../../engineCore/include/ecs/events/GameEvents.hpp"
 #include "ecs/ComponentSignature.hpp"
 #include <cmath>
@@ -38,14 +39,15 @@ public:
     world.getEntitiesWithSignature(getSignature(), entities);
 
     for (auto entity : entities) {
-      // Only run AI on enemies; never on player-controlled entities.
-      if (world.hasComponent<ecs::PlayerId>(entity)) {
-        continue;
-      }
       auto &transform = world.getComponent<ecs::Transform>(entity);
       auto &velocity = world.getComponent<ecs::Velocity>(entity);
 
       m_aiTimer[entity] += deltaTime;
+
+      // Initialize per-entity randomized shot delay
+      if (!m_nextShotDelay.contains(entity)) {
+        m_nextShotDelay[entity] = randomShotDelay();
+      }
 
       // Simple AI: enemies with negative velocity move left
       if (velocity.dx < 0) {
@@ -53,11 +55,12 @@ public:
         velocity.dx = -80.0F;
       }
 
-      // Shoot periodically (every 2 seconds)
-      if (m_aiTimer[entity] >= 2.0F) {
+      // Shoot after a random cooldown so enemies feel less predictable
+      if (m_aiTimer[entity] >= m_nextShotDelay[entity]) {
         ecs::ShootEvent shootEvent(entity, -1.0F, 0.0F);
         world.emitEvent(shootEvent);
         m_aiTimer[entity] = 0.0F;
+        m_nextShotDelay[entity] = randomShotDelay();
       }
 
       // Destroy if off-screen (left side)
@@ -70,6 +73,7 @@ public:
   [[nodiscard]] ecs::ComponentSignature getSignature() const override
   {
     ecs::ComponentSignature sig;
+    sig.set(ecs::getComponentId<ecs::EnemyAI>());
     sig.set(ecs::getComponentId<ecs::Velocity>());
     sig.set(ecs::getComponentId<ecs::Transform>());
     return sig;
@@ -78,6 +82,13 @@ public:
 private:
   std::mt19937 m_rng;
   std::unordered_map<ecs::Entity, float> m_aiTimer;
+  std::unordered_map<ecs::Entity, float> m_nextShotDelay;
+
+  float randomShotDelay()
+  {
+    std::uniform_real_distribution<float> dist(1.5F, 3.5F);
+    return dist(m_rng);
+  }
 };
 
 } // namespace server

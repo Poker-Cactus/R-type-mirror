@@ -12,6 +12,7 @@
 #include "../../../engineCore/include/ecs/ISystem.hpp"
 #include "../../../engineCore/include/ecs/World.hpp"
 #include "../../../engineCore/include/ecs/components/Health.hpp"
+#include "../../../engineCore/include/ecs/components/Owner.hpp"
 #include "../../../engineCore/include/ecs/components/Velocity.hpp"
 #include "../../../engineCore/include/ecs/events/EventListenerHandle.hpp"
 #include "../../../engineCore/include/ecs/events/GameEvents.hpp"
@@ -59,6 +60,25 @@ private:
     ecs::Entity entityA = event.entityA;
     ecs::Entity entityB = event.entityB;
 
+    // Check if entities are still alive (might have been destroyed in a previous collision)
+    if (!world.isAlive(entityA) || !world.isAlive(entityB)) {
+      return;
+    }
+
+    // Check if either entity is a projectile owned by the other (prevent self-damage)
+    if (world.hasComponent<ecs::Owner>(entityA)) {
+      const auto &ownerA = world.getComponent<ecs::Owner>(entityA);
+      if (ownerA.ownerId == entityB) {
+        return; // A is owned by B, ignore collision
+      }
+    }
+    if (world.hasComponent<ecs::Owner>(entityB)) {
+      const auto &ownerB = world.getComponent<ecs::Owner>(entityB);
+      if (ownerB.ownerId == entityA) {
+        return; // B is owned by A, ignore collision
+      }
+    }
+
     // Apply damage if both entities have health (entity-on-entity collision)
     bool aHasHealth = world.hasComponent<ecs::Health>(entityA);
     bool bHasHealth = world.hasComponent<ecs::Health>(entityB);
@@ -80,12 +100,21 @@ private:
 
   static void applyDamage(ecs::World &world, ecs::Entity target, ecs::Entity source, int damage)
   {
-    if (!world.hasComponent<ecs::Health>(target)) {
+    if (!world.isAlive(target) || !world.hasComponent<ecs::Health>(target)) {
       return;
     }
 
+    // Find the real source (if source is a projectile, get its owner)
+    ecs::Entity realSource = source;
+    if (world.hasComponent<ecs::Owner>(source)) {
+      const auto &owner = world.getComponent<ecs::Owner>(source);
+      if (world.isAlive(owner.ownerId)) {
+        realSource = owner.ownerId; // Credit the owner, not the projectile
+      }
+    }
+
     // Emit damage event
-    ecs::DamageEvent damageEvent(target, source, damage);
+    ecs::DamageEvent damageEvent(target, realSource, damage);
     world.emitEvent(damageEvent);
 
     auto &health = world.getComponent<ecs::Health>(target);
@@ -93,8 +122,8 @@ private:
 
     if (health.hp <= 0) {
       health.hp = 0;
-      // Emit death event
-      ecs::DeathEvent deathEvent(target, source);
+      // Emit death event with the real killer
+      ecs::DeathEvent deathEvent(target, realSource);
       world.emitEvent(deathEvent);
     }
   }
