@@ -37,7 +37,9 @@ Game::~Game()
 bool Game::init()
 {
   try {
-#ifdef __APPLE__
+#ifdef _WIN32
+    module = std::make_unique<Module<IRenderer>>("sdl2_module.dll", "createRenderer", "destroyRenderer");
+#elif defined(__APPLE__)
     module = std::make_unique<Module<IRenderer>>("./build/libs/sdl2_module.dylib", "createRenderer", "destroyRenderer");
 #else
     module = std::make_unique<Module<IRenderer>>("./build/libs/sdl2_module.so", "createRenderer", "destroyRenderer");
@@ -94,6 +96,7 @@ bool Game::init()
     isRunning = true;
     return true;
   } catch (const std::exception &e) {
+    std::cerr << "[Game::init] EXCEPTION: " << e.what() << std::endl;
     return false;
   }
 }

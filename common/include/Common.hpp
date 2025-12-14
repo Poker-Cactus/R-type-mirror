@@ -10,7 +10,11 @@
 
 #include <cstddef>
 
+#ifdef _MSC_VER
+#define UNUSED [[maybe_unused]]
+#else
 #define UNUSED __attribute__((unused))
+#endif
 
 constexpr std::size_t BUFFER_SIZE = 65535;
 

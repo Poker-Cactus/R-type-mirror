@@ -26,12 +26,19 @@ cmake --build build --config Release
 ### Windows (MSVC)
 
 ```powershell
-# From Developer Command Prompt for VS 2022:
-conan install . --output-folder=build --build=missing --profile=conan_profile
-cmake -S . -B build -G "Visual Studio 17 2022" -DCMAKE_TOOLCHAIN_FILE=build/conan_toolchain.cmake
+# Install dependencies with Conan
+python -m conans.conan install . --output-folder=build --build=missing -s build_type=Release
+
+# Configure with CMake (uses Visual Studio generator by default)
+cmake --preset conan-default
+
+# Build
 cmake --build build --config Release
 
-# Run
+# Copy required DLL next to client executable
+Copy-Item -Path "build\libs\Release\sdl2_module.dll" -Destination "build\client\Release\" -Force
+
+# Run (from project root)
 .\build\server\Release\server.exe
 .\build\client\Release\client.exe
 ```

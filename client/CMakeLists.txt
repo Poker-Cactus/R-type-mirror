@@ -27,6 +27,7 @@ target_link_libraries(client PRIVATE
     engineCore
     common
     network
+    SDL2::SDL2main
     SDL2::SDL2
 )
 

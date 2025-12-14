@@ -1,6 +1,6 @@
 #include "RendererSDL2.hpp"
 #include "../../interface/KeyCodes.hpp"
-#include "/home/itier/delivery/tek3/R-type-mirror/client/interface/Color.hpp"
+#include "../../interface/Color.hpp"
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
 #include <SDL2/SDL_ttf.h>
