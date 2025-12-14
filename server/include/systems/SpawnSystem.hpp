@@ -16,6 +16,7 @@
 #include "../../../engineCore/include/ecs/components/Health.hpp"
 #include "../../../engineCore/include/ecs/components/Lifetime.hpp"
 #include "../../../engineCore/include/ecs/components/Networked.hpp"
+#include "../../../engineCore/include/ecs/components/Sprite.hpp"
 #include "../../../engineCore/include/ecs/components/Transform.hpp"
 #include "../../../engineCore/include/ecs/components/Velocity.hpp"
 #include "../../../engineCore/include/ecs/components/roles/EnemyAI.hpp"
@@ -117,6 +118,14 @@ private:
 
     world.addComponent(enemy, ecs::Collider{32.0F, 32.0F});
 
+    // SERVER ASSIGNS VISUAL IDENTITY AS DATA
+    // The sprite is assigned at creation time - never inferred by systems
+    ecs::Sprite sprite;
+    sprite.spriteId = ecs::SpriteId::ENEMY_SHIP;
+    sprite.width = 32;
+    sprite.height = 32;
+    world.addComponent(enemy, sprite);
+
     ecs::Networked net;
     net.networkId = enemy;
     world.addComponent(enemy, net);
@@ -162,6 +171,14 @@ private:
     // Despawn is handled by LifetimeSystem when projectile leaves the viewport.
 
     world.addComponent(projectile, ecs::Collider{8.0F, 8.0F});
+
+    // SERVER ASSIGNS VISUAL IDENTITY AS DATA
+    // Projectile sprite decided at creation, never inferred later
+    ecs::Sprite sprite;
+    sprite.spriteId = ecs::SpriteId::PROJECTILE;
+    sprite.width = 42;  // 211x92 aspect ratio (422/2 frames, scaled down ~5x)
+    sprite.height = 18;
+    world.addComponent(projectile, sprite);
 
     // Mark as networked so the snapshot system replicates it to clients.
     ecs::Networked net;

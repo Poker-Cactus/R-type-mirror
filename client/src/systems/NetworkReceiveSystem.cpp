@@ -9,6 +9,7 @@
 #include "../../engineCore/include/ecs/World.hpp"
 #include "../../engineCore/include/ecs/components/Collider.hpp"
 #include "../../engineCore/include/ecs/components/Networked.hpp"
+#include "../../engineCore/include/ecs/components/Sprite.hpp"
 #include "../../engineCore/include/ecs/components/Transform.hpp"
 #include "../../include/systems/NetworkSendSystem.hpp"
 #include <iostream>
@@ -138,6 +139,19 @@ void ClientNetworkReceiveSystem::handleSnapshot(ecs::World &world, const nlohman
           col.width = w;
           col.height = h;
         }
+      }
+    }
+
+    // CLIENT RECEIVES SERVER-DRIVEN SPRITE DATA
+    // Visual identity is never inferred - only applied from server
+    if (entityJson.contains("sprite") && entityJson["sprite"].is_object()) {
+      const auto &spriteJson = entityJson["sprite"];
+      ecs::Sprite sprite = ecs::Sprite::fromJson(spriteJson);
+      
+      if (!world.hasComponent<ecs::Sprite>(entity)) {
+        world.addComponent(entity, sprite);
+      } else {
+        world.getComponent<ecs::Sprite>(entity) = sprite;
       }
     }
 

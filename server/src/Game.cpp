@@ -11,6 +11,7 @@
 #include "../../engineCore/include/ecs/components/Health.hpp"
 #include "../../engineCore/include/ecs/components/Input.hpp"
 #include "../../engineCore/include/ecs/components/Networked.hpp"
+#include "../../engineCore/include/ecs/components/Sprite.hpp"
 #include "../../engineCore/include/ecs/components/Transform.hpp"
 #include "../../engineCore/include/ecs/components/Velocity.hpp"
 #include "../../engineCore/include/ecs/components/roles/PlayerControlled.hpp"
@@ -110,6 +111,14 @@ void Game::spawnPlayer()
 
   world->addComponent(player, ecs::Collider{32.0F, 32.0F});
 
+  // SERVER ASSIGNS VISUAL IDENTITY AS DATA
+  // Player sprite decided at creation time
+  ecs::Sprite sprite;
+  sprite.spriteId = ecs::SpriteId::PLAYER_SHIP;
+  sprite.width = 70;  // 350x150 aspect ratio, scaled down
+  sprite.height = 30;
+  world->addComponent(player, sprite);
+
   // Add Networked component for network synchronization
   ecs::Networked networked;
   networked.networkId = player;
@@ -149,6 +158,14 @@ void Game::spawnPlayer(std::uint32_t networkId)
   world->addComponent(player, input);
 
   world->addComponent(player, ecs::Collider{32.0F, 32.0F});
+
+  // SERVER ASSIGNS VISUAL IDENTITY AS DATA
+  // Player sprite decided at creation time
+  ecs::Sprite sprite;
+  sprite.spriteId = ecs::SpriteId::PLAYER_SHIP;
+  sprite.width = 70;  // 350x150 aspect ratio, scaled down
+  sprite.height = 30;
+  world->addComponent(player, sprite);
 
   ecs::Networked networked;
   networked.networkId = static_cast<ecs::Entity>(networkId);

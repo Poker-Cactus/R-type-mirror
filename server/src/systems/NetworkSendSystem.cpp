@@ -9,6 +9,7 @@
 #include "../../engineCore/include/ecs/World.hpp"
 #include "../../engineCore/include/ecs/components/Collider.hpp"
 #include "../../engineCore/include/ecs/components/Networked.hpp"
+#include "../../engineCore/include/ecs/components/Sprite.hpp"
 #include "../../engineCore/include/ecs/components/Transform.hpp"
 #include "INetworkManager.hpp"
 #include "ecs/ComponentSignature.hpp"
@@ -59,6 +60,13 @@ void NetworkSendSystem::update(ecs::World &world, float deltaTime)
       if (world.hasComponent<ecs::Collider>(entity)) {
         const auto &col = world.getComponent<ecs::Collider>(entity);
         entityJson["collider"] = {{"w", col.width}, {"h", col.height}};
+      }
+
+      // SERVER-DRIVEN SPRITE REPLICATION
+      // Visual identity is replicated as data - client never infers it
+      if (world.hasComponent<ecs::Sprite>(entity)) {
+        const auto &sprite = world.getComponent<ecs::Sprite>(entity);
+        entityJson["sprite"] = sprite.toJson();
       }
 
       snapshot["entities"].push_back(entityJson);

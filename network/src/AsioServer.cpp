@@ -13,6 +13,7 @@
 #include "../../engineCore/include/ecs/components/Input.hpp"
 #include "../../engineCore/include/ecs/components/Networked.hpp"
 #include "../../engineCore/include/ecs/components/PlayerId.hpp"
+#include "../../engineCore/include/ecs/components/Sprite.hpp"
 #include "../../engineCore/include/ecs/components/Transform.hpp"
 #include "../../engineCore/include/ecs/components/Velocity.hpp"
 #include "../../engineCore/include/ecs/components/roles/PlayerControlled.hpp"
@@ -213,6 +214,14 @@ void AsioServer::createPlayerEntity(std::uint32_t clientId)
   m_world->addComponent(player, input);
 
   m_world->addComponent(player, ecs::Collider{32.0F, 32.0F});
+
+  // SERVER ASSIGNS VISUAL IDENTITY AS DATA
+  // Player sprite decided at creation time
+  ecs::Sprite sprite;
+  sprite.spriteId = ecs::SpriteId::PLAYER_SHIP;
+  sprite.width = 70;  // 350x150 aspect ratio, scaled down
+  sprite.height = 30;
+  m_world->addComponent(player, sprite);
 
   ecs::Networked networked;
   // Use clientId as the stable network id so the client can address its player.
