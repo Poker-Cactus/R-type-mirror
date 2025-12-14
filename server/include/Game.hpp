@@ -42,7 +42,8 @@ private:
   bool running = false;
   std::chrono::steady_clock::time_point currentTime;
   std::chrono::steady_clock::time_point nextTick;
-  std::chrono::milliseconds tickRate{16};
+  static constexpr int TICK_RATE_MS = 16;
+  std::chrono::milliseconds tickRate{TICK_RATE_MS};
 
   // System pointers for initialization
   server::DamageSystem *damageSystem = nullptr;

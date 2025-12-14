@@ -5,6 +5,13 @@
 ** Test_robustness.cpp
 */
 
+#include "network/NetworkPacket.hpp"
+#include <cstddef>
+#include <cstdint>
+#include <cstdlib>
+#include <memory>
+#include <span>
+#include <string>
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
 #include "AsioClient.hpp"
 #include "AsioServer.hpp"

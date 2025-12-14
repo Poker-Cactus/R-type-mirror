@@ -9,7 +9,9 @@
 #define NETWORKSENDSYSTEM_HPP_
 #include "../../engineCore/include/ecs/ISystem.hpp"
 #include "../../network/include/INetworkManager.hpp"
+#include "ecs/ComponentSignature.hpp"
 #include <cstdint>
+#include <memory>
 #include <vector>
 
 class NetworkSendSystem : public ecs::ISystem
@@ -23,9 +25,9 @@ public:
 protected:
 private:
   std::shared_ptr<INetworkManager> m_networkManager;
-  float m_timeSinceLastSend = 0.0f;
+  float m_timeSinceLastSend = 0.0F;
   std::vector<uint32_t> m_lastNetworkIds;
-  static constexpr float SEND_INTERVAL = 0.016f;
+  static constexpr float SEND_INTERVAL = 0.016F;
 };
 
 #endif /* !NETWORKSENDSYSTEM_HPP_ */

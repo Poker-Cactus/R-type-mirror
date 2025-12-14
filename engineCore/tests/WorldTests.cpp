@@ -6,13 +6,12 @@
 */
 
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
-#include "ecs/ComponentSignature.hpp"
+#include "../include/ComponentSignature.hpp"
 #include "ecs/Entity.hpp"
 #include "ecs/ISystem.hpp"
 #include "ecs/World.hpp"
 #include <algorithm>
 #include <doctest/doctest.h>
-#include <stdexcept>
 
 // ============================================================================
 // TEST COMPONENTS

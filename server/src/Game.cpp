@@ -32,6 +32,7 @@
 #include "systems/ShootingSystem.hpp"
 #include "systems/SpawnSystem.hpp"
 #include <chrono>
+#include <cstdint>
 #include <memory>
 #include <thread>
 
@@ -44,6 +45,7 @@ namespace {
   constexpr float PLAYER_COLLIDER_SIZE = 32.0F;
   constexpr unsigned int PLAYER_SPRITE_WIDTH = 140;
   constexpr unsigned int PLAYER_SPRITE_HEIGHT = 60;
+  constexpr float FIXED_DELTA_TIME = 0.016F; // 60 FPS (1/60 ≈ 0.016 seconds)
 }
 
 Game::Game()
@@ -221,10 +223,10 @@ void Game::runGameLoop()
     if (currentTime < nextTick) {
       std::this_thread::sleep_for(nextTick - currentTime);
     }
-
     // Update all systems
-    world->update(0.016F);
+    world->update(FIXED_DELTA_TIME);
 
+    nextTick += tickRate;
     nextTick += tickRate;
   }
 }

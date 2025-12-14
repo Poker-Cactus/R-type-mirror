@@ -18,17 +18,19 @@
 #include "ecs/Entity.hpp"
 #include <algorithm>
 #include <cstddef>
+#include <cstdint>
 #include <iostream>
 #include <memory>
 #include <nlohmann/json.hpp>
 #include <nlohmann/json_fwd.hpp>
 #include <span>
 #include <string>
+#include <utility>
 #include <vector>
 
 NetworkSendSystem::NetworkSendSystem(std::shared_ptr<INetworkManager> networkManager)
 {
-  m_networkManager = networkManager;
+  m_networkManager = std::move(networkManager);
 }
 
 NetworkSendSystem::~NetworkSendSystem() {}

@@ -72,13 +72,14 @@ public:
 
 private:
   ecs::EventListenerHandle m_deathHandle;
+  static const int pointsPerKill = 100;
 
   static void handleDeath(ecs::World &world, const ecs::DeathEvent &event)
   {
     // When an entity dies, award score to the killer
     if (world.isAlive(event.killer)) {
       // Award 100 points to the killer
-      ecs::ScoreEvent scoreEvent(event.killer, 100);
+      ecs::ScoreEvent scoreEvent(event.killer, pointsPerKill);
       world.emitEvent(scoreEvent);
       std::cout << "[DeathSystem] Entity " << event.entity << " killed by " << event.killer << " - awarding 100 points"
                 << std::endl;

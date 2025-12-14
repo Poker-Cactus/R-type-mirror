@@ -39,5 +39,5 @@ Checks: >
   clang-analyzer-cplusplus.NewDeleteLeaks
 
 WarningsAsErrors: ''
-HeaderFilterRegex: '.*'
+HeaderFilterRegex: '^(?!.*/tests/).*'
 FormatStyle: none

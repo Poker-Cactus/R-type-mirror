@@ -46,7 +46,7 @@ public:
   }
 
 private:
-  std::function<void()> unsubscribe{};
+  std::function<void()> unsubscribe;
 };
 
 } // namespace ecs
