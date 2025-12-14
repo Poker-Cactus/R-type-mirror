@@ -16,11 +16,13 @@
 #include "../../../engineCore/include/ecs/components/Health.hpp"
 #include "../../../engineCore/include/ecs/components/Lifetime.hpp"
 #include "../../../engineCore/include/ecs/components/Networked.hpp"
+#include "../../../engineCore/include/ecs/components/PlayerId.hpp"
 #include "../../../engineCore/include/ecs/components/Transform.hpp"
 #include "../../../engineCore/include/ecs/components/Velocity.hpp"
 #include "../../../engineCore/include/ecs/events/EventListenerHandle.hpp"
 #include "../../../engineCore/include/ecs/events/GameEvents.hpp"
 #include "ecs/ComponentSignature.hpp"
+#include <cmath>
 #include <random>
 
 namespace server
@@ -40,9 +42,10 @@ public:
     m_spawnTimer += deltaTime;
 
     // Spawn enemies periodically
-    // Disabled by default for prototype (avoids unexpected red squares on client).
-    // Re-enable when you want enemies:
-    // if (m_spawnTimer >= SPAWN_INTERVAL) { spawnRandomEnemy(world); m_spawnTimer = 0.0F; }
+    if (m_spawnTimer >= SPAWN_INTERVAL) {
+      spawnRandomEnemy(world);
+      m_spawnTimer = 0.0F;
+    }
   }
 
   void initialize(ecs::World &world)
@@ -65,7 +68,7 @@ private:
     std::uniform_real_distribution<float> yDist(100.0F, 500.0F);
 
     ecs::SpawnEntityEvent event(ecs::SpawnEntityEvent::EntityType::ENEMY,
-                                800.0F, // Right side of screen
+                                1200.0F, // Farther right so enemies enter from off-screen
                                 yDist(m_rng), 0);
     world.emitEvent(event);
   }
@@ -112,26 +115,38 @@ private:
     world.addComponent(enemy, health);
 
     world.addComponent(enemy, ecs::Collider{32.0F, 32.0F});
+
+    ecs::Networked net;
+    net.networkId = enemy;
+    world.addComponent(enemy, net);
   }
 
   static void spawnProjectile(ecs::World &world, float x, float y, ecs::Entity owner)
   {
-    // Determine direction based on owner's velocity
-    float projectileVelocity = 850.0F; // Fast, R-Type-like projectile
-    if (world.hasComponent<ecs::Velocity>(owner)) {
-      const auto &ownerVel = world.getComponent<ecs::Velocity>(owner);
-      // If owner moves left (enemy), projectile goes left
-      if (ownerVel.dx < 0) {
-        projectileVelocity = -850.0F;
-      }
+    // Determine direction: prefer requested direction, fall back to owner velocity
+    float directionX = 0.0F;
+    if (std::abs(directionX) < 0.001F && world.hasComponent<ecs::Velocity>(owner)) {
+      directionX = world.getComponent<ecs::Velocity>(owner).dx;
     }
+    if (std::abs(directionX) < 0.001F) {
+      directionX = 1.0F; // Default to right if nothing else is known
+    }
+
+    const float normalizedDirX = directionX >= 0.0F ? 1.0F : -1.0F;
+    const float projectileVelocity = 850.0F * normalizedDirX; // Match player projectile speed
 
     ecs::Entity projectile = world.createEntity();
 
     world.addComponent(projectile, ecs::EntityKind{ecs::EntityKind::Kind::PROJECTILE});
 
+    // Offset only player projectiles slightly forward; enemies spawn bullets at their position
+    float offsetX = 0.0F;
+    if (world.hasComponent<ecs::PlayerId>(owner)) {
+      offsetX = 20.0F * normalizedDirX;
+    }
+
     ecs::Transform transform;
-    transform.x = x;
+    transform.x = x + offsetX;
     transform.y = y;
     transform.rotation = 0.0F;
     transform.scale = 1.0F;

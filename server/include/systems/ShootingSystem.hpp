@@ -98,9 +98,8 @@ private:
     const auto &transform = world.getComponent<ecs::Transform>(event.shooter);
 
     // Emit spawn event for projectile
-    ecs::SpawnEntityEvent spawnEvent(ecs::SpawnEntityEvent::EntityType::PROJECTILE,
-                                     transform.x + 20.0F, // Offset from shooter
-                                     transform.y, event.shooter);
+    ecs::SpawnEntityEvent spawnEvent(ecs::SpawnEntityEvent::EntityType::PROJECTILE, transform.x, transform.y,
+                                     event.shooter);
     world.emitEvent(spawnEvent);
   }
 };

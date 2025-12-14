@@ -161,6 +161,9 @@ void ClientNetworkReceiveSystem::handleSnapshot(ecs::World &world, const nlohman
       if (kind == ecs::EntityKind::Kind::PROJECTILE && g_debugLogAcc >= 1.0F) {
         std::cout << "[Client] Projectile id=" << networkId << " x=" << x << " y=" << y << std::endl;
       }
+      if (kind == ecs::EntityKind::Kind::ENEMY && g_debugLogAcc >= 1.0F) {
+        std::cout << "[Client] Enemy id=" << networkId << " x=" << x << " y=" << y << std::endl;
+      }
     }
   }
 
