@@ -16,9 +16,12 @@
 #include "../../../engineCore/include/ecs/components/Health.hpp"
 #include "../../../engineCore/include/ecs/components/Lifetime.hpp"
 #include "../../../engineCore/include/ecs/components/Networked.hpp"
+#include "../../../engineCore/include/ecs/components/Owner.hpp"
 #include "../../../engineCore/include/ecs/components/Sprite.hpp"
 #include "../../../engineCore/include/ecs/components/Transform.hpp"
 #include "../../../engineCore/include/ecs/components/Velocity.hpp"
+#include "../../../engineCore/include/ecs/components/Viewport.hpp"
+#include "../../../engineCore/include/ecs/components/PlayerId.hpp"
 #include "../../../engineCore/include/ecs/components/roles/EnemyAI.hpp"
 #include "../../../engineCore/include/ecs/components/roles/Projectile.hpp"
 #include "../../../engineCore/include/ecs/events/EventListenerHandle.hpp"
@@ -67,10 +70,32 @@ private:
 
   void spawnRandomEnemy(ecs::World &world)
   {
-    std::uniform_real_distribution<float> yDist(100.0F, 500.0F);
+    // Get viewport dimensions from connected players
+    float worldW = 800.0F;
+    float worldH = 600.0F;
+    
+    ecs::ComponentSignature playerSig;
+    playerSig.set(ecs::getComponentId<ecs::PlayerId>());
+    playerSig.set(ecs::getComponentId<ecs::Viewport>());
+    std::vector<ecs::Entity> players;
+    world.getEntitiesWithSignature(playerSig, players);
+    
+    for (auto p : players) {
+      const auto &vp = world.getComponent<ecs::Viewport>(p);
+      if (vp.width > 0) {
+        worldW = std::max(worldW, static_cast<float>(vp.width));
+      }
+      if (vp.height > 0) {
+        worldH = std::max(worldH, static_cast<float>(vp.height));
+      }
+    }
 
+    // Random Y position across full screen height
+    std::uniform_real_distribution<float> yDist(50.0F, worldH - 50.0F);
+
+    // Spawn at right edge of screen (at the visible border)
     ecs::SpawnEntityEvent event(ecs::SpawnEntityEvent::EntityType::ENEMY,
-                                1200.0F, // Farther right so enemies enter from off-screen
+                                worldW - 32.0F, // Spawn at right edge (minus half sprite width)
                                 yDist(m_rng), 0);
     world.emitEvent(event);
   }
@@ -107,7 +132,7 @@ private:
     world.addComponent(enemy, transform);
 
     ecs::Velocity velocity;
-    velocity.dx = -50.0F;
+    velocity.dx = -150.0F;
     velocity.dy = 0.0F;
     world.addComponent(enemy, velocity);
 
@@ -122,8 +147,8 @@ private:
     // The sprite is assigned at creation time - never inferred by systems
     ecs::Sprite sprite;
     sprite.spriteId = ecs::SpriteId::ENEMY_SHIP;
-    sprite.width = 32;
-    sprite.height = 32;
+    sprite.width = 64;
+    sprite.height = 64;
     world.addComponent(enemy, sprite);
 
     ecs::Networked net;
@@ -143,7 +168,7 @@ private:
     }
 
     const float normalizedDirX = directionX >= 0.0F ? 1.0F : -1.0F;
-    const float projectileVelocity = 850.0F * normalizedDirX; // Match player projectile speed
+    const float projectileVelocity = 1700.0F * normalizedDirX; // 2x faster projectiles
 
     ecs::Entity projectile = world.createEntity();
 
@@ -176,14 +201,19 @@ private:
     // Projectile sprite decided at creation, never inferred later
     ecs::Sprite sprite;
     sprite.spriteId = ecs::SpriteId::PROJECTILE;
-    sprite.width = 42;  // 211x92 aspect ratio (422/2 frames, scaled down ~5x)
-    sprite.height = 18;
+    sprite.width = 84;  // 211x92 aspect ratio (422/2 frames, scaled down ~2.5x)
+    sprite.height = 36;
     world.addComponent(projectile, sprite);
 
     // Mark as networked so the snapshot system replicates it to clients.
     ecs::Networked net;
     net.networkId = projectile;
     world.addComponent(projectile, net);
+
+    // Track owner to prevent self-damage
+    ecs::Owner ownerComp;
+    ownerComp.ownerId = owner;
+    world.addComponent(projectile, ownerComp);
   }
 
   static void spawnPowerup(ecs::World &world, float x, float y)

@@ -12,8 +12,20 @@
 #include "../include/systems/NetworkReceiveSystem.hpp"
 #include "../include/systems/NetworkSendSystem.hpp"
 #include "../interface/KeyCodes.hpp"
+#include "/home/itier/delivery/tek3/R-type-mirror/client/ModuleLoader.hpp"
+#include "/home/itier/delivery/tek3/R-type-mirror/client/interface/IRenderer.hpp"
+#include "Menu.hpp"
+#include "Menu/MenuState.hpp"
+#include "PlayingState.hpp"
+#include <cstddef>
+#include <cstdint>
+#include <exception>
 #include <iostream>
+#include <memory>
 #include <nlohmann/json.hpp>
+#include <nlohmann/json_fwd.hpp>
+#include <span>
+#include <string>
 
 Game::Game() : module(nullptr), renderer(nullptr), isRunning(false), currentState(GameState::MENU) {}
 
@@ -142,6 +154,19 @@ void Game::processInput()
   }
 
   if (this->currentState == GameState::PLAYING) {
+    // Check if player died and should return to menu
+    if (playingState && playingState->shouldReturnToMenu()) {
+      std::cout << "[Game] Player died - returning to menu" << std::endl;
+      this->currentState = GameState::MENU;
+    } else if (playingState) {
+      // Debug log to check state
+      static int logCounter = 0;
+      if (++logCounter % 120 == 0) { // Log every ~2 seconds
+        std::cout << "[Game] Playing state active, shouldReturnToMenu = " 
+                  << playingState->shouldReturnToMenu() << std::endl;
+      }
+    }
+
     ensureInputEntity();
     if (m_world && m_inputEntity != 0 && m_world->hasComponent<ecs::Input>(m_inputEntity)) {
       auto &input = m_world->getComponent<ecs::Input>(m_inputEntity);

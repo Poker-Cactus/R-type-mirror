@@ -7,6 +7,9 @@
 
 #include "PlayingState.hpp"
 #include "../../engineCore/include/ecs/components/Collider.hpp"
+#include "../../engineCore/include/ecs/components/Health.hpp"
+#include "../../engineCore/include/ecs/components/Networked.hpp"
+#include "../../engineCore/include/ecs/components/Score.hpp"
 #include "../../engineCore/include/ecs/components/Sprite.hpp"
 #include "../../engineCore/include/ecs/components/Transform.hpp"
 #include <iostream>
@@ -38,6 +41,12 @@ bool PlayingState::init()
   // Load sprite textures
   loadSpriteTextures();
 
+  // Load HUD font
+  m_hudFont = renderer->loadFont("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 18);
+  if (!m_hudFont) {
+    std::cerr << "PlayingState: Warning - Could not load HUD font, text will not display" << std::endl;
+  }
+
   std::cout << "PlayingState: Initialized successfully" << std::endl;
 
   return true;
@@ -50,12 +59,8 @@ void PlayingState::update(float dt)
     background->update(dt);
   }
 
-  // TODO: Mettre à jour les systèmes de jeu
-  // - Mettre à jour les entités
-  // - Vérifier les collisions
-  // - Spawn des ennemis
-  // - Mettre à jour l'IA
-  // - Mettre à jour les projectiles
+  // Update HUD data from world state
+  updateHUDFromWorld();
 }
 
 void PlayingState::render()
@@ -149,6 +154,82 @@ void PlayingState::render()
                         color);
     }
   }
+
+  // Draw HUD on top of everything
+  renderHUD();
+}
+
+void PlayingState::renderHUD()
+{
+  if (!renderer || !m_hudFont) {
+    return;
+  }
+
+  // Draw health bar
+  const int healthBarX = 20;
+  const int healthBarY = 20;
+  const int healthBarWidth = 200;
+  const int healthBarHeight = 20;
+  
+  // Background (dark gray)
+  renderer->drawRect(healthBarX, healthBarY, healthBarWidth, healthBarHeight, {50, 50, 50, 200});
+  
+  // Health fill (green to red based on health)
+  int healthWidth = (m_playerHealth * healthBarWidth) / 100;
+  Color healthColor;
+  if (m_playerHealth > 60) {
+    healthColor = {100, 255, 100, 255}; // Green
+  } else if (m_playerHealth > 30) {
+    healthColor = {255, 255, 100, 255}; // Yellow
+  } else {
+    healthColor = {255, 100, 100, 255}; // Red
+  }
+  renderer->drawRect(healthBarX, healthBarY, healthWidth, healthBarHeight, healthColor);
+  
+  // Health text
+  std::string healthText = "HP: " + std::to_string(m_playerHealth) + "/100";
+  renderer->drawText(m_hudFont, healthText, healthBarX + 5, healthBarY + 2, {255, 255, 255, 255});
+  
+  // Score text
+  std::string scoreText = "Score: " + std::to_string(m_playerScore);
+  renderer->drawText(m_hudFont, scoreText, healthBarX, healthBarY + 30, {255, 255, 255, 255});
+}
+
+void PlayingState::updateHUDFromWorld()
+{
+  if (!world) {
+    return;
+  }
+
+  // Find the player entity (the one with our client's network ID)
+  ecs::ComponentSignature playerSig;
+  playerSig.set(ecs::getComponentId<ecs::Networked>());
+  playerSig.set(ecs::getComponentId<ecs::Health>());
+  
+  std::vector<ecs::Entity> entities;
+  world->getEntitiesWithSignature(playerSig, entities);
+  
+  // Update health and score from the first player entity found
+  for (auto entity : entities) {
+    if (world->hasComponent<ecs::Health>(entity)) {
+      const auto &health = world->getComponent<ecs::Health>(entity);
+      m_playerHealth = health.hp;
+      
+      // Debug: log when health is critically low
+      if (m_playerHealth <= 0 && m_playerHealth != -1000) {
+        static bool loggedDeath = false;
+        if (!loggedDeath) {
+          std::cout << "[PlayingState] Player health is " << m_playerHealth << " - should return to menu" << std::endl;
+          loggedDeath = true;
+        }
+      }
+    }
+    if (world->hasComponent<ecs::Score>(entity)) {
+      const auto &score = world->getComponent<ecs::Score>(entity);
+      m_playerScore = score.points;
+    }
+    break; // Use first player for now
+  }
 }
 
 void PlayingState::processInput()
@@ -168,6 +249,12 @@ void PlayingState::cleanup()
 
   // Free all loaded sprite textures
   freeSpriteTextures();
+
+  // Free HUD font
+  if (m_hudFont && renderer) {
+    renderer->freeFont(m_hudFont);
+    m_hudFont = nullptr;
+  }
 
   std::cout << "PlayingState: Cleaned up" << std::endl;
 }

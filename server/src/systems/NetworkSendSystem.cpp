@@ -8,12 +8,15 @@
 #include "systems/NetworkSendSystem.hpp"
 #include "../../engineCore/include/ecs/World.hpp"
 #include "../../engineCore/include/ecs/components/Collider.hpp"
+#include "../../engineCore/include/ecs/components/Health.hpp"
 #include "../../engineCore/include/ecs/components/Networked.hpp"
+#include "../../engineCore/include/ecs/components/Score.hpp"
 #include "../../engineCore/include/ecs/components/Sprite.hpp"
 #include "../../engineCore/include/ecs/components/Transform.hpp"
 #include "INetworkManager.hpp"
 #include "ecs/ComponentSignature.hpp"
 #include "ecs/Entity.hpp"
+#include <algorithm>
 #include <cstddef>
 #include <iostream>
 #include <memory>
@@ -44,13 +47,18 @@ void NetworkSendSystem::update(ecs::World &world, float deltaTime)
     snapshot["type"] = "snapshot";
     snapshot["entities"] = nlohmann::json::array();
 
+    // Collect current network IDs
+    std::vector<uint32_t> currentNetworkIds;
+
     for (const auto &entity : entities) {
-      if (!world.hasComponent<ecs::Transform>(entity)) {
+      if (!world.hasComponent<ecs::Transform>(entity) || !world.isAlive(entity)) {
         continue;
       }
 
       const auto &networked = world.getComponent<ecs::Networked>(entity);
       const auto &transform = world.getComponent<ecs::Transform>(entity);
+
+      currentNetworkIds.push_back(networked.networkId);
 
       nlohmann::json entityJson;
       entityJson["id"] = networked.networkId;
@@ -69,8 +77,36 @@ void NetworkSendSystem::update(ecs::World &world, float deltaTime)
         entityJson["sprite"] = sprite.toJson();
       }
 
+      // Replicate health for HUD display
+      if (world.hasComponent<ecs::Health>(entity)) {
+        const auto &health = world.getComponent<ecs::Health>(entity);
+        entityJson["health"] = {{"hp", health.hp}, {"maxHp", health.maxHp}};
+      }
+
+      // Replicate score for HUD display
+      if (world.hasComponent<ecs::Score>(entity)) {
+        const auto &score = world.getComponent<ecs::Score>(entity);
+        entityJson["score"] = {{"points", score.points}};
+      }
+
       snapshot["entities"].push_back(entityJson);
     }
+
+    // Track entities that should be removed on client side
+    // Find network IDs that existed last frame but not this frame
+    std::vector<uint32_t> destroyedIds;
+    for (const auto &lastId : m_lastNetworkIds) {
+      if (std::find(currentNetworkIds.begin(), currentNetworkIds.end(), lastId) == currentNetworkIds.end()) {
+        destroyedIds.push_back(lastId);
+      }
+    }
+
+    if (!destroyedIds.empty()) {
+      snapshot["destroyed"] = destroyedIds;
+    }
+
+    // Update last network IDs for next frame
+    m_lastNetworkIds = currentNetworkIds;
 
     const std::string jsonStr = snapshot.dump();
     const auto serialized = m_networkManager->getPacketHandler()->serialize(jsonStr);

@@ -11,6 +11,7 @@
 #include "../../engineCore/include/ecs/components/Health.hpp"
 #include "../../engineCore/include/ecs/components/Input.hpp"
 #include "../../engineCore/include/ecs/components/Networked.hpp"
+#include "../../engineCore/include/ecs/components/Score.hpp"
 #include "../../engineCore/include/ecs/components/Sprite.hpp"
 #include "../../engineCore/include/ecs/components/Transform.hpp"
 #include "../../engineCore/include/ecs/components/Velocity.hpp"
@@ -27,6 +28,7 @@
 #include "systems/LifetimeSystem.hpp"
 #include "systems/NetworkReceiveSystem.hpp"
 #include "systems/NetworkSendSystem.hpp"
+#include "systems/ScoreSystem.hpp"
 #include "systems/ShootingSystem.hpp"
 #include "systems/SpawnSystem.hpp"
 #include <chrono>
@@ -45,6 +47,7 @@ Game::Game()
   damageSystem = &world->registerSystem<server::DamageSystem>();
   deathSystem = &world->registerSystem<server::DeathSystem>();
   shootingSystem = &world->registerSystem<server::ShootingSystem>();
+  scoreSystem = &world->registerSystem<server::ScoreSystem>();
 
   world->registerSystem<server::EnemyAISystem>();
 
@@ -71,6 +74,9 @@ void Game::initializeSystems()
   }
   if (shootingSystem != nullptr) {
     shootingSystem->initialize(*world);
+  }
+  if (scoreSystem != nullptr) {
+    scoreSystem->initialize(*world);
   }
   if (spawnSystem != nullptr) {
     spawnSystem->initialize(*world);
@@ -115,14 +121,19 @@ void Game::spawnPlayer()
   // Player sprite decided at creation time
   ecs::Sprite sprite;
   sprite.spriteId = ecs::SpriteId::PLAYER_SHIP;
-  sprite.width = 70;  // 350x150 aspect ratio, scaled down
-  sprite.height = 30;
+  sprite.width = 140;  // 350x150 aspect ratio, scaled down 2.5x
+  sprite.height = 60;
   world->addComponent(player, sprite);
 
   // Add Networked component for network synchronization
   ecs::Networked networked;
   networked.networkId = player;
   world->addComponent(player, networked);
+
+  // Add Score component for tracking player score
+  ecs::Score score;
+  score.points = 0;
+  world->addComponent(player, score);
 }
 
 void Game::spawnPlayer(std::uint32_t networkId)
@@ -163,13 +174,18 @@ void Game::spawnPlayer(std::uint32_t networkId)
   // Player sprite decided at creation time
   ecs::Sprite sprite;
   sprite.spriteId = ecs::SpriteId::PLAYER_SHIP;
-  sprite.width = 70;  // 350x150 aspect ratio, scaled down
-  sprite.height = 30;
+  sprite.width = 140;  // 350x150 aspect ratio, scaled down 2.5x
+  sprite.height = 60;
   world->addComponent(player, sprite);
 
   ecs::Networked networked;
   networked.networkId = static_cast<ecs::Entity>(networkId);
   world->addComponent(player, networked);
+
+  // Add Score component for tracking player score
+  ecs::Score score;
+  score.points = 0;
+  world->addComponent(player, score);
 }
 
 void Game::setNetworkManager(const std::shared_ptr<INetworkManager> &networkManager)

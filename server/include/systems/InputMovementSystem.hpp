@@ -30,7 +30,7 @@ public:
     std::vector<ecs::Entity> entities;
     world.getEntitiesWithSignature(getSignature(), entities);
 
-    constexpr float SPEED = 200.0F;
+    constexpr float SPEED = 350.0F;
 
     for (auto entity : entities) {
       auto &input = world.getComponent<ecs::Input>(entity);

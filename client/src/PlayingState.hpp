@@ -53,6 +53,11 @@ public:
    */
   void cleanup();
 
+  /**
+   * @brief Check if player is dead and should return to menu
+   */
+  bool shouldReturnToMenu() const { return m_playerHealth <= 0; }
+
 private:
   IRenderer *renderer;
   std::shared_ptr<ecs::World> world;
@@ -64,9 +69,11 @@ private:
   void loadSpriteTextures();
   void freeSpriteTextures();
 
-  // TODO: Ajouter les systèmes de jeu
-  // - Gestion des entités (ECS)
-  // - Système de collision
-  // - Système de spawn d'ennemis
-  // - Interface de jeu (HUD)
+  // HUD state
+  void* m_hudFont = nullptr;
+  int m_playerHealth = 100;
+  int m_playerScore = 0;
+  
+  void renderHUD();
+  void updateHUDFromWorld();
 };

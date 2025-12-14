@@ -8,7 +8,9 @@
 #include "../../include/systems/NetworkReceiveSystem.hpp"
 #include "../../engineCore/include/ecs/World.hpp"
 #include "../../engineCore/include/ecs/components/Collider.hpp"
+#include "../../engineCore/include/ecs/components/Health.hpp"
 #include "../../engineCore/include/ecs/components/Networked.hpp"
+#include "../../engineCore/include/ecs/components/Score.hpp"
 #include "../../engineCore/include/ecs/components/Sprite.hpp"
 #include "../../engineCore/include/ecs/components/Transform.hpp"
 #include "../../include/systems/NetworkSendSystem.hpp"
@@ -155,6 +157,58 @@ void ClientNetworkReceiveSystem::handleSnapshot(ecs::World &world, const nlohman
       }
     }
 
+    // Receive health data for HUD display
+    if (entityJson.contains("health") && entityJson["health"].is_object()) {
+      const auto &healthJson = entityJson["health"];
+      const int hp = healthJson.value("hp", 0);
+      const int maxHp = healthJson.value("maxHp", 100);
+      
+      if (!world.hasComponent<ecs::Health>(entity)) {
+        ecs::Health health;
+        health.hp = hp;
+        health.maxHp = maxHp;
+        world.addComponent(entity, health);
+      } else {
+        auto &health = world.getComponent<ecs::Health>(entity);
+        health.hp = hp;
+        health.maxHp = maxHp;
+      }
+    }
+
+    // Receive score data for HUD display
+    if (entityJson.contains("score") && entityJson["score"].is_object()) {
+      const auto &scoreJson = entityJson["score"];
+      const int points = scoreJson.value("points", 0);
+      
+      if (!world.hasComponent<ecs::Score>(entity)) {
+        ecs::Score score;
+        score.points = points;
+        world.addComponent(entity, score);
+      } else {
+        auto &score = world.getComponent<ecs::Score>(entity);
+        score.points = points;
+      }
+    }
+
+  }
+
+  // Handle destroyed entities
+  if (json.contains("destroyed") && json["destroyed"].is_array()) {
+    for (const auto &destroyedId : json["destroyed"]) {
+      if (!destroyedId.is_number_unsigned()) {
+        continue;
+      }
+      
+      const std::uint32_t networkId = destroyedId.get<std::uint32_t>();
+      auto it = g_networkIdToEntity.find(networkId);
+      if (it != g_networkIdToEntity.end()) {
+        ecs::Entity entity = it->second;
+        if (world.isAlive(entity)) {
+          world.destroyEntity(entity);
+        }
+        g_networkIdToEntity.erase(it);
+      }
+    }
   }
 
   if (g_debugLogAcc >= 1.0F) {
