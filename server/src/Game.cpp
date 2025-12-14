@@ -35,6 +35,17 @@
 #include <memory>
 #include <thread>
 
+// Player spawn configuration constants
+namespace {
+  constexpr float PLAYER_GUN_OFFSET = 20.0F;
+  constexpr float PLAYER_START_X = 100.0F;
+  constexpr float PLAYER_START_Y = 300.0F;
+  constexpr int PLAYER_INITIAL_HEALTH = 100;
+  constexpr float PLAYER_COLLIDER_SIZE = 32.0F;
+  constexpr unsigned int PLAYER_SPRITE_WIDTH = 140;
+  constexpr unsigned int PLAYER_SPRITE_HEIGHT = 60;
+}
+
 Game::Game()
 {
   world = std::make_shared<ecs::World>();
@@ -88,11 +99,11 @@ void Game::spawnPlayer()
   ecs::Entity player = world->createEntity();
 
   world->addComponent(player, ecs::PlayerControlled{});
-  world->addComponent(player, ecs::GunOffset{20.0F});
+  world->addComponent(player, ecs::GunOffset{PLAYER_GUN_OFFSET});
 
   ecs::Transform transform;
-  transform.x = 100.0F;
-  transform.y = 300.0F;
+  transform.x = PLAYER_START_X;
+  transform.y = PLAYER_START_Y;
   transform.rotation = 0.0F;
   transform.scale = 1.0F;
   world->addComponent(player, transform);
@@ -103,8 +114,8 @@ void Game::spawnPlayer()
   world->addComponent(player, velocity);
 
   ecs::Health health;
-  health.hp = 100;
-  health.maxHp = 100;
+  health.hp = PLAYER_INITIAL_HEALTH;
+  health.maxHp = PLAYER_INITIAL_HEALTH;
   world->addComponent(player, health);
 
   ecs::Input input;
@@ -115,14 +126,14 @@ void Game::spawnPlayer()
   input.shoot = false;
   world->addComponent(player, input);
 
-  world->addComponent(player, ecs::Collider{32.0F, 32.0F});
+  world->addComponent(player, ecs::Collider{PLAYER_COLLIDER_SIZE, PLAYER_COLLIDER_SIZE});
 
   // SERVER ASSIGNS VISUAL IDENTITY AS DATA
   // Player sprite decided at creation time
   ecs::Sprite sprite;
   sprite.spriteId = ecs::SpriteId::PLAYER_SHIP;
-  sprite.width = 140; // 350x150 aspect ratio, scaled down 2.5x
-  sprite.height = 60;
+  sprite.width = PLAYER_SPRITE_WIDTH; // 350x150 aspect ratio, scaled down 2.5x
+  sprite.height = PLAYER_SPRITE_HEIGHT;
   world->addComponent(player, sprite);
 
   // Add Networked component for network synchronization
@@ -141,11 +152,11 @@ void Game::spawnPlayer(std::uint32_t networkId)
   ecs::Entity player = world->createEntity();
 
   world->addComponent(player, ecs::PlayerControlled{});
-  world->addComponent(player, ecs::GunOffset{20.0F});
+  world->addComponent(player, ecs::GunOffset{PLAYER_GUN_OFFSET});
 
   ecs::Transform transform;
-  transform.x = 100.0F;
-  transform.y = 300.0F;
+  transform.x = PLAYER_START_X;
+  transform.y = PLAYER_START_Y;
   transform.rotation = 0.0F;
   transform.scale = 1.0F;
   world->addComponent(player, transform);
@@ -156,8 +167,8 @@ void Game::spawnPlayer(std::uint32_t networkId)
   world->addComponent(player, velocity);
 
   ecs::Health health;
-  health.hp = 100;
-  health.maxHp = 100;
+  health.hp = PLAYER_INITIAL_HEALTH;
+  health.maxHp = PLAYER_INITIAL_HEALTH;
   world->addComponent(player, health);
 
   ecs::Input input;
@@ -168,14 +179,14 @@ void Game::spawnPlayer(std::uint32_t networkId)
   input.shoot = false;
   world->addComponent(player, input);
 
-  world->addComponent(player, ecs::Collider{32.0F, 32.0F});
+  world->addComponent(player, ecs::Collider{PLAYER_COLLIDER_SIZE, PLAYER_COLLIDER_SIZE});
 
   // SERVER ASSIGNS VISUAL IDENTITY AS DATA
   // Player sprite decided at creation time
   ecs::Sprite sprite;
   sprite.spriteId = ecs::SpriteId::PLAYER_SHIP;
-  sprite.width = 140; // 350x150 aspect ratio, scaled down 2.5x
-  sprite.height = 60;
+  sprite.width = PLAYER_SPRITE_WIDTH; // 350x150 aspect ratio, scaled down 2.5x
+  sprite.height = PLAYER_SPRITE_HEIGHT;
   world->addComponent(player, sprite);
 
   ecs::Networked networked;

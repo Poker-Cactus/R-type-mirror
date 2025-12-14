@@ -26,9 +26,11 @@ namespace ecs
  * The server assigns this at entity creation time - it is DATA, not LOGIC.
  */
 struct Sprite : public IComponent {
-  std::uint32_t spriteId = 0;
-  std::uint32_t width = 32;
-  std::uint32_t height = 32;
+  static constexpr std::uint32_t DEFAULT_SPRITE_SIZE = 32U;
+  
+  std::uint32_t spriteId = 0U;
+  std::uint32_t width = DEFAULT_SPRITE_SIZE;
+  std::uint32_t height = DEFAULT_SPRITE_SIZE;
 
   [[nodiscard]] nlohmann::json toJson() const override
   {
@@ -42,9 +44,9 @@ struct Sprite : public IComponent {
   static Sprite fromJson(const nlohmann::json &json)
   {
     Sprite sprite;
-    sprite.spriteId = json.value("spriteId", 0u);
-    sprite.width = json.value("width", 32u);
-    sprite.height = json.value("height", 32u);
+    sprite.spriteId = json.value("spriteId", 0U);
+    sprite.width = json.value("width", DEFAULT_SPRITE_SIZE);
+    sprite.height = json.value("height", DEFAULT_SPRITE_SIZE);
     return sprite;
   }
 };

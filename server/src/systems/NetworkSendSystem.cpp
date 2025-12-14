@@ -35,7 +35,7 @@ NetworkSendSystem::~NetworkSendSystem() {}
 
 void NetworkSendSystem::update(ecs::World &world, float deltaTime)
 {
-  static float logAccumulator = 0.0f;
+  static float logAccumulator = 0.0F;
   logAccumulator += deltaTime;
 
   m_timeSinceLastSend += deltaTime;
@@ -118,13 +118,13 @@ void NetworkSendSystem::update(ecs::World &world, float deltaTime)
         clientId);
     }
 
-    if (logAccumulator >= 1.0f) {
-      std::cout << "[Server] Snapshot broadcast: entities=" << snapshot["entities"].size()
+    if (logAccumulator >= 1.0F) {
+      std::cout << "[Server] Broadcasting snapshot: entities=" << entities.size()
                 << " clients=" << clients.size() << std::endl;
-      logAccumulator = 0.0f;
+      logAccumulator = 0.0F;
     }
 
-    m_timeSinceLastSend = 0.0f;
+    m_timeSinceLastSend = 0.0F;
   }
 }
 
