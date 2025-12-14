@@ -45,6 +45,7 @@ bool Game::init()
     renderer = module->create();
 
     if (renderer == nullptr) {
+      std::cerr << "[Game::init] ERROR: Renderer is null" << std::endl;
       return false;
     }
     renderer->setWindowTitle("ChaD");
@@ -141,6 +142,7 @@ void Game::shutdown()
 void Game::processInput()
 {
   if (!renderer->pollEvents()) {
+    std::cout << "[Game] pollEvents() returned false - shutting down" << std::endl;
     isRunning = false;
   }
   // if (this->menu && this->currentState == GameState::MENU)

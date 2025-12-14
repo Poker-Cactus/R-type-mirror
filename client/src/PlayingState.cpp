@@ -31,6 +31,8 @@ bool PlayingState::init()
     return false;
   }
 
+  std::cout << "[PlayingState] Initializing with m_playerHealth = " << m_playerHealth << std::endl;
+
   // Initialiser le background parallaxe
   background = std::make_unique<ParallaxBackground>(renderer);
   if (!background->init()) {
@@ -41,10 +43,17 @@ bool PlayingState::init()
   // Load sprite textures
   loadSpriteTextures();
 
-  // Load HUD font
-  m_hudFont = renderer->loadFont("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 18);
-  if (!m_hudFont) {
-    std::cerr << "PlayingState: Warning - Could not load HUD font, text will not display" << std::endl;
+  // Load HUD font with fallback
+  try {
+#ifdef __APPLE__
+    // macOS system font path
+    m_hudFont = renderer->loadFont("/System/Library/Fonts/Helvetica.ttc", 18);
+#else
+    m_hudFont = renderer->loadFont("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 18);
+#endif
+  } catch (const std::exception &e) {
+    std::cerr << "PlayingState: Warning - Could not load HUD font: " << e.what() << std::endl;
+    m_hudFont = nullptr;
   }
 
   std::cout << "PlayingState: Initialized successfully" << std::endl;
@@ -197,6 +206,12 @@ void PlayingState::updateHUDFromWorld()
 
   std::vector<ecs::Entity> entities;
   world->getEntitiesWithSignature(playerSig, entities);
+
+  // Debug: log entity count periodically
+  static int debugCounter = 0;
+  if (++debugCounter % 120 == 0) {
+    std::cout << "[PlayingState] Found " << entities.size() << " entities with Health, m_playerHealth = " << m_playerHealth << std::endl;
+  }
 
   // Update health and score from the first player entity found
   for (auto entity : entities) {
