@@ -8,7 +8,6 @@
 #include "../../include/systems/NetworkReceiveSystem.hpp"
 #include "../../engineCore/include/ecs/World.hpp"
 #include "../../engineCore/include/ecs/components/Collider.hpp"
-#include "../../engineCore/include/ecs/components/EntityKind.hpp"
 #include "../../engineCore/include/ecs/components/Networked.hpp"
 #include "../../engineCore/include/ecs/components/Transform.hpp"
 #include "../../include/systems/NetworkSendSystem.hpp"
@@ -142,29 +141,6 @@ void ClientNetworkReceiveSystem::handleSnapshot(ecs::World &world, const nlohman
       }
     }
 
-    if (entityJson.contains("kind") && entityJson["kind"].is_string()) {
-      const std::string kindStr = entityJson["kind"].get<std::string>();
-      ecs::EntityKind::Kind kind = ecs::EntityKind::Kind::UNKNOWN;
-      if (kindStr == "player") {
-        kind = ecs::EntityKind::Kind::PLAYER;
-      } else if (kindStr == "enemy") {
-        kind = ecs::EntityKind::Kind::ENEMY;
-      } else if (kindStr == "projectile") {
-        kind = ecs::EntityKind::Kind::PROJECTILE;
-      }
-      if (!world.hasComponent<ecs::EntityKind>(entity)) {
-        world.addComponent(entity, ecs::EntityKind{kind});
-      } else {
-        world.getComponent<ecs::EntityKind>(entity).kind = kind;
-      }
-
-      if (kind == ecs::EntityKind::Kind::PROJECTILE && g_debugLogAcc >= 1.0F) {
-        std::cout << "[Client] Projectile id=" << networkId << " x=" << x << " y=" << y << std::endl;
-      }
-      if (kind == ecs::EntityKind::Kind::ENEMY && g_debugLogAcc >= 1.0F) {
-        std::cout << "[Client] Enemy id=" << networkId << " x=" << x << " y=" << y << std::endl;
-      }
-    }
   }
 
   if (g_debugLogAcc >= 1.0F) {

@@ -7,12 +7,13 @@
 
 #include "Game.hpp"
 #include "../../engineCore/include/ecs/components/Collider.hpp"
-#include "../../engineCore/include/ecs/components/EntityKind.hpp"
+#include "../../engineCore/include/ecs/components/GunOffset.hpp"
 #include "../../engineCore/include/ecs/components/Health.hpp"
 #include "../../engineCore/include/ecs/components/Input.hpp"
 #include "../../engineCore/include/ecs/components/Networked.hpp"
 #include "../../engineCore/include/ecs/components/Transform.hpp"
 #include "../../engineCore/include/ecs/components/Velocity.hpp"
+#include "../../engineCore/include/ecs/components/roles/PlayerControlled.hpp"
 #include "ecs/Entity.hpp"
 #include "ecs/World.hpp"
 #include "ecs/systems/MovementSystem.hpp"
@@ -79,7 +80,8 @@ void Game::spawnPlayer()
 {
   ecs::Entity player = world->createEntity();
 
-  world->addComponent(player, ecs::EntityKind{ecs::EntityKind::Kind::PLAYER});
+  world->addComponent(player, ecs::PlayerControlled{});
+  world->addComponent(player, ecs::GunOffset{20.0F});
 
   ecs::Transform transform;
   transform.x = 100.0F;
@@ -118,7 +120,8 @@ void Game::spawnPlayer(std::uint32_t networkId)
 {
   ecs::Entity player = world->createEntity();
 
-  world->addComponent(player, ecs::EntityKind{ecs::EntityKind::Kind::PLAYER});
+  world->addComponent(player, ecs::PlayerControlled{});
+  world->addComponent(player, ecs::GunOffset{20.0F});
 
   ecs::Transform transform;
   transform.x = 100.0F;

@@ -8,12 +8,14 @@
 #include "../include/AsioServer.hpp"
 #include "../../engineCore/include/ecs/World.hpp"
 #include "../../engineCore/include/ecs/components/Collider.hpp"
+#include "../../engineCore/include/ecs/components/GunOffset.hpp"
 #include "../../engineCore/include/ecs/components/Health.hpp"
 #include "../../engineCore/include/ecs/components/Input.hpp"
 #include "../../engineCore/include/ecs/components/Networked.hpp"
 #include "../../engineCore/include/ecs/components/PlayerId.hpp"
 #include "../../engineCore/include/ecs/components/Transform.hpp"
 #include "../../engineCore/include/ecs/components/Velocity.hpp"
+#include "../../engineCore/include/ecs/components/roles/PlayerControlled.hpp"
 #include "../include/CapnpHandler.hpp"
 #include "ANetworkManager.hpp"
 #include "Common.hpp"
@@ -180,6 +182,10 @@ void AsioServer::createPlayerEntity(std::uint32_t clientId)
   }
 
   ecs::Entity player = m_world->createEntity();
+
+  // Server-authoritative role assignment.
+  m_world->addComponent(player, ecs::PlayerControlled{});
+  m_world->addComponent(player, ecs::GunOffset{20.0F});
 
   ecs::Transform transform;
   transform.x = 100.0F;

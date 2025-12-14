@@ -7,7 +7,6 @@
 
 #include "PlayingState.hpp"
 #include "../../engineCore/include/ecs/components/Collider.hpp"
-#include "../../engineCore/include/ecs/components/EntityKind.hpp"
 #include "../../engineCore/include/ecs/components/Transform.hpp"
 #include <iostream>
 
@@ -89,25 +88,7 @@ void PlayingState::render()
       h = static_cast<int>(c.height);
     }
 
-    // Prototype identification based on server-replicated kind.
-    Color color{200, 200, 200, 255}; // unknown
-    if (world->hasComponent<ecs::EntityKind>(entity)) {
-      const auto &k = world->getComponent<ecs::EntityKind>(entity);
-      switch (k.kind) {
-      case ecs::EntityKind::Kind::PLAYER:
-        color = {0, 128, 255, 255};
-        break;
-      case ecs::EntityKind::Kind::ENEMY:
-        color = {0, 255, 0, 255};
-        break;
-      case ecs::EntityKind::Kind::PROJECTILE:
-        color = {255, 220, 0, 255};
-        break;
-      default:
-        color = {200, 200, 200, 255};
-        break;
-      }
-    }
+    Color color{200, 200, 200, 255};
 
     renderer->drawRect(static_cast<int>(t.x), static_cast<int>(t.y), w, h, color);
   }

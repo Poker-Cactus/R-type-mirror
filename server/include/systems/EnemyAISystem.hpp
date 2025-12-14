@@ -11,10 +11,10 @@
 #include "../../../engineCore/include/ecs/Entity.hpp"
 #include "../../../engineCore/include/ecs/ISystem.hpp"
 #include "../../../engineCore/include/ecs/World.hpp"
-#include "../../../engineCore/include/ecs/components/EntityKind.hpp"
 #include "../../../engineCore/include/ecs/components/PlayerId.hpp"
 #include "../../../engineCore/include/ecs/components/Transform.hpp"
 #include "../../../engineCore/include/ecs/components/Velocity.hpp"
+#include "../../../engineCore/include/ecs/components/roles/EnemyAI.hpp"
 #include "../../../engineCore/include/ecs/events/GameEvents.hpp"
 #include "ecs/ComponentSignature.hpp"
 #include <cmath>
@@ -39,10 +39,6 @@ public:
     world.getEntitiesWithSignature(getSignature(), entities);
 
     for (auto entity : entities) {
-      const auto &kind = world.getComponent<ecs::EntityKind>(entity);
-      if (kind.kind != ecs::EntityKind::Kind::ENEMY) {
-        continue; // Only drive enemy AI
-      }
       auto &transform = world.getComponent<ecs::Transform>(entity);
       auto &velocity = world.getComponent<ecs::Velocity>(entity);
 
@@ -77,7 +73,7 @@ public:
   [[nodiscard]] ecs::ComponentSignature getSignature() const override
   {
     ecs::ComponentSignature sig;
-    sig.set(ecs::getComponentId<ecs::EntityKind>());
+    sig.set(ecs::getComponentId<ecs::EnemyAI>());
     sig.set(ecs::getComponentId<ecs::Velocity>());
     sig.set(ecs::getComponentId<ecs::Transform>());
     return sig;

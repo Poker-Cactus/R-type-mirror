@@ -12,13 +12,14 @@
 #include "../../../engineCore/include/ecs/ISystem.hpp"
 #include "../../../engineCore/include/ecs/World.hpp"
 #include "../../../engineCore/include/ecs/components/Collider.hpp"
-#include "../../../engineCore/include/ecs/components/EntityKind.hpp"
+#include "../../../engineCore/include/ecs/components/GunOffset.hpp"
 #include "../../../engineCore/include/ecs/components/Health.hpp"
 #include "../../../engineCore/include/ecs/components/Lifetime.hpp"
 #include "../../../engineCore/include/ecs/components/Networked.hpp"
-#include "../../../engineCore/include/ecs/components/PlayerId.hpp"
 #include "../../../engineCore/include/ecs/components/Transform.hpp"
 #include "../../../engineCore/include/ecs/components/Velocity.hpp"
+#include "../../../engineCore/include/ecs/components/roles/EnemyAI.hpp"
+#include "../../../engineCore/include/ecs/components/roles/Projectile.hpp"
 #include "../../../engineCore/include/ecs/events/EventListenerHandle.hpp"
 #include "../../../engineCore/include/ecs/events/GameEvents.hpp"
 #include "ecs/ComponentSignature.hpp"
@@ -95,7 +96,7 @@ private:
   {
     ecs::Entity enemy = world.createEntity();
 
-    world.addComponent(enemy, ecs::EntityKind{ecs::EntityKind::Kind::ENEMY});
+    world.addComponent(enemy, ecs::EnemyAI{});
 
     ecs::Transform transform;
     transform.x = x;
@@ -137,12 +138,13 @@ private:
 
     ecs::Entity projectile = world.createEntity();
 
-    world.addComponent(projectile, ecs::EntityKind{ecs::EntityKind::Kind::PROJECTILE});
+    world.addComponent(projectile, ecs::Projectile{});
 
-    // Offset only player projectiles slightly forward; enemies spawn bullets at their position
+    // Capability-based offset: use GunOffset if entity has it (no identity checks).
+    // Systems ask "What can this entity do?" not "What kind is it?"
     float offsetX = 0.0F;
-    if (world.hasComponent<ecs::PlayerId>(owner)) {
-      offsetX = 20.0F * normalizedDirX;
+    if (world.hasComponent<ecs::GunOffset>(owner)) {
+      offsetX = world.getComponent<ecs::GunOffset>(owner).x * normalizedDirX;
     }
 
     ecs::Transform transform;
