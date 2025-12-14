@@ -15,7 +15,7 @@ class INetworkManager;
 class Game
 {
 public:
-  enum class GameState { MENU, PLAYING, PAUSED };
+  enum class GameState : std::uint8_t { MENU, PLAYING, PAUSED };
 
   Game();
   ~Game();
@@ -29,7 +29,7 @@ public:
 
 private:
   void processInput();
-  void update(float dt);
+  void update(float deltaTime);
   void render();
   void ensureInputEntity();
 

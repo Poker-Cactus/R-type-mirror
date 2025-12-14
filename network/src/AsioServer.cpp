@@ -45,7 +45,11 @@ AsioServer::AsioServer(std::uint16_t port)
       m_socket(m_ioContext, asio::ip::udp::endpoint(asio::ip::udp::v4(), port)), m_nextClientId(0),
       m_workGuard(asio::make_work_guard(m_ioContext))
 {
-  asio::socket_base::receive_buffer_size option(1024 * 1024 * 8);
+  // 8 MB receive buffer size (1024 * 1024 * 8)
+  static constexpr int KILOBYTE = 1024;
+  static constexpr int MEGABYTE = KILOBYTE * 1024;
+  static constexpr int BUFFER_SIZE_MB = 8;
+  asio::socket_base::receive_buffer_size option(MEGABYTE * BUFFER_SIZE_MB);
   m_socket.set_option(option);
 }
 
@@ -69,8 +73,9 @@ void AsioServer::stop()
   m_ioContext.stop();
   m_workGuard.reset();
   for (auto &thread : m_threadPool) {
-    if (thread.joinable())
+    if (thread.joinable()) {
       thread.join();
+    }
   }
 }
 
@@ -94,7 +99,7 @@ std::pair<std::uint32_t, bool> AsioServer::getOrCreateClientId(const asio::ip::u
   }
   std::uint32_t clientId = m_nextClientId++;
   m_clients[clientId] = endpoint;
-  std::cout << "[Server] New client connected: " << clientId << std::endl;
+  std::cout << "[Server] New client connected: " << clientId << "\n";
   return {clientId, true};
 }
 
@@ -103,14 +108,14 @@ void AsioServer::send(std::span<const std::byte> data, const std::uint32_t &targ
   auto targetEndpointIt = m_clients.find(targetEndpointId);
 
   if (targetEndpointIt == m_clients.end()) {
-    std::cerr << "[Server] Client ID not found: " << targetEndpointId << std::endl;
+    std::cerr << "[Server] Client ID not found: " << targetEndpointId << "\n";
     return;
   }
   m_socket.async_send_to(
     asio::buffer(data.data(), data.size()), targetEndpointIt->second,
     asio::bind_executor(m_strand, [this, targetEndpointId](const std::error_code &error, std::size_t bytesTransferred) {
       if (error) {
-        std::cerr << "[Server] Send error: " << error.message() << std::endl;
+        std::cerr << "[Server] Send error: " << error.message() << "\n";
       } else {
         // std::cout << "[Server] Sent " << bytesTransferred << " bytes to client " << targetEndpointId << std::endl;
       }
@@ -128,7 +133,7 @@ void AsioServer::receive()
       m_strand, [this, buffer, senderEndpoint](const std::error_code &error, std::size_t bytesTransferred) {
         if (error) {
           if (error != asio::error::operation_aborted) {
-            std::cerr << "[Server] Receive error: " << error.message() << std::endl;
+            std::cerr << "[Server] Receive error: " << error.message() << "\n";
             receive();
           }
           return;
@@ -179,19 +184,29 @@ std::unordered_map<std::uint32_t, asio::ip::udp::endpoint> AsioServer::getClient
 void AsioServer::createPlayerEntity(std::uint32_t clientId)
 {
   if (!m_world) {
-    std::cerr << "[Server] Cannot create player entity: world not set." << std::endl;
+    std::cerr << "[Server] Cannot create player entity: world not set.\n";
     return;
   }
+
+  // Player spawn constants
+  static constexpr float PLAYER_GUN_OFFSET = 20.0F;
+  static constexpr float PLAYER_START_X = 100.0F;
+  static constexpr float PLAYER_BASE_Y = 300.0F;
+  static constexpr float PLAYER_Y_SPACING = 50.0F;
+  static constexpr int PLAYER_HEALTH = 100;
+  static constexpr float PLAYER_COLLIDER_SIZE = 32.0F;
+  static constexpr unsigned int PLAYER_SPRITE_WIDTH = 140;
+  static constexpr unsigned int PLAYER_SPRITE_HEIGHT = 60;
 
   ecs::Entity player = m_world->createEntity();
 
   // Server-authoritative role assignment.
   m_world->addComponent(player, ecs::PlayerControlled{});
-  m_world->addComponent(player, ecs::GunOffset{20.0F});
+  m_world->addComponent(player, ecs::GunOffset{PLAYER_GUN_OFFSET});
 
   ecs::Transform transform;
-  transform.x = 100.0F;
-  transform.y = 300.0F + static_cast<float>(m_connectedPlayersCount) * 50.0F;
+  transform.x = PLAYER_START_X;
+  transform.y = PLAYER_BASE_Y + (static_cast<float>(m_connectedPlayersCount) * PLAYER_Y_SPACING);
   transform.rotation = 0.0F;
   transform.scale = 1.0F;
   m_world->addComponent(player, transform);
@@ -202,8 +217,8 @@ void AsioServer::createPlayerEntity(std::uint32_t clientId)
   m_world->addComponent(player, velocity);
 
   ecs::Health health;
-  health.hp = 100;
-  health.maxHp = 100;
+  health.hp = PLAYER_HEALTH;
+  health.maxHp = PLAYER_HEALTH;
   m_world->addComponent(player, health);
 
   ecs::Input input{};
@@ -214,14 +229,14 @@ void AsioServer::createPlayerEntity(std::uint32_t clientId)
   input.shoot = false;
   m_world->addComponent(player, input);
 
-  m_world->addComponent(player, ecs::Collider{32.0F, 32.0F});
+  m_world->addComponent(player, ecs::Collider{PLAYER_COLLIDER_SIZE, PLAYER_COLLIDER_SIZE});
 
   // SERVER ASSIGNS VISUAL IDENTITY AS DATA
   // Player sprite decided at creation time
   ecs::Sprite sprite;
   sprite.spriteId = ecs::SpriteId::PLAYER_SHIP;
-  sprite.width = 140; // 350x150 aspect ratio, scaled down 2.5x
-  sprite.height = 60;
+  sprite.width = PLAYER_SPRITE_WIDTH; // 350x150 aspect ratio, scaled down 2.5x
+  sprite.height = PLAYER_SPRITE_HEIGHT;
   m_world->addComponent(player, sprite);
 
   ecs::Networked networked;
@@ -237,5 +252,5 @@ void AsioServer::createPlayerEntity(std::uint32_t clientId)
   owner.clientId = clientId;
   m_world->addComponent(player, owner);
 
-  std::cout << "[Server] Player entity " << player << " created for client " << clientId << std::endl;
+  std::cout << "[Server] Player entity " << player << " created for client " << clientId << "\n";
 }

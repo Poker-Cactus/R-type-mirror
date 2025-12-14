@@ -215,10 +215,10 @@ void Game::ensureInputEntity()
   m_world->addComponent(m_inputEntity, ecs::Input{});
 }
 
-void Game::update(float dt)
+void Game::update(float deltaTime)
 {
   if (m_world) {
-    m_world->update(dt);
+    m_world->update(deltaTime);
   }
   switch (currentState) {
   case GameState::MENU:
@@ -226,7 +226,7 @@ void Game::update(float dt)
     break;
   case GameState::PLAYING:
     if (playingState) {
-      playingState->update(dt);
+      playingState->update(deltaTime);
     }
     break;
   case GameState::PAUSED:
