@@ -220,7 +220,7 @@ void AsioServer::createPlayerEntity(std::uint32_t clientId)
   // Player sprite decided at creation time
   ecs::Sprite sprite;
   sprite.spriteId = ecs::SpriteId::PLAYER_SHIP;
-  sprite.width = 140;  // 350x150 aspect ratio, scaled down 2.5x
+  sprite.width = 140; // 350x150 aspect ratio, scaled down 2.5x
   sprite.height = 60;
   m_world->addComponent(player, sprite);
 

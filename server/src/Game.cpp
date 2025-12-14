@@ -121,7 +121,7 @@ void Game::spawnPlayer()
   // Player sprite decided at creation time
   ecs::Sprite sprite;
   sprite.spriteId = ecs::SpriteId::PLAYER_SHIP;
-  sprite.width = 140;  // 350x150 aspect ratio, scaled down 2.5x
+  sprite.width = 140; // 350x150 aspect ratio, scaled down 2.5x
   sprite.height = 60;
   world->addComponent(player, sprite);
 
@@ -174,7 +174,7 @@ void Game::spawnPlayer(std::uint32_t networkId)
   // Player sprite decided at creation time
   ecs::Sprite sprite;
   sprite.spriteId = ecs::SpriteId::PLAYER_SHIP;
-  sprite.width = 140;  // 350x150 aspect ratio, scaled down 2.5x
+  sprite.width = 140; // 350x150 aspect ratio, scaled down 2.5x
   sprite.height = 60;
   world->addComponent(player, sprite);
 

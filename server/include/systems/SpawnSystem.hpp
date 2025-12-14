@@ -17,11 +17,11 @@
 #include "../../../engineCore/include/ecs/components/Lifetime.hpp"
 #include "../../../engineCore/include/ecs/components/Networked.hpp"
 #include "../../../engineCore/include/ecs/components/Owner.hpp"
+#include "../../../engineCore/include/ecs/components/PlayerId.hpp"
 #include "../../../engineCore/include/ecs/components/Sprite.hpp"
 #include "../../../engineCore/include/ecs/components/Transform.hpp"
 #include "../../../engineCore/include/ecs/components/Velocity.hpp"
 #include "../../../engineCore/include/ecs/components/Viewport.hpp"
-#include "../../../engineCore/include/ecs/components/PlayerId.hpp"
 #include "../../../engineCore/include/ecs/components/roles/EnemyAI.hpp"
 #include "../../../engineCore/include/ecs/components/roles/Projectile.hpp"
 #include "../../../engineCore/include/ecs/events/EventListenerHandle.hpp"
@@ -73,13 +73,13 @@ private:
     // Get viewport dimensions from connected players
     float worldW = 800.0F;
     float worldH = 600.0F;
-    
+
     ecs::ComponentSignature playerSig;
     playerSig.set(ecs::getComponentId<ecs::PlayerId>());
     playerSig.set(ecs::getComponentId<ecs::Viewport>());
     std::vector<ecs::Entity> players;
     world.getEntitiesWithSignature(playerSig, players);
-    
+
     for (auto p : players) {
       const auto &vp = world.getComponent<ecs::Viewport>(p);
       if (vp.width > 0) {
@@ -201,7 +201,7 @@ private:
     // Projectile sprite decided at creation, never inferred later
     ecs::Sprite sprite;
     sprite.spriteId = ecs::SpriteId::PROJECTILE;
-    sprite.width = 84;  // 211x92 aspect ratio (422/2 frames, scaled down ~2.5x)
+    sprite.width = 84; // 211x92 aspect ratio (422/2 frames, scaled down ~2.5x)
     sprite.height = 36;
     world.addComponent(projectile, sprite);
 

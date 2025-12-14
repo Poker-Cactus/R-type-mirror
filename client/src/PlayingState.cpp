@@ -73,7 +73,7 @@ void PlayingState::render()
   // CLIENT PURE RENDERER - NO GAMEPLAY INFERENCE
   // Visual identity is replicated data decided by the server.
   // The client is a pure renderer and must never infer game roles.
-  
+
   if (!world || !renderer) {
     return;
   }
@@ -92,42 +92,32 @@ void PlayingState::render()
 
     // Try to use texture if available, otherwise fall back to colored rectangle
     auto textureIt = m_spriteTextures.find(sprite.spriteId);
-    
+
     if (textureIt != m_spriteTextures.end() && textureIt->second != nullptr) {
       // Draw using actual texture
       if (sprite.spriteId == ecs::SpriteId::PLAYER_SHIP) {
         // Player ship is a spritesheet: 2450x150 with 7 frames
         // Each frame is 350x150 (2450/7 = 350)
         // Extract only the first frame (x=0, y=0, w=350, h=150)
-        renderer->drawTextureRegion(textureIt->second,
-                                   0, 0, 350, 150,  // Source: first frame
-                                   static_cast<int>(t.x), 
-                                   static_cast<int>(t.y), 
-                                   static_cast<int>(sprite.width), 
-                                   static_cast<int>(sprite.height)); // Destination
+        renderer->drawTextureRegion(textureIt->second, 0, 0, 350, 150, // Source: first frame
+                                    static_cast<int>(t.x), static_cast<int>(t.y), static_cast<int>(sprite.width),
+                                    static_cast<int>(sprite.height)); // Destination
       } else if (sprite.spriteId == ecs::SpriteId::PROJECTILE) {
         // Projectile is a spritesheet: 422x92 with 2 frames
         // Each frame is 211x92 (422/2 = 211)
         // Extract only the first frame (x=0, y=0, w=211, h=92)
-        renderer->drawTextureRegion(textureIt->second,
-                                   0, 0, 211, 92,  // Source: first frame
-                                   static_cast<int>(t.x), 
-                                   static_cast<int>(t.y), 
-                                   static_cast<int>(sprite.width), 
-                                   static_cast<int>(sprite.height)); // Destination
+        renderer->drawTextureRegion(textureIt->second, 0, 0, 211, 92, // Source: first frame
+                                    static_cast<int>(t.x), static_cast<int>(t.y), static_cast<int>(sprite.width),
+                                    static_cast<int>(sprite.height)); // Destination
       } else {
         // Other sprites: draw full texture
-        renderer->drawTextureEx(textureIt->second, 
-                               static_cast<int>(t.x), 
-                               static_cast<int>(t.y), 
-                               static_cast<int>(sprite.width), 
-                               static_cast<int>(sprite.height),
-                               0.0, false, false);
+        renderer->drawTextureEx(textureIt->second, static_cast<int>(t.x), static_cast<int>(t.y),
+                                static_cast<int>(sprite.width), static_cast<int>(sprite.height), 0.0, false, false);
       }
     } else {
       // Fallback: colored rectangles for missing textures
       Color color{255, 255, 255, 255};
-      
+
       switch (sprite.spriteId) {
       case ecs::SpriteId::PLAYER_SHIP:
         color = {100, 150, 255, 255}; // Blue
@@ -149,9 +139,8 @@ void PlayingState::render()
         break;
       }
 
-      renderer->drawRect(static_cast<int>(t.x), static_cast<int>(t.y), 
-                        static_cast<int>(sprite.width), static_cast<int>(sprite.height), 
-                        color);
+      renderer->drawRect(static_cast<int>(t.x), static_cast<int>(t.y), static_cast<int>(sprite.width),
+                         static_cast<int>(sprite.height), color);
     }
   }
 
@@ -170,10 +159,10 @@ void PlayingState::renderHUD()
   const int healthBarY = 20;
   const int healthBarWidth = 200;
   const int healthBarHeight = 20;
-  
+
   // Background (dark gray)
   renderer->drawRect(healthBarX, healthBarY, healthBarWidth, healthBarHeight, {50, 50, 50, 200});
-  
+
   // Health fill (green to red based on health)
   int healthWidth = (m_playerHealth * healthBarWidth) / 100;
   Color healthColor;
@@ -185,11 +174,11 @@ void PlayingState::renderHUD()
     healthColor = {255, 100, 100, 255}; // Red
   }
   renderer->drawRect(healthBarX, healthBarY, healthWidth, healthBarHeight, healthColor);
-  
+
   // Health text
   std::string healthText = "HP: " + std::to_string(m_playerHealth) + "/100";
   renderer->drawText(m_hudFont, healthText, healthBarX + 5, healthBarY + 2, {255, 255, 255, 255});
-  
+
   // Score text
   std::string scoreText = "Score: " + std::to_string(m_playerScore);
   renderer->drawText(m_hudFont, scoreText, healthBarX, healthBarY + 30, {255, 255, 255, 255});
@@ -205,16 +194,16 @@ void PlayingState::updateHUDFromWorld()
   ecs::ComponentSignature playerSig;
   playerSig.set(ecs::getComponentId<ecs::Networked>());
   playerSig.set(ecs::getComponentId<ecs::Health>());
-  
+
   std::vector<ecs::Entity> entities;
   world->getEntitiesWithSignature(playerSig, entities);
-  
+
   // Update health and score from the first player entity found
   for (auto entity : entities) {
     if (world->hasComponent<ecs::Health>(entity)) {
       const auto &health = world->getComponent<ecs::Health>(entity);
       m_playerHealth = health.hp;
-      
+
       // Debug: log when health is critically low
       if (m_playerHealth <= 0 && m_playerHealth != -1000) {
         static bool loggedDeath = false;
@@ -266,11 +255,11 @@ void PlayingState::loadSpriteTextures()
   }
 
   std::cout << "[PlayingState] Loading sprite textures..." << std::endl;
-  
+
   // Load each texture individually with error handling
   // PLAYER_SHIP = 1 (spritesheet: 2450x150, 7 frames, using first frame only)
   try {
-    void* playerTex = renderer->loadTexture("client/assets/sprites/player_ship.png");
+    void *playerTex = renderer->loadTexture("client/assets/sprites/player_ship.png");
     if (playerTex) {
       m_spriteTextures[ecs::SpriteId::PLAYER_SHIP] = playerTex;
       std::cout << "[PlayingState] ✓ Loaded player_ship.png" << std::endl;
@@ -280,10 +269,10 @@ void PlayingState::loadSpriteTextures()
   } catch (const std::exception &e) {
     std::cerr << "[PlayingState] ✗ Failed to load player_ship.png: " << e.what() << std::endl;
   }
-  
+
   // ENEMY_SHIP = 2
   try {
-    void* enemyTex = renderer->loadTexture("client/assets/sprites/enemy_ship.png");
+    void *enemyTex = renderer->loadTexture("client/assets/sprites/enemy_ship.png");
     if (enemyTex) {
       m_spriteTextures[ecs::SpriteId::ENEMY_SHIP] = enemyTex;
       std::cout << "[PlayingState] ✓ Loaded enemy_ship.png" << std::endl;
@@ -293,10 +282,10 @@ void PlayingState::loadSpriteTextures()
   } catch (const std::exception &e) {
     std::cerr << "[PlayingState] ✗ Failed to load enemy_ship.png: " << e.what() << std::endl;
   }
-  
+
   // PROJECTILE = 3 (spritesheet: 422x92, 2 frames, using first frame only)
   try {
-    void* projectileTex = renderer->loadTexture("client/assets/sprites/projectile.png");
+    void *projectileTex = renderer->loadTexture("client/assets/sprites/projectile.png");
     if (projectileTex) {
       m_spriteTextures[ecs::SpriteId::PROJECTILE] = projectileTex;
       std::cout << "[PlayingState] ✓ Loaded projectile.png" << std::endl;
@@ -306,10 +295,10 @@ void PlayingState::loadSpriteTextures()
   } catch (const std::exception &e) {
     std::cerr << "[PlayingState] ✗ Failed to load projectile.png: " << e.what() << std::endl;
   }
-  
+
   // POWERUP = 5
   try {
-    void* powerupTex = renderer->loadTexture("client/assets/sprites/powerup.png");
+    void *powerupTex = renderer->loadTexture("client/assets/sprites/powerup.png");
     if (powerupTex) {
       m_spriteTextures[ecs::SpriteId::POWERUP] = powerupTex;
       std::cout << "[PlayingState] ✓ Loaded powerup.png" << std::endl;
@@ -319,10 +308,10 @@ void PlayingState::loadSpriteTextures()
   } catch (const std::exception &e) {
     std::cerr << "[PlayingState] ✗ Failed to load powerup.png: " << e.what() << std::endl;
   }
-  
+
   // EXPLOSION = 4
   try {
-    void* explosionTex = renderer->loadTexture("client/assets/sprites/explosion.png");
+    void *explosionTex = renderer->loadTexture("client/assets/sprites/explosion.png");
     if (explosionTex) {
       m_spriteTextures[ecs::SpriteId::EXPLOSION] = explosionTex;
       std::cout << "[PlayingState] ✓ Loaded explosion.png" << std::endl;
@@ -332,7 +321,7 @@ void PlayingState::loadSpriteTextures()
   } catch (const std::exception &e) {
     std::cerr << "[PlayingState] ✗ Failed to load explosion.png: " << e.what() << std::endl;
   }
-  
+
   std::cout << "[PlayingState] Successfully loaded " << m_spriteTextures.size() << " / 5 sprite textures" << std::endl;
   if (m_spriteTextures.size() < 5) {
     std::cerr << "[PlayingState] Missing textures will use fallback colored rectangles" << std::endl;
@@ -350,6 +339,6 @@ void PlayingState::freeSpriteTextures()
       renderer->freeTexture(texture);
     }
   }
-  
+
   m_spriteTextures.clear();
 }

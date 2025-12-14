@@ -16,11 +16,11 @@ namespace ecs
 
 /**
  * @brief Sprite component - defines visual representation
- * 
+ *
  * DESIGN PRINCIPLE:
  * Visual identity is replicated data decided by the server.
  * The client is a pure renderer and must never infer game roles.
- * 
+ *
  * spriteId is an abstract identifier used by the client to map to textures.
  * The server assigns this at entity creation time - it is DATA, not LOGIC.
  */

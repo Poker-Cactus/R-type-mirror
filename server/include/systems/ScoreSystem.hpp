@@ -37,14 +37,11 @@ public:
 
   void initialize(ecs::World &world)
   {
-    m_scoreHandle = world.subscribeEvent<ecs::ScoreEvent>(
-      [&world](const ecs::ScoreEvent &event) { handleScore(world, event); });
+    m_scoreHandle =
+      world.subscribeEvent<ecs::ScoreEvent>([&world](const ecs::ScoreEvent &event) { handleScore(world, event); });
   }
 
-  [[nodiscard]] ecs::ComponentSignature getSignature() const override
-  {
-    return {};
-  }
+  [[nodiscard]] ecs::ComponentSignature getSignature() const override { return {}; }
 
 private:
   ecs::EventListenerHandle m_scoreHandle;
@@ -55,10 +52,10 @@ private:
     if (world.isAlive(event.player) && world.hasComponent<ecs::Score>(event.player)) {
       auto &score = world.getComponent<ecs::Score>(event.player);
       score.points += event.points;
-      std::cout << "[ScoreSystem] Added " << event.points << " points to entity " << event.player 
+      std::cout << "[ScoreSystem] Added " << event.points << " points to entity " << event.player
                 << " (total: " << score.points << ")" << std::endl;
     } else {
-      std::cout << "[ScoreSystem] Cannot add score - entity " << event.player 
+      std::cout << "[ScoreSystem] Cannot add score - entity " << event.player
                 << " is not alive or has no Score component" << std::endl;
     }
   }

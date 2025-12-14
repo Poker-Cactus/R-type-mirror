@@ -15,10 +15,10 @@ namespace ecs
 
 /**
  * @brief Configuration component for projectile muzzle offset.
- * 
+ *
  * Entities with this component spawn projectiles offset from their origin.
  * Systems use this to determine projectile spawn position WITHOUT checking entity identity.
- * 
+ *
  * Example: Player ships might have GunOffset{20.0f}, enemies have none or different values.
  * This is capability-based design: "What can this entity do?" not "What kind is it?"
  */

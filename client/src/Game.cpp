@@ -162,8 +162,8 @@ void Game::processInput()
       // Debug log to check state
       static int logCounter = 0;
       if (++logCounter % 120 == 0) { // Log every ~2 seconds
-        std::cout << "[Game] Playing state active, shouldReturnToMenu = " 
-                  << playingState->shouldReturnToMenu() << std::endl;
+        std::cout << "[Game] Playing state active, shouldReturnToMenu = " << playingState->shouldReturnToMenu()
+                  << std::endl;
       }
     }
 

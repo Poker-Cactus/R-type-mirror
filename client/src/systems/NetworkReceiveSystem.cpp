@@ -149,7 +149,7 @@ void ClientNetworkReceiveSystem::handleSnapshot(ecs::World &world, const nlohman
     if (entityJson.contains("sprite") && entityJson["sprite"].is_object()) {
       const auto &spriteJson = entityJson["sprite"];
       ecs::Sprite sprite = ecs::Sprite::fromJson(spriteJson);
-      
+
       if (!world.hasComponent<ecs::Sprite>(entity)) {
         world.addComponent(entity, sprite);
       } else {
@@ -162,7 +162,7 @@ void ClientNetworkReceiveSystem::handleSnapshot(ecs::World &world, const nlohman
       const auto &healthJson = entityJson["health"];
       const int hp = healthJson.value("hp", 0);
       const int maxHp = healthJson.value("maxHp", 100);
-      
+
       if (!world.hasComponent<ecs::Health>(entity)) {
         ecs::Health health;
         health.hp = hp;
@@ -179,7 +179,7 @@ void ClientNetworkReceiveSystem::handleSnapshot(ecs::World &world, const nlohman
     if (entityJson.contains("score") && entityJson["score"].is_object()) {
       const auto &scoreJson = entityJson["score"];
       const int points = scoreJson.value("points", 0);
-      
+
       if (!world.hasComponent<ecs::Score>(entity)) {
         ecs::Score score;
         score.points = points;
@@ -189,7 +189,6 @@ void ClientNetworkReceiveSystem::handleSnapshot(ecs::World &world, const nlohman
         score.points = points;
       }
     }
-
   }
 
   // Handle destroyed entities
@@ -198,7 +197,7 @@ void ClientNetworkReceiveSystem::handleSnapshot(ecs::World &world, const nlohman
       if (!destroyedId.is_number_unsigned()) {
         continue;
       }
-      
+
       const std::uint32_t networkId = destroyedId.get<std::uint32_t>();
       auto it = g_networkIdToEntity.find(networkId);
       if (it != g_networkIdToEntity.end()) {

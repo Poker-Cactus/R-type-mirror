@@ -80,11 +80,11 @@ private:
       // Award 100 points to the killer
       ecs::ScoreEvent scoreEvent(event.killer, 100);
       world.emitEvent(scoreEvent);
-      std::cout << "[DeathSystem] Entity " << event.entity << " killed by " << event.killer 
-                << " - awarding 100 points" << std::endl;
+      std::cout << "[DeathSystem] Entity " << event.entity << " killed by " << event.killer << " - awarding 100 points"
+                << std::endl;
     } else {
-      std::cout << "[DeathSystem] Entity " << event.entity << " died but killer " << event.killer 
-                << " is not alive" << std::endl;
+      std::cout << "[DeathSystem] Entity " << event.entity << " died but killer " << event.killer << " is not alive"
+                << std::endl;
     }
     // Actual destruction happens in update()
   }

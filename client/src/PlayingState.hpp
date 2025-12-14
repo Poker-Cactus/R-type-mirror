@@ -64,16 +64,16 @@ private:
   std::unique_ptr<ParallaxBackground> background;
 
   // Texture management for sprite rendering
-  std::unordered_map<std::uint32_t, void*> m_spriteTextures;
-  
+  std::unordered_map<std::uint32_t, void *> m_spriteTextures;
+
   void loadSpriteTextures();
   void freeSpriteTextures();
 
   // HUD state
-  void* m_hudFont = nullptr;
+  void *m_hudFont = nullptr;
   int m_playerHealth = 100;
   int m_playerScore = 0;
-  
+
   void renderHUD();
   void updateHUDFromWorld();
 };

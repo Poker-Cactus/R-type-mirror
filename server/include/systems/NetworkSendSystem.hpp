@@ -9,8 +9,8 @@
 #define NETWORKSENDSYSTEM_HPP_
 #include "../../engineCore/include/ecs/ISystem.hpp"
 #include "../../network/include/INetworkManager.hpp"
-#include <vector>
 #include <cstdint>
+#include <vector>
 
 class NetworkSendSystem : public ecs::ISystem
 {
