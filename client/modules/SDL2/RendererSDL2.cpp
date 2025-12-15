@@ -127,6 +127,8 @@ RendererSDL2::RendererSDL2(int width, int height) : windowWidth(width), windowHe
     throw std::runtime_error(SDL_GetError());
   }
 
+  SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
+
   for (int i = 0; i < SDL_NumJoysticks(); ++i) {
     if (SDL_IsGameController(i) == SDL_TRUE) {
       SDL_GameController *pad = SDL_GameControllerOpen(i);

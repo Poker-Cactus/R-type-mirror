@@ -208,6 +208,8 @@ void Game::setNetworkManager(const std::shared_ptr<INetworkManager> &networkMana
  * elapsed time between frames. Uses a fixed tick rate for scheduling but
  * calculates real delta time for physics accuracy. Sleeps if running ahead
  * of schedule to maintain consistent tick rate.
+ *
+ * The game loop only updates systems after a player has sent the ready message.
  */
 void Game::runGameLoop()
 {
@@ -227,7 +229,9 @@ void Game::runGameLoop()
     float deltaTime = static_cast<float>(deltaTimeDuration.count()) / GameConfig::MICROSECONDS_TO_SECONDS;
     lastUpdateTime = currentTime;
 
-    world->update(deltaTime);
+    if (gameStarted) {
+      world->update(deltaTime);
+    }
 
     nextTick += tickRate;
   }
@@ -241,4 +245,25 @@ void Game::runGameLoop()
 std::shared_ptr<ecs::World> Game::getWorld()
 {
   return world;
+}
+
+/**
+ * @brief Starts the game and enables enemy spawning
+ *
+ * Called when a player sends a ready message. Activates the spawn system
+ * to begin spawning enemies.
+ */
+void Game::startGame()
+{
+  gameStarted = true;
+}
+
+/**
+ * @brief Checks if the game has been started
+ *
+ * @return true if a player has sent the ready signal, false otherwise
+ */
+bool Game::isGameStarted() const
+{
+  return gameStarted;
 }

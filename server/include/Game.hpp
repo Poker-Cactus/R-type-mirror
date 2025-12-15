@@ -46,6 +46,8 @@ public:
   void spawnPlayer();
   void spawnPlayer(std::uint32_t networkId);
   std::shared_ptr<ecs::World> getWorld();
+  void startGame();
+  [[nodiscard]] bool isGameStarted() const;
 
 private:
   std::shared_ptr<ecs::World> world;
@@ -54,6 +56,7 @@ private:
   NetworkReceiveSystem *m_networkReceiveSystem = nullptr;
   NetworkSendSystem *m_networkSendSystem = nullptr;
   bool running = false;
+  bool gameStarted = false;
   std::chrono::steady_clock::time_point currentTime;
   std::chrono::steady_clock::time_point nextTick;
   std::chrono::milliseconds tickRate{GameConfig::TICK_RATE_MS};
