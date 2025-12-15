@@ -5,45 +5,43 @@
 ** main.cpp
 */
 
-#include "../../engineCore/include/ecs/events/GameEvents.hpp"
 #include "../../network/include/AsioServer.hpp"
 #include "Game.hpp"
+#include <exception>
 #include <iostream>
+#include <memory>
 #include <thread>
 
 int main()
 {
-  std::cout << "🎮 R-Type Server Starting..." << std::endl;
+  std::cout << "🎮 R-Type Server Starting..." << '\n';
 
   try {
-    auto networkManager = std::make_shared<AsioServer>(4242);
+    auto networkManager = std::make_shared<AsioServer>(GameConfig::DEFAULT_PORT);
 
     Game game;
-    std::cout << "Game initialized with all systems" << std::endl;
+    std::cout << "Game initialized with all systems" << '\n';
 
     game.setNetworkManager(networkManager);
 
-    // Create some initial entities via spawn events
     auto world = game.getWorld();
     if (world) {
       networkManager->setWorld(world);
       networkManager->start();
 
-      std::cout << "Spawning initial entities..." << std::endl;
+      std::cout << "Spawning initial entities..." << '\n';
     }
 
-    // Run game in separate thread for now
     std::thread gameThread([&game]() { game.runGameLoop(); });
 
-    std::cout << "Press Ctrl+C to stop server" << std::endl;
+    std::cout << "Press Ctrl+C to stop server" << '\n';
 
     gameThread.join();
 
-    std::cout << "Total connected players handled: " << networkManager->getConnectedPlayersCount() << std::endl;
     networkManager->stop();
 
   } catch (const std::exception &e) {
-    std::cerr << "Error: " << e.what() << std::endl;
+    std::cerr << "Error: " << e.what() << '\n';
     return 1;
   }
 

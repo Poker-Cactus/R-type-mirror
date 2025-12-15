@@ -8,14 +8,27 @@
 #ifndef GAME_HPP_
 #define GAME_HPP_
 #include "../../engineCore/include/ecs/World.hpp"
-#include "systems/DamageSystem.hpp"
-#include "systems/DeathSystem.hpp"
-#include "systems/ScoreSystem.hpp"
-#include "systems/ShootingSystem.hpp"
-#include "systems/SpawnSystem.hpp"
+#include "ServerSystems.hpp"
 #include <chrono>
 #include <cstdint>
 #include <memory>
+
+// Game configuration constants
+namespace GameConfig
+{
+// Server settings
+constexpr int DEFAULT_PORT = 4242;
+constexpr int TICK_RATE_MS = 16;
+
+// Player configuration
+constexpr float PLAYER_GUN_OFFSET = 20.0F;
+constexpr float PLAYER_SPAWN_X = 100.0F;
+constexpr float PLAYER_SPAWN_Y = 300.0F;
+constexpr int PLAYER_MAX_HP = 100;
+constexpr float PLAYER_COLLIDER_SIZE = 32.0F;
+constexpr int PLAYER_SPRITE_WIDTH = 140;
+constexpr int PLAYER_SPRITE_HEIGHT = 60;
+} // namespace GameConfig
 
 class NetworkReceiveSystem;
 class NetworkSendSystem;
@@ -42,7 +55,7 @@ private:
   bool running = false;
   std::chrono::steady_clock::time_point currentTime;
   std::chrono::steady_clock::time_point nextTick;
-  std::chrono::milliseconds tickRate{16};
+  std::chrono::milliseconds tickRate{GameConfig::TICK_RATE_MS};
 
   // System pointers for initialization
   server::DamageSystem *damageSystem = nullptr;

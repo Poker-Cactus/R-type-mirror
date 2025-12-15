@@ -6,32 +6,9 @@
 */
 
 #include "Game.hpp"
-#include "../../engineCore/include/ecs/components/Collider.hpp"
-#include "../../engineCore/include/ecs/components/GunOffset.hpp"
-#include "../../engineCore/include/ecs/components/Health.hpp"
-#include "../../engineCore/include/ecs/components/Input.hpp"
-#include "../../engineCore/include/ecs/components/Networked.hpp"
-#include "../../engineCore/include/ecs/components/Score.hpp"
-#include "../../engineCore/include/ecs/components/Sprite.hpp"
-#include "../../engineCore/include/ecs/components/Transform.hpp"
-#include "../../engineCore/include/ecs/components/Velocity.hpp"
-#include "../../engineCore/include/ecs/components/roles/PlayerControlled.hpp"
-#include "ecs/Entity.hpp"
-#include "ecs/World.hpp"
-#include "ecs/systems/MovementSystem.hpp"
-#include "systems/CollisionSystem.hpp"
-#include "systems/DamageSystem.hpp"
-#include "systems/DeathSystem.hpp"
-#include "systems/EnemyAISystem.hpp"
-#include "systems/EntityLifetimeSystem.hpp"
-#include "systems/InputMovementSystem.hpp"
-#include "systems/LifetimeSystem.hpp"
-#include "systems/NetworkReceiveSystem.hpp"
-#include "systems/NetworkSendSystem.hpp"
-#include "systems/ScoreSystem.hpp"
-#include "systems/ShootingSystem.hpp"
-#include "systems/SpawnSystem.hpp"
+#include "../../engineCore/include/ecs/EngineComponents.hpp"
 #include <chrono>
+#include <cstdint>
 #include <memory>
 #include <thread>
 
@@ -88,11 +65,11 @@ void Game::spawnPlayer()
   ecs::Entity player = world->createEntity();
 
   world->addComponent(player, ecs::PlayerControlled{});
-  world->addComponent(player, ecs::GunOffset{20.0F});
+  world->addComponent(player, ecs::GunOffset{GameConfig::PLAYER_GUN_OFFSET});
 
   ecs::Transform transform;
-  transform.x = 100.0F;
-  transform.y = 300.0F;
+  transform.x = GameConfig::PLAYER_SPAWN_X;
+  transform.y = GameConfig::PLAYER_SPAWN_Y;
   transform.rotation = 0.0F;
   transform.scale = 1.0F;
   world->addComponent(player, transform);
@@ -103,8 +80,8 @@ void Game::spawnPlayer()
   world->addComponent(player, velocity);
 
   ecs::Health health;
-  health.hp = 100;
-  health.maxHp = 100;
+  health.hp = GameConfig::PLAYER_MAX_HP;
+  health.maxHp = GameConfig::PLAYER_MAX_HP;
   world->addComponent(player, health);
 
   ecs::Input input;
@@ -115,14 +92,14 @@ void Game::spawnPlayer()
   input.shoot = false;
   world->addComponent(player, input);
 
-  world->addComponent(player, ecs::Collider{32.0F, 32.0F});
+  world->addComponent(player, ecs::Collider{GameConfig::PLAYER_COLLIDER_SIZE, GameConfig::PLAYER_COLLIDER_SIZE});
 
   // SERVER ASSIGNS VISUAL IDENTITY AS DATA
   // Player sprite decided at creation time
   ecs::Sprite sprite;
   sprite.spriteId = ecs::SpriteId::PLAYER_SHIP;
-  sprite.width = 140; // 350x150 aspect ratio, scaled down 2.5x
-  sprite.height = 60;
+  sprite.width = GameConfig::PLAYER_SPRITE_WIDTH; // 350x150 aspect ratio, scaled down 2.5x
+  sprite.height = GameConfig::PLAYER_SPRITE_HEIGHT;
   world->addComponent(player, sprite);
 
   // Add Networked component for network synchronization
@@ -141,11 +118,11 @@ void Game::spawnPlayer(std::uint32_t networkId)
   ecs::Entity player = world->createEntity();
 
   world->addComponent(player, ecs::PlayerControlled{});
-  world->addComponent(player, ecs::GunOffset{20.0F});
+  world->addComponent(player, ecs::GunOffset{GameConfig::PLAYER_GUN_OFFSET});
 
   ecs::Transform transform;
-  transform.x = 100.0F;
-  transform.y = 300.0F;
+  transform.x = GameConfig::PLAYER_SPAWN_X;
+  transform.y = GameConfig::PLAYER_SPAWN_Y;
   transform.rotation = 0.0F;
   transform.scale = 1.0F;
   world->addComponent(player, transform);
@@ -156,8 +133,8 @@ void Game::spawnPlayer(std::uint32_t networkId)
   world->addComponent(player, velocity);
 
   ecs::Health health;
-  health.hp = 100;
-  health.maxHp = 100;
+  health.hp = GameConfig::PLAYER_MAX_HP;
+  health.maxHp = GameConfig::PLAYER_MAX_HP;
   world->addComponent(player, health);
 
   ecs::Input input;
@@ -168,14 +145,14 @@ void Game::spawnPlayer(std::uint32_t networkId)
   input.shoot = false;
   world->addComponent(player, input);
 
-  world->addComponent(player, ecs::Collider{32.0F, 32.0F});
+  world->addComponent(player, ecs::Collider{GameConfig::PLAYER_COLLIDER_SIZE, GameConfig::PLAYER_COLLIDER_SIZE});
 
   // SERVER ASSIGNS VISUAL IDENTITY AS DATA
   // Player sprite decided at creation time
   ecs::Sprite sprite;
   sprite.spriteId = ecs::SpriteId::PLAYER_SHIP;
-  sprite.width = 140; // 350x150 aspect ratio, scaled down 2.5x
-  sprite.height = 60;
+  sprite.width = GameConfig::PLAYER_SPRITE_WIDTH; // 350x150 aspect ratio, scaled down 2.5x
+  sprite.height = GameConfig::PLAYER_SPRITE_HEIGHT;
   world->addComponent(player, sprite);
 
   ecs::Networked networked;
@@ -201,6 +178,7 @@ void Game::setNetworkManager(const std::shared_ptr<INetworkManager> &networkMana
 
 void Game::runGameLoop()
 {
+  constexpr float DELTA_TIME = 0.016F;
   running = true;
   nextTick = std::chrono::steady_clock::now();
 
@@ -212,7 +190,7 @@ void Game::runGameLoop()
     }
 
     // Update all systems
-    world->update(0.016F);
+    world->update(DELTA_TIME);
 
     nextTick += tickRate;
   }
