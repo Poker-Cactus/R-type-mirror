@@ -19,6 +19,7 @@ namespace GameConfig
 // Server settings
 constexpr int DEFAULT_PORT = 4242;
 constexpr int TICK_RATE_MS = 16;
+constexpr float MICROSECONDS_TO_SECONDS = 1000000.0F;
 
 // Player configuration
 constexpr float PLAYER_GUN_OFFSET = 20.0F;

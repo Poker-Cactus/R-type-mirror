@@ -20,6 +20,7 @@
 #include "components/Health.hpp"
 #include "components/Input.hpp"
 #include "components/Networked.hpp"
+#include "components/PlayerId.hpp"
 #include "components/Score.hpp"
 #include "components/Sprite.hpp"
 #include "components/Transform.hpp"
