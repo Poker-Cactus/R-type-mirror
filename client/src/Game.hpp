@@ -15,9 +15,10 @@ class INetworkManager;
 class Game
 {
 public:
-  enum class GameState { MENU, PLAYING, PAUSED };
+  enum class GameState : std::uint8_t { MENU, PLAYING, PAUSED };
 
   Game();
+  Game(const std::string &host, const std::string &port);
   ~Game();
 
   bool init();
@@ -29,7 +30,7 @@ public:
 
 private:
   void processInput();
-  void update(float dt);
+  void update(float deltaTime);
   void render();
   void ensureInputEntity();
 
@@ -38,6 +39,8 @@ private:
 
   std::shared_ptr<ecs::World> m_world;
   std::shared_ptr<INetworkManager> m_networkManager;
+  std::string m_serverHost;
+  std::string m_serverPort;
   ecs::Entity m_inputEntity{0};
   bool isRunning = false;
   GameState currentState = GameState::MENU;

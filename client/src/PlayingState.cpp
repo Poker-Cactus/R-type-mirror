@@ -61,11 +61,11 @@ bool PlayingState::init()
   return true;
 }
 
-void PlayingState::update(float dt)
+void PlayingState::update(float deltaTime)
 {
   // Mettre à jour le background
   if (background) {
-    background->update(dt);
+    background->update(deltaTime);
   }
 
   // Update HUD data from world state

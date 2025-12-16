@@ -9,10 +9,52 @@
 #include <SDL2/SDL.h>
 #include <cstdio>
 #include <cstdlib>
+#include <iostream>
+#include <string>
 
-int main()
+static void printUsage(const char *programName)
 {
-  Game game;
+  std::cout << "Usage: " << programName << " [HOST] [PORT]\n"
+            << "\n"
+            << "Arguments:\n"
+            << "  HOST    Server hostname or IP address (default: 127.0.0.1)\n"
+            << "  PORT    Server port number (default: 4242)\n"
+            << "\n"
+            << "Options:\n"
+            << "  -h, --help    Display this help message and exit\n"
+            << "\n"
+            << "Examples:\n"
+            << "  " << programName << "                      # Connect to 127.0.0.1:4242\n"
+            << "  " << programName << " 192.168.1.100        # Connect to 192.168.1.100:4242\n"
+            << "  " << programName << " 192.168.1.100 8080   # Connect to 192.168.1.100:8080\n"
+            << "  " << programName << " game.server.com 4242 # Connect to game.server.com:4242\n"
+            << std::endl;
+}
+
+int main(int argc, char **argv)
+{
+  std::string host = "127.0.0.1";
+  std::string port = "4242";
+
+  // Check for help flag
+  if (argc >= 2 && (std::string(argv[1]) == "-h" || std::string(argv[1]) == "--help")) {
+    printUsage(argv[0]);
+    return EXIT_SUCCESS;
+  }
+
+  // Parse command line arguments
+  if (argc >= 2) {
+    host = argv[1];
+  }
+  if (argc >= 3) {
+    port = argv[2];
+  }
+
+  if (argc > 1) {
+    std::cout << "[Client] Connecting to " << host << ":" << port << std::endl;
+  }
+
+  Game game(host, port);
   if (!game.init()) {
     return EXIT_FAILURE;
   }

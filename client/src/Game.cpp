@@ -27,7 +27,9 @@
 #include <span>
 #include <string>
 
-Game::Game() : module(nullptr), renderer(nullptr), isRunning(false), currentState(GameState::MENU) {}
+Game::Game() : module(nullptr), renderer(nullptr), isRunning(false), currentState(GameState::MENU), m_serverHost("127.0.0.1"), m_serverPort("4242") {}
+
+Game::Game(const std::string &host, const std::string &port) : module(nullptr), renderer(nullptr), isRunning(false), currentState(GameState::MENU), m_serverHost(host), m_serverPort(port) {}
 
 Game::~Game()
 {
@@ -56,7 +58,7 @@ bool Game::init()
 
     // Networking + ECS: run network systems in the same loop as the graphical game.
     m_world = std::make_shared<ecs::World>();
-    auto asioClient = std::make_shared<AsioClient>("127.0.0.1", "4242");
+    auto asioClient = std::make_shared<AsioClient>(m_serverHost, m_serverPort);
     asioClient->start();
     {
       auto ep = asioClient->getServerEndpoint();
@@ -215,10 +217,10 @@ void Game::ensureInputEntity()
   m_world->addComponent(m_inputEntity, ecs::Input{});
 }
 
-void Game::update(float dt)
+void Game::update(float deltaTime)
 {
   if (m_world) {
-    m_world->update(dt);
+    m_world->update(deltaTime);
   }
   switch (currentState) {
   case GameState::MENU:
@@ -226,7 +228,7 @@ void Game::update(float dt)
     break;
   case GameState::PLAYING:
     if (playingState) {
-      playingState->update(dt);
+      playingState->update(deltaTime);
     }
     break;
   case GameState::PAUSED:
