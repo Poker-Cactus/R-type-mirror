@@ -86,7 +86,7 @@ jobs:
 
     - name: Verify Conan profile
       run: |
-        conan profile show default
+        conan profile show
 
     - name: Install dependencies with Conan
       run: |
