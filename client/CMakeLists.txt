@@ -31,4 +31,11 @@ target_link_libraries(client PRIVATE
     SDL2::SDL2
 )
 
+# Ensure SDL2main handles the main/WinMain conversion on Windows
+if(WIN32)
+    set_target_properties(client PROPERTIES
+        WIN32_EXECUTABLE TRUE
+    )
+endif()
+
 add_subdirectory(modules)
