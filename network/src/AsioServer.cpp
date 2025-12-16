@@ -124,7 +124,8 @@ void AsioServer::receive()
 
         if (isNewClient) {
           ++m_connectedPlayersCount;
-          createPlayerEntity(clientId);
+          // Don't create player entity here - wait for lobby start
+          // Just send the client its assigned ID
 
           // Handshake: tell the client its assigned id.
           try {
@@ -135,6 +136,7 @@ void AsioServer::receive()
             const auto serialized = getPacketHandler()->serialize(jsonStr);
             send(std::span<const std::byte>(reinterpret_cast<const std::byte *>(serialized.data()), serialized.size()),
                  clientId);
+            std::cout << "[Server] New client " << clientId << " connected, assigned ID sent" << std::endl;
           } catch ([[maybe_unused]] const std::exception &e) { // NOLINT(bugprone-empty-catch)
             // Best-effort handshake - silent failure acceptable for non-critical handshake
           }

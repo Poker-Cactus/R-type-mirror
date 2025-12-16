@@ -28,8 +28,6 @@ int main()
     if (world) {
       networkManager->setWorld(world);
       networkManager->start();
-
-      std::cout << "Spawning initial entities..." << '\n';
     }
 
     std::thread gameThread([&game]() { game.runGameLoop(); });

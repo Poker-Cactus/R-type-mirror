@@ -180,6 +180,13 @@ void Game::spawnPlayer(std::uint32_t networkId)
   ecs::Score score;
   score.points = 0;
   world->addComponent(player, score);
+
+  // Add PlayerId so server can route inputs to this player
+  ecs::PlayerId playerId;
+  playerId.clientId = networkId;
+  world->addComponent(player, playerId);
+
+  std::cout << "[Server] Spawned player entity " << player << " for client " << networkId << std::endl;
 }
 
 /**
@@ -199,18 +206,16 @@ void Game::setNetworkManager(const std::shared_ptr<INetworkManager> &networkMana
 
   m_networkReceiveSystem = &world->registerSystem<NetworkReceiveSystem>(m_networkManager);
   m_networkSendSystem = &world->registerSystem<NetworkSendSystem>(m_networkManager);
+
+  if (m_networkReceiveSystem != nullptr) {
+    m_networkReceiveSystem->setGame(this);
+  }
+
+  if (m_networkSendSystem != nullptr) {
+    m_networkSendSystem->setLobbyManager(&m_lobbyManager);
+  }
 }
 
-/**
- * @brief Main game loop with variable delta time calculation
- *
- * Runs continuously until stopped, updating all systems with the actual
- * elapsed time between frames. Uses a fixed tick rate for scheduling but
- * calculates real delta time for physics accuracy. Sleeps if running ahead
- * of schedule to maintain consistent tick rate.
- *
- * The game loop only updates systems after a player has sent the ready message.
- */
 void Game::runGameLoop()
 {
   running = true;
@@ -229,9 +234,27 @@ void Game::runGameLoop()
     float deltaTime = static_cast<float>(deltaTimeDuration.count()) / GameConfig::MICROSECONDS_TO_SECONDS;
     lastUpdateTime = currentTime;
 
-    if (gameStarted) {
-      world->update(deltaTime);
+    // Always process incoming network messages (uses main world for system registration,
+    // but routes to lobby worlds internally)
+    if (m_networkReceiveSystem != nullptr) {
+      m_networkReceiveSystem->update(*world, deltaTime);
     }
+
+    // Update each active lobby's game world independently
+    for (const auto &[code, lobby] : m_lobbyManager.getLobbies()) {
+      if (lobby && lobby->isGameStarted() && !lobby->isEmpty()) {
+        // Update this lobby's isolated world
+        lobby->update(deltaTime);
+      }
+    }
+
+    // Send snapshots for each lobby (NetworkSendSystem now handles per-lobby sending)
+    if (m_networkSendSystem != nullptr) {
+      m_networkSendSystem->update(*world, deltaTime);
+    }
+
+    // Clean up empty lobbies at end of frame (safe after all systems updated)
+    m_lobbyManager.cleanupEmptyLobbies();
 
     nextTick += tickRate;
   }
@@ -247,23 +270,37 @@ std::shared_ptr<ecs::World> Game::getWorld()
   return world;
 }
 
-/**
- * @brief Starts the game and enables enemy spawning
- *
- * Called when a player sends a ready message. Activates the spawn system
- * to begin spawning enemies.
- */
 void Game::startGame()
 {
+  std::cout << "[Server] Starting game with " << m_lobbyClients.size() << " players" << std::endl;
   gameStarted = true;
 }
 
-/**
- * @brief Checks if the game has been started
- *
- * @return true if a player has sent the ready signal, false otherwise
- */
 bool Game::isGameStarted() const
 {
   return gameStarted;
+}
+
+void Game::addClientToLobby(std::uint32_t clientId)
+{
+  m_lobbyClients.insert(clientId);
+  std::cout << "[Server] Player " << clientId << " joined the lobby (" << m_lobbyClients.size() << " players waiting)"
+            << std::endl;
+}
+
+void Game::removeClientFromLobby(std::uint32_t clientId)
+{
+  m_lobbyClients.erase(clientId);
+  std::cout << "[Server] Player " << clientId << " left the lobby (" << m_lobbyClients.size() << " players remaining)"
+            << std::endl;
+}
+
+const std::unordered_set<std::uint32_t> &Game::getLobbyClients() const
+{
+  return m_lobbyClients;
+}
+
+LobbyManager &Game::getLobbyManager()
+{
+  return m_lobbyManager;
 }

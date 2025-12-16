@@ -8,6 +8,8 @@ add_executable(server
     src/main.cpp
     src/Server.cpp
     src/Game.cpp
+    src/Lobby.cpp
+    src/LobbyManager.cpp
 
     src/systems/NetworkReceiveSystem.cpp
     src/systems/NetworkSendSystem.cpp

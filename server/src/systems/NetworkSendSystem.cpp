@@ -14,6 +14,7 @@
 #include "../../engineCore/include/ecs/components/Sprite.hpp"
 #include "../../engineCore/include/ecs/components/Transform.hpp"
 #include "INetworkManager.hpp"
+#include "LobbyManager.hpp"
 #include "ecs/ComponentSignature.hpp"
 #include "ecs/Entity.hpp"
 #include <algorithm>
@@ -33,6 +34,36 @@ NetworkSendSystem::NetworkSendSystem(std::shared_ptr<INetworkManager> networkMan
 
 NetworkSendSystem::~NetworkSendSystem() {}
 
+void NetworkSendSystem::setLobbyManager(LobbyManager *lobbyManager)
+{
+  m_lobbyManager = lobbyManager;
+}
+
+std::vector<std::uint32_t> NetworkSendSystem::getActiveGameClients() const
+{
+  std::vector<std::uint32_t> activeClients;
+
+  if (m_lobbyManager == nullptr) {
+    // Fallback: send to all connected clients
+    const auto clients = m_networkManager->getClients();
+    for (const auto &[clientId, _endpoint] : clients) {
+      activeClients.push_back(clientId);
+    }
+    return activeClients;
+  }
+
+  // Only get clients from lobbies where game has started
+  for (const auto &[code, lobby] : m_lobbyManager->getLobbies()) {
+    if (lobby && lobby->isGameStarted()) {
+      for (const auto &clientId : lobby->getClients()) {
+        activeClients.push_back(clientId);
+      }
+    }
+  }
+
+  return activeClients;
+}
+
 void NetworkSendSystem::update(ecs::World &world, float deltaTime)
 {
   static float logAccumulator = 0.0f;
@@ -40,87 +71,114 @@ void NetworkSendSystem::update(ecs::World &world, float deltaTime)
 
   m_timeSinceLastSend += deltaTime;
   if (m_timeSinceLastSend >= SEND_INTERVAL) {
-    std::vector<ecs::Entity> entities;
-    world.getEntitiesWithSignature(getSignature(), entities);
 
-    nlohmann::json snapshot;
-    snapshot["type"] = "snapshot";
-    snapshot["entities"] = nlohmann::json::array();
+    // If no lobby manager, skip (can't send lobby-specific state)
+    if (m_lobbyManager == nullptr) {
+      m_timeSinceLastSend = 0.0f;
+      return;
+    }
 
-    // Collect current network IDs
-    std::vector<uint32_t> currentNetworkIds;
-
-    for (const auto &entity : entities) {
-      if (!world.hasComponent<ecs::Transform>(entity) || !world.isAlive(entity)) {
+    // Send snapshots per-lobby: each lobby gets only its own entities
+    for (const auto &[code, lobby] : m_lobbyManager->getLobbies()) {
+      if (!lobby || !lobby->isGameStarted()) {
         continue;
       }
 
-      const auto &networked = world.getComponent<ecs::Networked>(entity);
-      const auto &transform = world.getComponent<ecs::Transform>(entity);
-
-      currentNetworkIds.push_back(networked.networkId);
-
-      nlohmann::json entityJson;
-      entityJson["id"] = networked.networkId;
-      entityJson["transform"] = {
-        {"x", transform.x}, {"y", transform.y}, {"rotation", transform.rotation}, {"scale", transform.scale}};
-
-      if (world.hasComponent<ecs::Collider>(entity)) {
-        const auto &col = world.getComponent<ecs::Collider>(entity);
-        entityJson["collider"] = {{"w", col.width}, {"h", col.height}};
+      auto lobbyWorld = lobby->getWorld();
+      if (!lobbyWorld) {
+        continue;
       }
 
-      // SERVER-DRIVEN SPRITE REPLICATION
-      // Visual identity is replicated as data - client never infers it
-      if (world.hasComponent<ecs::Sprite>(entity)) {
-        const auto &sprite = world.getComponent<ecs::Sprite>(entity);
-        entityJson["sprite"] = sprite.toJson();
+      // Get entities from THIS lobby's world
+      std::vector<ecs::Entity> entities;
+      lobbyWorld->getEntitiesWithSignature(getSignature(), entities);
+
+      nlohmann::json snapshot;
+      snapshot["type"] = "snapshot";
+      snapshot["entities"] = nlohmann::json::array();
+
+      // Collect current network IDs for this lobby
+      std::vector<uint32_t> currentNetworkIds;
+
+      for (const auto &entity : entities) {
+        if (!lobbyWorld->hasComponent<ecs::Transform>(entity) || !lobbyWorld->isAlive(entity)) {
+          continue;
+        }
+
+        const auto &networked = lobbyWorld->getComponent<ecs::Networked>(entity);
+        const auto &transform = lobbyWorld->getComponent<ecs::Transform>(entity);
+
+        currentNetworkIds.push_back(networked.networkId);
+
+        nlohmann::json entityJson;
+        entityJson["id"] = networked.networkId;
+        entityJson["transform"] = {
+          {"x", transform.x}, {"y", transform.y}, {"rotation", transform.rotation}, {"scale", transform.scale}};
+
+        if (lobbyWorld->hasComponent<ecs::Collider>(entity)) {
+          const auto &col = lobbyWorld->getComponent<ecs::Collider>(entity);
+          entityJson["collider"] = {{"w", col.width}, {"h", col.height}};
+        }
+
+        // SERVER-DRIVEN SPRITE REPLICATION
+        if (lobbyWorld->hasComponent<ecs::Sprite>(entity)) {
+          const auto &sprite = lobbyWorld->getComponent<ecs::Sprite>(entity);
+          entityJson["sprite"] = sprite.toJson();
+        }
+
+        // Replicate health for HUD display
+        if (lobbyWorld->hasComponent<ecs::Health>(entity)) {
+          const auto &health = lobbyWorld->getComponent<ecs::Health>(entity);
+          entityJson["health"] = {{"hp", health.hp}, {"maxHp", health.maxHp}};
+        }
+
+        // Replicate score for HUD display
+        if (lobbyWorld->hasComponent<ecs::Score>(entity)) {
+          const auto &score = lobbyWorld->getComponent<ecs::Score>(entity);
+          entityJson["score"] = {{"points", score.points}};
+        }
+
+        snapshot["entities"].push_back(entityJson);
       }
 
-      // Replicate health for HUD display
-      if (world.hasComponent<ecs::Health>(entity)) {
-        const auto &health = world.getComponent<ecs::Health>(entity);
-        entityJson["health"] = {{"hp", health.hp}, {"maxHp", health.maxHp}};
+      // Track entities that should be removed on client side (per-lobby)
+      auto &lastIds = m_lobbyLastNetworkIds[code];
+      std::vector<uint32_t> destroyedIds;
+      for (const auto &lastId : lastIds) {
+        if (std::find(currentNetworkIds.begin(), currentNetworkIds.end(), lastId) == currentNetworkIds.end()) {
+          destroyedIds.push_back(lastId);
+        }
       }
 
-      // Replicate score for HUD display
-      if (world.hasComponent<ecs::Score>(entity)) {
-        const auto &score = world.getComponent<ecs::Score>(entity);
-        entityJson["score"] = {{"points", score.points}};
+      if (!destroyedIds.empty()) {
+        snapshot["destroyed"] = destroyedIds;
       }
 
-      snapshot["entities"].push_back(entityJson);
-    }
+      // Update last network IDs for this lobby
+      lastIds = currentNetworkIds;
 
-    // Track entities that should be removed on client side
-    // Find network IDs that existed last frame but not this frame
-    std::vector<uint32_t> destroyedIds;
-    for (const auto &lastId : m_lastNetworkIds) {
-      if (std::find(currentNetworkIds.begin(), currentNetworkIds.end(), lastId) == currentNetworkIds.end()) {
-        destroyedIds.push_back(lastId);
+      // Send ONLY to clients in THIS lobby
+      const auto &lobbyClients = lobby->getClients();
+      if (lobbyClients.empty()) {
+        continue;
       }
-    }
 
-    if (!destroyedIds.empty()) {
-      snapshot["destroyed"] = destroyedIds;
-    }
+      const std::string jsonStr = snapshot.dump();
+      const auto serialized = m_networkManager->getPacketHandler()->serialize(jsonStr);
 
-    // Update last network IDs for next frame
-    m_lastNetworkIds = currentNetworkIds;
+      for (const auto &clientId : lobbyClients) {
+        m_networkManager->send(
+          std::span<const std::byte>(reinterpret_cast<const std::byte *>(serialized.data()), serialized.size()),
+          clientId);
+      }
 
-    const std::string jsonStr = snapshot.dump();
-    const auto serialized = m_networkManager->getPacketHandler()->serialize(jsonStr);
-
-    const auto clients = m_networkManager->getClients();
-    for (const auto &[clientId, _endpoint] : clients) {
-      m_networkManager->send(
-        std::span<const std::byte>(reinterpret_cast<const std::byte *>(serialized.data()), serialized.size()),
-        clientId);
+      if (logAccumulator >= 1.0f) {
+        std::cout << "[Lobby:" << code << "] Snapshot: entities=" << snapshot["entities"].size()
+                  << " clients=" << lobbyClients.size() << std::endl;
+      }
     }
 
     if (logAccumulator >= 1.0f) {
-      std::cout << "[Server] Snapshot broadcast: entities=" << snapshot["entities"].size()
-                << " clients=" << clients.size() << std::endl;
       logAccumulator = 0.0f;
     }
 

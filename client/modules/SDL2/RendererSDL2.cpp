@@ -1,3 +1,10 @@
+/*
+** EPITECH PROJECT, 2025
+** rtype
+** File description:
+** RendererSDL2.cpp
+*/
+
 #include "RendererSDL2.hpp"
 #include "../../interface/KeyCodes.hpp"
 #include <SDL2/SDL.h>
@@ -88,6 +95,30 @@ static int mapSDLKeyToGeneric(int sdlKey)
     return KeyCode::KEY_Y;
   case SDLK_z:
     return KeyCode::KEY_Z;
+
+  case SDLK_0:
+    return KeyCode::KEY_0;
+  case SDLK_1:
+    return KeyCode::KEY_1;
+  case SDLK_2:
+    return KeyCode::KEY_2;
+  case SDLK_3:
+    return KeyCode::KEY_3;
+  case SDLK_4:
+    return KeyCode::KEY_4;
+  case SDLK_5:
+    return KeyCode::KEY_5;
+  case SDLK_6:
+    return KeyCode::KEY_6;
+  case SDLK_7:
+    return KeyCode::KEY_7;
+  case SDLK_8:
+    return KeyCode::KEY_8;
+  case SDLK_9:
+    return KeyCode::KEY_9;
+
+  case SDLK_F11:
+    return KeyCode::KEY_F11;
 
   default:
     return KeyCode::KEY_UNKNOWN;
@@ -218,12 +249,14 @@ bool RendererSDL2::pollEvents()
 
   while (SDL_PollEvent(&event) != 0) {
     if (event.type == SDL_QUIT) {
+      std::cout << "[RendererSDL2] SDL_QUIT event received" << std::endl;
       return false;
     }
     if (event.type == SDL_KEYDOWN) {
       int genericKey = mapSDLKeyToGeneric(event.key.keysym.sym);
       keyStates[genericKey] = true;
       if (event.key.keysym.sym == SDLK_ESCAPE) {
+        std::cout << "[RendererSDL2] ESC pressed - closing" << std::endl;
         return false;
       }
     }

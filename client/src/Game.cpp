@@ -35,7 +35,6 @@ bool Game::init()
       return false;
     }
     renderer->setWindowTitle("ChaD");
-    renderer->setFullscreen(true);
 
     menu = std::make_unique<Menu>(renderer);
     menu->init();
@@ -67,7 +66,14 @@ bool Game::init()
 
     m_networkManager = asioClient;
     m_world->registerSystem<NetworkSendSystem>(m_networkManager);
-    m_world->registerSystem<ClientNetworkReceiveSystem>(m_networkManager);
+    auto *networkReceiveSystem = &m_world->registerSystem<ClientNetworkReceiveSystem>(m_networkManager);
+
+    if (networkReceiveSystem != nullptr) {
+      networkReceiveSystem->setGameStartedCallback([this]() {
+        std::cout << "[Game] Game started callback triggered - transitioning to PLAYING" << '\n';
+        this->currentState = GameState::PLAYING;
+      });
+    }
 
     playingState = std::make_unique<PlayingState>(renderer, m_world);
     if (!playingState->init()) {
@@ -99,6 +105,9 @@ void Game::run()
 
 void Game::shutdown()
 {
+  // Notify server that we're leaving before shutting down
+  sendLeaveToServer();
+
   if (menu) {
     menu->cleanup();
     menu.reset();
@@ -127,16 +136,75 @@ void Game::shutdown()
   isRunning = false;
 }
 
+void Game::sendLeaveToServer()
+{
+  if (!m_networkManager) {
+    return;
+  }
+
+  std::cout << "[Game] Sending leave_lobby to server before shutdown" << std::endl;
+
+  nlohmann::json message;
+  message["type"] = "leave_lobby";
+
+  std::string jsonStr = message.dump();
+  auto serialized = m_networkManager->getPacketHandler()->serialize(jsonStr);
+
+  m_networkManager->send(
+    std::span<const std::byte>(reinterpret_cast<const std::byte *>(serialized.data()), serialized.size()), 0);
+}
+
+void Game::sendViewportToServer()
+{
+  if (!m_networkManager || !renderer) {
+    return;
+  }
+
+  nlohmann::json viewport;
+  viewport["type"] = "viewport";
+  viewport["width"] = static_cast<std::uint32_t>(renderer->getWindowWidth());
+  viewport["height"] = static_cast<std::uint32_t>(renderer->getWindowHeight());
+
+  std::string jsonStr = viewport.dump();
+  auto serialized = m_networkManager->getPacketHandler()->serialize(jsonStr);
+
+  m_networkManager->send(
+    std::span<const std::byte>(reinterpret_cast<const std::byte *>(serialized.data()), serialized.size()), 0);
+
+  std::cout << "[Game] Sent viewport update: " << viewport["width"] << "x" << viewport["height"] << '\n';
+}
+
 void Game::processInput()
 {
   if (renderer != nullptr && !renderer->pollEvents()) {
+    // Don't allow immediate close in lobby - give network time to send messages
+    if (currentState == GameState::LOBBY_ROOM && m_lobbyStateTime < 0.5f) {
+      std::cout << "[Game] Ignoring close request - lobby just started (" << m_lobbyStateTime << "s)" << '\n';
+      return;
+    }
     std::cout << "[Game] pollEvents() returned false - shutting down" << '\n';
     isRunning = false;
     return;
   }
 
+  // Ignore ESC in lobby room to prevent accidental closures
+  if (currentState == GameState::LOBBY_ROOM && renderer != nullptr && renderer->isKeyJustPressed(KeyCode::KEY_ESCAPE)) {
+    std::cout << "[Game] ESC pressed in lobby - ignoring (use quit from menu to exit)" << '\n';
+    return;
+  }
+
+  if (renderer != nullptr && renderer->isKeyJustPressed(KeyCode::KEY_M)) {
+    bool currentFullscreen = renderer->isFullscreen();
+    renderer->setFullscreen(!currentFullscreen);
+    std::cout << "[Game] Toggled fullscreen: " << (!currentFullscreen ? "ON" : "OFF") << '\n';
+
+    // Send updated viewport to server
+    sendViewportToServer();
+  }
+
   handleMenuStateInput();
   handleLobbyRoomTransition();
+  handleLobbyRoomStateInput();
   handlePlayingStateInput();
   delegateInputToCurrentState();
 }
@@ -148,21 +216,85 @@ void Game::handleMenuStateInput()
   }
 }
 
-void Game::handleLobbyRoomTransition()
+void Game::handleLobbyRoomStateInput()
 {
-  if (!menu || currentState != GameState::MENU || !menu->shouldStartGame()) {
+  if (currentState != GameState::LOBBY_ROOM) {
     return;
   }
 
-  currentState = GameState::LOBBY_ROOM;
+  if (lobbyRoomState && lobbyRoomState->shouldReturnToMenu()) {
+    std::cout << "[Game] Returning from lobby to menu" << '\n';
+    currentState = GameState::MENU;
+    menu->setState(MenuState::LOBBY);
+    lobbyRoomState.reset();
+    return;
+  }
+}
 
+void Game::handleLobbyRoomTransition()
+{
+  if (!menu) {
+    return;
+  }
+
+  if (currentState != GameState::MENU) {
+    return;
+  }
+
+  if (!menu->shouldStartGame()) {
+    return;
+  }
+
+  // Get lobby info from menu
+  const bool isCreating = menu->isCreatingLobby();
+  const std::string lobbyCode = menu->getLobbyCodeToJoin();
+
+  std::cout << "[Game] Transitioning from MENU to LOBBY_ROOM" << std::endl;
+  std::cout << "[Game] Creating: " << (isCreating ? "yes" : "no");
+  if (!isCreating) {
+    std::cout << ", Code: " << lobbyCode;
+  }
+  std::cout << std::endl;
+
+  // Reset the menu flag
+  menu->resetLobbySelection();
+
+  currentState = GameState::LOBBY_ROOM;
+  m_lobbyStateTime = 0.0f;
+
+  // Create lobby room state if needed
   if (!lobbyRoomState) {
-    lobbyRoomState = std::make_unique<LobbyRoomState>(renderer, m_world);
+    lobbyRoomState = std::make_unique<LobbyRoomState>(renderer, m_world, m_networkManager);
     if (!lobbyRoomState->init()) {
-      std::cerr << "[Game] Failed to initialize lobby room state" << '\n';
+      std::cerr << "[Game] Failed to initialize lobby room state" << std::endl;
       lobbyRoomState.reset();
       currentState = GameState::MENU;
+      return;
     }
+  }
+
+  // Set the lobby mode (create or join)
+  lobbyRoomState->setLobbyMode(isCreating, lobbyCode);
+
+  // Connect network callbacks to lobby state
+  if (auto *networkReceiveSystem = m_world->getSystem<ClientNetworkReceiveSystem>()) {
+    networkReceiveSystem->setLobbyJoinedCallback([this](const std::string &code) {
+      if (lobbyRoomState) {
+        lobbyRoomState->onLobbyJoined(code);
+      }
+    });
+
+    networkReceiveSystem->setLobbyStateCallback([this](const std::string &code, int playerCount) {
+      if (lobbyRoomState) {
+        lobbyRoomState->onLobbyState(code, playerCount);
+      }
+    });
+
+    networkReceiveSystem->setErrorCallback([this](const std::string &errorMsg) {
+      if (lobbyRoomState) {
+        lobbyRoomState->onError(errorMsg);
+      }
+    });
   }
 }
 
@@ -252,6 +384,11 @@ void Game::update(float deltaTime)
 {
   if (m_world) {
     m_world->update(deltaTime);
+  }
+
+  // Track time in lobby state
+  if (currentState == GameState::LOBBY_ROOM) {
+    m_lobbyStateTime += deltaTime;
   }
 
   switch (currentState) {

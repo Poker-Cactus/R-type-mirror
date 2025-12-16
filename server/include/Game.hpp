@@ -8,10 +8,12 @@
 #ifndef GAME_HPP_
 #define GAME_HPP_
 #include "../../engineCore/include/ecs/World.hpp"
+#include "LobbyManager.hpp"
 #include "ServerSystems.hpp"
 #include <chrono>
 #include <cstdint>
 #include <memory>
+#include <unordered_set>
 
 // Game configuration constants
 namespace GameConfig
@@ -48,6 +50,10 @@ public:
   std::shared_ptr<ecs::World> getWorld();
   void startGame();
   [[nodiscard]] bool isGameStarted() const;
+  void addClientToLobby(std::uint32_t clientId);
+  void removeClientFromLobby(std::uint32_t clientId);
+  [[nodiscard]] const std::unordered_set<std::uint32_t> &getLobbyClients() const;
+  [[nodiscard]] LobbyManager &getLobbyManager();
 
 private:
   std::shared_ptr<ecs::World> world;
@@ -67,6 +73,9 @@ private:
   server::ShootingSystem *shootingSystem = nullptr;
   server::ScoreSystem *scoreSystem = nullptr;
   server::SpawnSystem *spawnSystem = nullptr;
+
+  std::unordered_set<std::uint32_t> m_lobbyClients;
+  LobbyManager m_lobbyManager;
 };
 
 #endif /* !GAME_HPP_ */

@@ -12,9 +12,13 @@
 #include "../../engineCore/include/ecs/components/Transform.hpp"
 #include "../interface/KeyCodes.hpp"
 #include <iostream>
+#include <nlohmann/json.hpp>
+#include <utility>
 
-LobbyRoomState::LobbyRoomState(IRenderer *renderer, const std::shared_ptr<ecs::World> &world)
-    : renderer(renderer), world(world), background(nullptr), overlay(nullptr)
+LobbyRoomState::LobbyRoomState(IRenderer *renderer, const std::shared_ptr<ecs::World> &world,
+                               std::shared_ptr<INetworkManager> networkManager)
+    : renderer(renderer), world(world), m_networkManager(std::move(networkManager)), background(nullptr),
+      overlay(nullptr)
 {
 }
 
@@ -25,6 +29,8 @@ LobbyRoomState::~LobbyRoomState()
 
 bool LobbyRoomState::init()
 {
+  std::cout << "[LobbyRoomState] Initializing..." << '\n';
+
   if (renderer == nullptr) {
     std::cerr << "LobbyRoomState: Renderer is null" << '\n';
     return false;
@@ -41,9 +47,14 @@ bool LobbyRoomState::init()
 
   loadSpriteTextures();
 
-  constexpr int LOBBY_FONT_SIZE = 32;
+  constexpr int WINDOW_WIDTH_THRESHOLD = 1200;
+  constexpr int LOBBY_FONT_SIZE_LARGE = 32;
+  constexpr int LOBBY_FONT_SIZE_SMALL = 24;
+  int winWidth = renderer->getWindowWidth();
+  int fontSize = winWidth > WINDOW_WIDTH_THRESHOLD ? LOBBY_FONT_SIZE_LARGE : LOBBY_FONT_SIZE_SMALL;
+
   try {
-    m_lobbyFont = renderer->loadFont("client/assets/font.opf/r-type.otf", LOBBY_FONT_SIZE);
+    m_lobbyFont = renderer->loadFont("client/assets/font.opf/game.ttf", fontSize);
   } catch (const std::exception &e) {
     std::cerr << "LobbyRoomState: Failed to load font: " << e.what() << '\n';
     m_lobbyFont = nullptr;
@@ -56,6 +67,14 @@ void LobbyRoomState::update([[maybe_unused]] float deltaTime)
 {
   if (background) {
     background->update(deltaTime);
+  }
+
+  if (!m_lobbyRequested) {
+    requestLobby();
+    m_lobbyRequested = true;
+    m_timeSinceLobbyRequest = 0.0f;
+  } else if (m_lobbyRequested) {
+    m_timeSinceLobbyRequest += deltaTime;
   }
 }
 
@@ -73,65 +92,153 @@ void LobbyRoomState::render()
     overlay->render();
   }
 
-  ecs::ComponentSignature sig;
-  sig.set(ecs::getComponentId<ecs::Transform>());
-  sig.set(ecs::getComponentId<ecs::Sprite>());
-
-  std::vector<ecs::Entity> entities;
-  world->getEntitiesWithSignature(sig, entities);
-
-  constexpr int SPRITE_SOURCE_X = 0;
-  constexpr int SPRITE_SOURCE_Y = 0;
-  constexpr int SPRITE_SOURCE_WIDTH = 350;
-  constexpr int SPRITE_SOURCE_HEIGHT = 150;
-
-  for (auto entity : entities) {
-    const auto &transform = world->getComponent<ecs::Transform>(entity);
-    const auto &sprite = world->getComponent<ecs::Sprite>(entity);
-
-    auto textureIt = m_spriteTextures.find(sprite.spriteId);
-
-    if (textureIt != m_spriteTextures.end() && textureIt->second != nullptr) {
-      if (sprite.spriteId == ecs::SpriteId::PLAYER_SHIP) {
-        renderer->drawTextureRegion(textureIt->second, SPRITE_SOURCE_X, SPRITE_SOURCE_Y, SPRITE_SOURCE_WIDTH,
-                                    SPRITE_SOURCE_HEIGHT, static_cast<int>(transform.x), static_cast<int>(transform.y),
-                                    static_cast<int>(sprite.width), static_cast<int>(sprite.height));
-      } else {
-        renderer->drawTextureEx(textureIt->second, static_cast<int>(transform.x), static_cast<int>(transform.y),
-                                static_cast<int>(sprite.width), static_cast<int>(sprite.height), 0.0, false, false);
-      }
-    } else {
-      constexpr std::uint8_t PLACEHOLDER_RED = 100;
-      constexpr std::uint8_t PLACEHOLDER_GREEN = 150;
-      constexpr std::uint8_t PLACEHOLDER_BLUE = 255;
-      constexpr std::uint8_t ALPHA_OPAQUE = 255;
-      Color color = {.r = PLACEHOLDER_RED, .g = PLACEHOLDER_GREEN, .b = PLACEHOLDER_BLUE, .a = ALPHA_OPAQUE};
-      renderer->drawRect(static_cast<int>(transform.x), static_cast<int>(transform.y), static_cast<int>(sprite.width),
-                         static_cast<int>(sprite.height), color);
-    }
-  }
-
   if (m_lobbyFont != nullptr) {
-    std::string text = "Waiting for Players. Press X to start the game";
-
-    int winWidth = renderer->getWindowWidth();
-    int winHeight = renderer->getWindowHeight();
-
-    int textWidth = 0;
-    int textHeight = 0;
-    renderer->getTextSize(m_lobbyFont, text, textWidth, textHeight);
-
-    int textPosX = (winWidth - textWidth) / 2;
-    int textPosY = (winHeight - textHeight) / 2;
-
-    constexpr std::uint8_t TEXT_WHITE = 255;
-    constexpr std::uint8_t TEXT_ALPHA = 255;
-    Color textColor = {.r = TEXT_WHITE, .g = TEXT_WHITE, .b = TEXT_WHITE, .a = TEXT_ALPHA};
-    renderer->drawText(m_lobbyFont, text, textPosX, textPosY, textColor);
+    renderLobbyText();
   }
 }
 
-void LobbyRoomState::processInput() {}
+void LobbyRoomState::renderLobbyText()
+{
+  const int winWidth = renderer->getWindowWidth();
+  const int winHeight = renderer->getWindowHeight();
+
+  std::string line1;
+  std::string line2;
+
+  switch (m_connectionState) {
+  case LobbyConnectionState::CONNECTING:
+    line1 = "Connecting to lobby...";
+    line2 = "";
+    break;
+  case LobbyConnectionState::JOINED:
+    line1 = "Lobby: " + m_lobbyCode + " (" + std::to_string(m_playerCount) + " player" +
+      (m_playerCount != 1 ? "s" : "") + ")";
+    line2 = "Press X to start, BACKSPACE to leave";
+    break;
+  case LobbyConnectionState::ERROR:
+    line1 = "Error: " + m_errorMessage;
+    line2 = "Press BACKSPACE to return to menu";
+    break;
+  }
+
+  constexpr std::uint8_t TEXT_WHITE = 255;
+  constexpr std::uint8_t TEXT_ALPHA = 255;
+  const Color textColor = {.r = TEXT_WHITE, .g = TEXT_WHITE, .b = TEXT_WHITE, .a = TEXT_ALPHA};
+
+  int textWidth1 = 0;
+  int textHeight1 = 0;
+  renderer->getTextSize(m_lobbyFont, line1, textWidth1, textHeight1);
+
+  const int textPosX1 = (winWidth - textWidth1) / 2;
+  const int textPosY1 = (winHeight - textHeight1) / 2 - (line2.empty() ? 0 : 20);
+
+  renderer->drawText(m_lobbyFont, line1, textPosX1, textPosY1, textColor);
+
+  if (!line2.empty()) {
+    int textWidth2 = 0;
+    int textHeight2 = 0;
+    renderer->getTextSize(m_lobbyFont, line2, textWidth2, textHeight2);
+
+    constexpr int LINE_SPACING = 10;
+    const int textPosX2 = (winWidth - textWidth2) / 2;
+    const int textPosY2 = textPosY1 + textHeight1 + LINE_SPACING;
+
+    renderer->drawText(m_lobbyFont, line2, textPosX2, textPosY2, textColor);
+  }
+}
+
+void LobbyRoomState::processInput()
+{
+  if (renderer == nullptr || m_networkManager == nullptr) {
+    std::cerr << "[LobbyRoomState] renderer or networkManager is null!" << '\n';
+    return;
+  }
+
+  if (m_startGameRequested || m_returnToMenuRequested) {
+    return;
+  }
+
+  // BACKSPACE to return to menu (send leave message first)
+  if (renderer->isKeyJustPressed(KeyCode::KEY_BACKSPACE)) {
+    std::cout << "[LobbyRoomState] BACKSPACE pressed - returning to menu" << '\n';
+    sendLeaveLobby();
+    m_returnToMenuRequested = true;
+    return;
+  }
+
+  // Only allow starting game if we're in a lobby
+  if (m_connectionState == LobbyConnectionState::JOINED && renderer->isKeyJustPressed(KeyCode::KEY_X)) {
+    std::cout << "[LobbyRoomState] Sending start game request to server" << '\n';
+
+    nlohmann::json message;
+    message["type"] = "start_game";
+
+    std::string serialized = message.dump();
+
+    // Serialize with Cap'n Proto like the viewport message
+    const auto capnpSerialized = m_networkManager->getPacketHandler()->serialize(serialized);
+
+    m_networkManager->send(
+      std::span<const std::byte>(reinterpret_cast<const std::byte *>(capnpSerialized.data()), capnpSerialized.size()),
+      0);
+    m_startGameRequested = true;
+  }
+}
+
+void LobbyRoomState::setLobbyMode(bool isCreating, const std::string &lobbyCode)
+{
+  m_isCreatingLobby = isCreating;
+  m_targetLobbyCode = lobbyCode;
+  m_lobbyRequested = false; // Reset so we can request again
+  m_connectionState = LobbyConnectionState::CONNECTING;
+  m_returnToMenuRequested = false;
+  std::cout << "[LobbyRoomState] Mode set: " << (isCreating ? "CREATE" : "JOIN")
+            << (lobbyCode.empty() ? "" : " code=" + lobbyCode) << '\n';
+}
+
+void LobbyRoomState::sendLeaveLobby()
+{
+  if (m_networkManager == nullptr) {
+    return;
+  }
+
+  std::cout << "[LobbyRoomState] Sending leave_lobby message to server" << '\n';
+
+  nlohmann::json message;
+  message["type"] = "leave_lobby";
+
+  std::string serialized = message.dump();
+  const auto capnpSerialized = m_networkManager->getPacketHandler()->serialize(serialized);
+
+  m_networkManager->send(
+    std::span<const std::byte>(reinterpret_cast<const std::byte *>(capnpSerialized.data()), capnpSerialized.size()), 0);
+}
+
+void LobbyRoomState::requestLobby()
+{
+  std::cout << "[LobbyRoomState] Requesting lobby from server" << '\n';
+
+  nlohmann::json message;
+
+  if (m_isCreatingLobby) {
+    message["type"] = "request_lobby";
+    message["action"] = "create";
+  } else {
+    message["type"] = "request_lobby";
+    message["action"] = "join";
+    message["lobby_code"] = m_targetLobbyCode;
+  }
+
+  std::string serialized = message.dump();
+  std::cout << "[LobbyRoomState] Sending message: " << serialized << '\n';
+
+  // Serialize with Cap'n Proto like the viewport message
+  const auto capnpSerialized = m_networkManager->getPacketHandler()->serialize(serialized);
+
+  m_networkManager->send(
+    std::span<const std::byte>(reinterpret_cast<const std::byte *>(capnpSerialized.data()), capnpSerialized.size()), 0);
+  std::cout << "[LobbyRoomState] Message sent to network manager" << '\n';
+}
 
 void LobbyRoomState::cleanup()
 {
@@ -165,4 +272,29 @@ void LobbyRoomState::freeSpriteTextures()
     }
   }
   m_spriteTextures.clear();
+}
+
+// ============================================================================
+// Network Callbacks
+// ============================================================================
+
+void LobbyRoomState::onLobbyJoined(const std::string &lobbyCode)
+{
+  std::cout << "[LobbyRoomState] Successfully joined lobby: " << lobbyCode << std::endl;
+  m_connectionState = LobbyConnectionState::JOINED;
+  m_lobbyCode = lobbyCode;
+}
+
+void LobbyRoomState::onLobbyState(const std::string &lobbyCode, int playerCount)
+{
+  std::cout << "[LobbyRoomState] Lobby " << lobbyCode << " state update: " << playerCount << " players" << std::endl;
+  m_lobbyCode = lobbyCode;
+  m_playerCount = playerCount;
+}
+
+void LobbyRoomState::onError(const std::string &errorMsg)
+{
+  std::cerr << "[LobbyRoomState] Error: " << errorMsg << std::endl;
+  m_connectionState = LobbyConnectionState::ERROR;
+  m_errorMessage = errorMsg;
 }

@@ -61,16 +61,40 @@ void ClientNetworkReceiveSystem::update(ecs::World &world, float deltaTime)
         continue;
       }
 
+      // Game entity messages
       if (type == "entity_created") {
         handleEntityCreated(world, json);
       } else if (type == "entity_update") {
         handleEntityUpdate(world, json);
       } else if (type == "snapshot") {
         handleSnapshot(world, json);
+      } else if (type == "game_started") {
+        handleGameStarted();
+      }
+      // Lobby messages
+      else if (type == "lobby_joined") {
+        std::string code = json.value("code", "");
+        std::cout << "[Client] Joined lobby: " << code << std::endl;
+        if (m_lobbyJoinedCallback) {
+          m_lobbyJoinedCallback(code);
+        }
+      } else if (type == "lobby_state") {
+        std::string code = json.value("code", "");
+        int playerCount = json.value("player_count", 0);
+        std::cout << "[Client] Lobby " << code << " has " << playerCount << " players" << std::endl;
+        if (m_lobbyStateCallback) {
+          m_lobbyStateCallback(code, playerCount);
+        }
+      } else if (type == "error") {
+        std::string errorMsg = json.value("message", "Unknown error");
+        std::cerr << "[Client] Server error: " << errorMsg << std::endl;
+        if (m_errorCallback) {
+          m_errorCallback(errorMsg);
+        }
       }
 
     } catch (const std::exception &e) {
-      std::cerr << "Client: Erreur parsing: " << e.what() << std::endl;
+      std::cerr << "[Client] Error parsing message: " << e.what() << std::endl;
     }
   }
 }
@@ -275,7 +299,36 @@ void ClientNetworkReceiveSystem::handleEntityUpdate(ecs::World &world, const nlo
   (void)lastProcessed;
 }
 
+void ClientNetworkReceiveSystem::setGameStartedCallback(std::function<void()> callback)
+{
+  m_gameStartedCallback = std::move(callback);
+}
+
+void ClientNetworkReceiveSystem::setLobbyJoinedCallback(std::function<void(const std::string &)> callback)
+{
+  m_lobbyJoinedCallback = std::move(callback);
+}
+
+void ClientNetworkReceiveSystem::setLobbyStateCallback(std::function<void(const std::string &, int)> callback)
+{
+  m_lobbyStateCallback = std::move(callback);
+}
+
+void ClientNetworkReceiveSystem::setErrorCallback(std::function<void(const std::string &)> callback)
+{
+  m_errorCallback = std::move(callback);
+}
+
+void ClientNetworkReceiveSystem::handleGameStarted()
+{
+  std::cout << "[Client] Received game_started message from server" << std::endl;
+
+  if (m_gameStartedCallback) {
+    m_gameStartedCallback();
+  }
+}
+
 ecs::ComponentSignature ClientNetworkReceiveSystem::getSignature() const
 {
-  return ecs::ComponentSignature(); // Pas de filtre spécifique
+  return ecs::ComponentSignature(); // No specific filter needed
 }

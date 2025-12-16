@@ -38,9 +38,12 @@ private:
   void update(float deltaTime);
   void render();
   void ensureInputEntity();
+  void sendLeaveToServer();
+  void sendViewportToServer();
 
   void handleMenuStateInput();
   void handleLobbyRoomTransition();
+  void handleLobbyRoomStateInput();
   void handlePlayingStateInput();
   void updatePlayerInput();
   void delegateInputToCurrentState();
@@ -55,4 +58,5 @@ private:
   std::unique_ptr<Menu> menu;
   std::unique_ptr<LobbyRoomState> lobbyRoomState;
   std::unique_ptr<PlayingState> playingState;
+  float m_lobbyStateTime = 0.0f;
 };
