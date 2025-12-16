@@ -58,6 +58,11 @@ ecs::ComponentSignature NetworkReceiveSystem::getSignature() const
 
 void NetworkReceiveSystem::handleMessage(ecs::World &world, const std::string &message, std::uint32_t clientId)
 {
+  // Ignore simple protocol-level keepalive/debug messages that are not JSON
+  if (message == "PING" || message == "PONG") {
+    return;
+  }
+
   try {
     const auto json = nlohmann::json::parse(message);
     if (!json.contains("type")) {
