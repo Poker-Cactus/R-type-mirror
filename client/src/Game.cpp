@@ -37,13 +37,41 @@ Game::~Game()
 bool Game::init()
 {
   try {
+    // Try multiple paths for the SDL2 module
+    const char *modulePaths[] = {
 #ifdef _WIN32
-    module = std::make_unique<Module<IRenderer>>("sdl2_module.dll", "createRenderer", "destroyRenderer");
+      "sdl2_module.dll",
+      "libs/sdl2_module.dll",
+      "./build/libs/sdl2_module.dll"
 #elif defined(__APPLE__)
-    module = std::make_unique<Module<IRenderer>>("./build/libs/sdl2_module.dylib", "createRenderer", "destroyRenderer");
+      "sdl2_module.dylib",
+      "libs/sdl2_module.dylib",
+      "./build/libs/sdl2_module.dylib"
 #else
-    module = std::make_unique<Module<IRenderer>>("./build/libs/sdl2_module.so", "createRenderer", "destroyRenderer");
+      "sdl2_module.so",
+      "libs/sdl2_module.so",
+      "./build/libs/sdl2_module.so"
 #endif
+    };
+    
+    bool moduleLoaded = false;
+    for (const char *path : modulePaths) {
+      try {
+        module = std::make_unique<Module<IRenderer>>(path, "createRenderer", "destroyRenderer");
+        std::cout << "[Game::init] Loaded SDL2 module from: " << path << std::endl;
+        moduleLoaded = true;
+        break;
+      } catch (const std::exception &e) {
+        // Try next path
+        continue;
+      }
+    }
+    
+    if (!moduleLoaded) {
+      std::cerr << "[Game::init] ERROR: Could not find SDL2 module in any known location" << std::endl;
+      return false;
+    }
+    
     renderer = module->create();
 
     if (renderer == nullptr) {
