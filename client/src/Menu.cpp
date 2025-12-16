@@ -6,6 +6,7 @@
 */
 
 #include "Menu.hpp"
+#include "../include/AssetPath.hpp"
 #include "Menu/LoadingMenu/LoadingMenu.hpp"
 #include "Menu/LobbyMenu/LobbyMenu.hpp"
 #include "Menu/MainMenu/MainMenu.hpp"
