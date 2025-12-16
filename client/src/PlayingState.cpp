@@ -274,7 +274,7 @@ void PlayingState::loadSpriteTextures()
   // Load each texture individually with error handling
   // PLAYER_SHIP = 1 (spritesheet: 2450x150, 7 frames, using first frame only)
   try {
-    void *playerTex = renderer->loadTexture("client/assets/sprites/player_ship.png");
+    void *playerTex = renderer->loadTexture(resolveAssetPath("client/assets/sprites/player_ship.png").c_str());
     if (playerTex) {
       m_spriteTextures[ecs::SpriteId::PLAYER_SHIP] = playerTex;
       std::cout << "[PlayingState] ✓ Loaded player_ship.png" << std::endl;
@@ -287,7 +287,7 @@ void PlayingState::loadSpriteTextures()
 
   // ENEMY_SHIP = 2
   try {
-    void *enemyTex = renderer->loadTexture("client/assets/sprites/enemy_ship.png");
+    void *enemyTex = renderer->loadTexture(resolveAssetPath("client/assets/sprites/enemy_ship.png").c_str());
     if (enemyTex) {
       m_spriteTextures[ecs::SpriteId::ENEMY_SHIP] = enemyTex;
       std::cout << "[PlayingState] ✓ Loaded enemy_ship.png" << std::endl;
@@ -300,7 +300,7 @@ void PlayingState::loadSpriteTextures()
 
   // PROJECTILE = 3 (spritesheet: 422x92, 2 frames, using first frame only)
   try {
-    void *projectileTex = renderer->loadTexture("client/assets/sprites/projectile.png");
+    void *projectileTex = renderer->loadTexture(resolveAssetPath("client/assets/sprites/projectile.png").c_str());
     if (projectileTex) {
       m_spriteTextures[ecs::SpriteId::PROJECTILE] = projectileTex;
       std::cout << "[PlayingState] ✓ Loaded projectile.png" << std::endl;
@@ -313,7 +313,7 @@ void PlayingState::loadSpriteTextures()
 
   // POWERUP = 5
   try {
-    void *powerupTex = renderer->loadTexture("client/assets/sprites/powerup.png");
+    void *powerupTex = renderer->loadTexture(resolveAssetPath("client/assets/sprites/powerup.png").c_str());
     if (powerupTex) {
       m_spriteTextures[ecs::SpriteId::POWERUP] = powerupTex;
       std::cout << "[PlayingState] ✓ Loaded powerup.png" << std::endl;
@@ -326,7 +326,7 @@ void PlayingState::loadSpriteTextures()
 
   // EXPLOSION = 4
   try {
-    void *explosionTex = renderer->loadTexture("client/assets/sprites/explosion.png");
+    void *explosionTex = renderer->loadTexture(resolveAssetPath("client/assets/sprites/explosion.png").c_str());
     if (explosionTex) {
       m_spriteTextures[ecs::SpriteId::EXPLOSION] = explosionTex;
       std::cout << "[PlayingState] ✓ Loaded explosion.png" << std::endl;

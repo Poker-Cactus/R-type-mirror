@@ -25,7 +25,7 @@ void Menu::init()
   try {
     const int menuFontSize = 24;
     const int titleFontSize = 48;
-    menu_font = renderer->loadFont("client/assets/font.opf/r-type.otf", menuFontSize);
+    menu_font = renderer->loadFont(resolveAssetPath("client/assets/font.opf/r-type.otf").c_str(), menuFontSize);
 
     loadingMenu = new LoadingMenu();
     loadingMenu->init(renderer);
