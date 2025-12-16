@@ -7,6 +7,7 @@
 
 #include "systems/NetworkReceiveSystem.hpp"
 #include "../../engineCore/include/ecs/World.hpp"
+// LobbyResponseData is defined in the header
 #include "../../engineCore/include/ecs/components/Input.hpp"
 #include "../../engineCore/include/ecs/components/Networked.hpp"
 #include "../../engineCore/include/ecs/components/PlayerId.hpp"
@@ -20,7 +21,7 @@
 
 NetworkReceiveSystem::NetworkReceiveSystem(std::shared_ptr<INetworkManager> networkManager)
 {
-  m_networkManager = networkManager;
+  m_networkManager = std::move(networkManager);
 }
 
 NetworkReceiveSystem::~NetworkReceiveSystem() {}
@@ -40,7 +41,7 @@ void NetworkReceiveSystem::update(ecs::World &world, [[maybe_unused]] float delt
       m_networkManager->getPacketHandler()->deserialize(packet.getData(), packet.getBytesTransferred()).value_or("");
 
     if (message.empty()) {
-      std::cerr << "[Server] Empty or malformed message received from client " << clientId << std::endl;
+      std::cerr << "[Server] Empty or malformed message received from client " << clientId << '\n';
       continue;
     }
 
@@ -60,7 +61,7 @@ void NetworkReceiveSystem::handleMessage(ecs::World &world, const std::string &m
   try {
     const auto json = nlohmann::json::parse(message);
     if (!json.contains("type")) {
-      std::cerr << "[Server] Message from client " << clientId << " has no 'type' field" << std::endl;
+      std::cerr << "[Server] Message from client " << clientId << " has no 'type' field" << '\n';
       return;
     }
 
@@ -77,10 +78,10 @@ void NetworkReceiveSystem::handleMessage(ecs::World &world, const std::string &m
     } else if (type == "viewport") {
       handleViewport(world, json, clientId);
     } else {
-      std::cerr << "[Server] Unknown message type from client " << clientId << ": " << type << std::endl;
+      std::cerr << "[Server] Unknown message type from client " << clientId << ": " << type << '\n';
     }
   } catch (const std::exception &e) {
-    std::cerr << "[Server] Exception handling message from client " << clientId << ": " << e.what() << std::endl;
+    std::cerr << "[Server] Exception handling message from client " << clientId << ": " << e.what() << '\n';
     return;
   }
 }
@@ -200,7 +201,7 @@ void NetworkReceiveSystem::handleStartGame([[maybe_unused]] ecs::World &world, s
     return;
   }
 
-  std::cout << "[Server] Player " << clientId << " started game in lobby: " << lobby->getCode() << std::endl;
+  std::cout << "[Server] Player " << clientId << " started game in lobby: " << lobby->getCode() << '\n';
 
   // Start game for this specific lobby - this initializes systems and spawns players
   // The Lobby::startGame() method handles all initialization internally
@@ -216,10 +217,10 @@ void NetworkReceiveSystem::handleStartGame([[maybe_unused]] ecs::World &world, s
 
 void NetworkReceiveSystem::handleRequestLobby(const nlohmann::json &json, std::uint32_t clientId)
 {
-  std::cout << "[Server] handleRequestLobby called for client " << clientId << std::endl;
+  std::cout << "[Server] handleRequestLobby called for client " << clientId << '\n';
 
   if (m_game == nullptr) {
-    std::cerr << "[Server] Error: m_game is nullptr!" << std::endl;
+    std::cerr << "[Server] Error: m_game is nullptr!" << '\n';
     sendErrorResponse(clientId, "Server error");
     return;
   }
@@ -237,18 +238,17 @@ void NetworkReceiveSystem::handleRequestLobby(const nlohmann::json &json, std::u
     // Client wants to join a specific lobby
     targetLobby = lobbyManager.getLobby(requestedCode);
     if (targetLobby == nullptr) {
-      std::cerr << "[Server] Client " << clientId << " tried to join non-existent lobby: " << requestedCode
-                << std::endl;
+      std::cerr << "[Server] Client " << clientId << " tried to join non-existent lobby: " << requestedCode << '\n';
       sendErrorResponse(clientId, "Lobby not found: " + requestedCode);
       return;
     }
     if (targetLobby->isGameStarted()) {
-      std::cerr << "[Server] Client " << clientId << " tried to join lobby in progress: " << requestedCode << std::endl;
+      std::cerr << "[Server] Client " << clientId << " tried to join lobby in progress: " << requestedCode << '\n';
       sendErrorResponse(clientId, "Lobby game already in progress");
       return;
     }
     lobbyCode = requestedCode;
-    std::cout << "[Server] Client " << clientId << " joining existing lobby: " << lobbyCode << std::endl;
+    std::cout << "[Server] Client " << clientId << " joining existing lobby: " << lobbyCode << '\n';
   } else {
     // Client wants to create a new lobby (or find any available)
     // Create a new lobby with simple numeric code
@@ -256,13 +256,13 @@ void NetworkReceiveSystem::handleRequestLobby(const nlohmann::json &json, std::u
     lobbyCode = std::to_string(++lobbyCounter);
     lobbyManager.createLobby(lobbyCode);
     targetLobby = lobbyManager.getLobby(lobbyCode);
-    std::cout << "[Server] Created new lobby: " << lobbyCode << " for client " << clientId << std::endl;
+    std::cout << "[Server] Created new lobby: " << lobbyCode << " for client " << clientId << '\n';
   }
 
   // Try to join the lobby
   if (lobbyManager.joinLobby(lobbyCode, clientId)) {
-    std::cout << "[Server] Client " << clientId << " joined lobby " << lobbyCode << std::endl;
-    sendLobbyResponse(clientId, "lobby_joined", lobbyCode);
+    std::cout << "[Server] Client " << clientId << " joined lobby " << lobbyCode << '\n';
+    sendLobbyResponse(clientId, {"lobby_joined", lobbyCode});
 
     // Notify client about current lobby state
     if (targetLobby != nullptr) {
@@ -280,7 +280,7 @@ void NetworkReceiveSystem::handleRequestLobby(const nlohmann::json &json, std::u
       }
     }
   } else {
-    std::cerr << "[Server] Client " << clientId << " failed to join lobby " << lobbyCode << std::endl;
+    std::cerr << "[Server] Client " << clientId << " failed to join lobby " << lobbyCode << '\n';
     sendErrorResponse(clientId, "Failed to join lobby");
   }
 }
@@ -304,18 +304,18 @@ void NetworkReceiveSystem::sendJsonMessageToAll(const std::vector<std::uint32_t>
   const std::string jsonStr = message.dump();
   const auto serialized = m_networkManager->getPacketHandler()->serialize(jsonStr);
 
-  for (const auto &id : clientIds) {
+  for (const auto &client_id : clientIds) {
     m_networkManager->send(
-      std::span<const std::byte>(reinterpret_cast<const std::byte *>(serialized.data()), serialized.size()), id);
+      std::span<const std::byte>(reinterpret_cast<const std::byte *>(serialized.data()), serialized.size()), client_id);
   }
 }
 
-void NetworkReceiveSystem::sendLobbyResponse(std::uint32_t clientId, const std::string &type, const std::string &code)
+void NetworkReceiveSystem::sendLobbyResponse(std::uint32_t clientId, const LobbyResponseData &response_data)
 {
   nlohmann::json response;
-  response["type"] = type;
-  if (!code.empty()) {
-    response["code"] = code;
+  response["type"] = response_data.response_type;
+  if (!response_data.lobby_code.empty()) {
+    response["code"] = response_data.lobby_code;
   }
   sendJsonMessage(clientId, response);
 }
@@ -334,7 +334,7 @@ void NetworkReceiveSystem::sendErrorResponse(std::uint32_t clientId, const std::
 
 void NetworkReceiveSystem::handleLeaveLobby([[maybe_unused]] ecs::World &world, std::uint32_t clientId)
 {
-  std::cout << "[Server] Client " << clientId << " requested to leave lobby" << std::endl;
+  std::cout << "[Server] Client " << clientId << " requested to leave lobby" << '\n';
 
   if (m_game == nullptr) {
     return;
@@ -345,7 +345,7 @@ void NetworkReceiveSystem::handleLeaveLobby([[maybe_unused]] ecs::World &world, 
   // Get lobby info before making any changes
   Lobby *lobby = lobbyManager.getClientLobby(clientId);
   if (lobby == nullptr) {
-    std::cout << "[Server] Client " << clientId << " is not in any lobby" << std::endl;
+    std::cout << "[Server] Client " << clientId << " is not in any lobby" << '\n';
     return;
   }
 
@@ -355,13 +355,13 @@ void NetworkReceiveSystem::handleLeaveLobby([[maybe_unused]] ecs::World &world, 
 
   // Remove client from lobby (this destroys the player entity)
   lobby->removeClient(clientId);
-  std::cout << "[Server] Removed client " << clientId << " from lobby " << lobbyCode << std::endl;
+  std::cout << "[Server] Removed client " << clientId << " from lobby " << lobbyCode << '\n';
 
   // Check if lobby is now empty
   const bool isLobbyEmpty = lobby->isEmpty();
 
   if (isLobbyEmpty) {
-    std::cout << "[Server] Lobby " << lobbyCode << " is now empty, will be cleaned up at end of frame" << std::endl;
+    std::cout << "[Server] Lobby " << lobbyCode << " is now empty, will be cleaned up at end of frame" << '\n';
   } else {
     // Capture remaining clients for notification
     for (const auto &playerId : lobby->getClients()) {

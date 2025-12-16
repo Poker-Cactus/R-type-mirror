@@ -72,7 +72,7 @@ void LobbyRoomState::update([[maybe_unused]] float deltaTime)
   if (!m_lobbyRequested) {
     requestLobby();
     m_lobbyRequested = true;
-    m_timeSinceLobbyRequest = 0.0f;
+    m_timeSinceLobbyRequest = 0.0F;
   } else if (m_lobbyRequested) {
     m_timeSinceLobbyRequest += deltaTime;
   }
@@ -130,7 +130,7 @@ void LobbyRoomState::renderLobbyText()
   renderer->getTextSize(m_lobbyFont, line1, textWidth1, textHeight1);
 
   const int textPosX1 = (winWidth - textWidth1) / 2;
-  const int textPosY1 = (winHeight - textHeight1) / 2 - (line2.empty() ? 0 : 20);
+  const int textPosY1 = ((winHeight - textHeight1) / 2) - (line2.empty() ? 0 : 20);
 
   renderer->drawText(m_lobbyFont, line1, textPosX1, textPosY1, textColor);
 
@@ -280,21 +280,21 @@ void LobbyRoomState::freeSpriteTextures()
 
 void LobbyRoomState::onLobbyJoined(const std::string &lobbyCode)
 {
-  std::cout << "[LobbyRoomState] Successfully joined lobby: " << lobbyCode << std::endl;
+  std::cout << "[LobbyRoomState] Successfully joined lobby: " << lobbyCode << '\n';
   m_connectionState = LobbyConnectionState::JOINED;
   m_lobbyCode = lobbyCode;
 }
 
 void LobbyRoomState::onLobbyState(const std::string &lobbyCode, int playerCount)
 {
-  std::cout << "[LobbyRoomState] Lobby " << lobbyCode << " state update: " << playerCount << " players" << std::endl;
+  std::cout << "[LobbyRoomState] Lobby " << lobbyCode << " state update: " << playerCount << " players" << '\n';
   m_lobbyCode = lobbyCode;
   m_playerCount = playerCount;
 }
 
 void LobbyRoomState::onError(const std::string &errorMsg)
 {
-  std::cerr << "[LobbyRoomState] Error: " << errorMsg << std::endl;
+  std::cerr << "[LobbyRoomState] Error: " << errorMsg << '\n';
   m_connectionState = LobbyConnectionState::ERROR;
   m_errorMessage = errorMsg;
 }

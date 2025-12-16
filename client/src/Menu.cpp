@@ -47,6 +47,7 @@ void Menu::init()
     // Initialiser le LoadingScreen
     loadingScreen = new LoadingScreen(renderer, menu_font);
   } catch (const std::exception &e) {
+    std::cerr << "Exception during menu initialization: " << e.what() << '\n';
   }
 }
 
@@ -66,7 +67,7 @@ void Menu::render()
     profileMenu->render(winWidth, winHeight, renderer);
     break;
   case MenuState::LOBBY:
-    lobbyMenu->render(winWidth, winHeight, renderer);
+    lobbyMenu->render({.width = winWidth, .height = winHeight}, renderer);
     break;
   case MenuState::SETTINGS:
     settingsMenu->render(winWidth, winHeight, renderer);
@@ -121,10 +122,10 @@ void Menu::drawCenteredText(const std::string &text, int yOffset, const Color &c
   int textHeight = 0;
   renderer->getTextSize(menu_font, text, textWidth, textHeight);
 
-  int x = (winWidth - textWidth) / 2;
-  int y = (winHeight - textHeight) / 2 + yOffset;
+  int pos_x = (winWidth - textWidth) / 2;
+  int pos_y = ((winHeight - textHeight) / 2) + yOffset;
 
-  renderer->drawText(menu_font, text, x, y, color);
+  renderer->drawText(menu_font, text, pos_x, pos_y, color);
 }
 
 MenuState Menu::getState() const
@@ -136,7 +137,7 @@ bool Menu::shouldStartGame() const
 {
   // Only transition to lobby room when user explicitly chooses to create/join
   if (lobbyMenu != nullptr && lobbyMenu->shouldEnterLobbyRoom()) {
-    std::cout << "[Menu] shouldStartGame() returning true - User selected lobby action" << std::endl;
+    std::cout << "[Menu] shouldStartGame() returning true - User selected lobby action" << '\n';
     return true;
   }
   return false;

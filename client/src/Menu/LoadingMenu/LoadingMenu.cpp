@@ -6,6 +6,7 @@
 */
 
 #include "LoadingMenu.hpp"
+#include "../../../interface/Geometry.hpp"
 #include "../../../interface/KeyCodes.hpp"
 #include <cmath>
 
@@ -57,9 +58,9 @@ void LoadingMenu::render(int winWidth, int winHeight, IRenderer *renderer, Loadi
   }
 
   if (backgroundTexture != nullptr) {
-    renderer->drawTextureEx(backgroundTexture, static_cast<int>(backgroundOffsetX), 0, winWidth, winHeight, 0.0, false,
-                            false);
-    renderer->drawTextureEx(backgroundTexture, static_cast<int>(backgroundOffsetX - winWidth), 0, winWidth, winHeight,
+    renderer->drawTextureEx(backgroundTexture, {static_cast<int>(backgroundOffsetX), 0, winWidth, winHeight}, 0.0,
+                            false, false);
+    renderer->drawTextureEx(backgroundTexture, {static_cast<int>(backgroundOffsetX - winWidth), 0, winWidth, winHeight},
                             0.0, false, false);
   }
   if (planet != nullptr) {
@@ -75,7 +76,7 @@ void LoadingMenu::render(int winWidth, int winHeight, IRenderer *renderer, Loadi
     int planetX = (winWidth - scaledWidth) / 2;
     int planetY = (winHeight - scaledHeight) / 2;
 
-    renderer->drawTextureEx(planet, planetX, planetY, scaledWidth, scaledHeight, 0.0, false, false);
+    renderer->drawTextureEx(planet, {planetX, planetY, scaledWidth, scaledHeight}, 0.0, false, false);
   }
   if (font != nullptr) {
     blinkTimer += renderer->getDeltaTime();

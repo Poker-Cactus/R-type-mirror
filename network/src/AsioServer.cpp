@@ -136,7 +136,7 @@ void AsioServer::receive()
             const auto serialized = getPacketHandler()->serialize(jsonStr);
             send(std::span<const std::byte>(reinterpret_cast<const std::byte *>(serialized.data()), serialized.size()),
                  clientId);
-            std::cout << "[Server] New client " << clientId << " connected, assigned ID sent" << std::endl;
+            std::cout << "[Server] New client " << clientId << " connected, assigned ID sent" << '\n';
           } catch ([[maybe_unused]] const std::exception &e) { // NOLINT(bugprone-empty-catch)
             // Best-effort handshake - silent failure acceptable for non-critical handshake
           }

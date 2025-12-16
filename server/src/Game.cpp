@@ -186,7 +186,7 @@ void Game::spawnPlayer(std::uint32_t networkId)
   playerId.clientId = networkId;
   world->addComponent(player, playerId);
 
-  std::cout << "[Server] Spawned player entity " << player << " for client " << networkId << std::endl;
+  std::cout << "[Server] Spawned player entity " << player << " for client " << networkId << '\n';
 }
 
 /**
@@ -272,7 +272,7 @@ std::shared_ptr<ecs::World> Game::getWorld()
 
 void Game::startGame()
 {
-  std::cout << "[Server] Starting game with " << m_lobbyClients.size() << " players" << std::endl;
+  std::cout << "[Server] Starting game with " << m_lobbyClients.size() << " players" << '\n';
   gameStarted = true;
 }
 
@@ -285,14 +285,14 @@ void Game::addClientToLobby(std::uint32_t clientId)
 {
   m_lobbyClients.insert(clientId);
   std::cout << "[Server] Player " << clientId << " joined the lobby (" << m_lobbyClients.size() << " players waiting)"
-            << std::endl;
+            << '\n';
 }
 
 void Game::removeClientFromLobby(std::uint32_t clientId)
 {
   m_lobbyClients.erase(clientId);
   std::cout << "[Server] Player " << clientId << " left the lobby (" << m_lobbyClients.size() << " players remaining)"
-            << std::endl;
+            << '\n';
 }
 
 const std::unordered_set<std::uint32_t> &Game::getLobbyClients() const

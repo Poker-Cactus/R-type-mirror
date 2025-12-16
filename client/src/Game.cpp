@@ -142,7 +142,7 @@ void Game::sendLeaveToServer()
     return;
   }
 
-  std::cout << "[Game] Sending leave_lobby to server before shutdown" << std::endl;
+  std::cout << "[Game] Sending leave_lobby to server before shutdown" << '\n';
 
   nlohmann::json message;
   message["type"] = "leave_lobby";
@@ -156,7 +156,7 @@ void Game::sendLeaveToServer()
 
 void Game::sendViewportToServer()
 {
-  if (!m_networkManager || !renderer) {
+  if (!m_networkManager || renderer == nullptr) {
     return;
   }
 
@@ -178,7 +178,8 @@ void Game::processInput()
 {
   if (renderer != nullptr && !renderer->pollEvents()) {
     // Don't allow immediate close in lobby - give network time to send messages
-    if (currentState == GameState::LOBBY_ROOM && m_lobbyStateTime < 0.5f) {
+    constexpr float LOBBY_GRACE_PERIOD = 0.5F;
+    if (currentState == GameState::LOBBY_ROOM && m_lobbyStateTime < LOBBY_GRACE_PERIOD) {
       std::cout << "[Game] Ignoring close request - lobby just started (" << m_lobbyStateTime << "s)" << '\n';
       return;
     }
@@ -249,24 +250,24 @@ void Game::handleLobbyRoomTransition()
   const bool isCreating = menu->isCreatingLobby();
   const std::string lobbyCode = menu->getLobbyCodeToJoin();
 
-  std::cout << "[Game] Transitioning from MENU to LOBBY_ROOM" << std::endl;
+  std::cout << "[Game] Transitioning from MENU to LOBBY_ROOM" << '\n';
   std::cout << "[Game] Creating: " << (isCreating ? "yes" : "no");
   if (!isCreating) {
     std::cout << ", Code: " << lobbyCode;
   }
-  std::cout << std::endl;
+  std::cout << '\n';
 
   // Reset the menu flag
   menu->resetLobbySelection();
 
   currentState = GameState::LOBBY_ROOM;
-  m_lobbyStateTime = 0.0f;
+  m_lobbyStateTime = 0.0F;
 
   // Create lobby room state if needed
   if (!lobbyRoomState) {
     lobbyRoomState = std::make_unique<LobbyRoomState>(renderer, m_world, m_networkManager);
     if (!lobbyRoomState->init()) {
-      std::cerr << "[Game] Failed to initialize lobby room state" << std::endl;
+      std::cerr << "[Game] Failed to initialize lobby room state" << '\n';
       lobbyRoomState.reset();
       currentState = GameState::MENU;
       return;
