@@ -61,6 +61,35 @@ jobs:
         path: |
           build/server/server
           build/client/client
+          build/libs/
+        retention-days: 7
+    
+    - name: Create portable package
+      run: |
+        mkdir -p linux-package
+        cp build/server/server linux-package/
+        cp build/client/client linux-package/
+        cp -r build/libs linux-package/ 2>/dev/null || true
+        # Copy SDL2 libraries from Conan
+        if [ -d "build" ]; then
+          find build -name "*.so*" -type f -exec cp {} linux-package/ \; 2>/dev/null || true
+        fi
+        echo "#!/bin/bash" > linux-package/run_server.sh
+        echo 'cd "$(dirname "$0")"' >> linux-package/run_server.sh
+        echo 'export LD_LIBRARY_PATH="$PWD:$LD_LIBRARY_PATH"' >> linux-package/run_server.sh
+        echo './server "$@"' >> linux-package/run_server.sh
+        chmod +x linux-package/run_server.sh
+        echo "#!/bin/bash" > linux-package/run_client.sh
+        echo 'cd "$(dirname "$0")"' >> linux-package/run_client.sh
+        echo 'export LD_LIBRARY_PATH="$PWD:$LD_LIBRARY_PATH"' >> linux-package/run_client.sh
+        echo './client "$@"' >> linux-package/run_client.sh
+        chmod +x linux-package/run_client.sh
+    
+    - name: Upload Linux portable package
+      uses: actions/upload-artifact@v4
+      with:
+        name: linux-portable-package
+        path: linux-package/
         retention-days: 7
 
   build-windows:
@@ -114,6 +143,38 @@ jobs:
         path: |
           build/server/Release/server.exe
           build/client/Release/client.exe
+          build/libs/
+        retention-days: 7
+    
+    - name: Create portable package
+      run: |
+        New-Item -ItemType Directory -Force -Path windows-package
+        Copy-Item build\server\Release\server.exe windows-package\
+        Copy-Item build\client\Release\client.exe windows-package\
+        # Copy SDL2 module
+        if (Test-Path build\libs) {
+          Copy-Item -Recurse build\libs windows-package\
+        }
+        # Copy DLLs from Conan build directory
+        Get-ChildItem -Path build -Filter *.dll -Recurse | Copy-Item -Destination windows-package\ -ErrorAction SilentlyContinue
+        # Create run scripts
+        @"
+        @echo off
+        cd /d "%~dp0"
+        server.exe %*
+        "@ | Out-File -FilePath windows-package\run_server.bat -Encoding ASCII
+        @"
+        @echo off
+        cd /d "%~dp0"
+        client.exe %*
+        "@ | Out-File -FilePath windows-package\run_client.bat -Encoding ASCII
+      shell: pwsh
+    
+    - name: Upload Windows portable package
+      uses: actions/upload-artifact@v4
+      with:
+        name: windows-portable-package
+        path: windows-package/
         retention-days: 7
 
   build-status:
