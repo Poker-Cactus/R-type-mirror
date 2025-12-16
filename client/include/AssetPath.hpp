@@ -40,6 +40,18 @@ inline std::string resolveAssetPath(const std::string &relativePath)
     }
   }
   
+  // Try stripping "client/" prefix for portable packages
+  // In portable packages, assets are at "assets/..." not "client/assets/..."
+  if (cleanPath.substr(0, 7) == "client/") {
+    std::string withoutClientPrefix = cleanPath.substr(7);
+    for (const auto &basePath : basePaths) {
+      std::string fullPath = basePath + withoutClientPrefix;
+      if (fileExists(fullPath)) {
+        return fullPath;
+      }
+    }
+  }
+  
   // If nothing found, return the original path
   return relativePath;
 }
