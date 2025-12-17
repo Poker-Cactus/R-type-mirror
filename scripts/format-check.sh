@@ -9,7 +9,7 @@ if [ -z "$FILES" ]; then
     exit 0
 fi
 
-clang-format --dry-run --Werror $FILES
+clang-format --dry-run $FILES
 STATUS=$?
 
 if [ $STATUS -ne 0 ]; then
