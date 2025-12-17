@@ -20,6 +20,9 @@ if(MSVC)
     
     # Define Windows version for ASIO (Windows 10/11)
     add_compile_definitions(_WIN32_WINNT=0x0A00)
+    
+    # Disable min/max macros that conflict with std::numeric_limits
+    add_compile_definitions(NOMINMAX)
 else()
     # GCC/Clang flags
     add_compile_options(

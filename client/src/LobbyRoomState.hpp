@@ -11,6 +11,7 @@
 #include "../interface/IRenderer.hpp"
 #include "Overlay.hpp"
 #include "ParallaxBackground.hpp"
+#include <cstdint>
 #include <memory>
 #include <string>
 #include <unordered_map>
