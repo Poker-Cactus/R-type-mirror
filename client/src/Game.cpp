@@ -15,6 +15,12 @@
 
 Game::Game() : module(nullptr), renderer(nullptr), isRunning(false), currentState(GameState::MENU) {}
 
+Game::Game(const std::string &host, const std::string &port)
+    : module(nullptr), renderer(nullptr), isRunning(false), currentState(GameState::MENU), m_serverHost(host),
+      m_serverPort(port)
+{
+}
+
 Game::~Game()
 {
   shutdown();
@@ -26,20 +32,14 @@ bool Game::init()
     // Try multiple paths for the SDL2 module
     const char *modulePaths[] = {
 #ifdef _WIN32
-      "sdl2_module.dll",
-      "libs/sdl2_module.dll",
-      "./build/libs/sdl2_module.dll"
+      "sdl2_module.dll", "libs/sdl2_module.dll", "./build/libs/sdl2_module.dll"
 #elif defined(__APPLE__)
-      "sdl2_module.dylib",
-      "libs/sdl2_module.dylib",
-      "./build/libs/sdl2_module.dylib"
+      "sdl2_module.dylib", "libs/sdl2_module.dylib", "./build/libs/sdl2_module.dylib"
 #else
-      "sdl2_module.so",
-      "libs/sdl2_module.so",
-      "./build/libs/sdl2_module.so"
+      "sdl2_module.so", "libs/sdl2_module.so", "./build/libs/sdl2_module.so"
 #endif
     };
-    
+
     bool moduleLoaded = false;
     for (const char *path : modulePaths) {
       try {
@@ -52,12 +52,12 @@ bool Game::init()
         continue;
       }
     }
-    
+
     if (!moduleLoaded) {
       std::cerr << "[Game::init] ERROR: Could not find SDL2 module in any known location" << std::endl;
       return false;
     }
-    
+
     renderer = module->create();
 
     if (renderer == nullptr) {
@@ -77,7 +77,7 @@ bool Game::init()
     menu->init();
 
     m_world = std::make_shared<ecs::World>();
-    auto asioClient = std::make_shared<AsioClient>("127.0.0.1", "4242");
+    auto asioClient = std::make_shared<AsioClient>(m_serverHost, m_serverPort);
     asioClient->start();
     {
       auto endpoint = asioClient->getServerEndpoint();
