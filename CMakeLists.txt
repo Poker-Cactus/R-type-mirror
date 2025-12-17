@@ -17,6 +17,9 @@ if(MSVC)
     )
     # Debug information for MSVC
     add_compile_options($<$<CONFIG:Debug>:/Zi>)
+    
+    # Define Windows version for ASIO (Windows 10/11)
+    add_compile_definitions(_WIN32_WINNT=0x0A00)
 else()
     # GCC/Clang flags
     add_compile_options(
