@@ -115,7 +115,7 @@ void LobbyRoomState::renderLobbyText()
       (m_playerCount != 1 ? "s" : "") + ")";
     line2 = "Press X to start, BACKSPACE to leave";
     break;
-  case LobbyConnectionState::ERROR:
+  case LobbyConnectionState::ERROR_STATE:
     line1 = "Error: " + m_errorMessage;
     line2 = "Press BACKSPACE to return to menu";
     break;
@@ -321,6 +321,6 @@ void LobbyRoomState::onLobbyState(const std::string &lobbyCode, int playerCount)
 void LobbyRoomState::onError(const std::string &errorMsg)
 {
   std::cerr << "[LobbyRoomState] Error: " << errorMsg << '\n';
-  m_connectionState = LobbyConnectionState::ERROR;
+  m_connectionState = LobbyConnectionState::ERROR_STATE;
   m_errorMessage = errorMsg;
 }

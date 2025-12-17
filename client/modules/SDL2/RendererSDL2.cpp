@@ -6,16 +6,26 @@
 */
 
 #include "RendererSDL2.hpp"
+#include "../../interface/Color.hpp"
 #include "../../interface/KeyCodes.hpp"
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
 #include <SDL2/SDL_ttf.h>
+#include <SDL_error.h>
 #include <SDL_events.h>
+#include <SDL_gamecontroller.h>
+#include <SDL_joystick.h>
 #include <SDL_keycode.h>
+#include <SDL_pixels.h>
+#include <SDL_rect.h>
+#include <SDL_render.h>
+#include <SDL_stdinc.h>
+#include <SDL_surface.h>
+#include <SDL_timer.h>
+#include <SDL_video.h>
 #include <cmath>
-#include <iostream>
 #include <stdexcept>
-#include <string>
+#include <iostream>
 
 namespace
 {

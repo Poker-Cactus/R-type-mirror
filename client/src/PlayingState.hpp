@@ -34,7 +34,7 @@ public:
 
   /**
    * @brief Met à jour la logique du jeu
-   * @param dt Delta time en secondes
+   * @param deltaTime Delta time en secondes
    */
   void update(float delta_time);
 

@@ -4,9 +4,15 @@
 #include <string>
 
 #if defined(_WIN32)
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
 #include <windows.h>
 using LibHandle = HMODULE;
-#define LOAD_LIB(path) uLoadLibraryA(path)
+#define LOAD_LIB(path) LoadLibraryA(path)
 #define LOAD_SYM(handle, name) GetProcAddress(handle, name)
 #define CLOSE_LIB(handle) FreeLibrary(handle)
 #else
@@ -28,17 +34,18 @@ public:
       : handle(nullptr), createFn(nullptr), destroyFn(nullptr)
   {
     handle = LOAD_LIB(path.c_str());
-    if (!handle)
+    if (handle == nullptr) {
       throw std::runtime_error("Failed to load module: " + path);
+    }
 
     createFn = reinterpret_cast<CreateFn>(LOAD_SYM(handle, createName.c_str()));
-    if (!createFn) {
+    if (createFn == nullptr) {
       CLOSE_LIB(handle);
       throw std::runtime_error("Failed to load symbol: " + createName);
     }
 
     destroyFn = reinterpret_cast<DestroyFn>(LOAD_SYM(handle, destroyName.c_str()));
-    if (!destroyFn) {
+    if (destroyFn == nullptr) {
       CLOSE_LIB(handle);
       throw std::runtime_error("Failed to load symbol: " + destroyName);
     }
@@ -46,7 +53,7 @@ public:
 
   ~Module()
   {
-    if (handle) {
+    if (handle != nullptr) {
       CLOSE_LIB(handle);
     }
   }

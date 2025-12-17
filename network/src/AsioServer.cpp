@@ -89,7 +89,7 @@ void AsioServer::send(std::span<const std::byte> data, const std::uint32_t &targ
   }
   m_socket.async_send_to(
     asio::buffer(data.data(), data.size()), targetEndpointIt->second,
-    asio::bind_executor(m_strand, [this, targetEndpointId](const std::error_code &error, std::size_t bytesTransferred) {
+    asio::bind_executor(m_strand, [this, targetEndpointId](const std::error_code &error, UNUSED std::size_t bytesTransferred) {
       if (error) {
         std::cerr << "[Server] Send error: " << error.message() << '\n';
       } else {
@@ -165,6 +165,16 @@ void AsioServer::createPlayerEntity(std::uint32_t clientId)
     std::cerr << "[Server] Cannot create player entity: world not set." << '\n';
     return;
   }
+
+  // Player spawn constants
+  UNUSED static constexpr float PLAYER_GUN_OFFSET = 20.0F;
+  UNUSED static constexpr float PLAYER_START_X = 100.0F;
+  UNUSED static constexpr float PLAYER_BASE_Y = 300.0F;
+  UNUSED static constexpr float PLAYER_Y_SPACING = 50.0F;
+  UNUSED static constexpr int PLAYER_HEALTH = 100;
+  UNUSED static constexpr float PLAYER_COLLIDER_SIZE = 32.0F;
+  UNUSED static constexpr unsigned int PLAYER_SPRITE_WIDTH = 140;
+  UNUSED static constexpr unsigned int PLAYER_SPRITE_HEIGHT = 60;
 
   ecs::Entity player = m_world->createEntity();
 

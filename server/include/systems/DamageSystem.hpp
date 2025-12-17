@@ -55,6 +55,8 @@ public:
 
 private:
   ecs::EventListenerHandle m_collisionHandle;
+  static constexpr int damageFromProjectile = 20;
+  static constexpr int damageFromEntityCollision = 10; 
 
   static void handleCollision(ecs::World &world, const ecs::CollisionEvent &event)
   {
@@ -99,11 +101,11 @@ private:
       applyDamage(world, entityB, entityA, 10);
     } else if (aHasHealth && !bHasHealth) {
       // Only A has health - projectile B hitting entity A
-      applyDamage(world, entityA, entityB, 20);
+      applyDamage(world, entityA, entityB, damageFromProjectile);
       world.destroyEntity(entityB); // Destroy projectile
     } else if (!aHasHealth && bHasHealth) {
       // Only B has health - projectile A hitting entity B
-      applyDamage(world, entityB, entityA, 20);
+      applyDamage(world, entityB, entityA, damageFromProjectile);
       world.destroyEntity(entityA); // Destroy projectile
     }
   }

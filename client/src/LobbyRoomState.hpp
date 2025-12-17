@@ -23,7 +23,7 @@ class World;
 /**
  * @brief Lobby connection state
  */
-enum class LobbyConnectionState : std::uint8_t { CONNECTING, JOINED, ERROR };
+enum class LobbyConnectionState : std::uint8_t { CONNECTING, JOINED, ERROR_STATE };
 
 /**
  * @brief Manages the lobby waiting room before game starts
