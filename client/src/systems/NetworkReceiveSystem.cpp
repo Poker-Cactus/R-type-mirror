@@ -201,6 +201,18 @@ void ClientNetworkReceiveSystem::handleSnapshot(ecs::World &world, const nlohman
       }
     }
 
+    // Owner/client id: set PlayerId component so client can identify its player entity
+    if (entityJson.contains("owner_client") && entityJson["owner_client"].is_number_unsigned()) {
+      const std::uint32_t ownerClient = entityJson["owner_client"].get<std::uint32_t>();
+      if (!world.hasComponent<ecs::PlayerId>(entity)) {
+        ecs::PlayerId pid{.clientId = ownerClient};
+        world.addComponent(entity, pid);
+      } else {
+        auto &pid = world.getComponent<ecs::PlayerId>(entity);
+        pid.clientId = ownerClient;
+      }
+    }
+
     // Receive health data for HUD display
     if (entityJson.contains("health") && entityJson["health"].is_object()) {
       const auto &healthJson = entityJson["health"];

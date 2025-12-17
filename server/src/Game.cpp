@@ -174,7 +174,8 @@ void Game::spawnPlayer(std::uint32_t networkId)
   world->addComponent(player, sprite);
 
   ecs::Networked networked;
-  networked.networkId = static_cast<ecs::Entity>(networkId);
+  // Use the created entity id as the network id (unique within this world).
+  networked.networkId = player;
   world->addComponent(player, networked);
 
   ecs::Score score;

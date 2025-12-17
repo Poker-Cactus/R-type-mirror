@@ -117,17 +117,36 @@ void Lobby::stopGame()
 
   m_gameStarted = false;
 
-  // Destroy all player entities
-  if (m_world) {
-    for (const auto &[clientId, entity] : m_playerEntities) {
-      if (m_world->isAlive(entity)) {
-        m_world->destroyEntity(entity);
+  if (!m_world) {
+    m_playerEntities.clear();
+    std::cout << "[Lobby:" << m_code << "] Game stopped (no world)" << '\n';
+    return;
+  }
+
+  // 1) Remove all systems so they can unsubscribe from events and release resources
+  m_world->clearSystems();
+
+  // 2) Clear any event listeners on the world's event bus
+  m_world->getEventBus().clear();
+
+  // 3) Destroy all entities to ensure components are removed and no stale state remains
+  {
+    ecs::ComponentSignature emptySig; // matches all entities
+    std::vector<ecs::Entity> allEntities;
+    m_world->getEntitiesWithSignature(emptySig, allEntities);
+    for (auto ent : allEntities) {
+      if (m_world->isAlive(ent)) {
+        m_world->destroyEntity(ent);
       }
     }
   }
 
-  // Clear player entity tracking
+  // 4) Clear player entity tracking
   m_playerEntities.clear();
+
+  // 5) Optionally replace the world to ensure a fully fresh state for the next start
+  //    This guarantees no lingering references remain in other subsystems.
+  m_world = std::make_shared<ecs::World>();
 
   std::cout << "[Lobby:" << m_code << "] Game stopped" << '\n';
 }
@@ -247,7 +266,9 @@ void Lobby::spawnPlayer(std::uint32_t clientId)
   m_world->addComponent(player, sprite);
 
   ecs::Networked networked;
-  networked.networkId = static_cast<ecs::Entity>(clientId);
+  // Use the entity id as the authoritative network id to avoid collisions
+  // with other entities (enemies/projectiles) that also use entity ids.
+  networked.networkId = player;
   m_world->addComponent(player, networked);
 
   ecs::Score score;

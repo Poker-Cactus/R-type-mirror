@@ -73,6 +73,23 @@ void NetworkSendSystem::update(ecs::World &world, float deltaTime)
   m_timeSinceLastSend += deltaTime;
   if (m_timeSinceLastSend >= SEND_INTERVAL) {
 
+    // Clean up cached last-network-id lists for lobbies that no longer exist
+    // or that are not currently running to avoid sending stale 'destroyed' lists.
+    if (m_lobbyManager != nullptr) {
+      std::vector<std::string> toErase;
+      for (const auto &pair : m_lobbyLastNetworkIds) {
+        const std::string &code = pair.first;
+        auto lobbyIt = m_lobbyManager->getLobbies().find(code);
+        if (lobbyIt == m_lobbyManager->getLobbies().end() || lobbyIt->second == nullptr ||
+            !lobbyIt->second->isGameStarted()) {
+          toErase.push_back(code);
+        }
+      }
+      for (const auto &code : toErase) {
+        m_lobbyLastNetworkIds.erase(code);
+      }
+    }
+
     // If no lobby manager, skip (can't send lobby-specific state)
     if (m_lobbyManager == nullptr) {
       m_timeSinceLastSend = 0.0f;
