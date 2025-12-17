@@ -10,6 +10,7 @@
 #include "../../engineCore/include/ecs/components/Collider.hpp"
 #include "../../engineCore/include/ecs/components/Health.hpp"
 #include "../../engineCore/include/ecs/components/Networked.hpp"
+#include "../../engineCore/include/ecs/components/PlayerId.hpp"
 #include "../../engineCore/include/ecs/components/Score.hpp"
 #include "../../engineCore/include/ecs/components/Sprite.hpp"
 #include "../../engineCore/include/ecs/components/Transform.hpp"
@@ -136,6 +137,12 @@ void NetworkSendSystem::update(ecs::World &world, float deltaTime)
         if (lobbyWorld->hasComponent<ecs::Score>(entity)) {
           const auto &score = lobbyWorld->getComponent<ecs::Score>(entity);
           entityJson["score"] = {{"points", score.points}};
+        }
+
+        // Include owner client id when present so client can identify its player reliably
+        if (lobbyWorld->hasComponent<ecs::PlayerId>(entity)) {
+          const auto &pid = lobbyWorld->getComponent<ecs::PlayerId>(entity);
+          entityJson["owner_client"] = pid.clientId;
         }
 
         snapshot["entities"].push_back(entityJson);

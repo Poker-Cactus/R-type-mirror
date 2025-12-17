@@ -10,6 +10,7 @@
 #include "../../engineCore/include/ecs/components/Collider.hpp"
 #include "../../engineCore/include/ecs/components/Health.hpp"
 #include "../../engineCore/include/ecs/components/Networked.hpp"
+#include "../../engineCore/include/ecs/components/PlayerId.hpp"
 #include "../../engineCore/include/ecs/components/Score.hpp"
 #include "../../engineCore/include/ecs/components/Sprite.hpp"
 #include "../../engineCore/include/ecs/components/Transform.hpp"
@@ -75,6 +76,25 @@ void ClientNetworkReceiveSystem::update(ecs::World &world, float deltaTime)
       else if (type == "lobby_joined") {
         std::string code = json.value("code", "");
         std::cout << "[Client] Joined lobby: " << code << std::endl;
+
+        // Clear existing entities and network id mapping when joining a lobby
+        // to avoid leftover entities from previous lobbies causing visual/HP glitches.
+        try {
+          // Destroy all existing entities in the world
+          ecs::ComponentSignature emptySig; // default empty signature matches all
+          std::vector<ecs::Entity> allEntities;
+          world.getEntitiesWithSignature(emptySig, allEntities);
+          for (auto e : allEntities) {
+            if (world.isAlive(e)) {
+              world.destroyEntity(e);
+            }
+          }
+          // Clear client-side mapping of network ids to entities
+          g_networkIdToEntity.clear();
+        } catch (const std::exception &e) {
+          std::cerr << "[Client] Error clearing world on lobby join: " << e.what() << std::endl;
+        }
+
         if (m_lobbyJoinedCallback) {
           m_lobbyJoinedCallback(code);
         }
@@ -236,6 +256,82 @@ void ClientNetworkReceiveSystem::handleSnapshot(ecs::World &world, const nlohman
 
   if (g_debugLogAcc >= 1.0F) {
     g_debugLogAcc = 0.0F;
+  }
+
+  // ---- Concise receive/display logging (throttled and change-detected) ----
+  // Determine our client id
+  auto *sendSys = world.getSystem<NetworkSendSystem>();
+  if (sendSys != nullptr) {
+    const std::uint32_t myClientId = sendSys->getClientId();
+
+    // Find the entity that belongs to us (prefer PlayerId.owner_client, fallback to networkId)
+    ecs::Entity myEntity = 0;
+    // First pass: PlayerId
+    std::vector<ecs::Entity> candidateEntities;
+    {
+      ecs::ComponentSignature sig;
+      sig.set(ecs::getComponentId<ecs::Networked>());
+      // We only need candidates which have Networked (that's what snapshots replicate)
+      world.getEntitiesWithSignature(sig, candidateEntities);
+    }
+
+    for (auto e : candidateEntities) {
+      if (world.hasComponent<ecs::PlayerId>(e)) {
+        const auto &pid = world.getComponent<ecs::PlayerId>(e);
+        if (pid.clientId == myClientId) {
+          myEntity = e;
+          break;
+        }
+      }
+    }
+
+    if (myEntity == 0) {
+      // Fallback: match by Networked.networkId == myClientId
+      for (auto e : candidateEntities) {
+        if (!world.hasComponent<ecs::Networked>(e))
+          continue;
+        const auto &net = world.getComponent<ecs::Networked>(e);
+        if (static_cast<std::uint32_t>(net.networkId) == myClientId) {
+          myEntity = e;
+          break;
+        }
+      }
+    }
+
+    int displayedHp = -1;
+    int displayedMaxHp = -1;
+    int displayedScore = -1;
+
+    if (myEntity != 0 && world.isAlive(myEntity)) {
+      if (world.hasComponent<ecs::Health>(myEntity)) {
+        const auto &h = world.getComponent<ecs::Health>(myEntity);
+        displayedHp = h.hp;
+        displayedMaxHp = h.maxHp;
+      }
+      if (world.hasComponent<ecs::Score>(myEntity)) {
+        const auto &s = world.getComponent<ecs::Score>(myEntity);
+        displayedScore = s.points;
+      }
+    }
+
+    // Static previous values to detect changes and throttle logs
+    static int prevHp = -9999;
+    static int prevScore = -9999;
+    static int tickCounter = 0;
+    ++tickCounter;
+
+    bool changed = (displayedHp != prevHp) || (displayedScore != prevScore);
+    // Log if changed or every 120 snapshots (~2s at 60Hz snapshots)
+    if (changed || (tickCounter % 120) == 0) {
+      std::cout << "[Client][RECV] snapshot entities=" << json["entities"].size() << " clientId=" << myClientId
+                << " entity=" << myEntity << " hp=" << displayedHp << "/" << displayedMaxHp
+                << " score=" << displayedScore << std::endl;
+      // Also echo what the HUD will display (concise)
+      std::cout << "[Client][DISPLAY] HP=" << (displayedHp >= 0 ? std::to_string(displayedHp) : "n/a")
+                << " Score=" << (displayedScore >= 0 ? std::to_string(displayedScore) : "n/a") << std::endl;
+      prevHp = displayedHp;
+      prevScore = displayedScore;
+    }
   }
 }
 

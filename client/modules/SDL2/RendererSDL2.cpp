@@ -166,6 +166,17 @@ RendererSDL2::RendererSDL2(int width, int height) : windowWidth(width), windowHe
 
   SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
 
+  // Update windowWidth/windowHeight to the renderer's actual output size
+  // (handles high-DPI / Retina where window logical size != drawable size).
+  if (renderer != nullptr) {
+    int outW = 0;
+    int outH = 0;
+    if (SDL_GetRendererOutputSize(renderer, &outW, &outH) == 0) {
+      windowWidth = outW;
+      windowHeight = outH;
+    }
+  }
+
   for (int i = 0; i < SDL_NumJoysticks(); ++i) {
     if (SDL_IsGameController(i) == SDL_TRUE) {
       SDL_GameController *pad = SDL_GameControllerOpen(i);
@@ -238,8 +249,21 @@ void RendererSDL2::setFullscreen(bool fullscreen)
   this->fullscreen = fullscreen;
   SDL_SetWindowFullscreen(window, fullscreen ? SDL_WINDOW_FULLSCREEN_DESKTOP : 0);
 
-  // Mettre à jour les dimensions de la fenêtre après le changement
-  SDL_GetWindowSize(window, &windowWidth, &windowHeight);
+  // Mettre à jour les dimensions en utilisant la taille de sortie du renderer
+  // pour obtenir la taille réelle en pixels (corrige Retina / HiDPI).
+  if (renderer != nullptr) {
+    int outW = 0;
+    int outH = 0;
+    if (SDL_GetRendererOutputSize(renderer, &outW, &outH) == 0) {
+      windowWidth = outW;
+      windowHeight = outH;
+    } else {
+      // Fallback to window size if renderer query fails
+      SDL_GetWindowSize(window, &windowWidth, &windowHeight);
+    }
+  } else {
+    SDL_GetWindowSize(window, &windowWidth, &windowHeight);
+  }
 }
 
 bool RendererSDL2::isFullscreen() const
@@ -282,7 +306,19 @@ bool RendererSDL2::pollEvents()
     }
     if (event.type == SDL_WINDOWEVENT) {
       if (event.window.event == SDL_WINDOWEVENT_RESIZED || event.window.event == SDL_WINDOWEVENT_SIZE_CHANGED) {
-        SDL_GetWindowSize(window, &windowWidth, &windowHeight);
+        // Use renderer output size to account for HiDPI scaling
+        if (renderer != nullptr) {
+          int outW = 0;
+          int outH = 0;
+          if (SDL_GetRendererOutputSize(renderer, &outW, &outH) == 0) {
+            windowWidth = outW;
+            windowHeight = outH;
+          } else {
+            SDL_GetWindowSize(window, &windowWidth, &windowHeight);
+          }
+        } else {
+          SDL_GetWindowSize(window, &windowWidth, &windowHeight);
+        }
       }
     }
   }

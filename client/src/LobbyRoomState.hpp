@@ -55,6 +55,9 @@ public:
   void onLobbyState(const std::string &lobbyCode, int playerCount);
   void onError(const std::string &errorMsg);
 
+  // Send viewport (width/height) to server
+  void sendViewportToServer();
+
 private:
   void loadSpriteTextures();
   void freeSpriteTextures();

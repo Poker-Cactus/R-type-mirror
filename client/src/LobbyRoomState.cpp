@@ -169,6 +169,8 @@ void LobbyRoomState::processInput()
   // Only allow starting game if we're in a lobby
   if (m_connectionState == LobbyConnectionState::JOINED && renderer->isKeyJustPressed(KeyCode::KEY_X)) {
     std::cout << "[LobbyRoomState] Sending start game request to server" << '\n';
+    // Ensure server knows our current viewport before starting the game
+    sendViewportToServer();
 
     nlohmann::json message;
     message["type"] = "start_game";
@@ -246,6 +248,26 @@ void LobbyRoomState::cleanup()
   m_lobbyFont = nullptr;
 }
 
+void LobbyRoomState::sendViewportToServer()
+{
+  if (m_networkManager == nullptr || renderer == nullptr) {
+    return;
+  }
+
+  nlohmann::json viewport;
+  viewport["type"] = "viewport";
+  viewport["width"] = static_cast<std::uint32_t>(renderer->getWindowWidth());
+  viewport["height"] = static_cast<std::uint32_t>(renderer->getWindowHeight());
+
+  std::string serialized = viewport.dump();
+  const auto capnpSerialized = m_networkManager->getPacketHandler()->serialize(serialized);
+
+  m_networkManager->send(
+    std::span<const std::byte>(reinterpret_cast<const std::byte *>(capnpSerialized.data()), capnpSerialized.size()), 0);
+
+  std::cout << "[LobbyRoomState] Sent viewport " << viewport["width"] << "x" << viewport["height"] << '\n';
+}
+
 void LobbyRoomState::loadSpriteTextures()
 {
   if (renderer == nullptr) {
@@ -283,6 +305,10 @@ void LobbyRoomState::onLobbyJoined(const std::string &lobbyCode)
   std::cout << "[LobbyRoomState] Successfully joined lobby: " << lobbyCode << '\n';
   m_connectionState = LobbyConnectionState::JOINED;
   m_lobbyCode = lobbyCode;
+
+  // Immediately send our viewport to the server so it has correct dimensions
+  // before the game begins.
+  sendViewportToServer();
 }
 
 void LobbyRoomState::onLobbyState(const std::string &lobbyCode, int playerCount)

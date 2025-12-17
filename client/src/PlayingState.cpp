@@ -9,9 +9,11 @@
 #include "../../engineCore/include/ecs/components/Collider.hpp"
 #include "../../engineCore/include/ecs/components/Health.hpp"
 #include "../../engineCore/include/ecs/components/Networked.hpp"
+#include "../../engineCore/include/ecs/components/PlayerId.hpp"
 #include "../../engineCore/include/ecs/components/Score.hpp"
 #include "../../engineCore/include/ecs/components/Sprite.hpp"
 #include "../../engineCore/include/ecs/components/Transform.hpp"
+#include "../include/systems/NetworkSendSystem.hpp"
 #include "../interface/Geometry.hpp"
 #include <iostream>
 
@@ -243,10 +245,19 @@ void PlayingState::updateHUDFromWorld()
     return;
   }
 
-  // Find the player entity (the one with our client's network ID)
+  // Get our assigned client id from the NetworkSendSystem
+  auto *sendSys = world->getSystem<NetworkSendSystem>();
+  if (sendSys == nullptr) {
+    return;
+  }
+
+  const std::uint32_t myClientId = sendSys->getClientId();
+
+  // Find the entity whose Networked.networkId == myClientId
   ecs::ComponentSignature playerSig;
   playerSig.set(ecs::getComponentId<ecs::Networked>());
   playerSig.set(ecs::getComponentId<ecs::Health>());
+  playerSig.set(ecs::getComponentId<ecs::Score>());
 
   std::vector<ecs::Entity> entities;
   world->getEntitiesWithSignature(playerSig, entities);
@@ -255,31 +266,50 @@ void PlayingState::updateHUDFromWorld()
   constexpr int DEBUG_LOG_INTERVAL = 120;
   static int debug_counter = 0;
   if (++debug_counter % DEBUG_LOG_INTERVAL == 0) {
-    std::cout << "[PlayingState] Found " << entities.size()
-              << " entities with Health, m_playerHealth = " << m_playerHealth << '\n';
+    std::cout << "[PlayingState] Candidate entities=" << entities.size() << " myClientId=" << myClientId
+              << " m_playerHealth=" << m_playerHealth << '\n';
   }
 
-  // Update health and score from the first player entity found
+  // Prefer finding entity by PlayerId.owner_client (explicit from server)
+  bool found = false;
   for (auto entity : entities) {
-    if (world->hasComponent<ecs::Health>(entity)) {
-      const auto &health = world->getComponent<ecs::Health>(entity);
-      m_playerHealth = health.hp;
-
-      // Debug: log when health is critically low
-      constexpr int DEATH_MARKER = -1000;
-      if (m_playerHealth <= 0 && m_playerHealth != DEATH_MARKER) {
-        static bool logged_death = false;
-        if (!logged_death) {
-          std::cout << "[PlayingState] Player health is " << m_playerHealth << " - should return to menu" << '\n';
-          logged_death = true;
+    if (world->hasComponent<ecs::PlayerId>(entity)) {
+      const auto &pid = world->getComponent<ecs::PlayerId>(entity);
+      if (pid.clientId == myClientId) {
+        if (world->hasComponent<ecs::Health>(entity)) {
+          const auto &health = world->getComponent<ecs::Health>(entity);
+          m_playerHealth = health.hp;
         }
+        if (world->hasComponent<ecs::Score>(entity)) {
+          const auto &score = world->getComponent<ecs::Score>(entity);
+          m_playerScore = score.points;
+        }
+        found = true;
+        break;
       }
     }
-    if (world->hasComponent<ecs::Score>(entity)) {
-      const auto &score = world->getComponent<ecs::Score>(entity);
-      m_playerScore = score.points;
+  }
+
+  // Fallback: match by Networked.networkId == myClientId (legacy behavior)
+  if (!found) {
+    for (auto entity : entities) {
+      if (!world->hasComponent<ecs::Networked>(entity)) {
+        continue;
+      }
+      const auto &net = world->getComponent<ecs::Networked>(entity);
+      if (static_cast<std::uint32_t>(net.networkId) != myClientId) {
+        continue;
+      }
+      if (world->hasComponent<ecs::Health>(entity)) {
+        const auto &health = world->getComponent<ecs::Health>(entity);
+        m_playerHealth = health.hp;
+      }
+      if (world->hasComponent<ecs::Score>(entity)) {
+        const auto &score = world->getComponent<ecs::Score>(entity);
+        m_playerScore = score.points;
+      }
+      break; // found our player
     }
-    break; // Use first player for now
   }
 }
 

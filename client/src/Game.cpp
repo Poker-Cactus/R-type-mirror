@@ -36,6 +36,13 @@ bool Game::init()
     }
     renderer->setWindowTitle("ChaD");
 
+    // Start the game in fullscreen by default
+    try {
+      renderer->setFullscreen(true);
+    } catch (const std::exception &e) {
+      std::cerr << "[Game::init] Warning: failed to set fullscreen: " << e.what() << '\n';
+    }
+
     menu = std::make_unique<Menu>(renderer);
     menu->init();
 
@@ -72,6 +79,9 @@ bool Game::init()
       networkReceiveSystem->setGameStartedCallback([this]() {
         std::cout << "[Game] Game started callback triggered - transitioning to PLAYING" << '\n';
         this->currentState = GameState::PLAYING;
+        // Send current viewport to server immediately after the game starts
+        // so the server records the correct client viewport for the playing session.
+        this->sendViewportToServer();
       });
     }
 
