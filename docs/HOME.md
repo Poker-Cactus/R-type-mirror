@@ -43,7 +43,7 @@ cmake --build .
 
 ```
 rtype/
-├── engineCore/    # Moteur ECS générique
+├── engine_core/    # Moteur ECS générique
 ├── common/         # Composants et protocole partagés
 ├── server/         # Serveur de jeu
 ├── client/         # Client de jeu

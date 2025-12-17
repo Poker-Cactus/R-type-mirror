@@ -73,7 +73,7 @@ clang-format path/to/file.cpp
 Pour analyser un fichier spécifique :
 
 ```bash
-clang-tidy path/to/file.cpp -- -I./engineCore/include -I./common/include -std=c++20
+clang-tidy path/to/file.cpp -- -I./engine_core/include -I./common/include -std=c++20
 ```
 
 Pour analyser tout le projet avec CMake :

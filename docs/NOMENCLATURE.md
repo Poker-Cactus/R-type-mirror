@@ -71,7 +71,7 @@ project/
 
 ```cpp
 class PlayerEntity { };
-class NetworkManager { };
+class UdpServer { };
 struct GameState { };
 
 // Interfaces: prefix with 'I'
@@ -153,7 +153,7 @@ enum class ConnectionState {
 ```cpp
 namespace rtype {
     namespace network {
-        class NetworkManager { };
+        class UdpServer { };
     }
     namespace ecs {
         class Registry { };
@@ -422,7 +422,7 @@ Closes #42
 ** EPITECH PROJECT, 2025
 ** R-type-mirror
 ** File description:
-** NetworkManager.hpp - Asynchronous UDP server implementation
+** UdpServer.hpp - Asynchronous UDP server implementation
 */
 
 #ifndef UDP_SERVER_HPP_
@@ -441,7 +441,7 @@ namespace rtype::network {
  * Handles incoming UDP packets and dispatches them to
  * registered callbacks. Supports multiple concurrent connections.
  */
-class NetworkManager {
+class UdpServer {
 public:
     using PacketCallback = std::function<void(const std::string&)>;
     using ErrorCallback = std::function<void(const std::error_code&)>;
@@ -452,9 +452,9 @@ public:
      * @param ioContext ASIO IO context for async operations
      * @param port Server listening port
      */
-    NetworkManager(asio::io_context& ioContext, uint16_t port);
+    UdpServer(asio::io_context& ioContext, uint16_t port);
     
-    ~NetworkManager();
+    ~UdpServer();
 
     /**
      * @brief Registers callback for incoming packets
