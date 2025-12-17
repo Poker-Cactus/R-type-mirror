@@ -157,7 +157,7 @@ public:
   /**
    * @brief Removes all registered systems
    * @note All system pointers become invalid after this call
-   */
+   */ 
   void clear() noexcept
   {
     systems.clear();
