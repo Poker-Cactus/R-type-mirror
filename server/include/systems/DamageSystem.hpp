@@ -13,6 +13,8 @@
 #include "../../../engineCore/include/ecs/World.hpp"
 #include "../../../engineCore/include/ecs/components/Health.hpp"
 #include "../../../engineCore/include/ecs/components/Owner.hpp"
+#include "../../../engineCore/include/ecs/components/Velocity.hpp"
+#include "../../../engineCore/include/ecs/components/roles/PlayerControlled.hpp"
 #include "../../../engineCore/include/ecs/events/EventListenerHandle.hpp"
 #include "../../../engineCore/include/ecs/events/GameEvents.hpp"
 #include "ecs/ComponentSignature.hpp"
@@ -85,9 +87,18 @@ private:
     bool bHasHealth = world.hasComponent<ecs::Health>(entityB);
 
     if (aHasHealth && bHasHealth) {
-      // Both have health - mutual damage
-      applyDamage(world, entityA, entityB, damageFromEntityCollision);
-      applyDamage(world, entityB, entityA, damageFromEntityCollision);
+      // Both have health - if both are players, ignore collision damage
+      bool aIsPlayer = world.hasComponent<ecs::PlayerControlled>(entityA);
+      bool bIsPlayer = world.hasComponent<ecs::PlayerControlled>(entityB);
+
+      if (aIsPlayer && bIsPlayer) {
+        // Do not apply damage when two players collide to avoid instant kills
+        return;
+      }
+
+      // Otherwise apply mutual damage (e.g., enemy vs player)
+      applyDamage(world, entityA, entityB, 10);
+      applyDamage(world, entityB, entityA, 10);
     } else if (aHasHealth && !bHasHealth) {
       // Only A has health - projectile B hitting entity A
       applyDamage(world, entityA, entityB, damageFromProjectile);
@@ -112,6 +123,12 @@ private:
       if (world.isAlive(owner.ownerId)) {
         realSource = owner.ownerId; // Credit the owner, not the projectile
       }
+    }
+
+    // Prevent friendly fire: if source is a player and target is also a player, skip
+    if (realSource != 0 && world.hasComponent<ecs::PlayerControlled>(realSource) &&
+        world.hasComponent<ecs::PlayerControlled>(target)) {
+      return;
     }
 
     // Emit damage event

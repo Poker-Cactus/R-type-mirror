@@ -6,7 +6,9 @@
 */
 
 #include "MainMenu.hpp"
+#include "../../../interface/Geometry.hpp"
 #include "../../../interface/KeyCodes.hpp"
+#include <iostream>
 
 void MainMenu::init(IRenderer *renderer)
 {
@@ -56,34 +58,35 @@ void MainMenu::render(int winWidth, int winHeight, IRenderer *renderer)
     parallaxOffsetFloor = 0.0f;
 
   if (moonSky != nullptr) {
-    renderer->drawTextureEx(moonSky, static_cast<int>(parallaxOffsetSky), 0, winWidth, winHeight, 0.0, false, false);
-    renderer->drawTextureEx(moonSky, static_cast<int>(parallaxOffsetSky - winWidth), 0, winWidth, winHeight, 0.0, false,
-                            false);
+    renderer->drawTextureEx(moonSky, {static_cast<int>(parallaxOffsetSky), 0, winWidth, winHeight}, 0.0, false, false);
+    renderer->drawTextureEx(moonSky, {static_cast<int>(parallaxOffsetSky - winWidth), 0, winWidth, winHeight}, 0.0,
+                            false, false);
   }
 
   if (moonBack != nullptr) {
-    renderer->drawTextureEx(moonBack, static_cast<int>(parallaxOffsetBack), 0, winWidth, winHeight, 0.0, false, false);
-    renderer->drawTextureEx(moonBack, static_cast<int>(parallaxOffsetBack - winWidth), 0, winWidth, winHeight, 0.0,
+    renderer->drawTextureEx(moonBack, {static_cast<int>(parallaxOffsetBack), 0, winWidth, winHeight}, 0.0, false,
+                            false);
+    renderer->drawTextureEx(moonBack, {static_cast<int>(parallaxOffsetBack - winWidth), 0, winWidth, winHeight}, 0.0,
                             false, false);
   }
 
   if (moonMid != nullptr) {
-    renderer->drawTextureEx(moonMid, static_cast<int>(parallaxOffsetMid), 0, winWidth, winHeight, 0.0, false, false);
-    renderer->drawTextureEx(moonMid, static_cast<int>(parallaxOffsetMid - winWidth), 0, winWidth, winHeight, 0.0, false,
-                            false);
+    renderer->drawTextureEx(moonMid, {static_cast<int>(parallaxOffsetMid), 0, winWidth, winHeight}, 0.0, false, false);
+    renderer->drawTextureEx(moonMid, {static_cast<int>(parallaxOffsetMid - winWidth), 0, winWidth, winHeight}, 0.0,
+                            false, false);
   }
 
   if (moonFront != nullptr) {
-    renderer->drawTextureEx(moonFront, static_cast<int>(parallaxOffsetFront), 0, winWidth, winHeight, 0.0, false,
+    renderer->drawTextureEx(moonFront, {static_cast<int>(parallaxOffsetFront), 0, winWidth, winHeight}, 0.0, false,
                             false);
-    renderer->drawTextureEx(moonFront, static_cast<int>(parallaxOffsetFront - winWidth), 0, winWidth, winHeight, 0.0,
+    renderer->drawTextureEx(moonFront, {static_cast<int>(parallaxOffsetFront - winWidth), 0, winWidth, winHeight}, 0.0,
                             false, false);
   }
 
   if (moonFloor != nullptr) {
-    renderer->drawTextureEx(moonFloor, static_cast<int>(parallaxOffsetFloor), 0, winWidth, winHeight, 0.0, false,
+    renderer->drawTextureEx(moonFloor, {static_cast<int>(parallaxOffsetFloor), 0, winWidth, winHeight}, 0.0, false,
                             false);
-    renderer->drawTextureEx(moonFloor, static_cast<int>(parallaxOffsetFloor - winWidth), 0, winWidth, winHeight, 0.0,
+    renderer->drawTextureEx(moonFloor, {static_cast<int>(parallaxOffsetFloor - winWidth), 0, winWidth, winHeight}, 0.0,
                             false, false);
   }
 
@@ -112,7 +115,9 @@ void MainMenu::process(MenuState *currentState, IRenderer *renderer)
   }
   if (renderer->isKeyJustPressed(KeyCode::KEY_RETURN)) {
     std::string selectedButton = mainMenuItems[currentMenuIndex];
+    std::cout << "[MainMenu] Enter pressed on: " << selectedButton << '\n';
     if (selectedButton == "Play") {
+      std::cout << "[MainMenu] Changing state to LOBBY" << '\n';
       *currentState = MenuState::LOBBY;
     } else if (selectedButton == "Settings") {
       *currentState = MenuState::SETTINGS;

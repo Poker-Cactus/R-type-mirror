@@ -32,6 +32,7 @@ public:
   [[nodiscard]] ecs::ComponentSignature getSignature() const override;
 
   void setClientId(std::uint32_t clientId) { m_clientId = clientId; }
+  std::uint32_t getClientId() const { return m_clientId; }
 
 protected:
 private:

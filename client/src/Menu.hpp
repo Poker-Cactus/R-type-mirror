@@ -20,23 +20,28 @@ public:
   [[nodiscard]] MenuState getState() const;
   [[nodiscard]] bool shouldStartGame() const;
 
+  // Lobby selection info
+  [[nodiscard]] bool isCreatingLobby() const;
+  [[nodiscard]] std::string getLobbyCodeToJoin() const;
+  void resetLobbySelection();
+
   void processInput();
 
 private:
   void processBack();
 
   void drawCenteredText(const std::string &text, int yOffset, const Color &color);
-  void drawThickBorderedRect(int x, int y, int width, int height, const Color &color, int thickness);
+  void drawThickBorderedRect(int posX, int posY, int width, int height, const Color &color, int thickness);
   void drawSettingsRectangles(int winWidth, int winHeight, int titleHeight);
 
   IRenderer *renderer;
-  MainMenu *mainMenu;
-  LoadingMenu *loadingMenu;
-  ProfileMenu *profileMenu;
-  SettingsMenu *settingsMenu;
+  MainMenu *mainMenu = nullptr;
+  LoadingMenu *loadingMenu = nullptr;
+  ProfileMenu *profileMenu = nullptr;
+  SettingsMenu *settingsMenu = nullptr;
+  LobbyMenu *lobbyMenu = nullptr;
 
   void *menu_font = nullptr;
   LoadingScreen *loadingScreen = nullptr;
-  LobbyMenu *lobbyMenu;
   MenuState currentState = MenuState::LOADING;
 };

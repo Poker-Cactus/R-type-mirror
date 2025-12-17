@@ -36,7 +36,7 @@ public:
    * @brief Met à jour la logique du jeu
    * @param deltaTime Delta time en secondes
    */
-  void update(float deltaTime);
+  void update(float delta_time);
 
   /**
    * @brief Dessine tous les éléments du jeu
@@ -70,9 +70,9 @@ private:
   void freeSpriteTextures();
 
   // HUD state
+  static constexpr int INITIAL_PLAYER_HEALTH = 100;
   void *m_hudFont = nullptr;
-  static constexpr int DEFAULT_PLAYER_HEALTH = 100;
-  int m_playerHealth = DEFAULT_PLAYER_HEALTH;
+  int m_playerHealth = INITIAL_PLAYER_HEALTH;
   int m_playerScore = 0;
 
   void renderHUD();

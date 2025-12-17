@@ -1,4 +1,5 @@
 #pragma once
+#include "Geometry.hpp"
 #include <string>
 
 class ITexture
@@ -9,9 +10,7 @@ public:
   virtual void *loadTexture(const std::string &filepath) = 0;
   virtual void freeTexture(void *texture) = 0;
   virtual void getTextureSize(void *texture, int &width, int &height) = 0;
-  virtual void drawTexture(void *texture, int x, int y) = 0;
-  virtual void drawTextureRegion(void *texture, int srcX, int srcY, int srcW, int srcH, int dstX, int dstY, int dstW,
-                                 int dstH) = 0;
-  virtual void drawTextureEx(void *texture, int x, int y, int w, int h, double angle, bool flipX = false,
-                             bool flipY = false) = 0;
+  virtual void drawTexture(void *texture, int pos_x, int pos_y) = 0;
+  virtual void drawTextureRegion(void *texture, const Rect &src, const Rect &dst) = 0;
+  virtual void drawTextureEx(void *texture, const Rect &dst, double angle, bool flipX = false, bool flipY = false) = 0;
 };

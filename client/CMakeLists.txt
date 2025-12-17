@@ -11,8 +11,10 @@ add_executable(client
     src/Menu/LobbyMenu/LobbyMenu.cpp
     src/Menu/SettingsMenu/SettingsMenu.cpp
     src/Menu/ProfileMenu/ProfileMenu.cpp
+    src/LobbyRoomState.cpp
     src/PlayingState.cpp
     src/ParallaxBackground.cpp
+    src/Overlay.cpp
     src/Client.cpp
     src/systems/NetworkSendSystem.cpp
     src/systems/NetworkReceiveSystem.cpp
