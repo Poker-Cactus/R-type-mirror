@@ -1,0 +1,59 @@
+# Dossier de sortie des modules dans build/libs/
+set(MODULE_OUTPUT_DIR "${CMAKE_BINARY_DIR}/libs")
+
+# Crée le dossier libs s'il n'existe pas
+file(MAKE_DIRECTORY ${MODULE_OUTPUT_DIR})
+
+# Liste tous les sous-dossiers (SDL2, etc.)
+file(GLOB MODULE_DIRS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *)
+
+foreach(module_dir ${MODULE_DIRS})
+    # Ignore CMakeLists.txt et autres fichiers
+    if(IS_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/${module_dir}")
+        # Récupère tous les fichiers .cpp du module
+        file(GLOB_RECURSE MODULE_SOURCES "${module_dir}/*.cpp")
+        
+        if(MODULE_SOURCES)
+            # Nom de la bibliothèque = nom du dossier en minuscule + "_module"
+            string(TOLOWER ${module_dir} module_name)
+            set(LIB_NAME "${module_name}_module")
+            
+            message(STATUS "Building dynamic module: ${LIB_NAME}")
+            
+            add_library(${LIB_NAME} SHARED ${MODULE_SOURCES})
+            
+            # Include le dossier du module lui-même + client/include
+            target_include_directories(${LIB_NAME} PRIVATE
+                ${CMAKE_CURRENT_SOURCE_DIR}/${module_dir}
+                ${CMAKE_SOURCE_DIR}/client/include
+            )
+            
+            # Dépendances spécifiques selon le module
+            if(module_dir STREQUAL "SDL2")
+                # Conan's sdl_ttf may export different target names depending on version/options.
+                set(_ttf_target "")
+                if(TARGET SDL2_ttf::SDL2_ttf)
+                    set(_ttf_target SDL2_ttf::SDL2_ttf)
+                elseif(TARGET SDL2_ttf::SDL2_ttf-static)
+                    set(_ttf_target SDL2_ttf::SDL2_ttf-static)
+                elseif(TARGET sdl_ttf::sdl_ttf)
+                    set(_ttf_target sdl_ttf::sdl_ttf)
+                endif()
+
+                if(_ttf_target STREQUAL "")
+                    message(FATAL_ERROR "No SDL2_ttf target found (expected SDL2_ttf::SDL2_ttf, SDL2_ttf::SDL2_ttf-static or sdl_ttf::sdl_ttf)")
+                endif()
+
+                target_link_libraries(${LIB_NAME} PRIVATE SDL2::SDL2 ${_ttf_target} SDL2_image::SDL2_image)
+            endif()
+            
+            # Place les .so/.dll dans build/
+            set_target_properties(${LIB_NAME} PROPERTIES
+                LIBRARY_OUTPUT_DIRECTORY ${MODULE_OUTPUT_DIR}
+                RUNTIME_OUTPUT_DIRECTORY ${MODULE_OUTPUT_DIR}
+                ARCHIVE_OUTPUT_DIRECTORY ${MODULE_OUTPUT_DIR}
+                PREFIX ""  # Pas de préfixe "lib"
+            )
+        endif()
+    endif()
+endforeach()

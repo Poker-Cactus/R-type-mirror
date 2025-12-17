@@ -4,7 +4,7 @@
 
 ```
 rtype/
-├── engine_core/          # Moteur ECS générique
+├── engineCore/          # Moteur ECS générique
 ├── common/               # Code partagé (composants, protocole)
 ├── server/               # Application serveur
 ├── client/               # Application client
@@ -13,11 +13,11 @@ rtype/
 
 ## 🎯 Modules
 
-### 1. **engine_core** (Bibliothèque Statique)
+### 1. **engineCore** (Bibliothèque Statique)
 Moteur ECS (Entity Component System) générique et réutilisable.
 
 ```
-engine_core/
+engineCore/
 ├── include/
 │   ├── ecs/              # Système ECS (Registry, Entity, System)
 │   └── utils/            # Utilitaires (Logger, Timer, etc.)
@@ -100,10 +100,10 @@ client/
 ## 🔗 Dépendances Entre Modules
 
 ```
-server ──┬──> engine_core
+server ──┬──> engineCore
          └──> common
 
-client ──┬──> engine_core
+client ──┬──> engineCore
          └──> common
 
 common ──> asio (protocole réseau)
@@ -113,7 +113,7 @@ common ──> asio (protocole réseau)
 
 | Module       | Dépendances              |
 |--------------|--------------------------|
-| engine_core  | C++20                    |
+| engineCore  | C++20                    |
 | common       | C++20, Asio              |
 | server       | Asio (réseau)            |
 | client       | SDL2 (graphisme)         |
