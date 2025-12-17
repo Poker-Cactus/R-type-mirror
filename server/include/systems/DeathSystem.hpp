@@ -14,8 +14,13 @@
 #include "../../../engineCore/include/ecs/components/Health.hpp"
 #include "../../../engineCore/include/ecs/events/EventListenerHandle.hpp"
 #include "../../../engineCore/include/ecs/events/GameEvents.hpp"
+#include "../../engineCore/include/ecs/components/PlayerId.hpp"
+#include "../../engineCore/include/ecs/components/Score.hpp"
+#include "../Lobby.hpp"
+#include "../WorldLobbyRegistry.hpp"
 #include "ecs/ComponentSignature.hpp"
 #include <iostream>
+#include <nlohmann/json.hpp>
 #include <vector>
 
 namespace server
@@ -86,6 +91,35 @@ private:
       std::cout << "[DeathSystem] Entity " << event.entity << " died but killer " << event.killer << " is not alive"
                 << std::endl;
     }
+    // Notify owning client (if any) that their player died so client can return to menu.
+    // Try to find the lobby owning this world and send a direct message.
+    Lobby *lobby = getLobbyForWorld(&world);
+    if (lobby != nullptr) {
+      if (world.isAlive(event.entity) && world.hasComponent<ecs::PlayerId>(event.entity)) {
+        const auto &pid = world.getComponent<ecs::PlayerId>(event.entity);
+        nlohmann::json msg;
+        msg["type"] = "player_dead";
+        msg["reason"] = "killed";
+        // Include final HP (should be 0) and score if available
+        if (world.hasComponent<ecs::Health>(event.entity)) {
+          const auto &health = world.getComponent<ecs::Health>(event.entity);
+          msg["hp"] = health.hp;
+          msg["maxHp"] = health.maxHp;
+        } else {
+          msg["hp"] = 0;
+          msg["maxHp"] = 0;
+        }
+        if (world.hasComponent<ecs::Score>(event.entity)) {
+          const auto &score = world.getComponent<ecs::Score>(event.entity);
+          msg["score"] = score.points;
+        } else {
+          msg["score"] = 0;
+        }
+
+        lobby->sendJsonToClient(pid.clientId, msg);
+      }
+    }
+
     // Actual destruction happens in update()
   }
 };

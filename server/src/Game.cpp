@@ -174,7 +174,8 @@ void Game::spawnPlayer(std::uint32_t networkId)
   world->addComponent(player, sprite);
 
   ecs::Networked networked;
-  networked.networkId = static_cast<ecs::Entity>(networkId);
+  // Use the created entity id as the network id (unique within this world).
+  networked.networkId = player;
   world->addComponent(player, networked);
 
   ecs::Score score;
@@ -186,7 +187,7 @@ void Game::spawnPlayer(std::uint32_t networkId)
   playerId.clientId = networkId;
   world->addComponent(player, playerId);
 
-  std::cout << "[Server] Spawned player entity " << player << " for client " << networkId << std::endl;
+  std::cout << "[Server] Spawned player entity " << player << " for client " << networkId << '\n';
 }
 
 /**
@@ -214,6 +215,8 @@ void Game::setNetworkManager(const std::shared_ptr<INetworkManager> &networkMana
   if (m_networkSendSystem != nullptr) {
     m_networkSendSystem->setLobbyManager(&m_lobbyManager);
   }
+  // Give the lobby manager access to the network manager so lobbies can send direct messages
+  m_lobbyManager.setNetworkManager(m_networkManager);
 }
 
 void Game::runGameLoop()
@@ -272,7 +275,7 @@ std::shared_ptr<ecs::World> Game::getWorld()
 
 void Game::startGame()
 {
-  std::cout << "[Server] Starting game with " << m_lobbyClients.size() << " players" << std::endl;
+  std::cout << "[Server] Starting game with " << m_lobbyClients.size() << " players" << '\n';
   gameStarted = true;
 }
 
@@ -285,14 +288,14 @@ void Game::addClientToLobby(std::uint32_t clientId)
 {
   m_lobbyClients.insert(clientId);
   std::cout << "[Server] Player " << clientId << " joined the lobby (" << m_lobbyClients.size() << " players waiting)"
-            << std::endl;
+            << '\n';
 }
 
 void Game::removeClientFromLobby(std::uint32_t clientId)
 {
   m_lobbyClients.erase(clientId);
   std::cout << "[Server] Player " << clientId << " left the lobby (" << m_lobbyClients.size() << " players remaining)"
-            << std::endl;
+            << '\n';
 }
 
 const std::unordered_set<std::uint32_t> &Game::getLobbyClients() const

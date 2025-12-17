@@ -10,6 +10,7 @@
 #include "../../engineCore/include/ecs/components/Collider.hpp"
 #include "../../engineCore/include/ecs/components/Health.hpp"
 #include "../../engineCore/include/ecs/components/Networked.hpp"
+#include "../../engineCore/include/ecs/components/PlayerId.hpp"
 #include "../../engineCore/include/ecs/components/Score.hpp"
 #include "../../engineCore/include/ecs/components/Sprite.hpp"
 #include "../../engineCore/include/ecs/components/Transform.hpp"
@@ -23,6 +24,7 @@ namespace
 bool g_loggedFirstSnapshot = false;
 std::unordered_map<std::uint32_t, ecs::Entity> g_networkIdToEntity;
 float g_debugLogAcc = 0.0F;
+bool g_acceptSnapshots = false;
 } // namespace
 
 ClientNetworkReceiveSystem::ClientNetworkReceiveSystem(std::shared_ptr<INetworkManager> networkManager)
@@ -61,13 +63,43 @@ void ClientNetworkReceiveSystem::update(ecs::World &world, float deltaTime)
         continue;
       }
 
+      // Server told us that this player is dead
+      if (type == "player_dead") {
+        std::cout << "[Client] Received player_dead from server" << std::endl;
+        // Stop accepting snapshots immediately
+        g_acceptSnapshots = false;
+        if (m_playerDeadCallback) {
+          m_playerDeadCallback(json);
+        }
+        continue;
+      }
+
+      // Lobby left acknowledgement from server
+      if (type == "lobby_left") {
+        std::cout << "[Client] Received lobby_left from server" << std::endl;
+        // Stop accepting snapshots immediately
+        g_acceptSnapshots = false;
+        if (m_lobbyStateCallback) {
+          // Notify any lobby UI about the updated state (0 players)
+          m_lobbyStateCallback(json.value("code", ""), 0);
+        }
+        // Call optional lobby-left callback
+        if (m_lobbyLeftCallback) {
+          m_lobbyLeftCallback();
+        }
+        continue;
+      }
+
       // Game entity messages
       if (type == "entity_created") {
         handleEntityCreated(world, json);
       } else if (type == "entity_update") {
         handleEntityUpdate(world, json);
       } else if (type == "snapshot") {
-        handleSnapshot(world, json);
+        // Only process snapshots when allowed (we may have left the lobby)
+        if (g_acceptSnapshots) {
+          handleSnapshot(world, json);
+        }
       } else if (type == "game_started") {
         handleGameStarted();
       }
@@ -75,6 +107,25 @@ void ClientNetworkReceiveSystem::update(ecs::World &world, float deltaTime)
       else if (type == "lobby_joined") {
         std::string code = json.value("code", "");
         std::cout << "[Client] Joined lobby: " << code << std::endl;
+
+        // Clear existing entities and network id mapping when joining a lobby
+        // to avoid leftover entities from previous lobbies causing visual/HP glitches.
+        try {
+          // Destroy all existing entities in the world
+          ecs::ComponentSignature emptySig; // default empty signature matches all
+          std::vector<ecs::Entity> allEntities;
+          world.getEntitiesWithSignature(emptySig, allEntities);
+          for (auto e : allEntities) {
+            if (world.isAlive(e)) {
+              world.destroyEntity(e);
+            }
+          }
+          // Clear client-side mapping of network ids to entities
+          g_networkIdToEntity.clear();
+        } catch (const std::exception &e) {
+          std::cerr << "[Client] Error clearing world on lobby join: " << e.what() << std::endl;
+        }
+
         if (m_lobbyJoinedCallback) {
           m_lobbyJoinedCallback(code);
         }
@@ -181,6 +232,18 @@ void ClientNetworkReceiveSystem::handleSnapshot(ecs::World &world, const nlohman
       }
     }
 
+    // Owner/client id: set PlayerId component so client can identify its player entity
+    if (entityJson.contains("owner_client") && entityJson["owner_client"].is_number_unsigned()) {
+      const std::uint32_t ownerClient = entityJson["owner_client"].get<std::uint32_t>();
+      if (!world.hasComponent<ecs::PlayerId>(entity)) {
+        ecs::PlayerId pid{.clientId = ownerClient};
+        world.addComponent(entity, pid);
+      } else {
+        auto &pid = world.getComponent<ecs::PlayerId>(entity);
+        pid.clientId = ownerClient;
+      }
+    }
+
     // Receive health data for HUD display
     if (entityJson.contains("health") && entityJson["health"].is_object()) {
       const auto &healthJson = entityJson["health"];
@@ -236,6 +299,82 @@ void ClientNetworkReceiveSystem::handleSnapshot(ecs::World &world, const nlohman
 
   if (g_debugLogAcc >= 1.0F) {
     g_debugLogAcc = 0.0F;
+  }
+
+  // ---- Concise receive/display logging (throttled and change-detected) ----
+  // Determine our client id
+  auto *sendSys = world.getSystem<NetworkSendSystem>();
+  if (sendSys != nullptr) {
+    const std::uint32_t myClientId = sendSys->getClientId();
+
+    // Find the entity that belongs to us (prefer PlayerId.owner_client, fallback to networkId)
+    ecs::Entity myEntity = 0;
+    // First pass: PlayerId
+    std::vector<ecs::Entity> candidateEntities;
+    {
+      ecs::ComponentSignature sig;
+      sig.set(ecs::getComponentId<ecs::Networked>());
+      // We only need candidates which have Networked (that's what snapshots replicate)
+      world.getEntitiesWithSignature(sig, candidateEntities);
+    }
+
+    for (auto e : candidateEntities) {
+      if (world.hasComponent<ecs::PlayerId>(e)) {
+        const auto &pid = world.getComponent<ecs::PlayerId>(e);
+        if (pid.clientId == myClientId) {
+          myEntity = e;
+          break;
+        }
+      }
+    }
+
+    if (myEntity == 0) {
+      // Fallback: match by Networked.networkId == myClientId
+      for (auto e : candidateEntities) {
+        if (!world.hasComponent<ecs::Networked>(e))
+          continue;
+        const auto &net = world.getComponent<ecs::Networked>(e);
+        if (static_cast<std::uint32_t>(net.networkId) == myClientId) {
+          myEntity = e;
+          break;
+        }
+      }
+    }
+
+    int displayedHp = -1;
+    int displayedMaxHp = -1;
+    int displayedScore = -1;
+
+    if (myEntity != 0 && world.isAlive(myEntity)) {
+      if (world.hasComponent<ecs::Health>(myEntity)) {
+        const auto &h = world.getComponent<ecs::Health>(myEntity);
+        displayedHp = h.hp;
+        displayedMaxHp = h.maxHp;
+      }
+      if (world.hasComponent<ecs::Score>(myEntity)) {
+        const auto &s = world.getComponent<ecs::Score>(myEntity);
+        displayedScore = s.points;
+      }
+    }
+
+    // Static previous values to detect changes and throttle logs
+    static int prevHp = -9999;
+    static int prevScore = -9999;
+    static int tickCounter = 0;
+    ++tickCounter;
+
+    bool changed = (displayedHp != prevHp) || (displayedScore != prevScore);
+    // Log if changed or every 120 snapshots (~2s at 60Hz snapshots)
+    if (changed || (tickCounter % 120) == 0) {
+      std::cout << "[Client][RECV] snapshot entities=" << json["entities"].size() << " clientId=" << myClientId
+                << " entity=" << myEntity << " hp=" << displayedHp << "/" << displayedMaxHp
+                << " score=" << displayedScore << std::endl;
+      // Also echo what the HUD will display (concise)
+      std::cout << "[Client][DISPLAY] HP=" << (displayedHp >= 0 ? std::to_string(displayedHp) : "n/a")
+                << " Score=" << (displayedScore >= 0 ? std::to_string(displayedScore) : "n/a") << std::endl;
+      prevHp = displayedHp;
+      prevScore = displayedScore;
+    }
   }
 }
 
@@ -323,9 +462,27 @@ void ClientNetworkReceiveSystem::handleGameStarted()
 {
   std::cout << "[Client] Received game_started message from server" << std::endl;
 
+  // Allow snapshots once the game starts
+  g_acceptSnapshots = true;
+
   if (m_gameStartedCallback) {
     m_gameStartedCallback();
   }
+}
+
+void ClientNetworkReceiveSystem::setAcceptSnapshots(bool accept)
+{
+  g_acceptSnapshots = accept;
+}
+
+void ClientNetworkReceiveSystem::setLobbyLeftCallback(std::function<void()> callback)
+{
+  m_lobbyLeftCallback = std::move(callback);
+}
+
+void ClientNetworkReceiveSystem::setPlayerDeadCallback(std::function<void(const nlohmann::json &)> callback)
+{
+  m_playerDeadCallback = std::move(callback);
 }
 
 ecs::ComponentSignature ClientNetworkReceiveSystem::getSignature() const

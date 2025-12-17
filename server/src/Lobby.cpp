@@ -7,20 +7,28 @@
 
 #include "Lobby.hpp"
 #include "../../engineCore/include/ecs/EngineComponents.hpp"
+#include "../../network/include/INetworkManager.hpp"
 #include "../include/Game.hpp"
 #include "../include/ServerSystems.hpp"
+#include "WorldLobbyRegistry.hpp"
 #include <iostream>
+#include <nlohmann/json.hpp>
 
-Lobby::Lobby(const std::string &code) : m_code(code)
+Lobby::Lobby(const std::string &code, std::shared_ptr<INetworkManager> networkManager)
+    : m_code(code), m_networkManager(std::move(networkManager))
 {
   // Create isolated world for this lobby
   m_world = std::make_shared<ecs::World>();
-  std::cout << "[Lobby:" << m_code << "] Created isolated game world" << std::endl;
+  std::cout << "[Lobby:" << m_code << "] Created isolated game world" << '\n';
+
+  // Register this world -> lobby mapping for systems that need to find the lobby
+  // (DeathSystem will use Lobby::getLobbyForWorld via this global mapping)
+  registerWorldLobbyMapping(m_world.get(), this);
 }
 
 Lobby::~Lobby()
 {
-  std::cout << "[Lobby:" << m_code << "] Destroying lobby..." << std::endl;
+  std::cout << "[Lobby:" << m_code << "] Destroying lobby..." << '\n';
 
   // Ensure game is stopped before destruction
   if (m_gameStarted) {
@@ -37,7 +45,8 @@ Lobby::~Lobby()
     // Note: Entity cleanup is handled by World's own destruction
   }
 
-  std::cout << "[Lobby:" << m_code << "] Destroyed" << std::endl;
+  std::cout << "[Lobby:" << m_code << "] Destroyed" << '\n';
+  unregisterWorldLobbyMapping(m_world.get());
 }
 
 bool Lobby::addClient(std::uint32_t clientId)
@@ -104,7 +113,7 @@ void Lobby::startGame()
     spawnPlayer(clientId);
   }
 
-  std::cout << "[Lobby:" << m_code << "] Game started with " << m_clients.size() << " players" << std::endl;
+  std::cout << "[Lobby:" << m_code << "] Game started with " << m_clients.size() << " players" << '\n';
 }
 
 void Lobby::stopGame()
@@ -113,23 +122,42 @@ void Lobby::stopGame()
     return;
   }
 
-  std::cout << "[Lobby:" << m_code << "] Stopping game..." << std::endl;
+  std::cout << "[Lobby:" << m_code << "] Stopping game..." << '\n';
 
   m_gameStarted = false;
 
-  // Destroy all player entities
-  if (m_world) {
-    for (const auto &[clientId, entity] : m_playerEntities) {
-      if (m_world->isAlive(entity)) {
-        m_world->destroyEntity(entity);
+  if (!m_world) {
+    m_playerEntities.clear();
+    std::cout << "[Lobby:" << m_code << "] Game stopped (no world)" << '\n';
+    return;
+  }
+
+  // 1) Remove all systems so they can unsubscribe from events and release resources
+  m_world->clearSystems();
+
+  // 2) Clear any event listeners on the world's event bus
+  m_world->getEventBus().clear();
+
+  // 3) Destroy all entities to ensure components are removed and no stale state remains
+  {
+    ecs::ComponentSignature emptySig; // matches all entities
+    std::vector<ecs::Entity> allEntities;
+    m_world->getEntitiesWithSignature(emptySig, allEntities);
+    for (auto ent : allEntities) {
+      if (m_world->isAlive(ent)) {
+        m_world->destroyEntity(ent);
       }
     }
   }
 
-  // Clear player entity tracking
+  // 4) Clear player entity tracking
   m_playerEntities.clear();
 
-  std::cout << "[Lobby:" << m_code << "] Game stopped" << std::endl;
+  // 5) Optionally replace the world to ensure a fully fresh state for the next start
+  //    This guarantees no lingering references remain in other subsystems.
+  m_world = std::make_shared<ecs::World>();
+
+  std::cout << "[Lobby:" << m_code << "] Game stopped" << '\n';
 }
 
 bool Lobby::isGameStarted() const
@@ -151,9 +179,9 @@ void Lobby::update(float deltaTime)
 
 ecs::Entity Lobby::getPlayerEntity(std::uint32_t clientId) const
 {
-  auto it = m_playerEntities.find(clientId);
-  if (it != m_playerEntities.end()) {
-    return it->second;
+  auto player_entity_it = m_playerEntities.find(clientId);
+  if (player_entity_it != m_playerEntities.end()) {
+    return player_entity_it->second;
   }
   return 0;
 }
@@ -197,7 +225,7 @@ void Lobby::initializeSystems()
     spawnSystem->initialize(*m_world);
   }
 
-  std::cout << "[Lobby:" << m_code << "] Initialized game systems" << std::endl;
+  std::cout << "[Lobby:" << m_code << "] Initialized game systems" << '\n';
 }
 
 void Lobby::spawnPlayer(std::uint32_t clientId)
@@ -213,8 +241,9 @@ void Lobby::spawnPlayer(std::uint32_t clientId)
 
   ecs::Transform transform;
   transform.x = GameConfig::PLAYER_SPAWN_X;
+  constexpr int PLAYER_VERTICAL_SPACING = 80;
   // Offset Y position based on number of players to avoid overlap
-  transform.y = GameConfig::PLAYER_SPAWN_Y + static_cast<float>(m_playerEntities.size() * 80);
+  transform.y = GameConfig::PLAYER_SPAWN_Y + static_cast<float>(m_playerEntities.size() * PLAYER_VERTICAL_SPACING);
   transform.rotation = 0.0F;
   transform.scale = 1.0F;
   m_world->addComponent(player, transform);
@@ -246,7 +275,9 @@ void Lobby::spawnPlayer(std::uint32_t clientId)
   m_world->addComponent(player, sprite);
 
   ecs::Networked networked;
-  networked.networkId = static_cast<ecs::Entity>(clientId);
+  // Use the entity id as the authoritative network id to avoid collisions
+  // with other entities (enemies/projectiles) that also use entity ids.
+  networked.networkId = player;
   m_world->addComponent(player, networked);
 
   ecs::Score score;
@@ -261,23 +292,34 @@ void Lobby::spawnPlayer(std::uint32_t clientId)
   // Track the player entity
   m_playerEntities[clientId] = player;
 
-  std::cout << "[Lobby:" << m_code << "] Spawned player entity " << player << " for client " << clientId << std::endl;
+  std::cout << "[Lobby:" << m_code << "] Spawned player entity " << player << " for client " << clientId << '\n';
 }
 
 void Lobby::destroyPlayerEntity(std::uint32_t clientId)
 {
-  auto it = m_playerEntities.find(clientId);
-  if (it == m_playerEntities.end()) {
+  auto player_entity_it = m_playerEntities.find(clientId);
+  if (player_entity_it == m_playerEntities.end()) {
     return; // No entity for this client
   }
 
   // Safely destroy the entity if world is valid and entity is alive
-  if (m_world && m_world->isAlive(it->second)) {
-    m_world->destroyEntity(it->second);
-    std::cout << "[Lobby:" << m_code << "] Destroyed player entity " << it->second << " for client " << clientId
-              << std::endl;
+  if (m_world && m_world->isAlive(player_entity_it->second)) {
+    m_world->destroyEntity(player_entity_it->second);
+    std::cout << "[Lobby:" << m_code << "] Destroyed player entity " << player_entity_it->second << " for client "
+              << clientId << '\n';
   }
 
   // Always remove from tracking map
-  m_playerEntities.erase(it);
+  m_playerEntities.erase(player_entity_it);
+}
+
+void Lobby::sendJsonToClient(std::uint32_t clientId, const nlohmann::json &message) const
+{
+  if (!m_networkManager) {
+    return;
+  }
+  const std::string jsonStr = message.dump();
+  const auto serialized = m_networkManager->getPacketHandler()->serialize(jsonStr);
+  m_networkManager->send(
+    std::span<const std::byte>(reinterpret_cast<const std::byte *>(serialized.data()), serialized.size()), clientId);
 }

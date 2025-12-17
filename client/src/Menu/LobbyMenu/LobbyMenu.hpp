@@ -15,9 +15,17 @@
 #include <vector>
 
 /**
+ * @brief Window dimensions structure to prevent accidental parameter swaps
+ */
+struct WindowDimensions {
+  int width;
+  int height;
+};
+
+/**
  * @brief Lobby selection options
  */
-enum class LobbyMenuOption { CREATE_LOBBY, JOIN_LOBBY, BACK };
+enum class LobbyMenuOption : std::uint8_t { CREATE_LOBBY, JOIN_LOBBY, BACK };
 
 /**
  * @brief Menu for creating and joining game lobbies
@@ -29,7 +37,7 @@ public:
   ~LobbyMenu();
 
   void init(IRenderer *renderer);
-  void render(int winWidth, int winHeight, IRenderer *renderer);
+  void render(const WindowDimensions &windowDims, IRenderer *renderer);
   void process(IRenderer *renderer, MenuState *currentState);
   void cleanup();
 
@@ -45,9 +53,9 @@ public:
   [[nodiscard]] bool isCreatingLobby() const { return m_isCreatingLobby; }
 
 private:
-  void renderBackground(int winWidth, int winHeight, IRenderer *renderer);
-  void renderMenuOptions(int winWidth, int winHeight, IRenderer *renderer);
-  void renderLobbyCodeInput(int winWidth, int winHeight, IRenderer *renderer);
+  void renderBackground(const WindowDimensions &windowDims, IRenderer *renderer);
+  void renderMenuOptions(const WindowDimensions &windowDims, IRenderer *renderer);
+  void renderLobbyCodeInput(const WindowDimensions &windowDims, IRenderer *renderer);
   void handleMenuNavigation(IRenderer *renderer);
   void handleTextInput(IRenderer *renderer);
   void selectCurrentOption(MenuState *currentState);
@@ -62,11 +70,11 @@ private:
   void *m_moonFloor = nullptr;
 
   // Parallax offsets
-  float m_parallaxOffsetSky = 0.0f;
-  float m_parallaxOffsetBack = 0.0f;
-  float m_parallaxOffsetMid = 0.0f;
-  float m_parallaxOffsetFront = 0.0f;
-  float m_parallaxOffsetFloor = 0.0f;
+  float m_parallaxOffsetSky = 0.0F;
+  float m_parallaxOffsetBack = 0.0F;
+  float m_parallaxOffsetMid = 0.0F;
+  float m_parallaxOffsetFront = 0.0F;
+  float m_parallaxOffsetFloor = 0.0F;
 
   // Menu state
   std::vector<std::string> m_menuItems = {"Create Lobby", "Join Lobby", "Back"};

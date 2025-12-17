@@ -10,6 +10,7 @@
 #include "../../engineCore/include/ecs/components/Collider.hpp"
 #include "../../engineCore/include/ecs/components/Health.hpp"
 #include "../../engineCore/include/ecs/components/Networked.hpp"
+#include "../../engineCore/include/ecs/components/PlayerId.hpp"
 #include "../../engineCore/include/ecs/components/Score.hpp"
 #include "../../engineCore/include/ecs/components/Sprite.hpp"
 #include "../../engineCore/include/ecs/components/Transform.hpp"
@@ -71,6 +72,23 @@ void NetworkSendSystem::update(ecs::World &world, float deltaTime)
 
   m_timeSinceLastSend += deltaTime;
   if (m_timeSinceLastSend >= SEND_INTERVAL) {
+
+    // Clean up cached last-network-id lists for lobbies that no longer exist
+    // or that are not currently running to avoid sending stale 'destroyed' lists.
+    if (m_lobbyManager != nullptr) {
+      std::vector<std::string> toErase;
+      for (const auto &pair : m_lobbyLastNetworkIds) {
+        const std::string &code = pair.first;
+        auto lobbyIt = m_lobbyManager->getLobbies().find(code);
+        if (lobbyIt == m_lobbyManager->getLobbies().end() || lobbyIt->second == nullptr ||
+            !lobbyIt->second->isGameStarted()) {
+          toErase.push_back(code);
+        }
+      }
+      for (const auto &code : toErase) {
+        m_lobbyLastNetworkIds.erase(code);
+      }
+    }
 
     // If no lobby manager, skip (can't send lobby-specific state)
     if (m_lobbyManager == nullptr) {
@@ -136,6 +154,12 @@ void NetworkSendSystem::update(ecs::World &world, float deltaTime)
         if (lobbyWorld->hasComponent<ecs::Score>(entity)) {
           const auto &score = lobbyWorld->getComponent<ecs::Score>(entity);
           entityJson["score"] = {{"points", score.points}};
+        }
+
+        // Include owner client id when present so client can identify its player reliably
+        if (lobbyWorld->hasComponent<ecs::PlayerId>(entity)) {
+          const auto &pid = lobbyWorld->getComponent<ecs::PlayerId>(entity);
+          entityJson["owner_client"] = pid.clientId;
         }
 
         snapshot["entities"].push_back(entityJson);

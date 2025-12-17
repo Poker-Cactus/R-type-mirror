@@ -58,5 +58,5 @@ private:
   std::unique_ptr<Menu> menu;
   std::unique_ptr<LobbyRoomState> lobbyRoomState;
   std::unique_ptr<PlayingState> playingState;
-  float m_lobbyStateTime = 0.0f;
+  float m_lobbyStateTime = 0.0F;
 };

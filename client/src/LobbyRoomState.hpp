@@ -23,7 +23,7 @@ class World;
 /**
  * @brief Lobby connection state
  */
-enum class LobbyConnectionState { CONNECTING, JOINED, ERROR };
+enum class LobbyConnectionState : std::uint8_t { CONNECTING, JOINED, ERROR };
 
 /**
  * @brief Manages the lobby waiting room before game starts
@@ -55,6 +55,9 @@ public:
   void onLobbyState(const std::string &lobbyCode, int playerCount);
   void onError(const std::string &errorMsg);
 
+  // Send viewport (width/height) to server
+  void sendViewportToServer();
+
 private:
   void loadSpriteTextures();
   void freeSpriteTextures();
@@ -73,7 +76,7 @@ private:
   bool m_startGameRequested = false;
   bool m_returnToMenuRequested = false;
   bool m_lobbyRequested = false;
-  float m_timeSinceLobbyRequest = 0.0f;
+  float m_timeSinceLobbyRequest = 0.0F;
 
   // Lobby mode
   bool m_isCreatingLobby = true;

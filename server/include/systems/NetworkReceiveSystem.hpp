@@ -13,6 +13,11 @@
 
 class Game;
 
+struct LobbyResponseData {
+  std::string response_type;
+  std::string lobby_code;
+};
+
 class NetworkReceiveSystem : public ecs::ISystem
 {
 public:
@@ -37,7 +42,7 @@ private:
   // Network helpers - properly serialize with Cap'n Proto
   void sendJsonMessage(std::uint32_t clientId, const nlohmann::json &message);
   void sendJsonMessageToAll(const std::vector<std::uint32_t> &clientIds, const nlohmann::json &message);
-  void sendLobbyResponse(std::uint32_t clientId, const std::string &type, const std::string &code);
+  void sendLobbyResponse(std::uint32_t clientId, const LobbyResponseData &response_data);
   void sendErrorResponse(std::uint32_t clientId, const std::string &error);
 };
 

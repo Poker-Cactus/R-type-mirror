@@ -13,6 +13,8 @@
 #include <string>
 #include <unordered_map>
 
+#include "../../network/include/INetworkManager.hpp"
+
 /**
  * @brief Manages creation and access to game lobbies
  */
@@ -21,6 +23,11 @@ class LobbyManager
 public:
   LobbyManager() = default;
   ~LobbyManager() = default;
+
+  void setNetworkManager(std::shared_ptr<INetworkManager> networkManager)
+  {
+    m_networkManager = std::move(networkManager);
+  }
 
   /**
    * @brief Create a new lobby with a unique code
@@ -71,6 +78,7 @@ public:
 private:
   std::unordered_map<std::string, std::unique_ptr<Lobby>> m_lobbies;
   std::unordered_map<std::uint32_t, std::string> m_clientToLobby;
+  std::shared_ptr<INetworkManager> m_networkManager;
 };
 
 #endif /* !LOBBY_MANAGER_HPP_ */

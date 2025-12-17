@@ -72,7 +72,7 @@ void LobbyRoomState::update([[maybe_unused]] float deltaTime)
   if (!m_lobbyRequested) {
     requestLobby();
     m_lobbyRequested = true;
-    m_timeSinceLobbyRequest = 0.0f;
+    m_timeSinceLobbyRequest = 0.0F;
   } else if (m_lobbyRequested) {
     m_timeSinceLobbyRequest += deltaTime;
   }
@@ -130,7 +130,7 @@ void LobbyRoomState::renderLobbyText()
   renderer->getTextSize(m_lobbyFont, line1, textWidth1, textHeight1);
 
   const int textPosX1 = (winWidth - textWidth1) / 2;
-  const int textPosY1 = (winHeight - textHeight1) / 2 - (line2.empty() ? 0 : 20);
+  const int textPosY1 = ((winHeight - textHeight1) / 2) - (line2.empty() ? 0 : 20);
 
   renderer->drawText(m_lobbyFont, line1, textPosX1, textPosY1, textColor);
 
@@ -169,6 +169,8 @@ void LobbyRoomState::processInput()
   // Only allow starting game if we're in a lobby
   if (m_connectionState == LobbyConnectionState::JOINED && renderer->isKeyJustPressed(KeyCode::KEY_X)) {
     std::cout << "[LobbyRoomState] Sending start game request to server" << '\n';
+    // Ensure server knows our current viewport before starting the game
+    sendViewportToServer();
 
     nlohmann::json message;
     message["type"] = "start_game";
@@ -246,6 +248,26 @@ void LobbyRoomState::cleanup()
   m_lobbyFont = nullptr;
 }
 
+void LobbyRoomState::sendViewportToServer()
+{
+  if (m_networkManager == nullptr || renderer == nullptr) {
+    return;
+  }
+
+  nlohmann::json viewport;
+  viewport["type"] = "viewport";
+  viewport["width"] = static_cast<std::uint32_t>(renderer->getWindowWidth());
+  viewport["height"] = static_cast<std::uint32_t>(renderer->getWindowHeight());
+
+  std::string serialized = viewport.dump();
+  const auto capnpSerialized = m_networkManager->getPacketHandler()->serialize(serialized);
+
+  m_networkManager->send(
+    std::span<const std::byte>(reinterpret_cast<const std::byte *>(capnpSerialized.data()), capnpSerialized.size()), 0);
+
+  std::cout << "[LobbyRoomState] Sent viewport " << viewport["width"] << "x" << viewport["height"] << '\n';
+}
+
 void LobbyRoomState::loadSpriteTextures()
 {
   if (renderer == nullptr) {
@@ -280,21 +302,25 @@ void LobbyRoomState::freeSpriteTextures()
 
 void LobbyRoomState::onLobbyJoined(const std::string &lobbyCode)
 {
-  std::cout << "[LobbyRoomState] Successfully joined lobby: " << lobbyCode << std::endl;
+  std::cout << "[LobbyRoomState] Successfully joined lobby: " << lobbyCode << '\n';
   m_connectionState = LobbyConnectionState::JOINED;
   m_lobbyCode = lobbyCode;
+
+  // Immediately send our viewport to the server so it has correct dimensions
+  // before the game begins.
+  sendViewportToServer();
 }
 
 void LobbyRoomState::onLobbyState(const std::string &lobbyCode, int playerCount)
 {
-  std::cout << "[LobbyRoomState] Lobby " << lobbyCode << " state update: " << playerCount << " players" << std::endl;
+  std::cout << "[LobbyRoomState] Lobby " << lobbyCode << " state update: " << playerCount << " players" << '\n';
   m_lobbyCode = lobbyCode;
   m_playerCount = playerCount;
 }
 
 void LobbyRoomState::onError(const std::string &errorMsg)
 {
-  std::cerr << "[LobbyRoomState] Error: " << errorMsg << std::endl;
+  std::cerr << "[LobbyRoomState] Error: " << errorMsg << '\n';
   m_connectionState = LobbyConnectionState::ERROR;
   m_errorMessage = errorMsg;
 }

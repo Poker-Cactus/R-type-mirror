@@ -36,6 +36,13 @@ bool Game::init()
     }
     renderer->setWindowTitle("ChaD");
 
+    // Start the game in fullscreen by default
+    try {
+      renderer->setFullscreen(true);
+    } catch (const std::exception &e) {
+      std::cerr << "[Game::init] Warning: failed to set fullscreen: " << e.what() << '\n';
+    }
+
     menu = std::make_unique<Menu>(renderer);
     menu->init();
 
@@ -71,7 +78,23 @@ bool Game::init()
     if (networkReceiveSystem != nullptr) {
       networkReceiveSystem->setGameStartedCallback([this]() {
         std::cout << "[Game] Game started callback triggered - transitioning to PLAYING" << '\n';
+        // Ensure the playing state exists and is initialized (recreate after death)
+        if (!this->playingState) {
+          this->playingState = std::make_unique<PlayingState>(this->renderer, this->m_world);
+          if (!this->playingState->init()) {
+            std::cerr << "[Game] Failed to initialize playing state on game_started" << '\n';
+            // Fallback to menu if we cannot initialize rendering state
+            this->currentState = GameState::MENU;
+            if (this->menu)
+              this->menu->setState(MenuState::MAIN_MENU);
+            return;
+          }
+        }
+
         this->currentState = GameState::PLAYING;
+        // Send current viewport to server immediately after the game starts
+        // so the server records the correct client viewport for the playing session.
+        this->sendViewportToServer();
       });
     }
 
@@ -142,7 +165,7 @@ void Game::sendLeaveToServer()
     return;
   }
 
-  std::cout << "[Game] Sending leave_lobby to server before shutdown" << std::endl;
+  std::cout << "[Game] Sending leave_lobby to server before shutdown" << '\n';
 
   nlohmann::json message;
   message["type"] = "leave_lobby";
@@ -156,7 +179,7 @@ void Game::sendLeaveToServer()
 
 void Game::sendViewportToServer()
 {
-  if (!m_networkManager || !renderer) {
+  if (!m_networkManager || renderer == nullptr) {
     return;
   }
 
@@ -178,7 +201,8 @@ void Game::processInput()
 {
   if (renderer != nullptr && !renderer->pollEvents()) {
     // Don't allow immediate close in lobby - give network time to send messages
-    if (currentState == GameState::LOBBY_ROOM && m_lobbyStateTime < 0.5f) {
+    constexpr float LOBBY_GRACE_PERIOD = 0.5F;
+    if (currentState == GameState::LOBBY_ROOM && m_lobbyStateTime < LOBBY_GRACE_PERIOD) {
       std::cout << "[Game] Ignoring close request - lobby just started (" << m_lobbyStateTime << "s)" << '\n';
       return;
     }
@@ -249,24 +273,24 @@ void Game::handleLobbyRoomTransition()
   const bool isCreating = menu->isCreatingLobby();
   const std::string lobbyCode = menu->getLobbyCodeToJoin();
 
-  std::cout << "[Game] Transitioning from MENU to LOBBY_ROOM" << std::endl;
+  std::cout << "[Game] Transitioning from MENU to LOBBY_ROOM" << '\n';
   std::cout << "[Game] Creating: " << (isCreating ? "yes" : "no");
   if (!isCreating) {
     std::cout << ", Code: " << lobbyCode;
   }
-  std::cout << std::endl;
+  std::cout << '\n';
 
   // Reset the menu flag
   menu->resetLobbySelection();
 
   currentState = GameState::LOBBY_ROOM;
-  m_lobbyStateTime = 0.0f;
+  m_lobbyStateTime = 0.0F;
 
   // Create lobby room state if needed
   if (!lobbyRoomState) {
     lobbyRoomState = std::make_unique<LobbyRoomState>(renderer, m_world, m_networkManager);
     if (!lobbyRoomState->init()) {
-      std::cerr << "[Game] Failed to initialize lobby room state" << std::endl;
+      std::cerr << "[Game] Failed to initialize lobby room state" << '\n';
       lobbyRoomState.reset();
       currentState = GameState::MENU;
       return;
@@ -295,6 +319,58 @@ void Game::handleLobbyRoomTransition()
         lobbyRoomState->onError(errorMsg);
       }
     });
+    // Player-dead: server told us our player is dead and we should return to menu
+    networkReceiveSystem->setPlayerDeadCallback([this](const nlohmann::json &msg) {
+      std::cout << "[Game] Received player_dead from server - returning to menu" << std::endl;
+
+      // Stop accepting snapshots
+      if (auto *netRec = m_world->getSystem<ClientNetworkReceiveSystem>()) {
+        netRec->setAcceptSnapshots(false);
+      }
+
+      // Inform server we're leaving (best effort)
+      sendLeaveToServer();
+
+      // Clean up playing state
+      if (playingState) {
+        playingState->cleanup();
+        playingState.reset();
+      }
+
+      // Clear world entities to stop any further rendering or AI
+      if (m_world) {
+        try {
+          ecs::ComponentSignature emptySig; // matches all
+          std::vector<ecs::Entity> allEntities;
+          m_world->getEntitiesWithSignature(emptySig, allEntities);
+          for (auto e : allEntities) {
+            if (m_world->isAlive(e)) {
+              m_world->destroyEntity(e);
+            }
+          }
+        } catch (const std::exception &e) {
+          std::cerr << "[Game] Error clearing world on player_dead: " << e.what() << '\n';
+        }
+      }
+
+      // Transition to main menu
+      currentState = GameState::MENU;
+      if (menu) {
+        menu->setState(MenuState::MAIN_MENU);
+      }
+    });
+
+    // Optional: handle server acknowledgement when lobby leave is processed
+    networkReceiveSystem->setLobbyLeftCallback([this]() {
+      std::cout << "[Game] Server acknowledged lobby_left" << std::endl;
+      // If we're in lobby UI, ensure it returns to main menu
+      if (lobbyRoomState) {
+        lobbyRoomState.reset();
+        currentState = GameState::MENU;
+        if (menu)
+          menu->setState(MenuState::MAIN_MENU);
+      }
+    });
   }
 }
 
@@ -306,7 +382,41 @@ void Game::handlePlayingStateInput()
 
   if (playingState && playingState->shouldReturnToMenu()) {
     std::cout << "[Game] Player died - returning to menu" << '\n';
+    // Notify server that we're leaving the lobby/game
+    sendLeaveToServer();
+
+    // Tell network receive system to stop accepting snapshots immediately
+    if (m_world) {
+      if (auto *netRecv = m_world->getSystem<ClientNetworkReceiveSystem>()) {
+        netRecv->setAcceptSnapshots(false);
+      }
+    }
+
+    // Clean up playing state resources
+    playingState->cleanup();
+    playingState.reset();
+
+    // Also clear all entities from the client world to avoid stale data
+    if (m_world) {
+      try {
+        ecs::ComponentSignature emptySig; // matches all
+        std::vector<ecs::Entity> allEntities;
+        m_world->getEntitiesWithSignature(emptySig, allEntities);
+        for (auto e : allEntities) {
+          if (m_world->isAlive(e)) {
+            m_world->destroyEntity(e);
+          }
+        }
+      } catch (const std::exception &e) {
+        std::cerr << "[Game] Error clearing world on death: " << e.what() << '\n';
+      }
+    }
+
+    // Return to main menu
     currentState = GameState::MENU;
+    if (menu) {
+      menu->setState(MenuState::MAIN_MENU);
+    }
     return;
   }
 
