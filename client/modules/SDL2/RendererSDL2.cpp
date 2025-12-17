@@ -486,6 +486,7 @@ void RendererSDL2::freeMusic(void * /*music*/)
 void RendererSDL2::drawRect(int x, int y, int w, int h, const Color &color)
 {
   SDL_Rect rect{x + cameraOffsetX, y + cameraOffsetY, w, h};
+  SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
   SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, color.a);
   SDL_RenderFillRect(renderer, &rect);
 }
