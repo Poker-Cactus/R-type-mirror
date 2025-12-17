@@ -42,7 +42,7 @@ bool LobbyRoomState::init()
     return false;
   }
 
-  constexpr std::uint8_t OVERLAY_ALPHA = 180;
+  constexpr uint8_t OVERLAY_ALPHA = 180;
   overlay = std::make_unique<Overlay>(renderer, OVERLAY_ALPHA);
 
   loadSpriteTextures();
@@ -121,8 +121,8 @@ void LobbyRoomState::renderLobbyText()
     break;
   }
 
-  constexpr std::uint8_t TEXT_WHITE = 255;
-  constexpr std::uint8_t TEXT_ALPHA = 255;
+  constexpr uint8_t TEXT_WHITE = 255;
+  constexpr uint8_t TEXT_ALPHA = 255;
   const Color textColor = {.r = TEXT_WHITE, .g = TEXT_WHITE, .b = TEXT_WHITE, .a = TEXT_ALPHA};
 
   int textWidth1 = 0;
