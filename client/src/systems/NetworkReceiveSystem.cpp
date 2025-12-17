@@ -24,6 +24,7 @@ namespace
 bool g_loggedFirstSnapshot = false;
 std::unordered_map<std::uint32_t, ecs::Entity> g_networkIdToEntity;
 float g_debugLogAcc = 0.0F;
+bool g_acceptSnapshots = false;
 } // namespace
 
 ClientNetworkReceiveSystem::ClientNetworkReceiveSystem(std::shared_ptr<INetworkManager> networkManager)
@@ -62,13 +63,43 @@ void ClientNetworkReceiveSystem::update(ecs::World &world, float deltaTime)
         continue;
       }
 
+      // Server told us that this player is dead
+      if (type == "player_dead") {
+        std::cout << "[Client] Received player_dead from server" << std::endl;
+        // Stop accepting snapshots immediately
+        g_acceptSnapshots = false;
+        if (m_playerDeadCallback) {
+          m_playerDeadCallback(json);
+        }
+        continue;
+      }
+
+      // Lobby left acknowledgement from server
+      if (type == "lobby_left") {
+        std::cout << "[Client] Received lobby_left from server" << std::endl;
+        // Stop accepting snapshots immediately
+        g_acceptSnapshots = false;
+        if (m_lobbyStateCallback) {
+          // Notify any lobby UI about the updated state (0 players)
+          m_lobbyStateCallback(json.value("code", ""), 0);
+        }
+        // Call optional lobby-left callback
+        if (m_lobbyLeftCallback) {
+          m_lobbyLeftCallback();
+        }
+        continue;
+      }
+
       // Game entity messages
       if (type == "entity_created") {
         handleEntityCreated(world, json);
       } else if (type == "entity_update") {
         handleEntityUpdate(world, json);
       } else if (type == "snapshot") {
-        handleSnapshot(world, json);
+        // Only process snapshots when allowed (we may have left the lobby)
+        if (g_acceptSnapshots) {
+          handleSnapshot(world, json);
+        }
       } else if (type == "game_started") {
         handleGameStarted();
       }
@@ -431,9 +462,27 @@ void ClientNetworkReceiveSystem::handleGameStarted()
 {
   std::cout << "[Client] Received game_started message from server" << std::endl;
 
+  // Allow snapshots once the game starts
+  g_acceptSnapshots = true;
+
   if (m_gameStartedCallback) {
     m_gameStartedCallback();
   }
+}
+
+void ClientNetworkReceiveSystem::setAcceptSnapshots(bool accept)
+{
+  g_acceptSnapshots = accept;
+}
+
+void ClientNetworkReceiveSystem::setLobbyLeftCallback(std::function<void()> callback)
+{
+  m_lobbyLeftCallback = std::move(callback);
+}
+
+void ClientNetworkReceiveSystem::setPlayerDeadCallback(std::function<void(const nlohmann::json &)> callback)
+{
+  m_playerDeadCallback = std::move(callback);
 }
 
 ecs::ComponentSignature ClientNetworkReceiveSystem::getSignature() const

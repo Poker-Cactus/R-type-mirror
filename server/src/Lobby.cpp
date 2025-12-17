@@ -7,15 +7,23 @@
 
 #include "Lobby.hpp"
 #include "../../engineCore/include/ecs/EngineComponents.hpp"
+#include "../../network/include/INetworkManager.hpp"
 #include "../include/Game.hpp"
 #include "../include/ServerSystems.hpp"
+#include "WorldLobbyRegistry.hpp"
 #include <iostream>
+#include <nlohmann/json.hpp>
 
-Lobby::Lobby(const std::string &code) : m_code(code)
+Lobby::Lobby(const std::string &code, std::shared_ptr<INetworkManager> networkManager)
+    : m_code(code), m_networkManager(std::move(networkManager))
 {
   // Create isolated world for this lobby
   m_world = std::make_shared<ecs::World>();
   std::cout << "[Lobby:" << m_code << "] Created isolated game world" << '\n';
+
+  // Register this world -> lobby mapping for systems that need to find the lobby
+  // (DeathSystem will use Lobby::getLobbyForWorld via this global mapping)
+  registerWorldLobbyMapping(m_world.get(), this);
 }
 
 Lobby::~Lobby()
@@ -38,6 +46,7 @@ Lobby::~Lobby()
   }
 
   std::cout << "[Lobby:" << m_code << "] Destroyed" << '\n';
+  unregisterWorldLobbyMapping(m_world.get());
 }
 
 bool Lobby::addClient(std::uint32_t clientId)
@@ -302,4 +311,15 @@ void Lobby::destroyPlayerEntity(std::uint32_t clientId)
 
   // Always remove from tracking map
   m_playerEntities.erase(player_entity_it);
+}
+
+void Lobby::sendJsonToClient(std::uint32_t clientId, const nlohmann::json &message) const
+{
+  if (!m_networkManager) {
+    return;
+  }
+  const std::string jsonStr = message.dump();
+  const auto serialized = m_networkManager->getPacketHandler()->serialize(jsonStr);
+  m_networkManager->send(
+    std::span<const std::byte>(reinterpret_cast<const std::byte *>(serialized.data()), serialized.size()), clientId);
 }

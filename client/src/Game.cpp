@@ -78,6 +78,19 @@ bool Game::init()
     if (networkReceiveSystem != nullptr) {
       networkReceiveSystem->setGameStartedCallback([this]() {
         std::cout << "[Game] Game started callback triggered - transitioning to PLAYING" << '\n';
+        // Ensure the playing state exists and is initialized (recreate after death)
+        if (!this->playingState) {
+          this->playingState = std::make_unique<PlayingState>(this->renderer, this->m_world);
+          if (!this->playingState->init()) {
+            std::cerr << "[Game] Failed to initialize playing state on game_started" << '\n';
+            // Fallback to menu if we cannot initialize rendering state
+            this->currentState = GameState::MENU;
+            if (this->menu)
+              this->menu->setState(MenuState::MAIN_MENU);
+            return;
+          }
+        }
+
         this->currentState = GameState::PLAYING;
         // Send current viewport to server immediately after the game starts
         // so the server records the correct client viewport for the playing session.
@@ -306,6 +319,58 @@ void Game::handleLobbyRoomTransition()
         lobbyRoomState->onError(errorMsg);
       }
     });
+    // Player-dead: server told us our player is dead and we should return to menu
+    networkReceiveSystem->setPlayerDeadCallback([this](const nlohmann::json &msg) {
+      std::cout << "[Game] Received player_dead from server - returning to menu" << std::endl;
+
+      // Stop accepting snapshots
+      if (auto *netRec = m_world->getSystem<ClientNetworkReceiveSystem>()) {
+        netRec->setAcceptSnapshots(false);
+      }
+
+      // Inform server we're leaving (best effort)
+      sendLeaveToServer();
+
+      // Clean up playing state
+      if (playingState) {
+        playingState->cleanup();
+        playingState.reset();
+      }
+
+      // Clear world entities to stop any further rendering or AI
+      if (m_world) {
+        try {
+          ecs::ComponentSignature emptySig; // matches all
+          std::vector<ecs::Entity> allEntities;
+          m_world->getEntitiesWithSignature(emptySig, allEntities);
+          for (auto e : allEntities) {
+            if (m_world->isAlive(e)) {
+              m_world->destroyEntity(e);
+            }
+          }
+        } catch (const std::exception &e) {
+          std::cerr << "[Game] Error clearing world on player_dead: " << e.what() << '\n';
+        }
+      }
+
+      // Transition to main menu
+      currentState = GameState::MENU;
+      if (menu) {
+        menu->setState(MenuState::MAIN_MENU);
+      }
+    });
+
+    // Optional: handle server acknowledgement when lobby leave is processed
+    networkReceiveSystem->setLobbyLeftCallback([this]() {
+      std::cout << "[Game] Server acknowledged lobby_left" << std::endl;
+      // If we're in lobby UI, ensure it returns to main menu
+      if (lobbyRoomState) {
+        lobbyRoomState.reset();
+        currentState = GameState::MENU;
+        if (menu)
+          menu->setState(MenuState::MAIN_MENU);
+      }
+    });
   }
 }
 
@@ -317,7 +382,41 @@ void Game::handlePlayingStateInput()
 
   if (playingState && playingState->shouldReturnToMenu()) {
     std::cout << "[Game] Player died - returning to menu" << '\n';
+    // Notify server that we're leaving the lobby/game
+    sendLeaveToServer();
+
+    // Tell network receive system to stop accepting snapshots immediately
+    if (m_world) {
+      if (auto *netRecv = m_world->getSystem<ClientNetworkReceiveSystem>()) {
+        netRecv->setAcceptSnapshots(false);
+      }
+    }
+
+    // Clean up playing state resources
+    playingState->cleanup();
+    playingState.reset();
+
+    // Also clear all entities from the client world to avoid stale data
+    if (m_world) {
+      try {
+        ecs::ComponentSignature emptySig; // matches all
+        std::vector<ecs::Entity> allEntities;
+        m_world->getEntitiesWithSignature(emptySig, allEntities);
+        for (auto e : allEntities) {
+          if (m_world->isAlive(e)) {
+            m_world->destroyEntity(e);
+          }
+        }
+      } catch (const std::exception &e) {
+        std::cerr << "[Game] Error clearing world on death: " << e.what() << '\n';
+      }
+    }
+
+    // Return to main menu
     currentState = GameState::MENU;
+    if (menu) {
+      menu->setState(MenuState::MAIN_MENU);
+    }
     return;
   }
 

@@ -215,6 +215,8 @@ void Game::setNetworkManager(const std::shared_ptr<INetworkManager> &networkMana
   if (m_networkSendSystem != nullptr) {
     m_networkSendSystem->setLobbyManager(&m_lobbyManager);
   }
+  // Give the lobby manager access to the network manager so lobbies can send direct messages
+  m_lobbyManager.setNetworkManager(m_networkManager);
 }
 
 void Game::runGameLoop()

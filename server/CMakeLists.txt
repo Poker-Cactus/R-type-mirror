@@ -10,6 +10,7 @@ add_executable(server
     src/Game.cpp
     src/Lobby.cpp
     src/LobbyManager.cpp
+    src/WorldLobbyRegistry.cpp
 
     src/systems/NetworkReceiveSystem.cpp
     src/systems/NetworkSendSystem.cpp

@@ -9,6 +9,10 @@
 #define LOBBY_HPP_
 
 #include "../../engineCore/include/ecs/World.hpp"
+#include <nlohmann/json.hpp>
+
+// Forward declaration for network manager
+class INetworkManager;
 #include <cstdint>
 #include <memory>
 #include <string>
@@ -21,7 +25,7 @@
 class Lobby
 {
 public:
-  explicit Lobby(const std::string &code);
+  explicit Lobby(const std::string &code, std::shared_ptr<INetworkManager> networkManager = nullptr);
   ~Lobby();
 
   // Disable copy and move to prevent issues with unique resources
@@ -110,6 +114,11 @@ public:
    */
   [[nodiscard]] ecs::Entity getPlayerEntity(std::uint32_t clientId) const;
 
+  /**
+   * @brief Send a JSON message to a specific client in this lobby
+   */
+  void sendJsonToClient(std::uint32_t clientId, const nlohmann::json &message) const;
+
 private:
   void initializeSystems();
   void spawnPlayer(std::uint32_t clientId);
@@ -121,6 +130,9 @@ private:
 
   // Isolated game world for this lobby
   std::shared_ptr<ecs::World> m_world;
+
+  // Network manager used to send direct messages to clients in this lobby
+  std::shared_ptr<INetworkManager> m_networkManager;
 
   // Map client IDs to their player entities
   std::unordered_map<std::uint32_t, ecs::Entity> m_playerEntities;

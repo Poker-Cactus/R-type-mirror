@@ -14,7 +14,8 @@ bool LobbyManager::createLobby(const std::string &code)
     return false;
   }
 
-  m_lobbies[code] = std::make_unique<Lobby>(code);
+  // Pass the network manager (if any) to the lobby so it can send direct messages
+  m_lobbies[code] = std::make_unique<Lobby>(code, m_networkManager);
   std::cout << "[LobbyManager] Created lobby: " << code << '\n';
   return true;
 }
