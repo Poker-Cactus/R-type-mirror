@@ -12,6 +12,7 @@
 #include "Menu/ProfileMenu/ProfileMenu.hpp"
 #include "Menu/SettingsMenu/SettingsMenu.hpp"
 #include <cmath>
+#include <iostream>
 
 Menu::Menu(IRenderer *renderer) : renderer(renderer) {}
 
@@ -70,6 +71,9 @@ void Menu::render()
   case MenuState::SETTINGS:
     settingsMenu->render(winWidth, winHeight, renderer);
     break;
+  case MenuState::EXIT:
+    // Exit state - nothing to render
+    break;
   }
 }
 
@@ -89,7 +93,7 @@ void Menu::processInput()
     settingsMenu->process(renderer);
     break;
   case MenuState::LOBBY:
-    lobbyMenu->process(renderer);
+    lobbyMenu->process(renderer, &currentState);
     break;
   default:
     break;
@@ -130,5 +134,30 @@ MenuState Menu::getState() const
 
 bool Menu::shouldStartGame() const
 {
-  return currentState == MenuState::LOBBY;
+  // Only transition to lobby room when user explicitly chooses to create/join
+  if (lobbyMenu != nullptr && lobbyMenu->shouldEnterLobbyRoom()) {
+    std::cout << "[Menu] shouldStartGame() returning true - User selected lobby action" << std::endl;
+    return true;
+  }
+  return false;
+}
+
+bool Menu::isCreatingLobby() const
+{
+  return lobbyMenu != nullptr && lobbyMenu->isCreatingLobby();
+}
+
+std::string Menu::getLobbyCodeToJoin() const
+{
+  if (lobbyMenu != nullptr) {
+    return lobbyMenu->getLobbyCodeToJoin();
+  }
+  return "";
+}
+
+void Menu::resetLobbySelection()
+{
+  if (lobbyMenu != nullptr) {
+    lobbyMenu->resetLobbyRoomFlag();
+  }
 }

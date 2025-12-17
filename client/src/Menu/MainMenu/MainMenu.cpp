@@ -7,6 +7,7 @@
 
 #include "MainMenu.hpp"
 #include "../../../interface/KeyCodes.hpp"
+#include <iostream>
 
 void MainMenu::init(IRenderer *renderer)
 {
@@ -112,7 +113,9 @@ void MainMenu::process(MenuState *currentState, IRenderer *renderer)
   }
   if (renderer->isKeyJustPressed(KeyCode::KEY_RETURN)) {
     std::string selectedButton = mainMenuItems[currentMenuIndex];
+    std::cout << "[MainMenu] Enter pressed on: " << selectedButton << '\n';
     if (selectedButton == "Play") {
+      std::cout << "[MainMenu] Changing state to LOBBY" << '\n';
       *currentState = MenuState::LOBBY;
     } else if (selectedButton == "Settings") {
       *currentState = MenuState::SETTINGS;
