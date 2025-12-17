@@ -6,8 +6,8 @@
 */
 
 #include "RendererSDL2.hpp"
-#include "../../interface/KeyCodes.hpp"
 #include "../../interface/Color.hpp"
+#include "../../interface/KeyCodes.hpp"
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
 #include <SDL2/SDL_ttf.h>
@@ -25,7 +25,7 @@
 #include <SDL_video.h>
 #include <cmath>
 #include <stdexcept>
-#include <string>
+#include <iostream>
 
 namespace
 {
