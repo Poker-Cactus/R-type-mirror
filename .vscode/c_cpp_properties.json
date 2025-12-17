@@ -17,8 +17,7 @@
         {
             "name": "Mac",
             "includePath": [
-                "${workspaceFolder}/**",
-                "~/.conan2/p/nlohm*/p/include"
+                "${workspaceFolder}/**"
             ],
             "defines": [
                 "ASIO_STANDALONE"
