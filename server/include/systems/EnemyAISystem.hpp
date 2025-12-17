@@ -11,7 +11,6 @@
 #include "../../../engineCore/include/ecs/Entity.hpp"
 #include "../../../engineCore/include/ecs/ISystem.hpp"
 #include "../../../engineCore/include/ecs/World.hpp"
-#include "../../../engineCore/include/ecs/components/PlayerId.hpp"
 #include "../../../engineCore/include/ecs/components/Transform.hpp"
 #include "../../../engineCore/include/ecs/components/Velocity.hpp"
 #include "../../../engineCore/include/ecs/components/roles/EnemyAI.hpp"
@@ -52,7 +51,7 @@ public:
       // Simple AI: enemies with negative velocity move left
       if (velocity.dx < 0) {
         // Keep moving left
-        velocity.dx = -80.0F;
+        velocity.dx = ENEMY_MOVE_SPEED;
       }
 
       // Shoot after a random cooldown so enemies feel less predictable
@@ -64,7 +63,7 @@ public:
       }
 
       // Destroy if off-screen (left side)
-      if (transform.x < -100.0F) {
+      if (transform.x < OFFSCREEN_DESTROY_X) {
         world.destroyEntity(entity);
       }
     }
@@ -83,10 +82,16 @@ private:
   std::mt19937 m_rng;
   std::unordered_map<ecs::Entity, float> m_aiTimer;
   std::unordered_map<ecs::Entity, float> m_nextShotDelay;
+  
+  // AI behavior constants
+  static constexpr float ENEMY_MOVE_SPEED = -80.0F;
+  static constexpr float MIN_SHOT_DELAY = 1.5F;
+  static constexpr float MAX_SHOT_DELAY = 3.5F;
+  static constexpr float OFFSCREEN_DESTROY_X = -100.0F;
 
   float randomShotDelay()
   {
-    std::uniform_real_distribution<float> dist(1.5F, 3.5F);
+    std::uniform_real_distribution<float> dist(MIN_SHOT_DELAY, MAX_SHOT_DELAY);
     return dist(m_rng);
   }
 };

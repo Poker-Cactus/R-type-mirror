@@ -6,6 +6,7 @@
 */
 
 #include "PlayingState.hpp"
+#include "../include/AssetPath.hpp"
 #include "../../engineCore/include/ecs/components/Collider.hpp"
 #include "../../engineCore/include/ecs/components/Health.hpp"
 #include "../../engineCore/include/ecs/components/Networked.hpp"

@@ -6,6 +6,7 @@
 */
 
 #include "ParallaxBackground.hpp"
+#include "../include/AssetPath.hpp"
 #include <cmath>
 #include <iostream>
 
@@ -27,14 +28,14 @@ bool ParallaxBackground::init()
   windowHeight = renderer->getWindowHeight();
 
   // Responsive
-  addLayer("./client/assets/background/iceberg/0-water.png", 50.0f, 1.0f, 0);
-  addLayer("./client/assets/background/iceberg/1-Sky.png", 5.0f, 1.0f, -300);
-  addLayer("./client/assets/background/iceberg/2-cloud.png", 10.0f, 1.0f, -150);
-  addLayer("./client/assets/background/iceberg/3-mountains.png", 40.0f, 0.02f, -240);
-  addLayer("./client/assets/background/iceberg/2-2-water reflex back.png", 250.0f, 1.0f, -200);
-  addLayer("./client/assets/background/iceberg/2-1-water reflex.png", 800.0f, 1.0f, -200);
-  addLayer("./client/assets/background/iceberg/4-icebergreflex.png", 220.0f, 1.0f, 120);
-  addLayer("./client/assets/background/iceberg/5-iceberg.png", 220.0f, 1.0f, 120);
+  addLayer(resolveAssetPath("client/assets/background/iceberg/0-water.png"), 50.0f, 1.0f, 0);
+  addLayer(resolveAssetPath("client/assets/background/iceberg/1-Sky.png"), 5.0f, 1.0f, -300);
+  addLayer(resolveAssetPath("client/assets/background/iceberg/2-cloud.png"), 10.0f, 1.0f, -150);
+  addLayer(resolveAssetPath("client/assets/background/iceberg/3-mountains.png"), 40.0f, 0.02f, -240);
+  addLayer(resolveAssetPath("client/assets/background/iceberg/2-2-water reflex back.png"), 250.0f, 1.0f, -200);
+  addLayer(resolveAssetPath("client/assets/background/iceberg/2-1-water reflex.png"), 800.0f, 1.0f, -200);
+  addLayer(resolveAssetPath("client/assets/background/iceberg/4-icebergreflex.png"), 220.0f, 1.0f, 120);
+  addLayer(resolveAssetPath("client/assets/background/iceberg/5-iceberg.png"), 220.0f, 1.0f, 120);
 
   return !layers.empty();
 }

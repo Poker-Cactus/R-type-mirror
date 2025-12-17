@@ -10,6 +10,7 @@
 
 #include "IComponent.hpp"
 #include <cstdint>
+#include <nlohmann/json_fwd.hpp>
 
 namespace ecs
 {
@@ -31,19 +32,19 @@ struct Sprite : public IComponent {
 
   [[nodiscard]] nlohmann::json toJson() const override
   {
-    nlohmann::json j;
-    j["spriteId"] = spriteId;
-    j["width"] = width;
-    j["height"] = height;
-    return j;
+    nlohmann::json json;
+    json["spriteId"] = spriteId;
+    json["width"] = width;
+    json["height"] = height;
+    return json;
   }
 
-  static Sprite fromJson(const nlohmann::json &j)
+  static Sprite fromJson(const nlohmann::json &json)
   {
     Sprite sprite;
-    sprite.spriteId = j.value("spriteId", 0u);
-    sprite.width = j.value("width", 32u);
-    sprite.height = j.value("height", 32u);
+    sprite.spriteId = json.value("spriteId", 0u);
+    sprite.width = json.value("width", 32u);
+    sprite.height = json.value("height", 32u);
     return sprite;
   }
 };
