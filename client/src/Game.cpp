@@ -17,12 +17,6 @@ Game::Game() : module(nullptr), renderer(nullptr), isRunning(false), currentStat
 
 Game::Game(const std::string &host, const std::string &port) : module(nullptr), renderer(nullptr), isRunning(false), currentState(GameState::MENU), m_serverHost(host), m_serverPort(port) {}
 
-Game::Game(const std::string &host, const std::string &port)
-    : module(nullptr), renderer(nullptr), isRunning(false), currentState(GameState::MENU), m_serverHost(host),
-      m_serverPort(port)
-{
-}
-
 Game::~Game()
 {
   shutdown();
