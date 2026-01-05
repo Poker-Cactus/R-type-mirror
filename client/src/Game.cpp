@@ -13,7 +13,9 @@
 #include <nlohmann/json.hpp>
 #include <span>
 
-Game::Game() : module(nullptr), renderer(nullptr), isRunning(false), currentState(GameState::MENU) {}
+Game::Game() : module(nullptr), renderer(nullptr), isRunning(false), currentState(GameState::MENU), m_serverHost("127.0.0.1"), m_serverPort("4242") {}
+
+Game::Game(const std::string &host, const std::string &port) : module(nullptr), renderer(nullptr), isRunning(false), currentState(GameState::MENU), m_serverHost(host), m_serverPort(port) {}
 
 Game::Game(const std::string &host, const std::string &port)
     : module(nullptr), renderer(nullptr), isRunning(false), currentState(GameState::MENU), m_serverHost(host),
