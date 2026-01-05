@@ -12,21 +12,34 @@
 #include <iostream>
 #include <string>
 
+static void printUsage(const char *programName)
+{
+  std::cout << "Usage: " << programName << " [HOST] [PORT]\n"
+            << "\n"
+            << "Arguments:\n"
+            << "  HOST    Server hostname or IP address (default: 127.0.0.1)\n"
+            << "  PORT    Server port number (default: 4242)\n"
+            << "\n"
+            << "Options:\n"
+            << "  -h, --help    Display this help message and exit\n"
+            << std::endl;
+}
+
 int main(int argc, char **argv)
 {
   std::string host = "127.0.0.1";
   std::string port = "4242";
 
-  // Parse command line arguments
   if (argc >= 2) {
-    host = argv[1];
+    std::string arg1 = argv[1];
+    if (arg1 == "-h" || arg1 == "--help") {
+      printUsage(argv[0]);
+      return EXIT_SUCCESS;
+    }
+    host = arg1;
   }
   if (argc >= 3) {
     port = argv[2];
-  }
-
-  if (argc > 1) {
-    std::cout << "[Client] Connecting to " << host << ":" << port << std::endl;
   }
 
   Game game(host, port);

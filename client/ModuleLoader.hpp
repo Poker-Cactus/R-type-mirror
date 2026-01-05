@@ -4,9 +4,15 @@
 #include <string>
 
 #if defined(_WIN32)
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
 #include <windows.h>
 using LibHandle = HMODULE;
-#define LOAD_LIB(path) uLoadLibraryA(path)
+#define LOAD_LIB(path) LoadLibraryA(path)
 #define LOAD_SYM(handle, name) GetProcAddress(handle, name)
 #define CLOSE_LIB(handle) FreeLibrary(handle)
 #else

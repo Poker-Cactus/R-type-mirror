@@ -6,6 +6,7 @@
 */
 
 #include "LoadingMenu.hpp"
+#include "../../../interface/Geometry.hpp"
 #include "../../../interface/KeyCodes.hpp"
 #include <cmath>
 

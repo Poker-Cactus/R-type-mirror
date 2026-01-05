@@ -11,8 +11,10 @@ add_executable(client
     src/Menu/LobbyMenu/LobbyMenu.cpp
     src/Menu/SettingsMenu/SettingsMenu.cpp
     src/Menu/ProfileMenu/ProfileMenu.cpp
+    src/LobbyRoomState.cpp
     src/PlayingState.cpp
     src/ParallaxBackground.cpp
+    src/Overlay.cpp
     src/Client.cpp
     src/systems/NetworkSendSystem.cpp
     src/systems/NetworkReceiveSystem.cpp
@@ -27,7 +29,15 @@ target_link_libraries(client PRIVATE
     engineCore
     common
     network
+    SDL2::SDL2main
     SDL2::SDL2
 )
+
+# Ensure SDL2main handles the main/WinMain conversion on Windows
+if(WIN32)
+    set_target_properties(client PROPERTIES
+        WIN32_EXECUTABLE TRUE
+    )
+endif()
 
 add_subdirectory(modules)

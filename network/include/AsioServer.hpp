@@ -8,7 +8,20 @@
 #ifndef ASIO_SERVER_HPP_
 #define ASIO_SERVER_HPP_
 
+#ifdef _WIN32
+#ifndef _WIN32_WINNT
+#define _WIN32_WINNT 0x0601
+#endif
+#endif
+
 #include <asio.hpp>
+#include <asio/bind_executor.hpp>
+#include <asio/buffer.hpp>
+#include <asio/error.hpp>
+#include <asio/executor_work_guard.hpp>
+#include <asio/ip/udp.hpp>
+#include <asio/socket_base.hpp>
+#include <asio/strand.hpp>
 #include <cstdint>
 #include <memory>
 #include <span>
