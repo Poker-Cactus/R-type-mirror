@@ -9,10 +9,27 @@
 #include <SDL2/SDL.h>
 #include <cstdio>
 #include <cstdlib>
+#include <iostream>
+#include <string>
 
-int main()
+int main(int argc, char **argv)
 {
-  Game game;
+  std::string host = "127.0.0.1";
+  std::string port = "4242";
+
+  // Parse command line arguments
+  if (argc >= 2) {
+    host = argv[1];
+  }
+  if (argc >= 3) {
+    port = argv[2];
+  }
+
+  if (argc > 1) {
+    std::cout << "[Client] Connecting to " << host << ":" << port << std::endl;
+  }
+
+  Game game(host, port);
   if (!game.init()) {
     return EXIT_FAILURE;
   }

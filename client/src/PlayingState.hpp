@@ -34,9 +34,9 @@ public:
 
   /**
    * @brief Met à jour la logique du jeu
-   * @param dt Delta time en secondes
+   * @param deltaTime Delta time en secondes
    */
-  void update(float dt);
+  void update(float deltaTime);
 
   /**
    * @brief Dessine tous les éléments du jeu
@@ -71,7 +71,8 @@ private:
 
   // HUD state
   void *m_hudFont = nullptr;
-  int m_playerHealth = 100;
+  static constexpr int DEFAULT_PLAYER_HEALTH = 100;
+  int m_playerHealth = DEFAULT_PLAYER_HEALTH;
   int m_playerScore = 0;
 
   void renderHUD();

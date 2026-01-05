@@ -28,17 +28,18 @@ public:
       : handle(nullptr), createFn(nullptr), destroyFn(nullptr)
   {
     handle = LOAD_LIB(path.c_str());
-    if (!handle)
+    if (handle == nullptr) {
       throw std::runtime_error("Failed to load module: " + path);
+    }
 
     createFn = reinterpret_cast<CreateFn>(LOAD_SYM(handle, createName.c_str()));
-    if (!createFn) {
+    if (createFn == nullptr) {
       CLOSE_LIB(handle);
       throw std::runtime_error("Failed to load symbol: " + createName);
     }
 
     destroyFn = reinterpret_cast<DestroyFn>(LOAD_SYM(handle, destroyName.c_str()));
-    if (!destroyFn) {
+    if (destroyFn == nullptr) {
       CLOSE_LIB(handle);
       throw std::runtime_error("Failed to load symbol: " + destroyName);
     }
@@ -46,7 +47,7 @@ public:
 
   ~Module()
   {
-    if (handle) {
+    if (handle != nullptr) {
       CLOSE_LIB(handle);
     }
   }

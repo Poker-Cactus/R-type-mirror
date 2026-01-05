@@ -14,7 +14,6 @@
 #include "../../../engineCore/include/ecs/components/Collider.hpp"
 #include "../../../engineCore/include/ecs/components/GunOffset.hpp"
 #include "../../../engineCore/include/ecs/components/Health.hpp"
-#include "../../../engineCore/include/ecs/components/Lifetime.hpp"
 #include "../../../engineCore/include/ecs/components/Networked.hpp"
 #include "../../../engineCore/include/ecs/components/Owner.hpp"
 #include "../../../engineCore/include/ecs/components/PlayerId.hpp"
@@ -27,8 +26,10 @@
 #include "../../../engineCore/include/ecs/events/EventListenerHandle.hpp"
 #include "../../../engineCore/include/ecs/events/GameEvents.hpp"
 #include "ecs/ComponentSignature.hpp"
+#include <algorithm>
 #include <cmath>
 #include <random>
+#include <vector>
 
 namespace server
 {
@@ -66,41 +67,54 @@ private:
   ecs::EventListenerHandle m_spawnHandle;
   std::mt19937 m_rng;
   float m_spawnTimer = 0.0F;
-  const float SPAWN_INTERVAL = 3.0F;
+  
+  // Spawn configuration constants
+  static constexpr float SPAWN_INTERVAL = 3.0F;
+  static constexpr float DEFAULT_VIEWPORT_WIDTH = 800.0F;
+  static constexpr float DEFAULT_VIEWPORT_HEIGHT = 600.0F;
+  static constexpr float SPAWN_Y_MARGIN = 50.0F;
+  static constexpr float SPAWN_X_OFFSET = 32.0F;
+  static constexpr float ENEMY_VELOCITY_X = -150.0F;
+  static constexpr int ENEMY_HEALTH = 30;
+  static constexpr float ENEMY_COLLIDER_SIZE = 32.0F;
+  static constexpr unsigned int ENEMY_SPRITE_SIZE = 64;
+  static constexpr float PROJECTILE_COLLIDER_SIZE = 8.0F;
+  static constexpr unsigned int PROJECTILE_SPRITE_WIDTH = 84;
+  static constexpr unsigned int PROJECTILE_SPRITE_HEIGHT = 36;
+  static constexpr float PROJECTILE_VELOCITY_MULTIPLIER = 1700.0F;
+  static constexpr float DIRECTION_THRESHOLD = 0.001F;
 
   void spawnRandomEnemy(ecs::World &world)
   {
     // Get viewport dimensions from connected players
-    float worldW = 800.0F;
-    float worldH = 600.0F;
-
+    float worldWidth = DEFAULT_VIEWPORT_WIDTH;
+    float worldHeight = DEFAULT_VIEWPORT_HEIGHT;
+    
     ecs::ComponentSignature playerSig;
     playerSig.set(ecs::getComponentId<ecs::PlayerId>());
     playerSig.set(ecs::getComponentId<ecs::Viewport>());
     std::vector<ecs::Entity> players;
     world.getEntitiesWithSignature(playerSig, players);
-
-    for (auto p : players) {
-      const auto &vp = world.getComponent<ecs::Viewport>(p);
-      if (vp.width > 0) {
-        worldW = std::max(worldW, static_cast<float>(vp.width));
+    
+    for (const auto &player : players) {
+      const auto &viewport = world.getComponent<ecs::Viewport>(player);
+      if (viewport.width > 0) {
+        worldWidth = std::max(worldWidth, static_cast<float>(viewport.width));
       }
-      if (vp.height > 0) {
-        worldH = std::max(worldH, static_cast<float>(vp.height));
+      if (viewport.height > 0) {
+        worldHeight = std::max(worldHeight, static_cast<float>(viewport.height));
       }
     }
 
     // Random Y position across full screen height
-    std::uniform_real_distribution<float> yDist(50.0F, worldH - 50.0F);
+    std::uniform_real_distribution<float> yDist(SPAWN_Y_MARGIN, worldHeight - SPAWN_Y_MARGIN);
 
     // Spawn at right edge of screen (at the visible border)
     ecs::SpawnEntityEvent event(ecs::SpawnEntityEvent::EntityType::ENEMY,
-                                worldW - 32.0F, // Spawn at right edge (minus half sprite width)
+                                worldWidth - SPAWN_X_OFFSET, // Spawn at right edge (minus half sprite width)
                                 yDist(m_rng), 0);
     world.emitEvent(event);
-  }
-
-  static void handleSpawnEvent(ecs::World &world, const ecs::SpawnEntityEvent &event)
+  }  static void handleSpawnEvent(ecs::World &world, const ecs::SpawnEntityEvent &event)
   {
     switch (event.type) {
     case ecs::SpawnEntityEvent::EntityType::ENEMY:
@@ -118,37 +132,37 @@ private:
     }
   }
 
-  static void spawnEnemy(ecs::World &world, float x, float y)
+  static void spawnEnemy(ecs::World &world, float posX, float posY)
   {
     ecs::Entity enemy = world.createEntity();
 
     world.addComponent(enemy, ecs::EnemyAI{});
 
     ecs::Transform transform;
-    transform.x = x;
-    transform.y = y;
+    transform.x = posX;
+    transform.y = posY;
     transform.rotation = 0.0F;
     transform.scale = 1.0F;
     world.addComponent(enemy, transform);
 
     ecs::Velocity velocity;
-    velocity.dx = -150.0F;
+    velocity.dx = ENEMY_VELOCITY_X;
     velocity.dy = 0.0F;
     world.addComponent(enemy, velocity);
 
     ecs::Health health;
-    health.hp = 30;
-    health.maxHp = 30;
+    health.hp = ENEMY_HEALTH;
+    health.maxHp = ENEMY_HEALTH;
     world.addComponent(enemy, health);
 
-    world.addComponent(enemy, ecs::Collider{32.0F, 32.0F});
+    world.addComponent(enemy, ecs::Collider{ENEMY_COLLIDER_SIZE, ENEMY_COLLIDER_SIZE});
 
     // SERVER ASSIGNS VISUAL IDENTITY AS DATA
     // The sprite is assigned at creation time - never inferred by systems
     ecs::Sprite sprite;
     sprite.spriteId = ecs::SpriteId::ENEMY_SHIP;
-    sprite.width = 64;
-    sprite.height = 64;
+    sprite.width = ENEMY_SPRITE_SIZE;
+    sprite.height = ENEMY_SPRITE_SIZE;
     world.addComponent(enemy, sprite);
 
     ecs::Networked net;
@@ -156,19 +170,19 @@ private:
     world.addComponent(enemy, net);
   }
 
-  static void spawnProjectile(ecs::World &world, float x, float y, ecs::Entity owner)
+  static void spawnProjectile(ecs::World &world, float posX, float posY, ecs::Entity owner)
   {
     // Determine direction: prefer requested direction, fall back to owner velocity
     float directionX = 0.0F;
-    if (std::abs(directionX) < 0.001F && world.hasComponent<ecs::Velocity>(owner)) {
+    if (std::abs(directionX) < DIRECTION_THRESHOLD && world.hasComponent<ecs::Velocity>(owner)) {
       directionX = world.getComponent<ecs::Velocity>(owner).dx;
     }
-    if (std::abs(directionX) < 0.001F) {
+    if (std::abs(directionX) < DIRECTION_THRESHOLD) {
       directionX = 1.0F; // Default to right if nothing else is known
     }
 
     const float normalizedDirX = directionX >= 0.0F ? 1.0F : -1.0F;
-    const float projectileVelocity = 1700.0F * normalizedDirX; // 2x faster projectiles
+    const float projectileVelocity = PROJECTILE_VELOCITY_MULTIPLIER * normalizedDirX;
 
     ecs::Entity projectile = world.createEntity();
 
@@ -182,8 +196,8 @@ private:
     }
 
     ecs::Transform transform;
-    transform.x = x + offsetX;
-    transform.y = y;
+    transform.x = posX + offsetX;
+    transform.y = posY;
     transform.rotation = 0.0F;
     transform.scale = 1.0F;
     world.addComponent(projectile, transform);
@@ -195,14 +209,14 @@ private:
 
     // Despawn is handled by LifetimeSystem when projectile leaves the viewport.
 
-    world.addComponent(projectile, ecs::Collider{8.0F, 8.0F});
+    world.addComponent(projectile, ecs::Collider{PROJECTILE_COLLIDER_SIZE, PROJECTILE_COLLIDER_SIZE});
 
     // SERVER ASSIGNS VISUAL IDENTITY AS DATA
     // Projectile sprite decided at creation, never inferred later
     ecs::Sprite sprite;
     sprite.spriteId = ecs::SpriteId::PROJECTILE;
-    sprite.width = 84; // 211x92 aspect ratio (422/2 frames, scaled down ~2.5x)
-    sprite.height = 36;
+    sprite.width = PROJECTILE_SPRITE_WIDTH; // 211x92 aspect ratio (422/2 frames, scaled down ~2.5x)
+    sprite.height = PROJECTILE_SPRITE_HEIGHT;
     world.addComponent(projectile, sprite);
 
     // Mark as networked so the snapshot system replicates it to clients.
@@ -216,19 +230,19 @@ private:
     world.addComponent(projectile, ownerComp);
   }
 
-  static void spawnPowerup(ecs::World &world, float x, float y)
+  static void spawnPowerup(ecs::World &world, float posX, float posY)
   {
     (void)world;
-    (void)x;
-    (void)y;
+    (void)posX;
+    (void)posY;
     // TODO: Implement powerup spawning
   }
 
-  static void spawnExplosion(ecs::World &world, float x, float y)
+  static void spawnExplosion(ecs::World &world, float posX, float posY)
   {
     (void)world;
-    (void)x;
-    (void)y;
+    (void)posX;
+    (void)posY;
     // TODO: Implement explosion effect
   }
 };
