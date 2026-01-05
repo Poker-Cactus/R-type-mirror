@@ -7,6 +7,7 @@
 
 #include "../include/CapnpHandler.hpp"
 #include "../include/GameMessage.capnp.h"
+#include <iostream>
 
 std::vector<std::uint8_t> CapnpHandler::serialize(const std::string &data) const
 {
@@ -27,6 +28,7 @@ std::optional<std::string> CapnpHandler::deserialize(const std::array<char, BUFF
   if (bytesTransferred == 0) {
     return std::nullopt;
   }
+
   kj::ArrayPtr<const kj::byte> bytes(reinterpret_cast<const kj::byte *>(buffer.data()), bytesTransferred);
   kj::ArrayInputStream stream(bytes);
 
@@ -36,12 +38,13 @@ std::optional<std::string> CapnpHandler::deserialize(const std::array<char, BUFF
     auto type = netMsg.getMessageType();
     return std::string(type.cStr(), type.size());
   } catch (const kj::Exception &e) {
+    std::cerr << "[CapnpHandler] Deserialize error: " << e.getDescription().cStr() << '\n';
     return std::nullopt;
   }
 }
 
 std::vector<std::byte> CapnpHandler::stringToBytes(const std::string &str)
 {
-  const std::byte *bytePtr = reinterpret_cast<const std::byte *>(str.data());
-  return std::vector<std::byte>(bytePtr, bytePtr + str.size());
+  const auto *bytePtr = reinterpret_cast<const std::byte *>(str.data());
+  return {bytePtr, bytePtr + str.size()};
 }

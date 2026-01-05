@@ -8,6 +8,12 @@
 #ifndef ASIO_CLIENT_HPP_
 #define ASIO_CLIENT_HPP_
 
+#ifdef _WIN32
+#ifndef _WIN32_WINNT
+#define _WIN32_WINNT 0x0601
+#endif
+#endif
+
 #include <asio.hpp>
 #include <cstdint>
 #include <span>

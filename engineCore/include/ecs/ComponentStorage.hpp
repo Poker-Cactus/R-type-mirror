@@ -81,7 +81,7 @@ public:
   }
 
 private:
-  static constexpr std::size_t INVALID = std::numeric_limits<std::size_t>::max();
+  static constexpr std::size_t INVALID = (std::numeric_limits<std::size_t>::max)();
 
   std::vector<std::size_t> sparseArray;
   std::vector<ecs::Entity> denseEntityArray;

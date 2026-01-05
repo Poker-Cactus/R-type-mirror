@@ -9,10 +9,40 @@
 #include <SDL2/SDL.h>
 #include <cstdio>
 #include <cstdlib>
+#include <iostream>
+#include <string>
 
-int main()
+static void printUsage(const char *programName)
 {
-  Game game;
+  std::cout << "Usage: " << programName << " [HOST] [PORT]\n"
+            << "\n"
+            << "Arguments:\n"
+            << "  HOST    Server hostname or IP address (default: 127.0.0.1)\n"
+            << "  PORT    Server port number (default: 4242)\n"
+            << "\n"
+            << "Options:\n"
+            << "  -h, --help    Display this help message and exit\n"
+            << std::endl;
+}
+
+int main(int argc, char **argv)
+{
+  std::string host = "127.0.0.1";
+  std::string port = "4242";
+
+  if (argc >= 2) {
+    std::string arg1 = argv[1];
+    if (arg1 == "-h" || arg1 == "--help") {
+      printUsage(argv[0]);
+      return EXIT_SUCCESS;
+    }
+    host = arg1;
+  }
+  if (argc >= 3) {
+    port = argv[2];
+  }
+
+  Game game(host, port);
   if (!game.init()) {
     return EXIT_FAILURE;
   }

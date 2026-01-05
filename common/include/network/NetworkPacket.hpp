@@ -9,6 +9,7 @@
 #define NETWORK_PACKET_HPP_
 
 #include "../Common.hpp"
+#include <array>
 #include <cstdint>
 #include <vector>
 

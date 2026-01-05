@@ -67,7 +67,7 @@ git clone https://github.com/Poker-Cactus/R-type-mirror.git
 cd R-type-mirror
 ```
 
-### Quick Build (with colors! 🎨)
+### Quick Build (Linux/macOS with colors! 🎨)
 
 ```bash
 ./build.sh
@@ -75,7 +75,9 @@ cd R-type-mirror
 
 ### Manual Build
 
-### Step 1: Install Dependencies
+#### Linux/macOS
+
+**Step 1: Install Dependencies**
 
 ```bash
 conan install . --output-folder=build --build=missing --profile=conan_profile
@@ -86,13 +88,13 @@ This command:
 - Generates CMake configuration files
 - Creates a `conan-release` preset
 
-### Step 2: Configure Build System
+**Step 2: Configure Build System**
 
 ```bash
 cmake --preset conan-release
 ```
 
-### Step 3: Compile Project
+**Step 3: Compile Project**
 
 ```bash
 cmake --build build --config Release
@@ -100,7 +102,7 @@ cmake --build build --config Release
 
 **Build artifacts location:** `build/`
 
-### Run the Application
+**Run the Application**
 
 ```bash
 # Terminal 1 - Start server
@@ -108,6 +110,59 @@ cmake --build build --config Release
 
 # Terminal 2 - Start client  
 ./build/client/client
+```
+
+---
+
+#### Windows (MSVC)
+
+**Step 1: Install Dependencies**
+
+Open **Developer Command Prompt for VS 2022** (or VS 2019) and run:
+
+```powershell
+conan install . --output-folder=build --build=missing --profile=conan_profile
+```
+
+**Step 2: Configure Build System with Visual Studio Generator**
+
+```powershell
+cmake -S . -B build -G "Visual Studio 17 2022" -DCMAKE_TOOLCHAIN_FILE=build/conan_toolchain.cmake
+```
+
+*Note: Use "Visual Studio 16 2019" if you have VS 2019 instead of VS 2022.*
+
+**Step 3: Compile Project**
+
+```powershell
+cmake --build build --config Release
+```
+
+**Build artifacts location:** `build/Release/`
+
+**Run the Application**
+
+```powershell
+# Terminal 1 - Start server
+.\build\server\Release\server.exe
+
+# Terminal 2 - Start client
+.\build\client\Release\client.exe
+```
+
+---
+
+### Alternative Windows Build (Command Line)
+
+If you prefer a simpler command-line workflow on Windows:
+
+```powershell
+# One-liner build
+cmake -S . -B build-msvc -G "Visual Studio 17 2022" -DCMAKE_TOOLCHAIN_FILE=build/conan_toolchain.cmake && cmake --build build-msvc --config Release
+
+# Run
+.\build-msvc\server\Release\server.exe
+.\build-msvc\client\Release\client.exe
 ```
 
 ## Troubleshooting

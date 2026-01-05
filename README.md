@@ -47,6 +47,7 @@ As per the classic design, our engine handles various entities simultaneously:
 
 ## 🚀 Quick Start
 
+### Linux/macOS
 ### Prerequisites
 
 - **OS:** Linux (Required), Windows (Supported)
@@ -82,9 +83,27 @@ Run the server first, then connect with one or more clients.
 ./build/client/r-type_client
 ```
 
----
+### Windows (MSVC)
 
-## 🛠️ Tech Stack & Architecture
+```powershell
+# Install dependencies with Conan
+python -m conans.conan install . --output-folder=build --build=missing -s build_type=Release
+
+# Configure with CMake (uses Visual Studio generator by default)
+cmake --preset conan-default
+
+# Build
+cmake --build build --config Release
+
+# Copy required DLL next to client executable
+Copy-Item -Path "build\libs\Release\sdl2_module.dll" -Destination "build\client\Release\" -Force
+
+# Run (from project root)
+.\build\server\Release\server.exe
+.\build\client\Release\client.exe
+```
+
+## 📚 Documentation
 
 - **Language:** C++20
 - **Architecture:** ECS (Entity Component System)
@@ -101,6 +120,19 @@ Detailed documentation is available in the `docs/` folder:
 - **Development Setup:** VS Code workflow & tools.
 - **Network Protocol:** Binary packet structure RFC.
 - **Architecture:** Diagrams of the Server/Client logic.
+
+### ✅ Compiler Support
+
+- **Linux**: GCC 10+, Clang 12+
+- **Windows**: MSVC 2019+ (Visual Studio 2019/2022)
+- **macOS**: Clang 12+ (Xcode 13+)
+
+### 🔧 Cross-Platform Features
+
+- ✅ Threading: `std::thread`, `std::mutex`, `std::atomic`
+- ✅ Networking: ASIO (no raw sockets, no POSIX dependencies)
+- ✅ Graphics: SDL2 (cross-platform)
+- ✅ Build System: CMake with MSVC and GCC/Clang support
 
 ---
 

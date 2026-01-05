@@ -6,12 +6,14 @@
 */
 
 #include "Menu.hpp"
+#include "../include/AssetPath.hpp"
 #include "Menu/LoadingMenu/LoadingMenu.hpp"
 #include "Menu/LobbyMenu/LobbyMenu.hpp"
 #include "Menu/MainMenu/MainMenu.hpp"
 #include "Menu/ProfileMenu/ProfileMenu.hpp"
 #include "Menu/SettingsMenu/SettingsMenu.hpp"
 #include <cmath>
+#include <iostream>
 
 Menu::Menu(IRenderer *renderer) : renderer(renderer) {}
 
@@ -25,7 +27,7 @@ void Menu::init()
   try {
     const int menuFontSize = 24;
     const int titleFontSize = 48;
-    menu_font = renderer->loadFont("client/assets/font.opf/r-type.otf", menuFontSize);
+    menu_font = renderer->loadFont(resolveAssetPath("client/assets/font.opf/r-type.otf").c_str(), menuFontSize);
 
     loadingMenu = new LoadingMenu();
     loadingMenu->init(renderer);
@@ -52,6 +54,7 @@ void Menu::init()
     // Initialiser le LoadingScreen
     loadingScreen = new LoadingScreen(renderer, menu_font);
   } catch (const std::exception &e) {
+    std::cerr << "Exception during menu initialization: " << e.what() << '\n';
   }
 }
 
@@ -73,11 +76,14 @@ void Menu::render()
     profileMenu->render(winWidth, winHeight, renderer);
     break;
   case MenuState::LOBBY:
-    lobbyMenu->render(winWidth, winHeight, renderer);
+    lobbyMenu->render({.width = winWidth, .height = winHeight}, renderer);
     break;
   case MenuState::SETTINGS:
     renderMoonParalax(winWidth, winHeight, renderer);
     settingsMenu->render(winWidth, winHeight, renderer);
+    break;
+  case MenuState::EXIT:
+    // Exit state - nothing to render
     break;
   }
 }
@@ -98,7 +104,7 @@ void Menu::processInput()
     settingsMenu->process(renderer);
     break;
   case MenuState::LOBBY:
-    lobbyMenu->process(renderer);
+    lobbyMenu->process(renderer, &currentState);
     break;
   default:
     break;
@@ -126,10 +132,10 @@ void Menu::drawCenteredText(const std::string &text, int yOffset, const Color &c
   int textHeight = 0;
   renderer->getTextSize(menu_font, text, textWidth, textHeight);
 
-  int x = (winWidth - textWidth) / 2;
-  int y = (winHeight - textHeight) / 2 + yOffset;
+  int pos_x = (winWidth - textWidth) / 2;
+  int pos_y = ((winHeight - textHeight) / 2) + yOffset;
 
-  renderer->drawText(menu_font, text, x, y, color);
+  renderer->drawText(menu_font, text, pos_x, pos_y, color);
 }
 
 MenuState Menu::getState() const
@@ -139,7 +145,32 @@ MenuState Menu::getState() const
 
 bool Menu::shouldStartGame() const
 {
-  return currentState == MenuState::LOBBY;
+  // Only transition to lobby room when user explicitly chooses to create/join
+  if (lobbyMenu != nullptr && lobbyMenu->shouldEnterLobbyRoom()) {
+    std::cout << "[Menu] shouldStartGame() returning true - User selected lobby action" << '\n';
+    return true;
+  }
+  return false;
+}
+
+bool Menu::isCreatingLobby() const
+{
+  return lobbyMenu != nullptr && lobbyMenu->isCreatingLobby();
+}
+
+std::string Menu::getLobbyCodeToJoin() const
+{
+  if (lobbyMenu != nullptr) {
+    return lobbyMenu->getLobbyCodeToJoin();
+  }
+  return "";
+}
+
+void Menu::resetLobbySelection()
+{
+  if (lobbyMenu != nullptr) {
+    lobbyMenu->resetLobbyRoomFlag();
+  }
 }
 
 void Menu::renderMoonParalax(int winWidth, int winHeight, IRenderer *renderer) {

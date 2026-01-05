@@ -98,9 +98,8 @@ void NetworkSendSystem::sendInputToServer(ecs::Entity entity, const ecs::Input &
 
   // Low-noise logging: print on change, and also periodically (2Hz) to confirm activity.
   if (changed || logAccumulator >= 0.5f) {
-    std::cout << "[Client] Sent input client_id=" << m_clientId << " up=" << now.up << " down=" << now.down
-              << " left=" << now.left << " right=" << now.right << " shoot=" << now.shoot
-              << " bytes=" << serialized.size() << std::endl;
+    // Minimal send log — avoid flooding. Detailed inspection is done on receive/display.
+    std::cout << "[Client][SEND] input updated (client_id=" << m_clientId << ")" << std::endl;
     logAccumulator = 0.0f;
   }
 

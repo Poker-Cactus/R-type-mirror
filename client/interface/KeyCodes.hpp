@@ -13,6 +13,21 @@ constexpr int KEY_TAB = 4;
 constexpr int KEY_SPACE = 5;
 constexpr int KEY_DELETE = 8;
 
+// Function keys
+constexpr int KEY_F11 = 9;
+
+// Numbers (0-9)
+constexpr int KEY_0 = 50;
+constexpr int KEY_1 = 51;
+constexpr int KEY_2 = 52;
+constexpr int KEY_3 = 53;
+constexpr int KEY_4 = 54;
+constexpr int KEY_5 = 55;
+constexpr int KEY_6 = 56;
+constexpr int KEY_7 = 57;
+constexpr int KEY_8 = 58;
+constexpr int KEY_9 = 59;
+
 // Arrow keys
 constexpr int KEY_UP = 10;
 constexpr int KEY_DOWN = 11;

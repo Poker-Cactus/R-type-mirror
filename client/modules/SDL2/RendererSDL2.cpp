@@ -1,4 +1,12 @@
+/*
+** EPITECH PROJECT, 2025
+** rtype
+** File description:
+** RendererSDL2.cpp
+*/
+
 #include "RendererSDL2.hpp"
+#include "../../interface/Color.hpp"
 #include "../../interface/KeyCodes.hpp"
 #include "/home/raphael/directory/third-year/R-type-mirror/client/interface/Color.hpp"
 #include <SDL2/SDL.h>
@@ -18,9 +26,14 @@
 #include <SDL_timer.h>
 #include <SDL_video.h>
 #include <cmath>
-#include <iostream>
 #include <stdexcept>
-#include <string>
+#include <iostream>
+
+namespace
+{
+constexpr float kMillisecondsPerSecond = 1000.0F;
+constexpr float kGamepadAxisMax = 32767.0F;
+} // anonymous namespace
 
 // Map SDL keycodes to generic keycodes
 static int mapSDLKeyToGeneric(int sdlKey)
@@ -101,6 +114,30 @@ static int mapSDLKeyToGeneric(int sdlKey)
   case SDLK_z:
     return KeyCode::KEY_Z;
 
+  case SDLK_0:
+    return KeyCode::KEY_0;
+  case SDLK_1:
+    return KeyCode::KEY_1;
+  case SDLK_2:
+    return KeyCode::KEY_2;
+  case SDLK_3:
+    return KeyCode::KEY_3;
+  case SDLK_4:
+    return KeyCode::KEY_4;
+  case SDLK_5:
+    return KeyCode::KEY_5;
+  case SDLK_6:
+    return KeyCode::KEY_6;
+  case SDLK_7:
+    return KeyCode::KEY_7;
+  case SDLK_8:
+    return KeyCode::KEY_8;
+  case SDLK_9:
+    return KeyCode::KEY_9;
+
+  case SDLK_F11:
+    return KeyCode::KEY_F11;
+
   default:
     return KeyCode::KEY_UNKNOWN;
   }
@@ -137,6 +174,19 @@ RendererSDL2::RendererSDL2(int width, int height) : windowWidth(width), windowHe
     IMG_Quit();
     TTF_Quit();
     throw std::runtime_error(SDL_GetError());
+  }
+
+  SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
+
+  // Update windowWidth/windowHeight to the renderer's actual output size
+  // (handles high-DPI / Retina where window logical size != drawable size).
+  if (renderer != nullptr) {
+    int outW = 0;
+    int outH = 0;
+    if (SDL_GetRendererOutputSize(renderer, &outW, &outH) == 0) {
+      windowWidth = outW;
+      windowHeight = outH;
+    }
   }
 
   for (int i = 0; i < SDL_NumJoysticks(); ++i) {
@@ -186,9 +236,9 @@ void RendererSDL2::present()
   }
 
   if (targetFPS > 0) {
-    float targetFrameTime = 1.0F / static_cast<float>(targetFPS);
+    const float targetFrameTime = 1.0F / static_cast<float>(targetFPS);
     if (deltaTime < targetFrameTime) {
-      Uint32 delay = static_cast<Uint32>((targetFrameTime - deltaTime) * 1000.0F);
+      const auto delay = static_cast<Uint32>((targetFrameTime - deltaTime) * kMillisecondsPerSecond);
       SDL_Delay(delay);
     }
   }
@@ -206,13 +256,26 @@ void RendererSDL2::setWindowTitle(const std::string &title)
   SDL_SetWindowTitle(window, title.c_str());
 }
 
-void RendererSDL2::setFullscreen(bool fs)
+void RendererSDL2::setFullscreen(bool fullscreen)
 {
-  fullscreen = fs;
-  SDL_SetWindowFullscreen(window, fs ? SDL_WINDOW_FULLSCREEN_DESKTOP : 0);
+  this->fullscreen = fullscreen;
+  SDL_SetWindowFullscreen(window, fullscreen ? SDL_WINDOW_FULLSCREEN_DESKTOP : 0);
 
-  // Mettre à jour les dimensions de la fenêtre après le changement
-  SDL_GetWindowSize(window, &windowWidth, &windowHeight);
+  // Mettre à jour les dimensions en utilisant la taille de sortie du renderer
+  // pour obtenir la taille réelle en pixels (corrige Retina / HiDPI).
+  if (renderer != nullptr) {
+    int outW = 0;
+    int outH = 0;
+    if (SDL_GetRendererOutputSize(renderer, &outW, &outH) == 0) {
+      windowWidth = outW;
+      windowHeight = outH;
+    } else {
+      // Fallback to window size if renderer query fails
+      SDL_GetWindowSize(window, &windowWidth, &windowHeight);
+    }
+  } else {
+    SDL_GetWindowSize(window, &windowWidth, &windowHeight);
+  }
 }
 
 bool RendererSDL2::isFullscreen() const
@@ -228,12 +291,14 @@ bool RendererSDL2::pollEvents()
 
   while (SDL_PollEvent(&event) != 0) {
     if (event.type == SDL_QUIT) {
+      std::cout << "[RendererSDL2] SDL_QUIT event received\n";
       return false;
     }
     if (event.type == SDL_KEYDOWN) {
       int genericKey = mapSDLKeyToGeneric(event.key.keysym.sym);
       keyStates[genericKey] = true;
       if (event.key.keysym.sym == SDLK_ESCAPE) {
+        std::cout << "[RendererSDL2] ESC pressed - closing\n";
         return false;
       }
     }
@@ -253,7 +318,19 @@ bool RendererSDL2::pollEvents()
     }
     if (event.type == SDL_WINDOWEVENT) {
       if (event.window.event == SDL_WINDOWEVENT_RESIZED || event.window.event == SDL_WINDOWEVENT_SIZE_CHANGED) {
-        SDL_GetWindowSize(window, &windowWidth, &windowHeight);
+        // Use renderer output size to account for HiDPI scaling
+        if (renderer != nullptr) {
+          int outW = 0;
+          int outH = 0;
+          if (SDL_GetRendererOutputSize(renderer, &outW, &outH) == 0) {
+            windowWidth = outW;
+            windowHeight = outH;
+          } else {
+            SDL_GetWindowSize(window, &windowWidth, &windowHeight);
+          }
+        } else {
+          SDL_GetWindowSize(window, &windowWidth, &windowHeight);
+        }
       }
     }
   }
@@ -275,10 +352,10 @@ bool RendererSDL2::isKeyJustPressed(int keycode)
   return keyStates[keycode] && !previousKeyStates[keycode];
 }
 
-void RendererSDL2::getMousePosition(int &x, int &y)
+void RendererSDL2::getMousePosition(int &outX, int &outY)
 {
-  x = mouseX;
-  y = mouseY;
+  outX = mouseX;
+  outY = mouseY;
 }
 
 bool RendererSDL2::isMouseButtonPressed(int button)
@@ -305,7 +382,7 @@ float RendererSDL2::getGamepadAxis(int gamepadIndex, int axis)
     return 0.0F;
   }
   Sint16 value = SDL_GameControllerGetAxis(gamepads[gamepadIndex], static_cast<SDL_GameControllerAxis>(axis));
-  return static_cast<float>(value) / 32767.0F;
+  return static_cast<float>(value) / kGamepadAxisMax;
 }
 
 // === ITexture ===
@@ -344,40 +421,39 @@ void RendererSDL2::getTextureSize(void *texture, int &width, int &height)
   }
 }
 
-void RendererSDL2::drawTexture(void *texture, int x, int y)
+void RendererSDL2::drawTexture(void *texture, int posX, int posY)
 {
   if (texture == nullptr) {
     return;
   }
 
-  SDL_Texture *tex = static_cast<SDL_Texture *>(texture);
-  int w = 0;
-  int h = 0;
-  SDL_QueryTexture(tex, nullptr, nullptr, &w, &h);
+  auto *tex = static_cast<SDL_Texture *>(texture);
+  int texWidth = 0;
+  int texHeight = 0;
+  SDL_QueryTexture(tex, nullptr, nullptr, &texWidth, &texHeight);
 
-  SDL_Rect dest = {x + cameraOffsetX, y + cameraOffsetY, w, h};
+  SDL_Rect dest = {posX + cameraOffsetX, posY + cameraOffsetY, texWidth, texHeight};
   SDL_RenderCopy(renderer, tex, nullptr, &dest);
 }
 
-void RendererSDL2::drawTextureRegion(void *texture, int srcX, int srcY, int srcW, int srcH, int dstX, int dstY,
-                                     int dstW, int dstH)
+void RendererSDL2::drawTextureRegion(void *texture, const Rect &src, const Rect &dst)
 {
   if (texture == nullptr) {
     return;
   }
 
-  SDL_Rect src = {srcX, srcY, srcW, srcH};
-  SDL_Rect dest = {dstX + cameraOffsetX, dstY + cameraOffsetY, dstW, dstH};
-  SDL_RenderCopy(renderer, static_cast<SDL_Texture *>(texture), &src, &dest);
+  SDL_Rect srcRect = {src.x, src.y, src.width, src.height};
+  SDL_Rect dstRect = {dst.x + cameraOffsetX, dst.y + cameraOffsetY, dst.width, dst.height};
+  SDL_RenderCopy(renderer, static_cast<SDL_Texture *>(texture), &srcRect, &dstRect);
 }
 
-void RendererSDL2::drawTextureEx(void *texture, int x, int y, int w, int h, double angle, bool flipX, bool flipY)
+void RendererSDL2::drawTextureEx(void *texture, int posX, int posY, int width, int height, double angle, bool flipX, bool flipY)
 {
   if (texture == nullptr) {
     return;
   }
 
-  SDL_Rect dest = {x + cameraOffsetX, y + cameraOffsetY, w, h};
+  SDL_Rect dest = {posX + cameraOffsetX, posY + cameraOffsetY, width, height};
   SDL_RendererFlip flip = SDL_FLIP_NONE;
   if (flipX) {
     flip = static_cast<SDL_RendererFlip>(flip | SDL_FLIP_HORIZONTAL);
@@ -406,7 +482,7 @@ void RendererSDL2::freeFont(void *font)
   }
 }
 
-void RendererSDL2::drawText(void *font, const std::string &text, int x, int y, const Color &color)
+void RendererSDL2::drawText(void *font, const std::string &text, int posX, int posY, const Color &color)
 {
   if (font == nullptr || text.empty()) {
     return;
@@ -420,7 +496,7 @@ void RendererSDL2::drawText(void *font, const std::string &text, int x, int y, c
 
   SDL_Texture *texture = SDL_CreateTextureFromSurface(renderer, surface);
   if (texture != nullptr) {
-    SDL_Rect dest = {x - cameraOffsetX, y - cameraOffsetY, surface->w, surface->h};
+    SDL_Rect dest = {posX - cameraOffsetX, posY - cameraOffsetY, surface->w, surface->h};
     SDL_RenderCopy(renderer, texture, nullptr, &dest);
     SDL_DestroyTexture(texture);
   }
@@ -495,81 +571,82 @@ void RendererSDL2::freeMusic(void * /*music*/)
 }
 
 // === IShape ===
-void RendererSDL2::drawRect(int x, int y, int w, int h, const Color &color)
+void RendererSDL2::drawRect(int posX, int posY, int width, int height, const Color &color)
 {
-  SDL_Rect rect{x + cameraOffsetX, y + cameraOffsetY, w, h};
+  SDL_Rect rect{posX + cameraOffsetX, posY + cameraOffsetY, width, height};
   SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
   SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, color.a);
   SDL_RenderFillRect(renderer, &rect);
 }
 
-void RendererSDL2::drawRectOutline(int x, int y, int w, int h, const Color &color)
+void RendererSDL2::drawRectOutline(int posX, int posY, int width, int height, const Color &color)
 {
-  SDL_Rect rect{x + cameraOffsetX, y + cameraOffsetY, w, h};
+  SDL_Rect rect{posX + cameraOffsetX, posY + cameraOffsetY, width, height};
   SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, color.a);
   SDL_RenderDrawRect(renderer, &rect);
 }
 
-void RendererSDL2::drawLine(int x1, int y1, int x2, int y2, const Color &color)
+void RendererSDL2::drawLine(int startX, int startY, int endX, int endY, const Color &color)
 {
   SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, color.a);
-  SDL_RenderDrawLine(renderer, x1 + cameraOffsetX, y1 + cameraOffsetY, x2 + cameraOffsetX, y2 + cameraOffsetY);
+  SDL_RenderDrawLine(renderer, startX + cameraOffsetX, startY + cameraOffsetY, endX + cameraOffsetX,
+                     endY + cameraOffsetY);
 }
 
-void RendererSDL2::drawCircle(int centerX, int centerY, int radius, const Color &color)
+void RendererSDL2::drawCircle(const Circle &circle, const Color &color)
 {
   SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, color.a);
 
-  int x = radius;
-  int y = 0;
+  int currX = circle.radius;
+  int currY = 0;
   int err = 0;
 
-  while (x >= y) {
-    SDL_RenderDrawPoint(renderer, centerX + x + cameraOffsetX, centerY + y + cameraOffsetY);
-    SDL_RenderDrawPoint(renderer, centerX + y + cameraOffsetX, centerY + x + cameraOffsetY);
-    SDL_RenderDrawPoint(renderer, centerX - y + cameraOffsetX, centerY + x + cameraOffsetY);
-    SDL_RenderDrawPoint(renderer, centerX - x + cameraOffsetX, centerY + y + cameraOffsetY);
-    SDL_RenderDrawPoint(renderer, centerX - x + cameraOffsetX, centerY - y + cameraOffsetY);
-    SDL_RenderDrawPoint(renderer, centerX - y + cameraOffsetX, centerY - x + cameraOffsetY);
-    SDL_RenderDrawPoint(renderer, centerX + y + cameraOffsetX, centerY - x + cameraOffsetY);
-    SDL_RenderDrawPoint(renderer, centerX + x + cameraOffsetX, centerY - y + cameraOffsetY);
+  while (currX >= currY) {
+    SDL_RenderDrawPoint(renderer, circle.centerX + currX + cameraOffsetX, circle.centerY + currY + cameraOffsetY);
+    SDL_RenderDrawPoint(renderer, circle.centerX + currY + cameraOffsetX, circle.centerY + currX + cameraOffsetY);
+    SDL_RenderDrawPoint(renderer, circle.centerX - currY + cameraOffsetX, circle.centerY + currX + cameraOffsetY);
+    SDL_RenderDrawPoint(renderer, circle.centerX - currX + cameraOffsetX, circle.centerY + currY + cameraOffsetY);
+    SDL_RenderDrawPoint(renderer, circle.centerX - currX + cameraOffsetX, circle.centerY - currY + cameraOffsetY);
+    SDL_RenderDrawPoint(renderer, circle.centerX - currY + cameraOffsetX, circle.centerY - currX + cameraOffsetY);
+    SDL_RenderDrawPoint(renderer, circle.centerX + currY + cameraOffsetX, circle.centerY - currX + cameraOffsetY);
+    SDL_RenderDrawPoint(renderer, circle.centerX + currX + cameraOffsetX, circle.centerY - currY + cameraOffsetY);
 
     if (err <= 0) {
-      y += 1;
-      err += 2 * y + 1;
+      currY += 1;
+      err += 2 * currY + 1;
     }
     if (err > 0) {
-      x -= 1;
-      err -= 2 * x + 1;
+      currX -= 1;
+      err -= 2 * currX + 1;
     }
   }
 }
 
-void RendererSDL2::drawCircleFilled(int centerX, int centerY, int radius, const Color &color)
+void RendererSDL2::drawCircleFilled(const Circle &circle, const Color &color)
 {
   SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, color.a);
 
-  for (int w = 0; w < radius * 2; w++) {
-    for (int h = 0; h < radius * 2; h++) {
-      int dx = radius - w;
-      int dy = radius - h;
-      if ((dx * dx + dy * dy) <= (radius * radius)) {
-        SDL_RenderDrawPoint(renderer, centerX + dx + cameraOffsetX, centerY + dy + cameraOffsetY);
+  for (int col = 0; col < circle.radius * 2; ++col) {
+    for (int row = 0; row < circle.radius * 2; ++row) {
+      int deltaX = circle.radius - col;
+      int deltaY = circle.radius - row;
+      if (((deltaX * deltaX) + (deltaY * deltaY)) <= (circle.radius * circle.radius)) {
+        SDL_RenderDrawPoint(renderer, circle.centerX + deltaX + cameraOffsetX, circle.centerY + deltaY + cameraOffsetY);
       }
     }
   }
 }
 
-void RendererSDL2::drawPoint(int x, int y, const Color &color)
+void RendererSDL2::drawPoint(int posX, int posY, const Color &color)
 {
   SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, color.a);
-  SDL_RenderDrawPoint(renderer, x + cameraOffsetX, y + cameraOffsetY);
+  SDL_RenderDrawPoint(renderer, posX + cameraOffsetX, posY + cameraOffsetY);
 }
 
 // === ICamera ===
-void RendererSDL2::setViewport(int x, int y, int w, int h)
+void RendererSDL2::setViewport(int posX, int posY, int width, int height)
 {
-  SDL_Rect viewport = {x, y, w, h};
+  SDL_Rect viewport = {posX, posY, width, height};
   SDL_RenderSetViewport(renderer, &viewport);
 }
 
@@ -584,10 +661,10 @@ void RendererSDL2::setCameraOffset(int offsetX, int offsetY)
   cameraOffsetY = offsetY;
 }
 
-void RendererSDL2::getCameraOffset(int &offsetX, int &offsetY) const
+void RendererSDL2::getCameraOffset(int &outOffsetX, int &outOffsetY) const
 {
-  offsetX = cameraOffsetX;
-  offsetY = cameraOffsetY;
+  outOffsetX = cameraOffsetX;
+  outOffsetY = cameraOffsetY;
 }
 
 // === ITime ===
@@ -613,21 +690,23 @@ void RendererSDL2::setVSync(bool /*enabled*/)
 }
 
 // === ICollision ===
-bool RendererSDL2::checkCollisionRects(int x1, int y1, int w1, int h1, int x2, int y2, int w2, int h2)
+bool RendererSDL2::checkCollisionRects(int leftX, int leftY, int leftWidth, int leftHeight, int rightX, int rightY,
+                                       int rightWidth, int rightHeight)
 {
-  return (x1 < x2 + w2 && x1 + w1 > x2 && y1 < y2 + h2 && y1 + h1 > y2);
+  return (leftX < rightX + rightWidth && leftX + leftWidth > rightX && leftY < rightY + rightHeight &&
+          leftY + leftHeight > rightY);
 }
 
-bool RendererSDL2::checkCollisionCircles(int x1, int y1, int r1, int x2, int y2, int r2)
+bool RendererSDL2::checkCollisionCircles(const Circle &circle1, const Circle &circle2)
 {
-  int dx = x2 - x1;
-  int dy = y2 - y1;
-  int distanceSquared = dx * dx + dy * dy;
-  int radiusSum = r1 + r2;
+  const int deltaX = circle2.centerX - circle1.centerX;
+  const int deltaY = circle2.centerY - circle1.centerY;
+  const int distanceSquared = (deltaX * deltaX) + (deltaY * deltaY);
+  const int radiusSum = circle1.radius + circle2.radius;
   return distanceSquared <= (radiusSum * radiusSum);
 }
 
-bool RendererSDL2::checkPointInRect(int px, int py, int rx, int ry, int rw, int rh)
+bool RendererSDL2::checkPointInRect(int pointX, int pointY, int rectX, int rectY, int rectW, int rectH)
 {
-  return (px >= rx && px <= rx + rw && py >= ry && py <= ry + rh);
+  return (pointX >= rectX && pointX <= rectX + rectW && pointY >= rectY && pointY <= rectY + rectH);
 }
