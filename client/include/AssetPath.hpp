@@ -23,23 +23,23 @@ inline std::string resolveAssetPath(const std::string &relativePath)
   if (cleanPath.substr(0, 2) == "./") {
     cleanPath = cleanPath.substr(2);
   }
-  
+
   // List of possible base paths to try
   const std::string basePaths[] = {
-    "",                    // Current directory (for portable package)
-    "./",                  // Explicit current directory
-    "../",                 // Parent directory
-    "./client/",          // Build directory structure
-    "../client/"          // Parent build structure
+    "", // Current directory (for portable package)
+    "./", // Explicit current directory
+    "../", // Parent directory
+    "./client/", // Build directory structure
+    "../client/" // Parent build structure
   };
-  
+
   for (const auto &basePath : basePaths) {
     std::string fullPath = basePath + cleanPath;
     if (fileExists(fullPath)) {
       return fullPath;
     }
   }
-  
+
   // Try stripping "client/" prefix for portable packages
   // In portable packages, assets are at "assets/..." not "client/assets/..."
   if (cleanPath.substr(0, 7) == "client/") {
@@ -51,7 +51,7 @@ inline std::string resolveAssetPath(const std::string &relativePath)
       }
     }
   }
-  
+
   // If nothing found, return the original path
   return relativePath;
 }

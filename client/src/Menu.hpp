@@ -49,7 +49,7 @@ private:
   float parallaxOffsetMid = 0.0f;
   float parallaxOffsetFront = 0.0f;
   float parallaxOffsetFloor = 0.0f;
-  
+
   void *moonFloor = nullptr;
   void *moonSky = nullptr;
   void *moonMid = nullptr;

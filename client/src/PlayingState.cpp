@@ -6,7 +6,6 @@
 */
 
 #include "PlayingState.hpp"
-#include "../include/AssetPath.hpp"
 #include "../../engineCore/include/ecs/components/Collider.hpp"
 #include "../../engineCore/include/ecs/components/Health.hpp"
 #include "../../engineCore/include/ecs/components/Networked.hpp"
@@ -14,6 +13,7 @@
 #include "../../engineCore/include/ecs/components/Score.hpp"
 #include "../../engineCore/include/ecs/components/Sprite.hpp"
 #include "../../engineCore/include/ecs/components/Transform.hpp"
+#include "../include/AssetPath.hpp"
 #include "../include/systems/NetworkSendSystem.hpp"
 #include "../interface/Geometry.hpp"
 #include <iostream>
@@ -138,12 +138,9 @@ void PlayingState::render()
            .height = static_cast<int>(sprite.height)}); // Destination
       } else {
         // Other sprites: draw full texture
-        renderer->drawTextureEx(textureIt->second,
-                                static_cast<int>(transformComponent.x),
-                                static_cast<int>(transformComponent.y),
-                                static_cast<int>(sprite.width),
-                                static_cast<int>(sprite.height),
-                                0.0, false, false);
+        renderer->drawTextureEx(textureIt->second, static_cast<int>(transformComponent.x),
+                                static_cast<int>(transformComponent.y), static_cast<int>(sprite.width),
+                                static_cast<int>(sprite.height), 0.0, false, false);
       }
     } else {
       // Fallback: colored rectangles for missing textures
