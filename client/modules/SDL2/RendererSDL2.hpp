@@ -46,7 +46,8 @@ public:
   void getTextureSize(void *texture, int &width, int &height) override;
   void drawTexture(void *texture, int posX, int posY) override;
   void drawTextureRegion(void *texture, const Rect &src, const Rect &dst) override;
-  void drawTextureEx(void *texture, int posX, int posY, int width, int height, double angle, bool flipX, bool flipY) override;
+  void drawTextureEx(void *texture, int posX, int posY, int width, int height, double angle, bool flipX,
+                     bool flipY) override;
 
   // === IText ===
   void *loadFont(const std::string &filepath, int fontSize) override;

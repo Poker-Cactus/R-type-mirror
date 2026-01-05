@@ -114,68 +114,38 @@ void LobbyMenu::renderBackground(const WindowDimensions &windowDims, IRenderer *
 
   // Draw parallax layers
   if (m_moonSky != nullptr) {
-    renderer->drawTextureEx(
-      m_moonSky,
-      static_cast<int>(m_parallaxOffsetSky), 0, windowDims.width, windowDims.height,
-      0.0F, false, false);
-    renderer->drawTextureEx(m_moonSky,
-                            static_cast<int>(m_parallaxOffsetSky - static_cast<float>(windowDims.width)),
-                            0,
-                            windowDims.width,
-                            windowDims.height,
+    renderer->drawTextureEx(m_moonSky, static_cast<int>(m_parallaxOffsetSky), 0, windowDims.width, windowDims.height,
                             0.0F, false, false);
+    renderer->drawTextureEx(m_moonSky, static_cast<int>(m_parallaxOffsetSky - static_cast<float>(windowDims.width)), 0,
+                            windowDims.width, windowDims.height, 0.0F, false, false);
   }
 
   if (m_moonBack != nullptr) {
-    renderer->drawTextureEx(
-      m_moonBack,
-      static_cast<int>(m_parallaxOffsetBack), 0, windowDims.width, windowDims.height,
-      0.0F, false, false);
-    renderer->drawTextureEx(m_moonBack,
-                            static_cast<int>(m_parallaxOffsetBack - static_cast<float>(windowDims.width)),
-                            0,
-                            windowDims.width,
-                            windowDims.height,
+    renderer->drawTextureEx(m_moonBack, static_cast<int>(m_parallaxOffsetBack), 0, windowDims.width, windowDims.height,
                             0.0F, false, false);
+    renderer->drawTextureEx(m_moonBack, static_cast<int>(m_parallaxOffsetBack - static_cast<float>(windowDims.width)),
+                            0, windowDims.width, windowDims.height, 0.0F, false, false);
   }
 
   if (m_moonMid != nullptr) {
-    renderer->drawTextureEx(
-      m_moonMid,
-      static_cast<int>(m_parallaxOffsetMid), 0, windowDims.width, windowDims.height,
-      0.0F, false, false);
-    renderer->drawTextureEx(m_moonMid,
-                            static_cast<int>(m_parallaxOffsetMid - static_cast<float>(windowDims.width)),
-                            0,
-                            windowDims.width,
-                            windowDims.height,
+    renderer->drawTextureEx(m_moonMid, static_cast<int>(m_parallaxOffsetMid), 0, windowDims.width, windowDims.height,
                             0.0F, false, false);
+    renderer->drawTextureEx(m_moonMid, static_cast<int>(m_parallaxOffsetMid - static_cast<float>(windowDims.width)), 0,
+                            windowDims.width, windowDims.height, 0.0F, false, false);
   }
 
   if (m_moonFront != nullptr) {
-    renderer->drawTextureEx(
-      m_moonFront,
-      static_cast<int>(m_parallaxOffsetFront), 0, windowDims.width, windowDims.height,
-      0.0F, false, false);
-    renderer->drawTextureEx(m_moonFront,
-                            static_cast<int>(m_parallaxOffsetFront - static_cast<float>(windowDims.width)),
-                            0,
-                            windowDims.width,
-                            windowDims.height,
-                            0.0F, false, false);
+    renderer->drawTextureEx(m_moonFront, static_cast<int>(m_parallaxOffsetFront), 0, windowDims.width,
+                            windowDims.height, 0.0F, false, false);
+    renderer->drawTextureEx(m_moonFront, static_cast<int>(m_parallaxOffsetFront - static_cast<float>(windowDims.width)),
+                            0, windowDims.width, windowDims.height, 0.0F, false, false);
   }
 
   if (m_moonFloor != nullptr) {
-    renderer->drawTextureEx(
-      m_moonFloor,
-      static_cast<int>(m_parallaxOffsetFloor), 0, windowDims.width, windowDims.height,
-      0.0F, false, false);
-    renderer->drawTextureEx(m_moonFloor,
-                            static_cast<int>(m_parallaxOffsetFloor - static_cast<float>(windowDims.width)),
-                            0,
-                            windowDims.width,
-                            windowDims.height,
-                            0.0F, false, false);
+    renderer->drawTextureEx(m_moonFloor, static_cast<int>(m_parallaxOffsetFloor), 0, windowDims.width,
+                            windowDims.height, 0.0F, false, false);
+    renderer->drawTextureEx(m_moonFloor, static_cast<int>(m_parallaxOffsetFloor - static_cast<float>(windowDims.width)),
+                            0, windowDims.width, windowDims.height, 0.0F, false, false);
   }
 }
 

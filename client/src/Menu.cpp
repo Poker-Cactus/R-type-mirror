@@ -173,7 +173,8 @@ void Menu::resetLobbySelection()
   }
 }
 
-void Menu::renderMoonParalax(int winWidth, int winHeight, IRenderer *renderer) {
+void Menu::renderMoonParalax(int winWidth, int winHeight, IRenderer *renderer)
+{
   float deltaTime = renderer->getDeltaTime();
 
   parallaxOffsetSky += deltaTime * 5.0f;

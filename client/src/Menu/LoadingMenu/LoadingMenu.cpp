@@ -58,8 +58,10 @@ void LoadingMenu::render(int winWidth, int winHeight, IRenderer *renderer, Loadi
   }
 
   if (backgroundTexture != nullptr) {
-    renderer->drawTextureEx(backgroundTexture, static_cast<int>(backgroundOffsetX), 0, winWidth, winHeight, 0.0, false, false);
-    renderer->drawTextureEx(backgroundTexture, static_cast<int>(backgroundOffsetX - winWidth), 0, winWidth, winHeight, 0.0, false, false);
+    renderer->drawTextureEx(backgroundTexture, static_cast<int>(backgroundOffsetX), 0, winWidth, winHeight, 0.0, false,
+                            false);
+    renderer->drawTextureEx(backgroundTexture, static_cast<int>(backgroundOffsetX - winWidth), 0, winWidth, winHeight,
+                            0.0, false, false);
   }
   if (planet != nullptr) {
     int planetWidth, planetHeight;

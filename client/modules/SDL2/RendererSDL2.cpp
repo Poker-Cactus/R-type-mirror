@@ -26,8 +26,8 @@
 #include <SDL_timer.h>
 #include <SDL_video.h>
 #include <cmath>
-#include <stdexcept>
 #include <iostream>
+#include <stdexcept>
 
 namespace
 {
@@ -447,7 +447,8 @@ void RendererSDL2::drawTextureRegion(void *texture, const Rect &src, const Rect 
   SDL_RenderCopy(renderer, static_cast<SDL_Texture *>(texture), &srcRect, &dstRect);
 }
 
-void RendererSDL2::drawTextureEx(void *texture, int posX, int posY, int width, int height, double angle, bool flipX, bool flipY)
+void RendererSDL2::drawTextureEx(void *texture, int posX, int posY, int width, int height, double angle, bool flipX,
+                                 bool flipY)
 {
   if (texture == nullptr) {
     return;

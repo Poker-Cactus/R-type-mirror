@@ -67,7 +67,7 @@ private:
   ecs::EventListenerHandle m_spawnHandle;
   std::mt19937 m_rng;
   float m_spawnTimer = 0.0F;
-  
+
   // Spawn configuration constants
   static constexpr float SPAWN_INTERVAL = 3.0F;
   static constexpr float DEFAULT_VIEWPORT_WIDTH = 800.0F;
@@ -89,13 +89,13 @@ private:
     // Get viewport dimensions from connected players
     float worldWidth = DEFAULT_VIEWPORT_WIDTH;
     float worldHeight = DEFAULT_VIEWPORT_HEIGHT;
-    
+
     ecs::ComponentSignature playerSig;
     playerSig.set(ecs::getComponentId<ecs::PlayerId>());
     playerSig.set(ecs::getComponentId<ecs::Viewport>());
     std::vector<ecs::Entity> players;
     world.getEntitiesWithSignature(playerSig, players);
-    
+
     for (const auto &player : players) {
       const auto &viewport = world.getComponent<ecs::Viewport>(player);
       if (viewport.width > 0) {
@@ -114,7 +114,8 @@ private:
                                 worldWidth - SPAWN_X_OFFSET, // Spawn at right edge (minus half sprite width)
                                 yDist(m_rng), 0);
     world.emitEvent(event);
-  }  static void handleSpawnEvent(ecs::World &world, const ecs::SpawnEntityEvent &event)
+  }
+  static void handleSpawnEvent(ecs::World &world, const ecs::SpawnEntityEvent &event)
   {
     switch (event.type) {
     case ecs::SpawnEntityEvent::EntityType::ENEMY:

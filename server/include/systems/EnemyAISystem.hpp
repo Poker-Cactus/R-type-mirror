@@ -82,7 +82,7 @@ private:
   std::mt19937 m_rng;
   std::unordered_map<ecs::Entity, float> m_aiTimer;
   std::unordered_map<ecs::Entity, float> m_nextShotDelay;
-  
+
   // AI behavior constants
   static constexpr float ENEMY_MOVE_SPEED = -80.0F;
   static constexpr float MIN_SHOT_DELAY = 1.5F;
