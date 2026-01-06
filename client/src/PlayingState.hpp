@@ -58,6 +58,11 @@ public:
    */
   bool shouldReturnToMenu() const { return m_playerHealth <= 0; }
 
+  /**
+   * @brief Change player animation based on input
+   */
+  void changeAnimationPlayers(float delta_time);
+
 private:
   IRenderer *renderer;
   std::shared_ptr<ecs::World> world;
@@ -77,4 +82,11 @@ private:
 
   void renderHUD();
   void updateHUDFromWorld();
+
+  bool m_returnUp = false;
+  bool m_returnDown = false;
+
+  int m_playerFrameIndex = 2;
+  int m_playerAnimToggle = 0;
+  float m_playerAnimTimer = 0.f;
 };
