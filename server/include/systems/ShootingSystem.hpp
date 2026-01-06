@@ -101,8 +101,8 @@ private:
     const float offsetY = 25.0F;
 
     // Emit spawn event for projectile
-    ecs::SpawnEntityEvent spawnEvent(ecs::SpawnEntityEvent::EntityType::PROJECTILE, transform.x + offsetX, transform.y + offsetY,
-                                     event.shooter);
+    ecs::SpawnEntityEvent spawnEvent(ecs::SpawnEntityEvent::EntityType::PROJECTILE, transform.x + offsetX,
+                                     transform.y + offsetY, event.shooter);
     world.emitEvent(spawnEvent);
   }
 };

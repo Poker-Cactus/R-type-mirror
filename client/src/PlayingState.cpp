@@ -176,12 +176,12 @@ void PlayingState::render()
           int srcY = 0; // première ligne seulement
           int scaledWidth = static_cast<int>(sprite.width * transformComponent.scale);
           int scaledHeight = static_cast<int>(sprite.height * transformComponent.scale);
-          renderer->drawTextureRegion(textureIt->second,
-                                      {.x = srcX, .y = srcY, .width = PLAYER_FRAME_WIDTH, .height = PLAYER_FRAME_HEIGHT},
-                                      {.x = static_cast<int>(transformComponent.x),
-                                       .y = static_cast<int>(transformComponent.y),
-                                       .width = scaledWidth,
-                                       .height = scaledHeight}); // Destination with scale
+          renderer->drawTextureRegion(
+            textureIt->second, {.x = srcX, .y = srcY, .width = PLAYER_FRAME_WIDTH, .height = PLAYER_FRAME_HEIGHT},
+            {.x = static_cast<int>(transformComponent.x),
+             .y = static_cast<int>(transformComponent.y),
+             .width = scaledWidth,
+             .height = scaledHeight}); // Destination with scale
         } else if (sprite.spriteId == ecs::SpriteId::PROJECTILE) {
           // Projectile is a spritesheet: 422x92 with 2 frames
           // Each frame is 211x92 (422/2 = 211)
@@ -473,7 +473,6 @@ void PlayingState::changeAnimationPlayers(float delta_time)
       m_playerFrameIndex = (m_playerAnimToggle == 0) ? 1 : 2;
     }
   }
-
 }
 
 void PlayingState::cleanup()

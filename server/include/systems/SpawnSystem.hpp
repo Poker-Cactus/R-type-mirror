@@ -102,6 +102,13 @@ private:
   static constexpr float ENEMY_RED_AMPLITUDE = 40.0F;
   static constexpr float ENEMY_RED_FREQUENCY = 6.0F;
   static constexpr float ENEMY_RED_SPAWN_DELAY = 0.3F; // Delay between each enemy in a group
+  static constexpr float ENEMY_RED_SCALE = 3.0F;
+  // Enemy Red sprite: 533x36 spritesheet with 16 frames
+  static constexpr int ENEMY_RED_SPRITE_SHEET_WIDTH = 533;
+  static constexpr int ENEMY_RED_SPRITE_HEIGHT = 36;
+  static constexpr int ENEMY_RED_FRAME_COUNT = 16;
+  static constexpr int ENEMY_RED_FRAME_WIDTH =
+    ENEMY_RED_SPRITE_SHEET_WIDTH / ENEMY_RED_FRAME_COUNT; // 33px (integer division)
 
   static constexpr float PROJECTILE_COLLIDER_SIZE = 8.0F;
   static constexpr unsigned int PROJECTILE_SPRITE_WIDTH = 84;
@@ -174,7 +181,7 @@ private:
     transform.x = posX;
     transform.y = posY;
     transform.rotation = 0.0F;
-    transform.scale = 3.0F; // Scale enemy 3x larger
+    transform.scale = ENEMY_RED_SCALE;
     world.addComponent(enemy, transform);
 
     ecs::Velocity velocity;
@@ -187,19 +194,21 @@ private:
     health.maxHp = ENEMY_HEALTH;
     world.addComponent(enemy, health);
 
-    // Collider scaled to match visual size (33 * 3 = ~100)
-    world.addComponent(enemy, ecs::Collider{100.0F, 108.0F});
+    // Collider scaled to match visual size: frame dimensions * scale
+    // Frame: 33x36, Scale: 3.0 => Collider: 99x108
+    world.addComponent(
+      enemy, ecs::Collider{ENEMY_RED_FRAME_WIDTH * ENEMY_RED_SCALE, ENEMY_RED_SPRITE_HEIGHT * ENEMY_RED_SCALE});
 
     // Sprite for Enemy Red with animation
-    // Image: 533x36, 16 frames total
-    // Frame size: 533/16 = 33.3125 (approximately 33px per frame)
+    // Spritesheet: 533x36 with 16 frames
+    // Frame size: 533/16 = 33px per frame (integer division)
     // Animation: frames 7 to 0 (reverse, from 8th frame to 1st)
     ecs::Sprite sprite;
     sprite.spriteId = ecs::SpriteId::ENEMY_SHIP;
-    sprite.width = 33; // Original frame width
-    sprite.height = 36; // Original frame height (scale applied via Transform)
+    sprite.width = ENEMY_RED_FRAME_WIDTH; // Frame width from integer division
+    sprite.height = ENEMY_RED_SPRITE_HEIGHT; // Frame height (scale applied via Transform)
     sprite.animated = true;
-    sprite.frameCount = 16;
+    sprite.frameCount = ENEMY_RED_FRAME_COUNT;
     sprite.startFrame = 7; // 8th frame (0-indexed)
     sprite.endFrame = 0; // 1st frame
     sprite.currentFrame = 7;
