@@ -49,7 +49,7 @@ public:
     // Update spawn queue timer for delayed spawns
     if (!m_spawnQueue.empty()) {
       m_spawnQueueTimer += deltaTime;
-      
+
       while (!m_spawnQueue.empty() && m_spawnQueueTimer >= m_spawnQueue.front().delay) {
         const auto &queuedSpawn = m_spawnQueue.front();
         spawnEnemyRed(world, queuedSpawn.x, queuedSpawn.y);
@@ -79,7 +79,7 @@ private:
   std::mt19937 m_rng;
   float m_spawnTimer = 0.0F;
   float m_spawnQueueTimer = 0.0F;
-  
+
   struct QueuedSpawn {
     float x;
     float y;
@@ -97,12 +97,12 @@ private:
   static constexpr int ENEMY_HEALTH = 30;
   static constexpr float ENEMY_COLLIDER_SIZE = 48.0F;
   static constexpr unsigned int ENEMY_SPRITE_SIZE = 96;
-  
+
   // Enemy Red configuration
   static constexpr float ENEMY_RED_AMPLITUDE = 40.0F;
   static constexpr float ENEMY_RED_FREQUENCY = 6.0F;
   static constexpr float ENEMY_RED_SPAWN_DELAY = 0.3F; // Delay between each enemy in a group
-  
+
   static constexpr float PROJECTILE_COLLIDER_SIZE = 8.0F;
   static constexpr unsigned int PROJECTILE_SPRITE_WIDTH = 84;
   static constexpr unsigned int PROJECTILE_SPRITE_HEIGHT = 37;
@@ -141,11 +141,11 @@ private:
     // Pick a random height range (1-6)
     std::uniform_int_distribution<int> heightRangeDist(0, 5);
     int heightRange = heightRangeDist(m_rng);
-    
+
     // Calculate Y position within the chosen range (height / 6)
     float rangeHeight = (worldHeight - 2 * SPAWN_Y_MARGIN) / 6.0f;
     float baseY = SPAWN_Y_MARGIN + heightRange * rangeHeight;
-    
+
     // Random Y within this range
     std::uniform_real_distribution<float> yOffsetDist(0.0f, rangeHeight);
 
@@ -196,12 +196,12 @@ private:
     // Animation: frames 7 to 0 (reverse, from 8th frame to 1st)
     ecs::Sprite sprite;
     sprite.spriteId = ecs::SpriteId::ENEMY_SHIP;
-    sprite.width = 33;   // Original frame width
-    sprite.height = 36;  // Original frame height (scale applied via Transform)
+    sprite.width = 33; // Original frame width
+    sprite.height = 36; // Original frame height (scale applied via Transform)
     sprite.animated = true;
     sprite.frameCount = 16;
-    sprite.startFrame = 7;  // 8th frame (0-indexed)
-    sprite.endFrame = 0;    // 1st frame
+    sprite.startFrame = 7; // 8th frame (0-indexed)
+    sprite.endFrame = 0; // 1st frame
     sprite.currentFrame = 7;
     sprite.frameTime = 0.1f; // 10 FPS animation
     sprite.reverseAnimation = true; // Play from frame 7 to 0

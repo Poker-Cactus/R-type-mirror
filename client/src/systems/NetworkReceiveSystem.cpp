@@ -231,14 +231,14 @@ void ClientNetworkReceiveSystem::handleSnapshot(ecs::World &world, const nlohman
       } else {
         // Existing sprite: update only non-animated fields to preserve client animation state
         auto &existingSprite = world.getComponent<ecs::Sprite>(entity);
-        
+
         // Preserve animation state (currentFrame and animationTimer are client-managed)
         uint32_t preservedCurrentFrame = existingSprite.currentFrame;
         float preservedAnimationTimer = existingSprite.animationTimer;
-        
+
         // Update sprite from server
         existingSprite = sprite;
-        
+
         // Restore client animation state
         existingSprite.currentFrame = preservedCurrentFrame;
         existingSprite.animationTimer = preservedAnimationTimer;

@@ -114,18 +114,18 @@ void PlayingState::render()
     if (textureIt != m_spriteTextures.end() && textureIt->second != nullptr) {
       constexpr int PLAYER_FRAME_WIDTH = 350;
       constexpr int PLAYER_FRAME_HEIGHT = 150;
-      
+
       bool rendered = false;
-      
+
       // Check if sprite is animated
       if (sprite.animated && sprite.frameCount > 1) {
         // Calculate frame dimensions and source rectangle for animated sprites
         int frameWidth = 0;
         int frameHeight = 0;
-        
+
         if (sprite.spriteId == ecs::SpriteId::ENEMY_SHIP) {
           // Enemy ship: 533x36 with 16 frames
-          frameWidth = 533 / 16;  // 33px per frame
+          frameWidth = 533 / 16; // 33px per frame
           frameHeight = 36;
         } else if (sprite.spriteId == ecs::SpriteId::PLAYER_SHIP) {
           frameWidth = PLAYER_FRAME_WIDTH;
@@ -134,30 +134,29 @@ void PlayingState::render()
           frameWidth = 211;
           frameHeight = 92;
         }
-        
+
         if (frameWidth > 0 && frameHeight > 0) {
           // Calculate source rectangle based on current frame
           int srcX = sprite.currentFrame * frameWidth;
           // Apply transform scale to sprite dimensions
           int scaledWidth = static_cast<int>(sprite.width * transformComponent.scale);
           int scaledHeight = static_cast<int>(sprite.height * transformComponent.scale);
-          
+
           // Debug: log animation state for enemy ships
           static float debugTimer = 0.0f;
           static float lastTime = 0.0f;
           if (sprite.spriteId == ecs::SpriteId::ENEMY_SHIP) {
             debugTimer += 0.016f; // Approximate frame time
             if (debugTimer - lastTime >= 1.0f) {
-              std::cout << "[Render] Enemy sprite - animated: " << sprite.animated 
-                        << ", currentFrame: " << sprite.currentFrame 
-                        << ", srcX: " << srcX << ", frameWidth: " << frameWidth << std::endl;
+              std::cout << "[Render] Enemy sprite - animated: " << sprite.animated
+                        << ", currentFrame: " << sprite.currentFrame << ", srcX: " << srcX
+                        << ", frameWidth: " << frameWidth << std::endl;
               lastTime = debugTimer;
             }
           }
-          
+
           renderer->drawTextureRegion(
-            textureIt->second,
-            {.x = srcX, .y = 0, .width = frameWidth, .height = frameHeight}, // Source: current frame
+            textureIt->second, {.x = srcX, .y = 0, .width = frameWidth, .height = frameHeight}, // Source: current frame
             {.x = static_cast<int>(transformComponent.x),
              .y = static_cast<int>(transformComponent.y),
              .width = scaledWidth,
@@ -165,46 +164,45 @@ void PlayingState::render()
           rendered = true;
         }
       }
-      
+
       // Non-animated or fallback rendering
       if (!rendered) {
         // Draw using actual texture
         if (sprite.spriteId == ecs::SpriteId::PLAYER_SHIP) {
-        // Player ship is a spritesheet: 2450x150 with 7 frames
-        // Each frame is 350x150 (2450/7 = 350)
-        // Extract only the first frame (x=0, y=0, w=350, h=150)
-        int scaledWidth = static_cast<int>(sprite.width * transformComponent.scale);
-        int scaledHeight = static_cast<int>(sprite.height * transformComponent.scale);
-        renderer->drawTextureRegion(
-          textureIt->second,
-          {.x = 0, .y = 0, .width = PLAYER_FRAME_WIDTH, .height = PLAYER_FRAME_HEIGHT}, // Source: first frame
-          {.x = static_cast<int>(transformComponent.x),
-           .y = static_cast<int>(transformComponent.y),
-           .width = scaledWidth,
-           .height = scaledHeight}); // Destination with scale
-      } else if (sprite.spriteId == ecs::SpriteId::PROJECTILE) {
-        // Projectile is a spritesheet: 422x92 with 2 frames
-        // Each frame is 211x92 (422/2 = 211)
-        // Extract only the first frame (x=0, y=0, w=211, h=92)
-        constexpr int PROJECTILE_FRAME_WIDTH = 211;
-        constexpr int PROJECTILE_FRAME_HEIGHT = 92;
-        int scaledWidth = static_cast<int>(sprite.width * transformComponent.scale);
-        int scaledHeight = static_cast<int>(sprite.height * transformComponent.scale);
-        renderer->drawTextureRegion(
-          textureIt->second,
-          {.x = 0, .y = 0, .width = PROJECTILE_FRAME_WIDTH, .height = PROJECTILE_FRAME_HEIGHT}, // Source: first frame
-          {.x = static_cast<int>(transformComponent.x),
-           .y = static_cast<int>(transformComponent.y),
-           .width = scaledWidth,
-           .height = scaledHeight}); // Destination with scale
-      } else {
-        // Other sprites: draw full texture
-        int scaledWidth = static_cast<int>(sprite.width * transformComponent.scale);
-        int scaledHeight = static_cast<int>(sprite.height * transformComponent.scale);
-        renderer->drawTextureEx(textureIt->second, static_cast<int>(transformComponent.x),
-                                static_cast<int>(transformComponent.y), scaledWidth,
-                                scaledHeight, 0.0, false, false);
-      }
+          // Player ship is a spritesheet: 2450x150 with 7 frames
+          // Each frame is 350x150 (2450/7 = 350)
+          // Extract only the first frame (x=0, y=0, w=350, h=150)
+          int scaledWidth = static_cast<int>(sprite.width * transformComponent.scale);
+          int scaledHeight = static_cast<int>(sprite.height * transformComponent.scale);
+          renderer->drawTextureRegion(
+            textureIt->second,
+            {.x = 0, .y = 0, .width = PLAYER_FRAME_WIDTH, .height = PLAYER_FRAME_HEIGHT}, // Source: first frame
+            {.x = static_cast<int>(transformComponent.x),
+             .y = static_cast<int>(transformComponent.y),
+             .width = scaledWidth,
+             .height = scaledHeight}); // Destination with scale
+        } else if (sprite.spriteId == ecs::SpriteId::PROJECTILE) {
+          // Projectile is a spritesheet: 422x92 with 2 frames
+          // Each frame is 211x92 (422/2 = 211)
+          // Extract only the first frame (x=0, y=0, w=211, h=92)
+          constexpr int PROJECTILE_FRAME_WIDTH = 211;
+          constexpr int PROJECTILE_FRAME_HEIGHT = 92;
+          int scaledWidth = static_cast<int>(sprite.width * transformComponent.scale);
+          int scaledHeight = static_cast<int>(sprite.height * transformComponent.scale);
+          renderer->drawTextureRegion(
+            textureIt->second,
+            {.x = 0, .y = 0, .width = PROJECTILE_FRAME_WIDTH, .height = PROJECTILE_FRAME_HEIGHT}, // Source: first frame
+            {.x = static_cast<int>(transformComponent.x),
+             .y = static_cast<int>(transformComponent.y),
+             .width = scaledWidth,
+             .height = scaledHeight}); // Destination with scale
+        } else {
+          // Other sprites: draw full texture
+          int scaledWidth = static_cast<int>(sprite.width * transformComponent.scale);
+          int scaledHeight = static_cast<int>(sprite.height * transformComponent.scale);
+          renderer->drawTextureEx(textureIt->second, static_cast<int>(transformComponent.x),
+                                  static_cast<int>(transformComponent.y), scaledWidth, scaledHeight, 0.0, false, false);
+        }
       }
     } else {
       // Fallback: colored rectangles for missing textures
@@ -241,8 +239,8 @@ void PlayingState::render()
 
       int scaledWidth = static_cast<int>(sprite.width * transformComponent.scale);
       int scaledHeight = static_cast<int>(sprite.height * transformComponent.scale);
-      renderer->drawRect(static_cast<int>(transformComponent.x), static_cast<int>(transformComponent.y),
-                         scaledWidth, scaledHeight, color);
+      renderer->drawRect(static_cast<int>(transformComponent.x), static_cast<int>(transformComponent.y), scaledWidth,
+                         scaledHeight, color);
     }
   }
 
@@ -325,7 +323,7 @@ void PlayingState::updateAnimations(float deltaTime)
     }
 
     animatedCount++;
-    
+
     // Update animation timer
     sprite.animationTimer += deltaTime;
 
@@ -350,7 +348,7 @@ void PlayingState::updateAnimations(float deltaTime)
       }
     }
   }
-  
+
   // Debug: log once per second
   static float debugTimer = 0.0f;
   debugTimer += deltaTime;

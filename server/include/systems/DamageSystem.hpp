@@ -126,8 +126,7 @@ private:
     }
 
     // Prevent friendly fire: if source is a player and target is also a player, skip
-    if (realSource != 0 && world.hasComponent<ecs::Input>(realSource) &&
-        world.hasComponent<ecs::Input>(target)) {
+    if (realSource != 0 && world.hasComponent<ecs::Input>(realSource) && world.hasComponent<ecs::Input>(target)) {
       return;
     }
 

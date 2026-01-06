@@ -29,16 +29,16 @@ struct Sprite : public IComponent {
   std::uint32_t spriteId = 0;
   std::uint32_t width = 32;
   std::uint32_t height = 32;
-  
+
   // Animation fields
   bool animated = false;
   std::uint32_t frameCount = 1;
   std::uint32_t currentFrame = 0;
-  std::uint32_t startFrame = 0;    // First frame of animation sequence
-  std::uint32_t endFrame = 0;      // Last frame of animation sequence
-  float frameTime = 0.1f;          // Time per frame in seconds
-  float animationTimer = 0.0f;     // Internal timer for animation
-  bool reverseAnimation = false;   // Play animation in reverse order
+  std::uint32_t startFrame = 0; // First frame of animation sequence
+  std::uint32_t endFrame = 0; // Last frame of animation sequence
+  float frameTime = 0.1f; // Time per frame in seconds
+  float animationTimer = 0.0f; // Internal timer for animation
+  bool reverseAnimation = false; // Play animation in reverse order
 
   [[nodiscard]] nlohmann::json toJson() const override
   {
