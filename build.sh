@@ -661,7 +661,7 @@ if [ -f "build/CMakePresets.json" ]; then
     if command -v sed &> /dev/null; then
         if [[ "$OSTYPE" == "darwin"* ]]; then
             # macOS sed - use absolute path for toolchain file
-            sed -i '' 's|"toolchainFile": "conan_toolchain.cmake"|"toolchainFile": "/Users/neauneau/Documents/tek3/rtype/build/conan_toolchain.cmake"|g' build/CMakePresets.json
+            sed -i '' 's|"toolchainFile": "conan_toolchain.cmake"|"toolchainFile": "'$(pwd)'/build/conan_toolchain.cmake"|g' build/CMakePresets.json
         else
             # Linux sed
             sed -i 's|"toolchainFile": "conan_toolchain.cmake"|"toolchainFile": "'$(pwd)'/build/conan_toolchain.cmake"|g' build/CMakePresets.json

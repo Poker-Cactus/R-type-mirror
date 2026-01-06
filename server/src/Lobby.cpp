@@ -253,10 +253,19 @@ void Lobby::spawnPlayer(std::uint32_t clientId)
   velocity.dy = 0.0F;
   m_world->addComponent(player, velocity);
 
+  // Apply difficulty-based HP
+  int startingHP = GameConfig::getPlayerHPForDifficulty(m_difficulty);
   ecs::Health health;
-  health.hp = GameConfig::PLAYER_MAX_HP;
-  health.maxHp = GameConfig::PLAYER_MAX_HP;
+  health.hp = startingHP;
+  health.maxHp = startingHP;
   m_world->addComponent(player, health);
+
+  std::cout << "[Lobby:" << m_code << "] Player " << clientId << " spawned with " << startingHP
+            << " HP (Difficulty: "
+            << (m_difficulty == GameConfig::Difficulty::EASY
+                  ? "EASY"
+                  : (m_difficulty == GameConfig::Difficulty::MEDIUM ? "MEDIUM" : "EXPERT"))
+            << ")" << '\n';
 
   ecs::Input input;
   input.up = false;
@@ -323,3 +332,19 @@ void Lobby::sendJsonToClient(std::uint32_t clientId, const nlohmann::json &messa
   m_networkManager->send(
     std::span<const std::byte>(reinterpret_cast<const std::byte *>(serialized.data()), serialized.size()), clientId);
 }
+
+void Lobby::setDifficulty(GameConfig::Difficulty difficulty)
+{
+  if (m_gameStarted) {
+    std::cerr << "[Lobby:" << m_code << "] Cannot change difficulty after game has started" << '\n';
+    return;
+  }
+  m_difficulty = difficulty;
+  std::cout << "[Lobby:" << m_code << "] Difficulty set to "
+            << (difficulty == GameConfig::Difficulty::EASY
+                  ? "EASY (100 HP)"
+                  : (difficulty == GameConfig::Difficulty::MEDIUM ? "MEDIUM (50 HP)" : "EXPERT (17 HP)"))
+            << '\n';
+}
+
+GameConfig::Difficulty Lobby::getDifficulty() const { return m_difficulty; }

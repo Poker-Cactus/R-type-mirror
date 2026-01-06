@@ -72,6 +72,7 @@ private:
   // HUD state
   static constexpr int INITIAL_PLAYER_HEALTH = 100;
   void *m_hudFont = nullptr;
+  void *m_heartsTexture = nullptr;
   int m_playerHealth = INITIAL_PLAYER_HEALTH;
   int m_playerScore = 0;
 
