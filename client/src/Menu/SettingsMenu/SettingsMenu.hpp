@@ -19,7 +19,7 @@ class SettingsMenu
 {
 public:
   SettingsMenu() = default;
-  ~SettingsMenu() {};
+  ~SettingsMenu() {}
   void init(IRenderer *renderer);
   void render(int winWidth, int winHeight, IRenderer *renderer);
   void process(IRenderer *renderer);

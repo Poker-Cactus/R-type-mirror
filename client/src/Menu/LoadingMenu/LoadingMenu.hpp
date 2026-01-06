@@ -6,8 +6,8 @@
 class LoadingMenu
 {
 public:
-  LoadingMenu() {};
-  ~LoadingMenu() {};
+  LoadingMenu() {}
+  ~LoadingMenu() {}
   void init(IRenderer *renderer);
   void render(int winWidth, int winHeight, IRenderer *renderer, LoadingScreen *loadingScreen, MenuState *currentState);
   void process(IRenderer *renderer);
