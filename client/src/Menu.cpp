@@ -15,7 +15,7 @@
 #include <cmath>
 #include <iostream>
 
-Menu::Menu(IRenderer *renderer) : renderer(renderer) {}
+Menu::Menu(IRenderer *renderer, Settings &settings) : renderer(renderer), settings(settings) {}
 
 Menu::~Menu()
 {
@@ -43,7 +43,7 @@ void Menu::init()
     profileMenu->init(renderer);
 
     settingsMenu = new SettingsMenu();
-    settingsMenu->init(renderer);
+    settingsMenu->init(renderer, settings);
 
     moonSky = renderer->loadTexture("client/assets/moon-para/moon_sky.png");
     moonBack = renderer->loadTexture("client/assets/moon-para/moon_back.png");

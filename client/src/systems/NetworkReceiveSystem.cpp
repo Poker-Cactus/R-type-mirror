@@ -226,9 +226,22 @@ void ClientNetworkReceiveSystem::handleSnapshot(ecs::World &world, const nlohman
       ecs::Sprite sprite = ecs::Sprite::fromJson(spriteJson);
 
       if (!world.hasComponent<ecs::Sprite>(entity)) {
+        // New sprite: add it completely
         world.addComponent(entity, sprite);
       } else {
-        world.getComponent<ecs::Sprite>(entity) = sprite;
+        // Existing sprite: update only non-animated fields to preserve client animation state
+        auto &existingSprite = world.getComponent<ecs::Sprite>(entity);
+
+        // Preserve animation state (currentFrame and animationTimer are client-managed)
+        uint32_t preservedCurrentFrame = existingSprite.currentFrame;
+        float preservedAnimationTimer = existingSprite.animationTimer;
+
+        // Update sprite from server
+        existingSprite = sprite;
+
+        // Restore client animation state
+        existingSprite.currentFrame = preservedCurrentFrame;
+        existingSprite.animationTimer = preservedAnimationTimer;
       }
     }
 

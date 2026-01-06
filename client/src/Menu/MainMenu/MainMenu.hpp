@@ -8,7 +8,7 @@ class MainMenu
 {
 public:
   MainMenu() = default;
-  ~MainMenu(){};
+  ~MainMenu() {}
   void init(IRenderer *renderer);
   void render(int winWidth, int winHeight, IRenderer *renderer);
   void process(MenuState *currentState, IRenderer *renderer);

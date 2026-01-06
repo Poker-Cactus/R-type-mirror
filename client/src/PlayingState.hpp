@@ -8,6 +8,7 @@
 #pragma once
 #include "../../engineCore/include/ecs/World.hpp"
 #include "../interface/IRenderer.hpp"
+#include "Menu/SettingsMenu/SettingsMenu.hpp"
 #include "ParallaxBackground.hpp"
 #include <memory>
 #include <unordered_map>
@@ -23,7 +24,7 @@
 class PlayingState
 {
 public:
-  PlayingState(IRenderer *renderer, const std::shared_ptr<ecs::World> &world);
+  PlayingState(IRenderer *renderer, const std::shared_ptr<ecs::World> &world, Settings &settings);
   ~PlayingState();
 
   /**
@@ -74,6 +75,9 @@ private:
   void loadSpriteTextures();
   void freeSpriteTextures();
 
+  // Animation system
+  void updateAnimations(float deltaTime);
+
   // HUD state
   static constexpr int INITIAL_PLAYER_HEALTH = 100;
   void *m_hudFont = nullptr;
@@ -89,4 +93,10 @@ private:
   int m_playerFrameIndex = 2;
   int m_playerAnimToggle = 0;
   float m_playerAnimTimer = 0.f;
+  enum class PlayerAnimDirection { None, Up, Down };
+  PlayerAnimDirection m_playerAnimDirection = PlayerAnimDirection::None;
+  bool m_playerAnimPlayingOnce = false;
+  int m_playerAnimPhase = 0;
+  Settings &settings;
+  SettingsMenu *settingsMenu = nullptr;
 };
