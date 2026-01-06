@@ -16,6 +16,7 @@
 #include "../include/AssetPath.hpp"
 #include "../include/systems/NetworkSendSystem.hpp"
 #include "../interface/Geometry.hpp"
+#include "../interface/KeyCodes.hpp"
 #include <iostream>
 
 PlayingState::PlayingState(IRenderer *renderer, const std::shared_ptr<ecs::World> &world)
@@ -73,6 +74,7 @@ void PlayingState::update(float delta_time)
   if (background) {
     background->update(delta_time);
   }
+  changeAnimationPlayers(delta_time);
 
   // Update sprite animations
   updateAnimations(delta_time);
@@ -112,8 +114,8 @@ void PlayingState::render()
     auto textureIt = m_spriteTextures.find(sprite.spriteId);
 
     if (textureIt != m_spriteTextures.end() && textureIt->second != nullptr) {
-      constexpr int PLAYER_FRAME_WIDTH = 350;
-      constexpr int PLAYER_FRAME_HEIGHT = 150;
+      constexpr int PLAYER_FRAME_WIDTH = 33; // 166 / 5
+      constexpr int PLAYER_FRAME_HEIGHT = 17; // 86 / 5
 
       bool rendered = false;
 
@@ -169,18 +171,17 @@ void PlayingState::render()
       if (!rendered) {
         // Draw using actual texture
         if (sprite.spriteId == ecs::SpriteId::PLAYER_SHIP) {
-          // Player ship is a spritesheet: 2450x150 with 7 frames
-          // Each frame is 350x150 (2450/7 = 350)
-          // Extract only the first frame (x=0, y=0, w=350, h=150)
+          // Player ship is a spritesheet with player animation
+          int srcX = m_playerFrameIndex * PLAYER_FRAME_WIDTH;
+          int srcY = 0; // première ligne seulement
           int scaledWidth = static_cast<int>(sprite.width * transformComponent.scale);
           int scaledHeight = static_cast<int>(sprite.height * transformComponent.scale);
-          renderer->drawTextureRegion(
-            textureIt->second,
-            {.x = 0, .y = 0, .width = PLAYER_FRAME_WIDTH, .height = PLAYER_FRAME_HEIGHT}, // Source: first frame
-            {.x = static_cast<int>(transformComponent.x),
-             .y = static_cast<int>(transformComponent.y),
-             .width = scaledWidth,
-             .height = scaledHeight}); // Destination with scale
+          renderer->drawTextureRegion(textureIt->second,
+                                      {.x = srcX, .y = srcY, .width = PLAYER_FRAME_WIDTH, .height = PLAYER_FRAME_HEIGHT},
+                                      {.x = static_cast<int>(transformComponent.x),
+                                       .y = static_cast<int>(transformComponent.y),
+                                       .width = scaledWidth,
+                                       .height = scaledHeight}); // Destination with scale
         } else if (sprite.spriteId == ecs::SpriteId::PROJECTILE) {
           // Projectile is a spritesheet: 422x92 with 2 frames
           // Each frame is 211x92 (422/2 = 211)
@@ -436,10 +437,43 @@ void PlayingState::updateHUDFromWorld()
 
 void PlayingState::processInput()
 {
-  // TODO: Gérer les entrées du joueur
-  // - Mouvement du vaisseau
-  // - Tir
-  // - Pause (Échap)
+  if (renderer == nullptr)
+    return;
+
+  bool up = renderer->isKeyPressed(KeyCode::KEY_UP);
+  bool down = renderer->isKeyPressed(KeyCode::KEY_DOWN);
+
+  if (renderer->isKeyPressed(KeyCode::KEY_UP)) {
+    m_returnUp = true;
+  } else if (renderer->isKeyPressed(KeyCode::KEY_DOWN)) {
+    m_returnDown = true;
+  } else {
+    m_returnUp = false;
+    m_returnDown = false;
+  }
+}
+
+void PlayingState::changeAnimationPlayers(float delta_time)
+{
+  if (!m_returnUp && !m_returnDown) {
+    m_playerAnimTimer = 0.f;
+    m_playerFrameIndex = 3;
+    return;
+  }
+
+  m_playerAnimTimer += delta_time;
+  constexpr float ANIM_FRAME_DURATION = 0.15f;
+  if (m_playerAnimTimer >= ANIM_FRAME_DURATION) {
+    m_playerAnimTimer = 0.f;
+    m_playerAnimToggle = (m_playerAnimToggle + 1) % 2;
+
+    if (m_returnUp) {
+      m_playerFrameIndex = (m_playerAnimToggle == 0) ? 3 : 4;
+    } else if (m_returnDown) {
+      m_playerFrameIndex = (m_playerAnimToggle == 0) ? 1 : 2;
+    }
+  }
+
 }
 
 void PlayingState::cleanup()
@@ -472,7 +506,7 @@ void PlayingState::loadSpriteTextures()
   // Load each texture individually with error handling
   // PLAYER_SHIP = 1 (spritesheet: 2450x150, 7 frames, using first frame only)
   try {
-    void *player_tex = renderer->loadTexture("client/assets/sprites/player_ship.png");
+    void *player_tex = renderer->loadTexture("client/assets/sprites/player_ship.gif");
     if (player_tex != nullptr) {
       m_spriteTextures[ecs::SpriteId::PLAYER_SHIP] = player_tex;
       std::cout << "[PlayingState] ✓ Loaded player_ship.png" << '\n';
