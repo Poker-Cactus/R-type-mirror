@@ -11,9 +11,9 @@
 #include "../../../engineCore/include/ecs/Entity.hpp"
 #include "../../../engineCore/include/ecs/ISystem.hpp"
 #include "../../../engineCore/include/ecs/World.hpp"
+#include "../../../engineCore/include/ecs/components/Pattern.hpp"
 #include "../../../engineCore/include/ecs/components/Transform.hpp"
 #include "../../../engineCore/include/ecs/components/Velocity.hpp"
-#include "../../../engineCore/include/ecs/components/roles/EnemyAI.hpp"
 #include "../../../engineCore/include/ecs/events/GameEvents.hpp"
 #include "ecs/ComponentSignature.hpp"
 #include <cmath>
@@ -72,7 +72,7 @@ public:
   [[nodiscard]] ecs::ComponentSignature getSignature() const override
   {
     ecs::ComponentSignature sig;
-    sig.set(ecs::getComponentId<ecs::EnemyAI>());
+    sig.set(ecs::getComponentId<ecs::Pattern>());
     sig.set(ecs::getComponentId<ecs::Velocity>());
     sig.set(ecs::getComponentId<ecs::Transform>());
     return sig;

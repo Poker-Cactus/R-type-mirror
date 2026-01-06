@@ -16,13 +16,12 @@
 #include "../../../engineCore/include/ecs/components/Health.hpp"
 #include "../../../engineCore/include/ecs/components/Networked.hpp"
 #include "../../../engineCore/include/ecs/components/Owner.hpp"
+#include "../../../engineCore/include/ecs/components/Pattern.hpp"
 #include "../../../engineCore/include/ecs/components/PlayerId.hpp"
 #include "../../../engineCore/include/ecs/components/Sprite.hpp"
 #include "../../../engineCore/include/ecs/components/Transform.hpp"
 #include "../../../engineCore/include/ecs/components/Velocity.hpp"
 #include "../../../engineCore/include/ecs/components/Viewport.hpp"
-#include "../../../engineCore/include/ecs/components/roles/EnemyAI.hpp"
-#include "../../../engineCore/include/ecs/components/roles/Projectile.hpp"
 #include "../../../engineCore/include/ecs/events/EventListenerHandle.hpp"
 #include "../../../engineCore/include/ecs/events/GameEvents.hpp"
 #include "ecs/ComponentSignature.hpp"
@@ -137,7 +136,8 @@ private:
   {
     ecs::Entity enemy = world.createEntity();
 
-    world.addComponent(enemy, ecs::EnemyAI{});
+    // Enemies use a Pattern component for movement behavior
+    world.addComponent(enemy, ecs::Pattern{"straight", 0.0f, 0.0f});
 
     ecs::Transform transform;
     transform.x = posX;
@@ -186,8 +186,6 @@ private:
     const float projectileVelocity = PROJECTILE_VELOCITY_MULTIPLIER * normalizedDirX;
 
     ecs::Entity projectile = world.createEntity();
-
-    world.addComponent(projectile, ecs::Projectile{});
 
     // Capability-based offset: use GunOffset if entity has it (no identity checks).
     // Systems ask "What can this entity do?" not "What kind is it?"

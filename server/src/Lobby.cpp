@@ -236,7 +236,6 @@ void Lobby::spawnPlayer(std::uint32_t clientId)
 
   ecs::Entity player = m_world->createEntity();
 
-  m_world->addComponent(player, ecs::PlayerControlled{});
   m_world->addComponent(player, ecs::GunOffset{GameConfig::PLAYER_GUN_OFFSET});
 
   ecs::Transform transform;
