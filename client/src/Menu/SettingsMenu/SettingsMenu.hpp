@@ -1,6 +1,7 @@
 #pragma once
 #include "../../../include/Settings.hpp"
 #include "../../../interface/IRenderer.hpp"
+#include "Settings.hpp"
 #include <array>
 #include <cstdint>
 #include <string>
