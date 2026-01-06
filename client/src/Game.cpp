@@ -527,6 +527,11 @@ void Game::ensureInputEntity()
 
 void Game::update(float deltaTime)
 {
+  if (settings.fullScreen != fullScreen) {
+    renderer->setFullscreen(settings.fullScreen);
+    fullScreen = settings.fullScreen;
+  }
+
   if (m_world) {
     m_world->update(deltaTime);
   }

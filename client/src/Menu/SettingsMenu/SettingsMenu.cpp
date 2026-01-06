@@ -52,7 +52,6 @@ void SettingsMenu::init(IRenderer *renderer, Settings &settings)
       categoryTabs[i].isSelected = (i == 0);
     }
 
-    // Build typed item models (live-bound to Settings)
     audioItems.clear();
     audioItems.push_back({.label = "Master Volume",
                           .type = SettingItemType::SLIDER_INT,
@@ -155,15 +154,12 @@ void SettingsMenu::applyDelta(SettingItem &item, int direction)
     }
     break;
   case SettingItemType::KEYBIND:
-    // No left/right by default; keybind uses Enter + capture
     break;
   }
 }
 
 int SettingsMenu::captureKeyJustPressed(IRenderer *renderer) const
 {
-  // Minimal scan for keys we support in KeyCodes.hpp
-  // Return KEY_UNKNOWN if none.
   const int candidates[] = {
     KeyCode::KEY_RETURN, KeyCode::KEY_ESCAPE, KeyCode::KEY_BACKSPACE, KeyCode::KEY_TAB,  KeyCode::KEY_SPACE,
     KeyCode::KEY_DELETE, KeyCode::KEY_F11,    KeyCode::KEY_UP,        KeyCode::KEY_DOWN, KeyCode::KEY_LEFT,
@@ -187,11 +183,9 @@ int SettingsMenu::captureKeyJustPressed(IRenderer *renderer) const
 
 void SettingsMenu::renderCategoryTab(IRenderer *renderer, const Component &tab, bool isActive)
 {
-  // Couleur du texte avec moins d'opacité pour les non-actifs
   Color textColor =
     isActive ? Color{.r = 255, .g = 255, .b = 255, .a = 255} : Color{.r = 150, .g = 150, .b = 150, .a = 120};
 
-  // Centrer le texte avec la grosse police
   int textWidth = 0;
   int textHeight = 0;
   renderer->getTextSize(titleFont, tab.label, textWidth, textHeight);
@@ -285,7 +279,7 @@ void SettingsMenu::render(int winWidth, int winHeight, IRenderer *renderer)
 
   const Color helpTextColor = {.r = 255, .g = 255, .b = 255, .a = 200};
   const int helpTextX = 60;
-  const int helpTextY = winHeight - 60; // Plus de marge en bas
+  const int helpTextY = winHeight - 60;
   renderer->drawText(helpFont, "Press return to get back", helpTextX, helpTextY, helpTextColor);
 }
 
@@ -295,7 +289,6 @@ void SettingsMenu::process(IRenderer *renderer)
     return;
   }
 
-  // Key capture mode for keybind items
   if (isCapturingKey) {
     if (renderer->isKeyJustPressed(KeyCode::KEY_ESCAPE) || renderer->isKeyJustPressed(KeyCode::KEY_RETURN)) {
       isCapturingKey = false;
@@ -318,7 +311,6 @@ void SettingsMenu::process(IRenderer *renderer)
     return;
   }
 
-  // Cancel editing
   if (renderer->isKeyJustPressed(KeyCode::KEY_ESCAPE)) {
     isEditing = false;
     return;
@@ -357,7 +349,6 @@ void SettingsMenu::process(IRenderer *renderer)
     }
   }
 
-  // Enter-to-edit behavior
   if (renderer->isKeyJustPressed(KeyCode::KEY_RETURN)) {
     auto &item = items[selectedIndex];
     if (item.type == SettingItemType::KEYBIND) {
@@ -366,11 +357,9 @@ void SettingsMenu::process(IRenderer *renderer)
       return;
     }
     if (item.type == SettingItemType::TOGGLE_BOOL) {
-      // Toggle on Enter ("edit" confirmation for this field)
       applyDelta(item, +1);
       return;
     }
-    // Slider: Enter toggles edit mode, Left/Right adjusts while editing
     isEditing = !isEditing;
     return;
   }

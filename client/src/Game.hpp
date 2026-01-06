@@ -65,4 +65,5 @@ private:
   std::unique_ptr<PlayingState> playingState;
   float m_lobbyStateTime = 0.0F;
   Settings settings;
+  bool fullScreen = true;
 };
