@@ -282,6 +282,15 @@ void SettingsMenu::render(int winWidth, int winHeight, IRenderer *renderer)
   renderer->drawText(helpFont, "Press return to get back", helpTextX, helpTextY, helpTextColor);
 }
 
+bool SettingsMenu::keyAlreadyInUse(int key) {
+  for (auto &item : activeItems()) {
+    if (*item.intTarget == key) {
+      return false;
+    }
+  }
+  return true;
+}
+
 void SettingsMenu::process(IRenderer *renderer)
 {
   if (settings == nullptr) {
@@ -301,7 +310,9 @@ void SettingsMenu::process(IRenderer *renderer)
       if (!items.empty() && selectedIndex < items.size()) {
         auto &item = items[selectedIndex];
         if (item.type == SettingItemType::KEYBIND && item.intTarget != nullptr) {
-          *item.intTarget = key;
+          if (keyAlreadyInUse(key)) {
+            *item.intTarget = key;
+          }
         }
       }
       isCapturingKey = false;

@@ -63,4 +63,5 @@ private:
 
   void renderRow(IRenderer *renderer, const Component &rowRect, const SettingItem &item, bool selected);
   void renderCategoryTab(IRenderer *renderer, const Component &tab, bool isActive);
+  bool keyAlreadyInUse(int key);
 };
