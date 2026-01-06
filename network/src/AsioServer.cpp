@@ -181,7 +181,6 @@ void AsioServer::createPlayerEntity(std::uint32_t clientId)
   ecs::Entity player = m_world->createEntity();
 
   // Server-authoritative role assignment.
-  m_world->addComponent(player, ecs::PlayerControlled{});
   m_world->addComponent(player, ecs::GunOffset{NetworkConfig::PLAYER_GUN_OFFSET});
 
   ecs::Transform transform;
