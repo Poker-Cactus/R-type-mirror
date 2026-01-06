@@ -322,9 +322,6 @@ void PlayingState::processInput()
   if (renderer == nullptr)
     return;
 
-  bool up = renderer->isKeyPressed(KeyCode::KEY_UP);
-  bool down = renderer->isKeyPressed(KeyCode::KEY_DOWN);
-
   if (renderer->isKeyPressed(KeyCode::KEY_UP)) {
     m_returnUp = true;
   } else if (renderer->isKeyPressed(KeyCode::KEY_DOWN)) {
@@ -355,7 +352,6 @@ void PlayingState::changeAnimationPlayers(float delta_time)
       m_playerFrameIndex = (m_playerAnimToggle == 0) ? 1 : 2;
     }
   }
-
 }
 
 void PlayingState::cleanup()

@@ -56,7 +56,7 @@ ecs::ComponentSignature NetworkSendSystem::getSignature() const
   return sig;
 }
 
-void NetworkSendSystem::sendInputToServer(ecs::Entity entity, const ecs::Input &input)
+void NetworkSendSystem::sendInputToServer(UNUSED ecs::Entity entity, const ecs::Input &input)
 {
   struct InputState {
     bool up;

@@ -54,11 +54,11 @@ private:
   IRenderer *renderer = nullptr;
   std::shared_ptr<ecs::World> m_world;
   std::shared_ptr<INetworkManager> m_networkManager;
+  bool isRunning = false;
+  GameState currentState = GameState::MENU;
   std::string m_serverHost = "127.0.0.1";
   std::string m_serverPort = "4242";
   ecs::Entity m_inputEntity{0};
-  bool isRunning = false;
-  GameState currentState = GameState::MENU;
   std::unique_ptr<Menu> menu;
   std::unique_ptr<LobbyRoomState> lobbyRoomState;
   std::unique_ptr<PlayingState> playingState;

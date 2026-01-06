@@ -1,3 +1,10 @@
+/*
+** EPITECH PROJECT, 2025
+** R-type-mirror
+** File description:
+** ProfileMenu.hpp
+*/
+
 #pragma once
 #include "../../../interface/IRenderer.hpp"
 
