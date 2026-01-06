@@ -6,8 +6,8 @@
 */
 
 #pragma once
-#include "../interface/IRenderer.hpp"
 #include "../interface/Color.hpp"
+#include "../interface/IRenderer.hpp"
 #include <string>
 #include <vector>
 

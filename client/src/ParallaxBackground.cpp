@@ -59,8 +59,8 @@ void ParallaxBackground::addLayer(const std::string &texturePath, float scrollSp
   layers.push_back(layer);
 }
 
-void ParallaxBackground::addStarLayer(
-  int starCount, float scrollSpeed, float minRadius, float maxRadius, const Color &color)
+void ParallaxBackground::addStarLayer(int starCount, float scrollSpeed, float minRadius, float maxRadius,
+                                      const Color &color)
 {
   if (!renderer) {
     return;
@@ -94,8 +94,8 @@ void ParallaxBackground::addStarLayer(
   layers.push_back(layer);
 }
 
-void ParallaxBackground::addStarLayerWithVariedColors(
-  int starCount, float scrollSpeed, float minRadius, float maxRadius)
+void ParallaxBackground::addStarLayerWithVariedColors(int starCount, float scrollSpeed, float minRadius,
+                                                      float maxRadius)
 {
   if (!renderer) {
     return;
@@ -123,30 +123,30 @@ void ParallaxBackground::addStarLayerWithVariedColors(
     star.x = xDist(gen);
     star.y = yDist(gen);
     star.radius = radiusDist(gen);
-    
+
     // Color distribution: dark blue, blue-green, light blue, white, purple
     float colorChoice = colorDist(gen);
     if (colorChoice < 35.0f) {
       // 35%: Dark blue
-      star.color = {25, 25, 112, 255};  // Midnight blue
+      star.color = {25, 25, 112, 255}; // Midnight blue
     } else if (colorChoice < 60.0f) {
       // 25%: Blue-green (cyan tones)
       std::uniform_int_distribution<int> cyanDist(0, 2);
       int cyanVariant = cyanDist(gen);
       if (cyanVariant == 0) {
-        star.color = {0, 139, 139, 240};    // Dark cyan
+        star.color = {0, 139, 139, 240}; // Dark cyan
       } else if (cyanVariant == 1) {
-        star.color = {32, 178, 170, 245};   // Light sea green
+        star.color = {32, 178, 170, 245}; // Light sea green
       } else {
-        star.color = {64, 224, 208, 250};   // Turquoise
+        star.color = {64, 224, 208, 250}; // Turquoise
       }
     } else if (colorChoice < 80.0f) {
       // 20%: Light blue
       std::uniform_int_distribution<int> lightBlueDist(0, 1);
       if (lightBlueDist(gen) == 0) {
-        star.color = {135, 206, 250, 255};  // Sky blue
+        star.color = {135, 206, 250, 255}; // Sky blue
       } else {
-        star.color = {173, 216, 230, 255};  // Light blue
+        star.color = {173, 216, 230, 255}; // Light blue
       }
     } else if (colorChoice < 90.0f) {
       // 10%: White
@@ -156,14 +156,14 @@ void ParallaxBackground::addStarLayerWithVariedColors(
       std::uniform_int_distribution<int> purpleDist(0, 2);
       int purpleVariant = purpleDist(gen);
       if (purpleVariant == 0) {
-        star.color = {138, 43, 226, 250};   // Blue violet
+        star.color = {138, 43, 226, 250}; // Blue violet
       } else if (purpleVariant == 1) {
-        star.color = {148, 0, 211, 245};    // Dark violet
+        star.color = {148, 0, 211, 245}; // Dark violet
       } else {
-        star.color = {186, 85, 211, 240};   // Medium orchid
+        star.color = {186, 85, 211, 240}; // Medium orchid
       }
     }
-    
+
     layer.stars.push_back(star);
   }
 
@@ -197,17 +197,17 @@ void ParallaxBackground::renderLayer(const ParallaxLayer &layer)
 {
   if (layer.isProcedural) {
     const float layerWidth = static_cast<float>(layer.textureWidth);
-    
+
     for (const auto &star : layer.stars) {
       // Calculate position with offset, using modulo for seamless wrapping
       float baseX = star.x - layer.offsetX;
-      
+
       // Normalize position to layerWidth range
       baseX = std::fmod(baseX, layerWidth);
       if (baseX < 0.0f) {
         baseX += layerWidth;
       }
-      
+
       // Draw star at its primary position
       if (baseX >= 0.0f && baseX <= static_cast<float>(windowWidth)) {
         Circle circle;
@@ -216,7 +216,7 @@ void ParallaxBackground::renderLayer(const ParallaxLayer &layer)
         circle.radius = static_cast<int>(star.radius);
         renderer->drawCircleFilled(circle, star.color);
       }
-      
+
       // Draw wrapped copy to ensure continuity at screen edges
       float wrappedX = baseX - layerWidth;
       if (wrappedX >= -10.0f && wrappedX <= static_cast<float>(windowWidth)) {
@@ -226,7 +226,7 @@ void ParallaxBackground::renderLayer(const ParallaxLayer &layer)
         circle.radius = static_cast<int>(star.radius);
         renderer->drawCircleFilled(circle, star.color);
       }
-      
+
       // Draw another wrapped copy on the right side
       wrappedX = baseX + layerWidth;
       if (wrappedX >= 0.0f && wrappedX <= static_cast<float>(windowWidth + 10)) {
