@@ -42,13 +42,13 @@ void SettingsMenu::init(IRenderer *renderer)
     const int totalButtonsHeight = numButtons * buttonHeight;
     const int buttonsStartY = (winHeight - totalButtonsHeight) / 2;
 
-    std::vector<std::string> audioLabels = {"Master Volume", "Music Volume", "SFX Volume", "Voice Volume", "Back"};
+    std::vector<std::string> audioLabels = {"Master Volume", "Music Volume", "SFX Volume", "Voice Volume"};
     initButtons(audioButtons, audioLabels, winWidth, winHeight, buttonsStartY);
 
-    std::vector<std::string> graphicLabels = {"Resolution", "Fullscreen", "VSync", "Quality", "Back"};
+    std::vector<std::string> graphicLabels = {"Fullscreen"};
     initButtons(graphicButtons, graphicLabels, winWidth, winHeight, buttonsStartY);
 
-    std::vector<std::string> controlsLabels = {"Move Up", "Move Down", "Move Left", "Move Right", "Back"};
+    std::vector<std::string> controlsLabels = {"Move Up", "Move Down", "Move Left", "Move Right"};
     initButtons(controlsButtons, controlsLabels, winWidth, winHeight, buttonsStartY);
   } catch (const std::exception &e) {
   }
@@ -60,7 +60,7 @@ void SettingsMenu::initButtons(std::array<Component, N> &buttons, const std::vec
 {
   const int buttonWidth = winWidth * 0.5;
   const int buttonHeight = winHeight * 0.07;
-  const int startX = (winWidth - buttonWidth) / 2; // Centrer horizontalement
+  const int startX = (winWidth - buttonWidth) / 2;
 
   size_t maxButtons = std::min(buttons.size(), labels.size());
 
@@ -89,12 +89,11 @@ void SettingsMenu::renderCategoryTab(IRenderer *renderer, const Component &tab, 
 
   renderer->drawText(titleFont, tab.label, textX, textY, textColor);
 
-  // Souligner si actif (60% de la largeur du texte)
   if (isActive) {
     Color underlineColor = {.r = 255, .g = 255, .b = 255, .a = 255};
-    int underlineWidth = textWidth * 0.6; // 60% de la largeur
-    int underlineX = textX + (textWidth - underlineWidth) / 2; // Centrer le soulignement
-    int underlineY = textY + textHeight + 8; // 8px sous le texte
+    int underlineWidth = textWidth * 0.6;
+    int underlineX = textX + (textWidth - underlineWidth) / 2;
+    int underlineY = textY + textHeight + 8;
     int underlineThickness = 4;
 
     for (int i = 0; i < underlineThickness; i++) {
@@ -107,7 +106,6 @@ void SettingsMenu::renderButton(IRenderer *renderer, const Component &button)
 {
   const int borderThickness = 6;
 
-  // Afficher le fond et la bordure UNIQUEMENT pour le bouton sélectionné
   if (button.isSelected) {
     Color bgColor = {.r = 5, .g = 10, .b = 25, .a = 120};
     Color border = {.r = 180, .g = 180, .b = 180, .a = 255};
@@ -121,14 +119,12 @@ void SettingsMenu::renderButton(IRenderer *renderer, const Component &button)
     }
   }
 
-  // Centrer le texte verticalement dans le bouton
   int textWidth = 0;
   int textHeight = 0;
   renderer->getTextSize(font, button.label, textWidth, textHeight);
   int textX = button.rectX + 10; // Petit padding à gauche
   int textY = button.rectY + (button.rectHeight - textHeight) / 2;
 
-  // Texte plus clair si sélectionné
   Color textColor =
     button.isSelected ? Color{.r = 255, .g = 255, .b = 255, .a = 255} : Color{.r = 180, .g = 180, .b = 180, .a = 255};
   renderer->drawText(font, button.label, textX, textY, textColor);
@@ -139,13 +135,11 @@ void SettingsMenu::render(int winWidth, int winHeight, IRenderer *renderer)
   const Color darkOverlay = {.r = 0, .g = 0, .b = 0, .a = 120};
   renderer->drawRect(0, 0, winWidth, winHeight, darkOverlay);
 
-  // Afficher les onglets de catégories
   for (size_t i = 0; i < categoryTabs.size(); i++) {
     bool isActive = (static_cast<size_t>(currentCategory) == i);
     renderCategoryTab(renderer, categoryTabs[i], isActive);
   }
 
-  // Afficher les boutons de la catégorie sélectionnée
   switch (currentCategory) {
   case SettingsCategory::AUDIO:
     for (const auto &button : audioButtons) {
@@ -164,7 +158,6 @@ void SettingsMenu::render(int winWidth, int winHeight, IRenderer *renderer)
     break;
   }
 
-  // Texte d'aide en bas à gauche
   const Color helpTextColor = {.r = 255, .g = 255, .b = 255, .a = 200};
   const int helpTextX = 60;
   const int helpTextY = winHeight - 60; // Plus de marge en bas
@@ -173,7 +166,6 @@ void SettingsMenu::render(int winWidth, int winHeight, IRenderer *renderer)
 
 void SettingsMenu::process(IRenderer *renderer)
 {
-  // Navigation entre les catégories (gauche/droite)
   if (renderer->isKeyJustPressed(KeyCode::KEY_LEFT)) {
     int catIndex = static_cast<int>(currentCategory);
     if (catIndex > 0) {
@@ -187,8 +179,7 @@ void SettingsMenu::process(IRenderer *renderer)
     }
   }
 
-  // Navigation dans les boutons de la catégorie active (haut/bas)
-  std::array<Component, 5> *activeButtons = nullptr;
+  std::array<Component, 4> *activeButtons = nullptr;
   switch (currentCategory) {
   case SettingsCategory::AUDIO:
     activeButtons = &audioButtons;

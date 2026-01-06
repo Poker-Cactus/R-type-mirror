@@ -9,6 +9,7 @@
 #include "../interface/IRenderer.hpp"
 #include "LobbyRoomState.hpp"
 #include "Menu.hpp"
+#include "../include/Settings.hpp"
 #include "PlayingState.hpp"
 #include <cstdint>
 #include <memory>
@@ -63,4 +64,5 @@ private:
   std::unique_ptr<LobbyRoomState> lobbyRoomState;
   std::unique_ptr<PlayingState> playingState;
   float m_lobbyStateTime = 0.0F;
+  Settings settings;
 };

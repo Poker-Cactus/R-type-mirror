@@ -34,9 +34,9 @@ private:
   SettingsCategory currentCategory = SettingsCategory::AUDIO;
 
   // Boutons par catégorie
-  std::array<Component, 5> audioButtons;
-  std::array<Component, 5> graphicButtons;
-  std::array<Component, 5> controlsButtons;
+  std::array<Component, 4> audioButtons;
+  std::array<Component, 4> graphicButtons;
+  std::array<Component, 4> controlsButtons;
 
   template <size_t N>
   void initButtons(std::array<Component, N> &buttons, const std::vector<std::string> &labels, int winWidth,

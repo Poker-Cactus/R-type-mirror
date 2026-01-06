@@ -8,14 +8,23 @@
 #include "Game.hpp"
 #include "../interface/KeyCodes.hpp"
 #include "Menu/MenuState.hpp"
+#include "Settings.hpp"
 #include <cstddef>
 #include <iostream>
 #include <nlohmann/json.hpp>
 #include <span>
 
-Game::Game() : module(nullptr), renderer(nullptr), isRunning(false), currentState(GameState::MENU), m_serverHost("127.0.0.1"), m_serverPort("4242") {}
+Game::Game()
+    : module(nullptr), renderer(nullptr), m_serverHost("127.0.0.1"), m_serverPort("4242"), isRunning(false),
+      currentState(GameState::MENU)
+{
+}
 
-Game::Game(const std::string &host, const std::string &port) : module(nullptr), renderer(nullptr), isRunning(false), currentState(GameState::MENU), m_serverHost(host), m_serverPort(port) {}
+Game::Game(const std::string &host, const std::string &port)
+    : module(nullptr), renderer(nullptr), m_serverHost(host), m_serverPort(port), isRunning(false),
+      currentState(GameState::MENU)
+{
+}
 
 Game::~Game()
 {
@@ -227,7 +236,6 @@ void Game::sendViewportToServer()
 void Game::processInput()
 {
   if (renderer != nullptr && !renderer->pollEvents()) {
-    // Don't allow immediate close in lobby - give network time to send messages
     constexpr float LOBBY_GRACE_PERIOD = 0.5F;
     if (currentState == GameState::LOBBY_ROOM && m_lobbyStateTime < LOBBY_GRACE_PERIOD) {
       std::cout << "[Game] Ignoring close request - lobby just started (" << m_lobbyStateTime << "s)" << '\n';
@@ -467,13 +475,13 @@ void Game::updatePlayerInput()
   }
 
   auto &input = m_world->getComponent<ecs::Input>(m_inputEntity);
-  input.up = renderer->isKeyPressed(KeyCode::KEY_UP) || renderer->isKeyPressed(KeyCode::KEY_W) ||
+  input.up = renderer->isKeyPressed(settings.up) || renderer->isKeyPressed(KeyCode::KEY_W) ||
     renderer->isKeyPressed(KeyCode::KEY_Z);
-  input.down = renderer->isKeyPressed(KeyCode::KEY_DOWN) || renderer->isKeyPressed(KeyCode::KEY_S);
-  input.left = renderer->isKeyPressed(KeyCode::KEY_LEFT) || renderer->isKeyPressed(KeyCode::KEY_A) ||
+  input.down = renderer->isKeyPressed(settings.down) || renderer->isKeyPressed(KeyCode::KEY_S);
+  input.left = renderer->isKeyPressed(settings.left) || renderer->isKeyPressed(KeyCode::KEY_A) ||
     renderer->isKeyPressed(KeyCode::KEY_Q);
-  input.right = renderer->isKeyPressed(KeyCode::KEY_RIGHT) || renderer->isKeyPressed(KeyCode::KEY_D);
-  input.shoot = renderer->isKeyPressed(KeyCode::KEY_SPACE);
+  input.right = renderer->isKeyPressed(settings.right) || renderer->isKeyPressed(KeyCode::KEY_D);
+  input.shoot = renderer->isKeyPressed(settings.shoot);
 }
 
 void Game::delegateInputToCurrentState()
