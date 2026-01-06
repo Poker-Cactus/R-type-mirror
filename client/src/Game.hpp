@@ -4,12 +4,12 @@
 #include "../../engineCore/include/ecs/components/Input.hpp"
 #include "../../network/include/AsioClient.hpp"
 #include "../ModuleLoader.hpp"
+#include "../include/Settings.hpp"
 #include "../include/systems/NetworkReceiveSystem.hpp"
 #include "../include/systems/NetworkSendSystem.hpp"
 #include "../interface/IRenderer.hpp"
 #include "LobbyRoomState.hpp"
 #include "Menu.hpp"
-#include "../include/Settings.hpp"
 #include "PlayingState.hpp"
 #include <cstdint>
 #include <memory>

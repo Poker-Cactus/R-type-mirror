@@ -282,7 +282,8 @@ void SettingsMenu::render(int winWidth, int winHeight, IRenderer *renderer)
   renderer->drawText(helpFont, "Press return to get back", helpTextX, helpTextY, helpTextColor);
 }
 
-bool SettingsMenu::keyAlreadyInUse(int key) {
+bool SettingsMenu::keyAlreadyInUse(int key)
+{
   for (auto &item : activeItems()) {
     if (*item.intTarget == key) {
       return false;

@@ -1,10 +1,10 @@
 #pragma once
 #include "../../../interface/IRenderer.hpp"
+#include "Settings.hpp"
 #include <array>
 #include <cstdint>
 #include <string>
 #include <vector>
-#include "Settings.hpp"
 
 struct Component {
   int rectX = 0;
@@ -33,7 +33,7 @@ class SettingsMenu
 {
 public:
   SettingsMenu() = default;
-  ~SettingsMenu() {};
+  ~SettingsMenu(){};
   void init(IRenderer *renderer, Settings &settings);
   void render(int winWidth, int winHeight, IRenderer *renderer);
   void process(IRenderer *renderer);
