@@ -182,8 +182,7 @@ private:
       directionX = 1.0F; // Default to right if nothing else is known
     }
 
-    const float normalizedDirX = directionX >= 0.0F ? 1.0F : -1.0F;
-    const float projectileVelocity = PROJECTILE_VELOCITY_MULTIPLIER * normalizedDirX;
+    const float projectileVelocity = PROJECTILE_VELOCITY_MULTIPLIER * 1.0F;
 
     ecs::Entity projectile = world.createEntity();
 
@@ -193,7 +192,7 @@ private:
     // Systems ask "What can this entity do?" not "What kind is it?"
     float offsetX = 0.0F;
     if (world.hasComponent<ecs::GunOffset>(owner)) {
-      offsetX = world.getComponent<ecs::GunOffset>(owner).x * normalizedDirX;
+      offsetX = world.getComponent<ecs::GunOffset>(owner).x * 1.0F;
     }
 
     ecs::Transform transform;

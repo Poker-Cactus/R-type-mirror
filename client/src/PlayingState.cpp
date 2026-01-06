@@ -133,8 +133,8 @@ void PlayingState::render()
         // Projectile is a spritesheet: 422x92 with 2 frames
         // Each frame is 211x92 (422/2 = 211)
         // Extract only the first frame (x=0, y=0, w=211, h=92)
-        constexpr int PROJECTILE_FRAME_WIDTH = 211;
-        constexpr int PROJECTILE_FRAME_HEIGHT = 92;
+        constexpr int PROJECTILE_FRAME_WIDTH = 18;
+        constexpr int PROJECTILE_FRAME_HEIGHT = 14;
         renderer->drawTextureRegion(
           textureIt->second,
           {.x = 0, .y = 0, .width = PROJECTILE_FRAME_WIDTH, .height = PROJECTILE_FRAME_HEIGHT}, // Source: first frame
@@ -414,7 +414,7 @@ void PlayingState::loadSpriteTextures()
 
   // PROJECTILE = 3 (spritesheet: 422x92, 2 frames, using first frame only)
   try {
-    void *projectile_tex = renderer->loadTexture("client/assets/sprites/projectile.png");
+    void *projectile_tex = renderer->loadTexture("client/assets/sprites/r-typesheet1.png");
     if (projectile_tex != nullptr) {
       m_spriteTextures[ecs::SpriteId::PROJECTILE] = projectile_tex;
       std::cout << "[PlayingState] ✓ Loaded projectile.png" << '\n';

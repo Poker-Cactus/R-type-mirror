@@ -97,7 +97,7 @@ private:
 
     const auto &transform = world.getComponent<ecs::Transform>(event.shooter);
 
-    const float offsetX = 105.0F;
+    const float offsetX = 110.0F;
     const float offsetY = 25.0F;
 
     // Emit spawn event for projectile
