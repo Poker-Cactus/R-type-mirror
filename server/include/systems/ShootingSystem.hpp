@@ -39,7 +39,7 @@ public:
 
     for (auto entity : entities) {
       const auto &input = world.getComponent<ecs::Input>(entity);
-      const auto &transform = world.getComponent<ecs::Transform>(entity);
+      // const auto &transform = world.getComponent<ecs::Transform>(entity);
 
       const bool wasShooting = m_prevShootState.contains(entity) ? m_prevShootState[entity] : false;
       const bool justPressed = input.shoot && !wasShooting;

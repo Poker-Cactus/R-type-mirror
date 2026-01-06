@@ -73,10 +73,10 @@ private:
   static constexpr float DEFAULT_VIEWPORT_HEIGHT = 600.0F;
   static constexpr float SPAWN_Y_MARGIN = 50.0F;
   static constexpr float SPAWN_X_OFFSET = 32.0F;
-  static constexpr float ENEMY_VELOCITY_X = -150.0F;
+  static constexpr float ENEMY_VELOCITY_X = -1000.0F;
   static constexpr int ENEMY_HEALTH = 30;
-  static constexpr float ENEMY_COLLIDER_SIZE = 32.0F;
-  static constexpr unsigned int ENEMY_SPRITE_SIZE = 64;
+  static constexpr float ENEMY_COLLIDER_SIZE = 128.0F;
+  static constexpr unsigned int ENEMY_SPRITE_SIZE = 128;
   static constexpr float PROJECTILE_COLLIDER_SIZE = 8.0F;
   static constexpr unsigned int PROJECTILE_SPRITE_WIDTH = 84;
   static constexpr unsigned int PROJECTILE_SPRITE_HEIGHT = 36;
@@ -136,8 +136,7 @@ private:
   {
     ecs::Entity enemy = world.createEntity();
 
-    // Enemies use a Pattern component for movement behavior
-    world.addComponent(enemy, ecs::Pattern{"straight", 0.0f, 0.0f});
+    world.addComponent(enemy, ecs::Pattern{"sine_wave", 80.0f, 2.0f});
 
     ecs::Transform transform;
     transform.x = posX;
