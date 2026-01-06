@@ -115,7 +115,7 @@ bool Game::init()
         std::cout << "[Game] Game started callback triggered - transitioning to PLAYING" << '\n';
         // Ensure the playing state exists and is initialized (recreate after death)
         if (!this->playingState) {
-          this->playingState = std::make_unique<PlayingState>(this->renderer, this->m_world);
+          this->playingState = std::make_unique<PlayingState>(this->renderer, this->m_world, this->settings);
           if (!this->playingState->init()) {
             std::cerr << "[Game] Failed to initialize playing state on game_started" << '\n';
             // Fallback to menu if we cannot initialize rendering state
@@ -133,7 +133,7 @@ bool Game::init()
       });
     }
 
-    playingState = std::make_unique<PlayingState>(renderer, m_world);
+    playingState = std::make_unique<PlayingState>(renderer, m_world, settings);
     if (!playingState->init()) {
       std::cerr << "Failed to initialize playing state" << '\n';
       return false;

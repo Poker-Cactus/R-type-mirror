@@ -19,8 +19,8 @@
 #include "../interface/KeyCodes.hpp"
 #include <iostream>
 
-PlayingState::PlayingState(IRenderer *renderer, const std::shared_ptr<ecs::World> &world)
-    : renderer(renderer), world(world), background(nullptr)
+PlayingState::PlayingState(IRenderer *renderer, const std::shared_ptr<ecs::World> &world, Settings &settings)
+    : renderer(renderer), world(world), background(nullptr), settings(settings)
 {
 }
 
@@ -37,6 +37,8 @@ bool PlayingState::init()
   }
 
   std::cout << "[PlayingState] Initializing with m_playerHealth = " << m_playerHealth << '\n';
+
+  settingsMenu = new SettingsMenu();
 
   // Initialiser le background parallaxe
   background = std::make_unique<ParallaxBackground>(renderer);
@@ -133,8 +135,8 @@ void PlayingState::render()
           frameWidth = PLAYER_FRAME_WIDTH;
           frameHeight = PLAYER_FRAME_HEIGHT;
         } else if (sprite.spriteId == ecs::SpriteId::PROJECTILE) {
-          frameWidth = 211;
-          frameHeight = 92;
+          frameWidth = 18;
+          frameHeight = 14;
         }
 
         if (frameWidth > 0 && frameHeight > 0) {
@@ -184,10 +186,8 @@ void PlayingState::render()
              .height = scaledHeight}); // Destination with scale
         } else if (sprite.spriteId == ecs::SpriteId::PROJECTILE) {
           // Projectile is a spritesheet: 422x92 with 2 frames
-          // Each frame is 211x92 (422/2 = 211)
-          // Extract only the first frame (x=0, y=0, w=211, h=92)
-          constexpr int PROJECTILE_FRAME_WIDTH = 211;
-          constexpr int PROJECTILE_FRAME_HEIGHT = 92;
+          constexpr int PROJECTILE_FRAME_WIDTH = 18;
+          constexpr int PROJECTILE_FRAME_HEIGHT = 14;
           int scaledWidth = static_cast<int>(sprite.width * transformComponent.scale);
           int scaledHeight = static_cast<int>(sprite.height * transformComponent.scale);
           renderer->drawTextureRegion(
@@ -323,6 +323,16 @@ void PlayingState::updateAnimations(float deltaTime)
       continue;
     }
 
+    // If the animation is non-looping and already finished, keep final frame
+    if (!sprite.loop) {
+      if (!sprite.reverseAnimation && sprite.currentFrame >= sprite.endFrame) {
+        continue;
+      }
+      if (sprite.reverseAnimation && sprite.currentFrame <= sprite.endFrame) {
+        continue;
+      }
+    }
+
     animatedCount++;
 
     // Update animation timer
@@ -336,14 +346,14 @@ void PlayingState::updateAnimations(float deltaTime)
         // Play animation in reverse (e.g., from frame 7 to 0)
         if (sprite.currentFrame > sprite.endFrame) {
           sprite.currentFrame--;
-        } else {
+        } else if (sprite.loop) {
           sprite.currentFrame = sprite.startFrame; // Loop back
         }
       } else {
         // Play animation forward
         if (sprite.currentFrame < sprite.endFrame) {
           sprite.currentFrame++;
-        } else {
+        } else if (sprite.loop) {
           sprite.currentFrame = sprite.startFrame; // Loop back
         }
       }
@@ -440,12 +450,12 @@ void PlayingState::processInput()
   if (renderer == nullptr)
     return;
 
-  bool up = renderer->isKeyPressed(KeyCode::KEY_UP);
-  bool down = renderer->isKeyPressed(KeyCode::KEY_DOWN);
+  bool up = renderer->isKeyPressed(settings.up);
+  bool down = renderer->isKeyPressed(settings.down);
 
-  if (renderer->isKeyPressed(KeyCode::KEY_UP)) {
+  if (renderer->isKeyPressed(settings.up)) {
     m_returnUp = true;
-  } else if (renderer->isKeyPressed(KeyCode::KEY_DOWN)) {
+  } else if (renderer->isKeyPressed(settings.down)) {
     m_returnDown = true;
   } else {
     m_returnUp = false;
@@ -455,22 +465,52 @@ void PlayingState::processInput()
 
 void PlayingState::changeAnimationPlayers(float delta_time)
 {
+  // No input: reset to idle and clear any queued single-shot animation
   if (!m_returnUp && !m_returnDown) {
     m_playerAnimTimer = 0.f;
-    m_playerFrameIndex = 3;
+    m_playerFrameIndex = 2;
+    m_playerAnimDirection = PlayerAnimDirection::None;
+    m_playerAnimPlayingOnce = false;
+    m_playerAnimPhase = 0;
     return;
   }
 
+  // Determine desired direction based on current input
+  const PlayerAnimDirection desiredDirection = m_returnUp ? PlayerAnimDirection::Up : PlayerAnimDirection::Down;
+
+  // Start a new single-shot animation only on a fresh key press or direction change
+  if (desiredDirection != m_playerAnimDirection) {
+    m_playerAnimDirection = desiredDirection;
+    m_playerAnimPlayingOnce = true;
+    m_playerAnimPhase = 0;
+    m_playerAnimTimer = 0.f;
+    m_playerFrameIndex = 2; // start from neutral frame before stepping
+  }
+
+  if (!m_playerAnimPlayingOnce) {
+    return; // already played for this press
+  }
+
   m_playerAnimTimer += delta_time;
-  constexpr float ANIM_FRAME_DURATION = 0.15f;
+  constexpr float ANIM_FRAME_DURATION = 0.12f; // slightly faster for snappier feel
   if (m_playerAnimTimer >= ANIM_FRAME_DURATION) {
     m_playerAnimTimer = 0.f;
-    m_playerAnimToggle = (m_playerAnimToggle + 1) % 2;
+    m_playerAnimPhase++;
 
-    if (m_returnUp) {
-      m_playerFrameIndex = (m_playerAnimToggle == 0) ? 3 : 4;
-    } else if (m_returnDown) {
-      m_playerFrameIndex = (m_playerAnimToggle == 0) ? 1 : 2;
+    if (m_playerAnimDirection == PlayerAnimDirection::Up) {
+      if (m_playerAnimPhase == 1) {
+        m_playerFrameIndex = 3; // mid frame
+      } else {
+        m_playerFrameIndex = 4; // end frame
+        m_playerAnimPlayingOnce = false; // done for this press
+      }
+    } else if (m_playerAnimDirection == PlayerAnimDirection::Down) {
+      if (m_playerAnimPhase == 1) {
+        m_playerFrameIndex = 1; // mid frame
+      } else {
+        m_playerFrameIndex = 0; // end frame
+        m_playerAnimPlayingOnce = false; // done for this press
+      }
     }
   }
 }
@@ -531,7 +571,7 @@ void PlayingState::loadSpriteTextures()
 
   // PROJECTILE = 3 (spritesheet: 422x92, 2 frames, using first frame only)
   try {
-    void *projectile_tex = renderer->loadTexture("client/assets/sprites/projectile.png");
+    void *projectile_tex = renderer->loadTexture("client/assets/sprites/r-typesheet1.png");
     if (projectile_tex != nullptr) {
       m_spriteTextures[ecs::SpriteId::PROJECTILE] = projectile_tex;
       std::cout << "[PlayingState] ✓ Loaded projectile.png" << '\n';

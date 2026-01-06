@@ -250,8 +250,7 @@ private:
       directionX = 1.0F; // Default to right if nothing else is known
     }
 
-    const float normalizedDirX = directionX >= 0.0F ? 1.0F : -1.0F;
-    const float projectileVelocity = PROJECTILE_VELOCITY_MULTIPLIER * normalizedDirX;
+    const float projectileVelocity = PROJECTILE_VELOCITY_MULTIPLIER * 1.0F;
 
     ecs::Entity projectile = world.createEntity();
 
@@ -259,7 +258,7 @@ private:
     // Systems ask "What can this entity do?" not "What kind is it?"
     float offsetX = 0.0F;
     if (world.hasComponent<ecs::GunOffset>(owner)) {
-      offsetX = world.getComponent<ecs::GunOffset>(owner).x * normalizedDirX;
+      offsetX = world.getComponent<ecs::GunOffset>(owner).x * 1.0F;
     }
 
     ecs::Transform transform;
@@ -284,6 +283,12 @@ private:
     sprite.spriteId = ecs::SpriteId::PROJECTILE;
     sprite.width = PROJECTILE_SPRITE_WIDTH; // 211x92 aspect ratio (422/2 frames, scaled down ~2.5x)
     sprite.height = PROJECTILE_SPRITE_HEIGHT;
+    sprite.animated = true;
+    sprite.frameCount = 3;
+    sprite.loop = false;
+    sprite.startFrame = 0;
+    sprite.endFrame = 2;
+
     world.addComponent(projectile, sprite);
 
     // Mark as networked so the snapshot system replicates it to clients.
