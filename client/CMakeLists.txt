@@ -3,6 +3,7 @@ project(client)
 add_executable(client
     src/main.cpp
     src/Game.cpp
+    src/helper/KeyToLabel.cpp
     src/Menu.cpp
     src/Menu/ProcessInputMenu.cpp
     src/Menu/LoadingScreen.cpp

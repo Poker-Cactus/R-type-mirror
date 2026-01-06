@@ -6,10 +6,12 @@
 #include "Menu/SettingsMenu/SettingsMenu.hpp"
 #include <string>
 
+class Settings;
+
 class Menu
 {
 public:
-  Menu(IRenderer *renderer);
+  Menu(IRenderer *renderer, Settings &settings);
   ~Menu();
 
   void init();
@@ -36,6 +38,7 @@ private:
   void renderMoonParalax(int winWidth, int winHeight, IRenderer *renderer);
 
   IRenderer *renderer;
+  Settings &settings;
   MainMenu *mainMenu = nullptr;
   LoadingMenu *loadingMenu = nullptr;
   ProfileMenu *profileMenu = nullptr;

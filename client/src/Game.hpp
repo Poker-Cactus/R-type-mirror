@@ -4,6 +4,7 @@
 #include "../../engineCore/include/ecs/components/Input.hpp"
 #include "../../network/include/AsioClient.hpp"
 #include "../ModuleLoader.hpp"
+#include "../include/Settings.hpp"
 #include "../include/systems/NetworkReceiveSystem.hpp"
 #include "../include/systems/NetworkSendSystem.hpp"
 #include "../interface/IRenderer.hpp"
@@ -63,4 +64,6 @@ private:
   std::unique_ptr<LobbyRoomState> lobbyRoomState;
   std::unique_ptr<PlayingState> playingState;
   float m_lobbyStateTime = 0.0F;
+  Settings settings;
+  bool fullScreen = true;
 };

@@ -1,6 +1,8 @@
 #pragma once
 #include "../../../interface/IRenderer.hpp"
+#include "Settings.hpp"
 #include <array>
+#include <cstdint>
 #include <string>
 #include <vector>
 
@@ -10,10 +12,22 @@ struct Component {
   int rectWidth = 0;
   int rectHeight = 0;
   bool isSelected = false;
-  std::string label = "";
+  std::string label;
 };
 
-enum class SettingsCategory { AUDIO = 0, GRAPHICS = 1, CONTROLS = 2 };
+enum class SettingsCategory : std::uint8_t { AUDIO = 0, GRAPHICS = 1, CONTROLS = 2 };
+
+enum class SettingItemType : std::uint8_t { SLIDER_INT, TOGGLE_BOOL, KEYBIND };
+
+struct SettingItem {
+  std::string label;
+  SettingItemType type = SettingItemType::SLIDER_INT;
+  int minValue = 0;
+  int maxValue = 100;
+  int step = 5;
+  int *intTarget = nullptr;
+  bool *boolTarget = nullptr;
+};
 
 class SettingsMenu
 {
@@ -25,6 +39,7 @@ public:
   void process(IRenderer *renderer);
 
 private:
+  Settings *settings = nullptr;
   void *font;
   void *titleFont;
   void *helpFont;
@@ -33,14 +48,20 @@ private:
   std::array<Component, 3> categoryTabs;
   SettingsCategory currentCategory = SettingsCategory::AUDIO;
 
-  // Boutons par catégorie
-  std::array<Component, 5> audioButtons;
-  std::array<Component, 5> graphicButtons;
-  std::array<Component, 5> controlsButtons;
+  std::vector<SettingItem> audioItems;
+  std::vector<SettingItem> graphicItems;
+  std::vector<SettingItem> controlsItems;
 
-  template <size_t N>
-  void initButtons(std::array<Component, N> &buttons, const std::vector<std::string> &labels, int winWidth,
-                   int winHeight, int startY);
-  void renderButton(IRenderer *renderer, const Component &button);
+  std::size_t selectedIndex = 0;
+  bool isCapturingKey = false;
+  bool isEditing = false;
+
+  std::vector<SettingItem> &activeItems();
+  std::string itemValueText(const SettingItem &item) const;
+  void applyDelta(SettingItem &item, int direction);
+  int captureKeyJustPressed(IRenderer *renderer) const;
+
+  void renderRow(IRenderer *renderer, const Component &rowRect, const SettingItem &item, bool selected);
   void renderCategoryTab(IRenderer *renderer, const Component &tab, bool isActive);
+  bool keyAlreadyInUse(int key);
 };

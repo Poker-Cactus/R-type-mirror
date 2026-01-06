@@ -16,6 +16,7 @@
 #include "../../common/include/Common.hpp"
 #include "../../engineCore/include/ecs/World.hpp"
 #include "../../network/include/INetworkManager.hpp"
+#include "Settings.hpp"
 
 /**
  * @brief High-level client wrapper
