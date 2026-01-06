@@ -12,9 +12,9 @@
 #include "../../../engineCore/include/ecs/ISystem.hpp"
 #include "../../../engineCore/include/ecs/World.hpp"
 #include "../../../engineCore/include/ecs/components/Health.hpp"
+#include "../../../engineCore/include/ecs/components/Input.hpp"
 #include "../../../engineCore/include/ecs/components/Owner.hpp"
 #include "../../../engineCore/include/ecs/components/Velocity.hpp"
-#include "../../../engineCore/include/ecs/components/roles/PlayerControlled.hpp"
 #include "../../../engineCore/include/ecs/events/EventListenerHandle.hpp"
 #include "../../../engineCore/include/ecs/events/GameEvents.hpp"
 #include "ecs/ComponentSignature.hpp"
@@ -88,8 +88,8 @@ private:
 
     if (aHasHealth && bHasHealth) {
       // Both have health - if both are players, ignore collision damage
-      bool aIsPlayer = world.hasComponent<ecs::PlayerControlled>(entityA);
-      bool bIsPlayer = world.hasComponent<ecs::PlayerControlled>(entityB);
+      bool aIsPlayer = world.hasComponent<ecs::Input>(entityA);
+      bool bIsPlayer = world.hasComponent<ecs::Input>(entityB);
 
       if (aIsPlayer && bIsPlayer) {
         // Do not apply damage when two players collide to avoid instant kills
@@ -126,8 +126,8 @@ private:
     }
 
     // Prevent friendly fire: if source is a player and target is also a player, skip
-    if (realSource != 0 && world.hasComponent<ecs::PlayerControlled>(realSource) &&
-        world.hasComponent<ecs::PlayerControlled>(target)) {
+    if (realSource != 0 && world.hasComponent<ecs::Input>(realSource) &&
+        world.hasComponent<ecs::Input>(target)) {
       return;
     }
 
