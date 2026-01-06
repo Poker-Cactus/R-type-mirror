@@ -30,12 +30,29 @@ struct Sprite : public IComponent {
   std::uint32_t width = 32;
   std::uint32_t height = 32;
 
+  // Animation fields
+  bool animated = false;
+  std::uint32_t frameCount = 1;
+  std::uint32_t currentFrame = 0;
+  std::uint32_t startFrame = 0; // First frame of animation sequence
+  std::uint32_t endFrame = 0; // Last frame of animation sequence
+  float frameTime = 0.1f; // Time per frame in seconds
+  float animationTimer = 0.0f; // Internal timer for animation
+  bool reverseAnimation = false; // Play animation in reverse order
+
   [[nodiscard]] nlohmann::json toJson() const override
   {
     nlohmann::json json;
     json["spriteId"] = spriteId;
     json["width"] = width;
     json["height"] = height;
+    json["animated"] = animated;
+    json["frameCount"] = frameCount;
+    // currentFrame is NOT serialized - it's client-side animation state
+    json["startFrame"] = startFrame;
+    json["endFrame"] = endFrame;
+    json["frameTime"] = frameTime;
+    json["reverseAnimation"] = reverseAnimation;
     return json;
   }
 
@@ -45,6 +62,15 @@ struct Sprite : public IComponent {
     sprite.spriteId = json.value("spriteId", 0u);
     sprite.width = json.value("width", 32u);
     sprite.height = json.value("height", 32u);
+    sprite.animated = json.value("animated", false);
+    sprite.frameCount = json.value("frameCount", 1u);
+    // currentFrame is NOT deserialized - client manages it locally
+    // If it's a new sprite, initialize currentFrame to startFrame
+    sprite.startFrame = json.value("startFrame", 0u);
+    sprite.endFrame = json.value("endFrame", 0u);
+    sprite.currentFrame = json.value("startFrame", 0u); // Initialize to startFrame
+    sprite.frameTime = json.value("frameTime", 0.1f);
+    sprite.reverseAnimation = json.value("reverseAnimation", false);
     return sprite;
   }
 };
