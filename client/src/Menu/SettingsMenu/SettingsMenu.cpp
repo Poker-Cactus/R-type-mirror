@@ -132,7 +132,6 @@ std::string SettingsMenu::itemValueText(const SettingItem &item) const
     return label;
   }
   }
-
   return "";
 }
 
