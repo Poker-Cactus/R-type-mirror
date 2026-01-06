@@ -20,14 +20,12 @@
 #include "components/Health.hpp"
 #include "components/Input.hpp"
 #include "components/Networked.hpp"
+#include "components/Pattern.hpp"
 #include "components/PlayerId.hpp"
 #include "components/Score.hpp"
 #include "components/Sprite.hpp"
 #include "components/Transform.hpp"
 #include "components/Velocity.hpp"
-
-// Component roles
-#include "components/roles/PlayerControlled.hpp"
 
 // Core systems
 #include "systems/MovementSystem.hpp"

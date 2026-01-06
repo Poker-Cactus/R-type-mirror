@@ -6,66 +6,114 @@
 */
 
 #pragma once
+#include "../interface/Color.hpp"
 #include "../interface/IRenderer.hpp"
 #include <string>
 #include <vector>
 
 /**
- * @brief Layer de parallaxe avec défilement infini
+ * @brief Structure representing a star
  */
-struct ParallaxLayer {
-  void *texture = nullptr; // Texture de la couche
-  float scrollSpeed = 0.0f; // Vitesse de défilement (plus élevée = plus rapide)
-  float offsetX = 0.0f; // Décalage horizontal actuel
-  int offsetY = 0; // Décalage vertical (position Y)
-  float scale = 1.0f; // Échelle de la texture
-  int textureWidth = 0; // Largeur native de la texture
-  int textureHeight = 0; // Hauteur native de la texture
+struct Star {
+  float x = 0.0f;
+  float y = 0.0f;
+  float radius = 1.0f;
+  Color color;
 };
 
 /**
- * @brief Gère un background avec effet parallaxe infini
+ * @brief Layer structure for parallax with infinite scrolling
+ */
+struct ParallaxLayer {
+  void *texture = nullptr;
+  float scrollSpeed = 0.0f;
+  float offsetX = 0.0f;
+  int offsetY = 0;
+  float scale = 1.0f;
+  int textureWidth = 0;
+  int textureHeight = 0;
+  std::vector<Star> stars;
+  bool isProcedural = false;
+};
+
+/**
+ * @brief Manages a parallax background with infinite scrolling effect
  *
- * Cette classe gère plusieurs couches de background qui défilent
- * à des vitesses différentes pour créer un effet de profondeur.
- * Le défilement est infini grâce à une répétition seamless.
+ * This class handles multiple background layers that scroll at different speeds
+ * to create a depth effect. Scrolling is infinite thanks to seamless repetition.
  */
 class ParallaxBackground
 {
 public:
+  // Star layer configuration constants - R-Type inspired high-speed parallax
+  static constexpr int SLOW_STAR_COUNT = 120;
+  static constexpr float SLOW_SPEED = 100.0F;
+  static constexpr float SLOW_MIN_RADIUS = 1.5F;
+  static constexpr float SLOW_MAX_RADIUS = 2.5F;
+
+  static constexpr int MEDIUM_STAR_COUNT = 80;
+  static constexpr float MEDIUM_SPEED = 280.0F;
+  static constexpr float MEDIUM_MIN_RADIUS = 2.0F;
+  static constexpr float MEDIUM_MAX_RADIUS = 3.5F;
+
+  static constexpr int FAST_STAR_COUNT = 50;
+  static constexpr float FAST_SPEED = 550.0F;
+  static constexpr float FAST_MIN_RADIUS = 2.5F;
+  static constexpr float FAST_MAX_RADIUS = 4.5F;
+
   ParallaxBackground(IRenderer *renderer);
   ~ParallaxBackground();
 
   /**
-   * @brief Initialise le background avec les textures
-   * @return true si l'initialisation a réussi
+   * @brief Initialize background with textures
+   * @return true if initialization succeeded
    */
   bool init();
 
   /**
-   * @brief Met à jour les positions des couches
-   * @param dt Delta time en secondes
+   * @brief Update layer positions
+   * @param dt Delta time in seconds
    */
   void update(float dt);
 
   /**
-   * @brief Dessine toutes les couches du background
+   * @brief Render all background layers
    */
   void render();
 
   /**
-   * @brief Nettoie les ressources
+   * @brief Clean up resources
    */
   void cleanup();
 
   /**
-   * @brief Ajoute une couche de parallaxe
-   * @param texturePath Chemin vers la texture
-   * @param scrollSpeed Vitesse de défilement (pixels/seconde)
-   * @param scale Échelle de la texture
-   * @param offsetY Décalage vertical (position Y)
+   * @brief Add a parallax layer
+   * @param texturePath Texture file path
+   * @param scrollSpeed Scroll speed (pixels/second)
+   * @param scale Texture scale
+   * @param offsetY Vertical offset (Y position)
    */
   void addLayer(const std::string &texturePath, float scrollSpeed, float scale = 1.0f, int offsetY = 0);
+
+  /**
+   * @brief Add a procedural star layer
+   * @param starCount Number of stars to generate
+   * @param scrollSpeed Scroll speed (pixels/second)
+   * @param minRadius Minimum star radius
+   * @param maxRadius Maximum star radius
+   * @param color Star color
+   */
+  void addStarLayer(int starCount, float scrollSpeed, float minRadius, float maxRadius, const Color &color);
+
+  /**
+   * @brief Add a procedural star layer with varied colors
+   * @param starCount Number of stars to generate
+   * @param scrollSpeed Scroll speed (pixels/second)
+   * @param minRadius Minimum star radius
+   * @param maxRadius Maximum star radius
+   * Colors: 80% blue (various shades), 10% white, 10% light purple
+   */
+  void addStarLayerWithVariedColors(int starCount, float scrollSpeed, float minRadius, float maxRadius);
 
 private:
   IRenderer *renderer;
@@ -74,8 +122,8 @@ private:
   int windowHeight = 0;
 
   /**
-   * @brief Dessine une couche avec répétition pour l'effet infini
-   * @param layer La couche à dessiner
+   * @brief Render a layer with repetition for infinite effect
+   * @param layer The layer to render
    */
   void renderLayer(const ParallaxLayer &layer);
 };
