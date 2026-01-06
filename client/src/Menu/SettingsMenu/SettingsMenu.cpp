@@ -7,7 +7,6 @@
 
 #include "SettingsMenu.hpp"
 #include "../../../include/KeyToLabel.hpp"
-#include "../../../include/Settings.hpp"
 #include "../interface/Color.hpp"
 #include "../interface/KeyCodes.hpp"
 #include <cmath>
@@ -284,12 +283,16 @@ void SettingsMenu::render(int winWidth, int winHeight, IRenderer *renderer)
 
 bool SettingsMenu::keyAlreadyInUse(int key)
 {
-  for (auto &item : activeItems()) {
+  // Only check against Controls keybinds.
+  for (const auto &item : controlsItems) {
+    if (item.type != SettingItemType::KEYBIND || item.intTarget == nullptr) {
+      continue;
+    }
     if (*item.intTarget == key) {
-      return false;
+      return true;
     }
   }
-  return true;
+  return false;
 }
 
 void SettingsMenu::process(IRenderer *renderer)
@@ -311,7 +314,8 @@ void SettingsMenu::process(IRenderer *renderer)
       if (!items.empty() && selectedIndex < items.size()) {
         auto &item = items[selectedIndex];
         if (item.type == SettingItemType::KEYBIND && item.intTarget != nullptr) {
-          if (keyAlreadyInUse(key)) {
+          // Reject duplicates: do not allow assigning a key already used by another action.
+          if (!keyAlreadyInUse(key) || *item.intTarget == key) {
             *item.intTarget = key;
           }
         }

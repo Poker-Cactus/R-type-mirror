@@ -1,6 +1,6 @@
 #pragma once
+#include "../../../include/Settings.hpp"
 #include "../../../interface/IRenderer.hpp"
-#include "Settings.hpp"
 #include <array>
 #include <cstdint>
 #include <string>
@@ -33,7 +33,7 @@ class SettingsMenu
 {
 public:
   SettingsMenu() = default;
-  ~SettingsMenu(){};
+  ~SettingsMenu() {};
   void init(IRenderer *renderer, Settings &settings);
   void render(int winWidth, int winHeight, IRenderer *renderer);
   void process(IRenderer *renderer);
