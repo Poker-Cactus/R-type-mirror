@@ -69,6 +69,9 @@ private:
   void loadSpriteTextures();
   void freeSpriteTextures();
 
+  // Animation system
+  void updateAnimations(float deltaTime);
+
   // HUD state
   static constexpr int INITIAL_PLAYER_HEALTH = 100;
   void *m_hudFont = nullptr;

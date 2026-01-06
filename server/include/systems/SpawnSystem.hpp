@@ -46,9 +46,21 @@ public:
     (void)world;
     m_spawnTimer += deltaTime;
 
-    // Spawn enemies periodically
+    // Update spawn queue timer for delayed spawns
+    if (!m_spawnQueue.empty()) {
+      m_spawnQueueTimer += deltaTime;
+      
+      while (!m_spawnQueue.empty() && m_spawnQueueTimer >= m_spawnQueue.front().delay) {
+        const auto &queuedSpawn = m_spawnQueue.front();
+        spawnEnemyRed(world, queuedSpawn.x, queuedSpawn.y);
+        m_spawnQueueTimer -= queuedSpawn.delay;
+        m_spawnQueue.erase(m_spawnQueue.begin());
+      }
+    }
+
+    // Spawn enemy groups periodically
     if (m_spawnTimer >= SPAWN_INTERVAL) {
-      spawnRandomEnemy(world);
+      spawnEnemyRedGroup(world);
       m_spawnTimer = 0.0F;
     }
   }
@@ -66,26 +78,43 @@ private:
   ecs::EventListenerHandle m_spawnHandle;
   std::mt19937 m_rng;
   float m_spawnTimer = 0.0F;
+  float m_spawnQueueTimer = 0.0F;
+  
+  struct QueuedSpawn {
+    float x;
+    float y;
+    float delay;
+  };
+  std::vector<QueuedSpawn> m_spawnQueue;
 
   // Spawn configuration constants
-  static constexpr float SPAWN_INTERVAL = 3.0F;
+  static constexpr float SPAWN_INTERVAL = 6.0F;
   static constexpr float DEFAULT_VIEWPORT_WIDTH = 800.0F;
   static constexpr float DEFAULT_VIEWPORT_HEIGHT = 600.0F;
   static constexpr float SPAWN_Y_MARGIN = 50.0F;
   static constexpr float SPAWN_X_OFFSET = 32.0F;
-  static constexpr float ENEMY_VELOCITY_X = -1000.0F;
+  static constexpr float ENEMY_VELOCITY_X = -384.0F;
   static constexpr int ENEMY_HEALTH = 30;
-  static constexpr float ENEMY_COLLIDER_SIZE = 128.0F;
-  static constexpr unsigned int ENEMY_SPRITE_SIZE = 128;
+  static constexpr float ENEMY_COLLIDER_SIZE = 48.0F;
+  static constexpr unsigned int ENEMY_SPRITE_SIZE = 96;
+  
+  // Enemy Red configuration
+  static constexpr float ENEMY_RED_AMPLITUDE = 40.0F;
+  static constexpr float ENEMY_RED_FREQUENCY = 6.0F;
+  static constexpr float ENEMY_RED_SPAWN_DELAY = 0.3F; // Delay between each enemy in a group
+  
   static constexpr float PROJECTILE_COLLIDER_SIZE = 8.0F;
   static constexpr unsigned int PROJECTILE_SPRITE_WIDTH = 84;
-  static constexpr unsigned int PROJECTILE_SPRITE_HEIGHT = 36;
-  static constexpr float PROJECTILE_VELOCITY_MULTIPLIER = 1700.0F;
-  static constexpr float DIRECTION_THRESHOLD = 0.001F;
+  static constexpr unsigned int PROJECTILE_SPRITE_HEIGHT = 37;
+  static constexpr float PROJECTILE_VELOCITY_MULTIPLIER = 400.0F;
+  static constexpr float DIRECTION_THRESHOLD = 0.01F;
 
-  void spawnRandomEnemy(ecs::World &world)
+  /**
+   * @brief Spawn a group of Enemy Red with random count (1-5)
+   */
+  void spawnEnemyRedGroup(ecs::World &world)
   {
-    // Get viewport dimensions from connected players
+    // Get world dimensions
     float worldWidth = DEFAULT_VIEWPORT_WIDTH;
     float worldHeight = DEFAULT_VIEWPORT_HEIGHT;
 
@@ -105,44 +134,47 @@ private:
       }
     }
 
-    // Random Y position across full screen height
-    std::uniform_real_distribution<float> yDist(SPAWN_Y_MARGIN, worldHeight - SPAWN_Y_MARGIN);
+    // Random group size: 1 to 5 enemies
+    std::uniform_int_distribution<int> groupSizeDist(1, 5);
+    int groupSize = groupSizeDist(m_rng);
 
-    // Spawn at right edge of screen (at the visible border)
-    ecs::SpawnEntityEvent event(ecs::SpawnEntityEvent::EntityType::ENEMY,
-                                worldWidth - SPAWN_X_OFFSET, // Spawn at right edge (minus half sprite width)
-                                yDist(m_rng), 0);
-    world.emitEvent(event);
-  }
-  static void handleSpawnEvent(ecs::World &world, const ecs::SpawnEntityEvent &event)
-  {
-    switch (event.type) {
-    case ecs::SpawnEntityEvent::EntityType::ENEMY:
-      spawnEnemy(world, event.x, event.y);
-      break;
-    case ecs::SpawnEntityEvent::EntityType::PROJECTILE:
-      spawnProjectile(world, event.x, event.y, event.spawner);
-      break;
-    case ecs::SpawnEntityEvent::EntityType::POWERUP:
-      spawnPowerup(world, event.x, event.y);
-      break;
-    case ecs::SpawnEntityEvent::EntityType::EXPLOSION:
-      spawnExplosion(world, event.x, event.y);
-      break;
+    // Pick a random height range (1-6)
+    std::uniform_int_distribution<int> heightRangeDist(0, 5);
+    int heightRange = heightRangeDist(m_rng);
+    
+    // Calculate Y position within the chosen range (height / 6)
+    float rangeHeight = (worldHeight - 2 * SPAWN_Y_MARGIN) / 6.0f;
+    float baseY = SPAWN_Y_MARGIN + heightRange * rangeHeight;
+    
+    // Random Y within this range
+    std::uniform_real_distribution<float> yOffsetDist(0.0f, rangeHeight);
+
+    // Spawn X position at right edge
+    float spawnX = worldWidth - SPAWN_X_OFFSET;
+
+    // Queue all enemies in the group with delays
+    for (int i = 0; i < groupSize; ++i) {
+      float y = baseY + yOffsetDist(m_rng);
+      float delay = i * ENEMY_RED_SPAWN_DELAY;
+      m_spawnQueue.push_back({spawnX, y, delay});
     }
   }
 
-  static void spawnEnemy(ecs::World &world, float posX, float posY)
+  /**
+   * @brief Spawn a single Enemy Red
+   */
+  static void spawnEnemyRed(ecs::World &world, float posX, float posY)
   {
     ecs::Entity enemy = world.createEntity();
 
-    world.addComponent(enemy, ecs::Pattern{"sine_wave", 80.0f, 2.0f});
+    // Each enemy has its own oscillation pattern
+    world.addComponent(enemy, ecs::Pattern{"sine_wave", ENEMY_RED_AMPLITUDE, ENEMY_RED_FREQUENCY});
 
     ecs::Transform transform;
     transform.x = posX;
     transform.y = posY;
     transform.rotation = 0.0F;
-    transform.scale = 1.0F;
+    transform.scale = 3.0F; // Scale enemy 3x larger
     world.addComponent(enemy, transform);
 
     ecs::Velocity velocity;
@@ -155,19 +187,47 @@ private:
     health.maxHp = ENEMY_HEALTH;
     world.addComponent(enemy, health);
 
-    world.addComponent(enemy, ecs::Collider{ENEMY_COLLIDER_SIZE, ENEMY_COLLIDER_SIZE});
+    // Collider scaled to match visual size (33 * 3 = ~100)
+    world.addComponent(enemy, ecs::Collider{100.0F, 108.0F});
 
-    // SERVER ASSIGNS VISUAL IDENTITY AS DATA
-    // The sprite is assigned at creation time - never inferred by systems
+    // Sprite for Enemy Red with animation
+    // Image: 533x36, 16 frames total
+    // Frame size: 533/16 = 33.3125 (approximately 33px per frame)
+    // Animation: frames 7 to 0 (reverse, from 8th frame to 1st)
     ecs::Sprite sprite;
     sprite.spriteId = ecs::SpriteId::ENEMY_SHIP;
-    sprite.width = ENEMY_SPRITE_SIZE;
-    sprite.height = ENEMY_SPRITE_SIZE;
+    sprite.width = 33;   // Original frame width
+    sprite.height = 36;  // Original frame height (scale applied via Transform)
+    sprite.animated = true;
+    sprite.frameCount = 16;
+    sprite.startFrame = 7;  // 8th frame (0-indexed)
+    sprite.endFrame = 0;    // 1st frame
+    sprite.currentFrame = 7;
+    sprite.frameTime = 0.1f; // 10 FPS animation
+    sprite.reverseAnimation = true; // Play from frame 7 to 0
     world.addComponent(enemy, sprite);
 
     ecs::Networked net;
     net.networkId = enemy;
     world.addComponent(enemy, net);
+  }
+
+  static void handleSpawnEvent(ecs::World &world, const ecs::SpawnEntityEvent &event)
+  {
+    switch (event.type) {
+    case ecs::SpawnEntityEvent::EntityType::ENEMY:
+      spawnEnemyRed(world, event.x, event.y);
+      break;
+    case ecs::SpawnEntityEvent::EntityType::PROJECTILE:
+      spawnProjectile(world, event.x, event.y, event.spawner);
+      break;
+    case ecs::SpawnEntityEvent::EntityType::POWERUP:
+      spawnPowerup(world, event.x, event.y);
+      break;
+    case ecs::SpawnEntityEvent::EntityType::EXPLOSION:
+      spawnExplosion(world, event.x, event.y);
+      break;
+    }
   }
 
   static void spawnProjectile(ecs::World &world, float posX, float posY, ecs::Entity owner)
