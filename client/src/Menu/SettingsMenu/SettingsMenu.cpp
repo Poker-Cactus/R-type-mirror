@@ -6,12 +6,26 @@
 */
 
 #include "SettingsMenu.hpp"
+#include "../../../include/KeyToLabel.hpp"
+#include "../../../include/Settings.hpp"
 #include "../interface/Color.hpp"
 #include "../interface/KeyCodes.hpp"
 #include <cmath>
 
-void SettingsMenu::init(IRenderer *renderer)
+static int clampInt(int value, int minValue, int maxValue)
 {
+  if (value < minValue) {
+    return minValue;
+  }
+  if (value > maxValue) {
+    return maxValue;
+  }
+  return value;
+}
+
+void SettingsMenu::init(IRenderer *renderer, Settings &settings)
+{
+  this->settings = &settings;
   try {
     const int fontSize = 32;
     const int titleFontSize = 48;
@@ -25,11 +39,12 @@ void SettingsMenu::init(IRenderer *renderer)
 
     std::vector<std::string> categoryLabels = {"Audio", "Graphics", "Controls"};
     const int tabWidth = winWidth / 4;
-    const int tabHeight = winHeight * 0.06;
-    const int tabY = winHeight * 0.05;
+    const int tabHeight = static_cast<int>(winHeight * 0.06);
+    const int tabY = static_cast<int>(winHeight * 0.05);
 
     for (size_t i = 0; i < categoryTabs.size(); i++) {
-      categoryTabs[i].rectX = (winWidth / 2) - (categoryLabels.size() * tabWidth / 2) + (i * tabWidth);
+      categoryTabs[i].rectX =
+        (winWidth / 2) - (static_cast<int>(categoryLabels.size()) * tabWidth / 2) + (static_cast<int>(i) * tabWidth);
       categoryTabs[i].rectY = tabY;
       categoryTabs[i].rectWidth = tabWidth;
       categoryTabs[i].rectHeight = tabHeight;
@@ -37,41 +52,137 @@ void SettingsMenu::init(IRenderer *renderer)
       categoryTabs[i].isSelected = (i == 0);
     }
 
-    const int buttonHeight = winHeight * 0.07;
-    const int numButtons = 5;
-    const int totalButtonsHeight = numButtons * buttonHeight;
-    const int buttonsStartY = (winHeight - totalButtonsHeight) / 2;
+    // Build typed item models (live-bound to Settings)
+    audioItems.clear();
+    audioItems.push_back({.label = "Master Volume",
+                          .type = SettingItemType::SLIDER_INT,
+                          .minValue = 0,
+                          .maxValue = 100,
+                          .step = 5,
+                          .intTarget = &this->settings->masterVolume});
+    audioItems.push_back({.label = "Music Volume",
+                          .type = SettingItemType::SLIDER_INT,
+                          .minValue = 0,
+                          .maxValue = 100,
+                          .step = 5,
+                          .intTarget = &this->settings->musicVolume});
+    audioItems.push_back({.label = "SFX Volume",
+                          .type = SettingItemType::SLIDER_INT,
+                          .minValue = 0,
+                          .maxValue = 100,
+                          .step = 5,
+                          .intTarget = &this->settings->sfxVolume});
 
-    std::vector<std::string> audioLabels = {"Master Volume", "Music Volume", "SFX Volume", "Voice Volume"};
-    initButtons(audioButtons, audioLabels, winWidth, winHeight, buttonsStartY);
+    graphicItems.clear();
+    graphicItems.push_back(
+      {.label = "Fullscreen", .type = SettingItemType::TOGGLE_BOOL, .boolTarget = &this->settings->fullScreen});
 
-    std::vector<std::string> graphicLabels = {"Fullscreen"};
-    initButtons(graphicButtons, graphicLabels, winWidth, winHeight, buttonsStartY);
+    controlsItems.clear();
+    controlsItems.push_back({.label = "Move Up", .type = SettingItemType::KEYBIND, .intTarget = &this->settings->up});
+    controlsItems.push_back(
+      {.label = "Move Down", .type = SettingItemType::KEYBIND, .intTarget = &this->settings->down});
+    controlsItems.push_back(
+      {.label = "Move Left", .type = SettingItemType::KEYBIND, .intTarget = &this->settings->left});
+    controlsItems.push_back(
+      {.label = "Move Right", .type = SettingItemType::KEYBIND, .intTarget = &this->settings->right});
+    controlsItems.push_back({.label = "Shoot", .type = SettingItemType::KEYBIND, .intTarget = &this->settings->shoot});
+    controlsItems.push_back(
+      {.label = "Charged Shoot", .type = SettingItemType::KEYBIND, .intTarget = &this->settings->chargedShoot});
 
-    std::vector<std::string> controlsLabels = {"Move Up", "Move Down", "Move Left", "Move Right"};
-    initButtons(controlsButtons, controlsLabels, winWidth, winHeight, buttonsStartY);
+    selectedIndex = 0;
+    isCapturingKey = false;
+    isEditing = false;
   } catch (const std::exception &e) {
+    (void)e;
   }
 }
 
-template <size_t N>
-void SettingsMenu::initButtons(std::array<Component, N> &buttons, const std::vector<std::string> &labels, int winWidth,
-                               int winHeight, int startY)
+std::vector<SettingItem> &SettingsMenu::activeItems()
 {
-  const int buttonWidth = winWidth * 0.5;
-  const int buttonHeight = winHeight * 0.07;
-  const int startX = (winWidth - buttonWidth) / 2;
-
-  size_t maxButtons = std::min(buttons.size(), labels.size());
-
-  for (size_t i = 0; i < maxButtons; i++) {
-    buttons[i].rectX = startX;
-    buttons[i].rectY = startY + (i * buttonHeight);
-    buttons[i].rectWidth = buttonWidth;
-    buttons[i].rectHeight = buttonHeight;
-    buttons[i].label = labels[i];
-    buttons[i].isSelected = (i == 0);
+  switch (currentCategory) {
+  case SettingsCategory::AUDIO:
+    return audioItems;
+  case SettingsCategory::GRAPHICS:
+    return graphicItems;
+  case SettingsCategory::CONTROLS:
+    return controlsItems;
   }
+  return audioItems;
+}
+
+std::string SettingsMenu::itemValueText(const SettingItem &item) const
+{
+  if (isCapturingKey && item.type == SettingItemType::KEYBIND) {
+    return "Press A Key";
+  }
+
+  switch (item.type) {
+  case SettingItemType::SLIDER_INT: {
+    const int value = (item.intTarget != nullptr) ? *item.intTarget : 0;
+    return std::to_string(value) + "%";
+  }
+  case SettingItemType::TOGGLE_BOOL: {
+    const bool value = (item.boolTarget != nullptr) ? *item.boolTarget : false;
+    return value ? "On" : "Off";
+  }
+  case SettingItemType::KEYBIND: {
+    const int key = (item.intTarget != nullptr) ? *item.intTarget : KeyCode::KEY_UNKNOWN;
+    std::string label = KeyToLabel(key);
+    if (label.empty())
+      label = "?";
+    return label;
+  }
+  }
+
+  return "";
+}
+
+void SettingsMenu::applyDelta(SettingItem &item, int direction)
+{
+  if (direction == 0)
+    return;
+
+  switch (item.type) {
+  case SettingItemType::SLIDER_INT:
+    if (item.intTarget != nullptr) {
+      const int delta = (direction > 0) ? item.step : -item.step;
+      *item.intTarget = clampInt(*item.intTarget + delta, item.minValue, item.maxValue);
+    }
+    break;
+  case SettingItemType::TOGGLE_BOOL:
+    if (item.boolTarget != nullptr) {
+      *item.boolTarget = !*item.boolTarget;
+    }
+    break;
+  case SettingItemType::KEYBIND:
+    // No left/right by default; keybind uses Enter + capture
+    break;
+  }
+}
+
+int SettingsMenu::captureKeyJustPressed(IRenderer *renderer) const
+{
+  // Minimal scan for keys we support in KeyCodes.hpp
+  // Return KEY_UNKNOWN if none.
+  const int candidates[] = {
+    KeyCode::KEY_RETURN, KeyCode::KEY_ESCAPE, KeyCode::KEY_BACKSPACE, KeyCode::KEY_TAB,  KeyCode::KEY_SPACE,
+    KeyCode::KEY_DELETE, KeyCode::KEY_F11,    KeyCode::KEY_UP,        KeyCode::KEY_DOWN, KeyCode::KEY_LEFT,
+    KeyCode::KEY_RIGHT,  KeyCode::KEY_0,      KeyCode::KEY_1,         KeyCode::KEY_2,    KeyCode::KEY_3,
+    KeyCode::KEY_4,      KeyCode::KEY_5,      KeyCode::KEY_6,         KeyCode::KEY_7,    KeyCode::KEY_8,
+    KeyCode::KEY_9,      KeyCode::KEY_A,      KeyCode::KEY_B,         KeyCode::KEY_C,    KeyCode::KEY_D,
+    KeyCode::KEY_E,      KeyCode::KEY_F,      KeyCode::KEY_G,         KeyCode::KEY_H,    KeyCode::KEY_I,
+    KeyCode::KEY_J,      KeyCode::KEY_K,      KeyCode::KEY_L,         KeyCode::KEY_M,    KeyCode::KEY_N,
+    KeyCode::KEY_O,      KeyCode::KEY_P,      KeyCode::KEY_Q,         KeyCode::KEY_R,    KeyCode::KEY_S,
+    KeyCode::KEY_T,      KeyCode::KEY_U,      KeyCode::KEY_V,         KeyCode::KEY_W,    KeyCode::KEY_X,
+    KeyCode::KEY_Y,      KeyCode::KEY_Z,
+  };
+
+  for (int key : candidates) {
+    if (renderer->isKeyJustPressed(key)) {
+      return key;
+    }
+  }
+  return KeyCode::KEY_UNKNOWN;
 }
 
 void SettingsMenu::renderCategoryTab(IRenderer *renderer, const Component &tab, bool isActive)
@@ -102,32 +213,47 @@ void SettingsMenu::renderCategoryTab(IRenderer *renderer, const Component &tab, 
   }
 }
 
-void SettingsMenu::renderButton(IRenderer *renderer, const Component &button)
+void SettingsMenu::renderRow(IRenderer *renderer, const Component &rowRect, const SettingItem &item, bool selected)
 {
   const int borderThickness = 6;
 
-  if (button.isSelected) {
+  if (selected) {
     Color bgColor = {.r = 5, .g = 10, .b = 25, .a = 120};
     Color border = {.r = 180, .g = 180, .b = 180, .a = 255};
 
-    renderer->drawRect(button.rectX, button.rectY, button.rectWidth, button.rectHeight, bgColor);
+    renderer->drawRect(rowRect.rectX, rowRect.rectY, rowRect.rectWidth, rowRect.rectHeight, bgColor);
 
     for (int i = 0; i < borderThickness; i++) {
       border.a = 255 - ((borderThickness - 1 - i) * 40);
-      renderer->drawRectOutline(button.rectX + i, button.rectY + i, button.rectWidth - (i * 2),
-                                button.rectHeight - (i * 2), border);
+      renderer->drawRectOutline(rowRect.rectX + i, rowRect.rectY + i, rowRect.rectWidth - (i * 2),
+                                rowRect.rectHeight - (i * 2), border);
     }
   }
 
   int textWidth = 0;
   int textHeight = 0;
-  renderer->getTextSize(font, button.label, textWidth, textHeight);
-  int textX = button.rectX + 10; // Petit padding à gauche
-  int textY = button.rectY + (button.rectHeight - textHeight) / 2;
+  renderer->getTextSize(font, item.label, textWidth, textHeight);
+  int textX = rowRect.rectX + 10;
+  int textY = rowRect.rectY + (rowRect.rectHeight - textHeight) / 2;
 
   Color textColor =
-    button.isSelected ? Color{.r = 255, .g = 255, .b = 255, .a = 255} : Color{.r = 180, .g = 180, .b = 180, .a = 255};
-  renderer->drawText(font, button.label, textX, textY, textColor);
+    selected ? Color{.r = 255, .g = 255, .b = 255, .a = 255} : Color{.r = 180, .g = 180, .b = 180, .a = 255};
+  renderer->drawText(font, item.label, textX, textY, textColor);
+
+  const std::string value = itemValueText(item);
+  if (!value.empty()) {
+    std::string displayValue = value;
+    if (selected && isEditing && !isCapturingKey) {
+      displayValue = "> " + displayValue + " <";
+    }
+
+    int valueW = 0;
+    int valueH = 0;
+    renderer->getTextSize(font, displayValue, valueW, valueH);
+    const int valueX = rowRect.rectX + rowRect.rectWidth - valueW - 10;
+    const int valueY = rowRect.rectY + (rowRect.rectHeight - valueH) / 2;
+    renderer->drawText(font, displayValue, valueX, valueY, textColor);
+  }
 }
 
 void SettingsMenu::render(int winWidth, int winHeight, IRenderer *renderer)
@@ -140,22 +266,21 @@ void SettingsMenu::render(int winWidth, int winHeight, IRenderer *renderer)
     renderCategoryTab(renderer, categoryTabs[i], isActive);
   }
 
-  switch (currentCategory) {
-  case SettingsCategory::AUDIO:
-    for (const auto &button : audioButtons) {
-      renderButton(renderer, button);
-    }
-    break;
-  case SettingsCategory::GRAPHICS:
-    for (const auto &button : graphicButtons) {
-      renderButton(renderer, button);
-    }
-    break;
-  case SettingsCategory::CONTROLS:
-    for (const auto &button : controlsButtons) {
-      renderButton(renderer, button);
-    }
-    break;
+  const auto &items = activeItems();
+  const int rowWidth = winWidth * 0.5;
+  const int rowHeight = winHeight * 0.07;
+  const int startX = (winWidth - rowWidth) / 2;
+  const int totalHeight = static_cast<int>(items.size()) * rowHeight;
+  const int startY = (winHeight - totalHeight) / 2;
+
+  for (std::size_t i = 0; i < items.size(); ++i) {
+    Component row;
+    row.rectX = startX;
+    row.rectY = startY + static_cast<int>(i) * rowHeight;
+    row.rectWidth = rowWidth;
+    row.rectHeight = rowHeight;
+    const bool selected = (i == selectedIndex);
+    renderRow(renderer, row, items[i], selected);
   }
 
   const Color helpTextColor = {.r = 255, .g = 255, .b = 255, .a = 200};
@@ -166,50 +291,97 @@ void SettingsMenu::render(int winWidth, int winHeight, IRenderer *renderer)
 
 void SettingsMenu::process(IRenderer *renderer)
 {
-  if (renderer->isKeyJustPressed(KeyCode::KEY_LEFT)) {
+  if (settings == nullptr) {
+    return;
+  }
+
+  // Key capture mode for keybind items
+  if (isCapturingKey) {
+    if (renderer->isKeyJustPressed(KeyCode::KEY_ESCAPE) || renderer->isKeyJustPressed(KeyCode::KEY_RETURN)) {
+      isCapturingKey = false;
+      isEditing = false;
+      return;
+    }
+
+    int key = captureKeyJustPressed(renderer);
+    if (key != KeyCode::KEY_UNKNOWN) {
+      auto &items = activeItems();
+      if (!items.empty() && selectedIndex < items.size()) {
+        auto &item = items[selectedIndex];
+        if (item.type == SettingItemType::KEYBIND && item.intTarget != nullptr) {
+          *item.intTarget = key;
+        }
+      }
+      isCapturingKey = false;
+      isEditing = false;
+    }
+    return;
+  }
+
+  // Cancel editing
+  if (renderer->isKeyJustPressed(KeyCode::KEY_ESCAPE)) {
+    isEditing = false;
+    return;
+  }
+
+  if (renderer->isKeyJustPressed(KeyCode::KEY_LEFT) && !isEditing) {
     int catIndex = static_cast<int>(currentCategory);
     if (catIndex > 0) {
       currentCategory = static_cast<SettingsCategory>(catIndex - 1);
+      selectedIndex = 0;
     }
   }
-  if (renderer->isKeyJustPressed(KeyCode::KEY_RIGHT)) {
+  if (renderer->isKeyJustPressed(KeyCode::KEY_RIGHT) && !isEditing) {
     int catIndex = static_cast<int>(currentCategory);
     if (catIndex < 2) {
       currentCategory = static_cast<SettingsCategory>(catIndex + 1);
+      selectedIndex = 0;
     }
   }
 
-  std::array<Component, 4> *activeButtons = nullptr;
-  switch (currentCategory) {
-  case SettingsCategory::AUDIO:
-    activeButtons = &audioButtons;
-    break;
-  case SettingsCategory::GRAPHICS:
-    activeButtons = &graphicButtons;
-    break;
-  case SettingsCategory::CONTROLS:
-    activeButtons = &controlsButtons;
-    break;
+  auto &items = activeItems();
+  if (items.empty()) {
+    return;
   }
 
-  if (activeButtons != nullptr) {
-    if (renderer->isKeyJustPressed(KeyCode::KEY_DOWN)) {
-      for (size_t i = 0; i < activeButtons->size(); i++) {
-        if ((*activeButtons)[i].isSelected && i < activeButtons->size() - 1) {
-          (*activeButtons)[i].isSelected = false;
-          (*activeButtons)[i + 1].isSelected = true;
-          break;
-        }
-      }
+  if (renderer->isKeyJustPressed(KeyCode::KEY_DOWN)) {
+    if (selectedIndex + 1 < items.size()) {
+      selectedIndex++;
+      isEditing = false;
     }
-    if (renderer->isKeyJustPressed(KeyCode::KEY_UP)) {
-      for (size_t i = 0; i < activeButtons->size(); i++) {
-        if ((*activeButtons)[i].isSelected && i > 0) {
-          (*activeButtons)[i].isSelected = false;
-          (*activeButtons)[i - 1].isSelected = true;
-          break;
-        }
-      }
+  }
+  if (renderer->isKeyJustPressed(KeyCode::KEY_UP)) {
+    if (selectedIndex > 0) {
+      selectedIndex--;
+      isEditing = false;
+    }
+  }
+
+  // Enter-to-edit behavior
+  if (renderer->isKeyJustPressed(KeyCode::KEY_RETURN)) {
+    auto &item = items[selectedIndex];
+    if (item.type == SettingItemType::KEYBIND) {
+      isEditing = true;
+      isCapturingKey = true;
+      return;
+    }
+    if (item.type == SettingItemType::TOGGLE_BOOL) {
+      // Toggle on Enter ("edit" confirmation for this field)
+      applyDelta(item, +1);
+      return;
+    }
+    // Slider: Enter toggles edit mode, Left/Right adjusts while editing
+    isEditing = !isEditing;
+    return;
+  }
+
+  // Only modify values while in edit mode
+  if (isEditing) {
+    if (renderer->isKeyJustPressed(KeyCode::KEY_LEFT)) {
+      applyDelta(items[selectedIndex], -1);
+    }
+    if (renderer->isKeyJustPressed(KeyCode::KEY_RIGHT)) {
+      applyDelta(items[selectedIndex], +1);
     }
   }
 }

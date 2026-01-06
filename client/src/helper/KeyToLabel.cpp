@@ -5,9 +5,8 @@
 ** KeyToLabel.cpp
 */
 
+#include "../../include/KeyToLabel.hpp"
 #include "../../interface/KeyCodes.hpp"
-
-#include <string>
 
 std::string KeyToLabel(int key)
 {

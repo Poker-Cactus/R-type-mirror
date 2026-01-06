@@ -78,7 +78,7 @@ bool Game::init()
       std::cerr << "[Game::init] Warning: failed to set fullscreen: " << e.what() << '\n';
     }
 
-    menu = std::make_unique<Menu>(renderer);
+    menu = std::make_unique<Menu>(renderer, settings);
     menu->init();
 
     m_world = std::make_shared<ecs::World>();
