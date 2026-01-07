@@ -11,11 +11,7 @@
 void Menu::processBack()
 {
   if (renderer->isKeyJustPressed(KeyCode::KEY_BACKSPACE)) {
-    if (currentState == MenuState::LOADING) {
-      return;
-    }
-    if (currentState == MenuState::MAIN_MENU) {
-      currentState = MenuState::LOADING;
+    if (currentState == MenuState::INTRO || currentState == MenuState::MAIN_MENU) {
       return;
     }
     currentState = MenuState::MAIN_MENU;

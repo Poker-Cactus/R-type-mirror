@@ -1,3 +1,8 @@
+/**
+ * @file SettingsMenu.hpp
+ * @brief Settings configuration menu interface
+ */
+
 #pragma once
 #include "../../../include/Settings.hpp"
 #include "../../../interface/IRenderer.hpp"
@@ -7,36 +12,85 @@
 #include <string>
 #include <vector>
 
+/**
+ * @struct Component
+ * @brief UI component with position and selection state
+ */
 struct Component {
-  int rectX = 0;
-  int rectY = 0;
-  int rectWidth = 0;
-  int rectHeight = 0;
-  bool isSelected = false;
-  std::string label;
+  int rectX = 0;           ///< X position
+  int rectY = 0;           ///< Y position
+  int rectWidth = 0;       ///< Width
+  int rectHeight = 0;      ///< Height
+  bool isSelected = false; ///< Selection state
+  std::string label;       ///< Display label
 };
 
-enum class SettingsCategory : std::uint8_t { AUDIO = 0, GRAPHICS = 1, CONTROLS = 2 };
+/**
+ * @enum SettingsCategory
+ * @brief Settings menu categories
+ */
+enum class SettingsCategory : std::uint8_t {
+  AUDIO = 0,    ///< Audio settings
+  GRAPHICS = 1, ///< Graphics settings
+  CONTROLS = 2  ///< Control bindings
+};
 
-enum class SettingItemType : std::uint8_t { SLIDER_INT, TOGGLE_BOOL, KEYBIND };
+/**
+ * @enum SettingItemType
+ * @brief Type of setting control
+ */
+enum class SettingItemType : std::uint8_t {
+  SLIDER_INT,  ///< Integer slider
+  TOGGLE_BOOL, ///< Boolean toggle
+  KEYBIND      ///< Key binding
+};
 
+/**
+ * @struct SettingItem
+ * @brief Individual setting entry
+ */
 struct SettingItem {
-  std::string label;
-  SettingItemType type = SettingItemType::SLIDER_INT;
-  int minValue = 0;
-  int maxValue = 100;
-  int step = 5;
-  int *intTarget = nullptr;
-  bool *boolTarget = nullptr;
+  std::string label;                      ///< Setting label
+  SettingItemType type = SettingItemType::SLIDER_INT; ///< Control type
+  int minValue = 0;                       ///< Minimum value (for sliders)
+  int maxValue = 100;                     ///< Maximum value (for sliders)
+  int step = 5;                           ///< Step increment (for sliders)
+  int *intTarget = nullptr;               ///< Target integer variable
+  bool *boolTarget = nullptr;             ///< Target boolean variable
 };
 
+/**
+ * @class SettingsMenu
+ * @brief Settings configuration interface
+ *
+ * Provides UI for configuring audio, graphics, and control settings.
+ * Supports sliders, toggles, and key binding capture.
+ */
 class SettingsMenu
 {
 public:
   SettingsMenu() = default;
   ~SettingsMenu() {};
+
+  /**
+   * @brief Initialize settings menu
+   * @param renderer Renderer interface
+   * @param settings Game settings reference
+   */
   void init(IRenderer *renderer, Settings &settings);
+
+  /**
+   * @brief Render the settings menu
+   * @param winWidth Window width
+   * @param winHeight Window height
+   * @param renderer Renderer interface
+   */
   void render(int winWidth, int winHeight, IRenderer *renderer);
+
+  /**
+   * @brief Process user input
+   * @param renderer Renderer interface
+   */
   void process(IRenderer *renderer);
 
 private:

@@ -645,7 +645,71 @@ if [ "$1" == "example" ]; then
     exit 0
 fi
 
-# Full build process
+# Check if build directory exists and do incremental build
+if [ -d "build" ] && [ -f "build/CMakeCache.txt" ]; then
+    print_step "${BUILD}" "Build directory found - performing incremental build..."
+    echo ""
+    
+    cmake --build build --config Release 2>&1 | while IFS= read -r line; do
+        if [[ $line == *"engineCore"* ]]; then
+            if [[ $line == *"Building"* ]]; then
+                print_building "${MAGENTA}Engine Core${RESET}"
+            else
+                echo -e "${MAGENTA}${ENGINE} $line${RESET}"
+            fi
+        elif [[ $line == *"common"* ]]; then
+            if [[ $line == *"Building"* ]]; then
+                print_building "${CYAN}Common${RESET}"
+            else
+                echo -e "${CYAN}${COMMON} $line${RESET}"
+            fi
+        elif [[ $line == *"server"* ]]; then
+            if [[ $line == *"Building"* ]]; then
+                print_building "${GREEN}Server${RESET}"
+            else
+                echo -e "${GREEN}${SERVER} $line${RESET}"
+            fi
+        elif [[ $line == *"client"* ]]; then
+            if [[ $line == *"Building"* ]]; then
+                print_building "${BLUE}Client${RESET}"
+            else
+                echo -e "${BLUE}${CLIENT} $line${RESET}"
+            fi
+        elif [[ $line == *"Built target"* ]]; then
+            echo -e "${GREEN}${BOLD}${CHECK} $line${RESET}"
+        elif [[ $line == *"error"* ]] || [[ $line == *"Error"* ]]; then
+            echo -e "${RED}${CROSS} $line${RESET}"
+        elif [[ $line =~ ^[[:space:]]*\[.*%\] ]]; then
+            echo -e "${WHITE}$line${RESET}"
+        else
+            echo -e "${GRAY}$line${RESET}"
+        fi
+    done
+
+    if [ $? -eq 0 ]; then
+        echo ""
+        echo -e "${GREEN}${BOLD}"
+        echo "╔═══════════════════════════════════════════════════════════╗"
+        echo "║                                                           ║"
+        echo "║              ${SPARKLES}  BUILD SUCCESSFUL!  ${SPARKLES}                    ║"
+        echo "║                                                           ║"
+        echo "╚═══════════════════════════════════════════════════════════╝"
+        echo -e "${RESET}\n"
+
+        echo -e "${WHITE}${BOLD}To run the application:${RESET}"
+        echo -e "  ${SERVER}  Server: ${GREEN}./build/server/server${RESET}"
+        echo -e "  ${CLIENT}  Client: ${BLUE}./build/client/client${RESET}"
+        echo ""
+        echo -e "\033[1;33m🍝 Mamacita, les pâtes au Crous 🍝\033[0m"
+    else
+        echo ""
+        print_error "Build failed!"
+        exit 1
+    fi
+    exit 0
+fi
+
+# Full build process (if build directory doesn't exist)
 print_step "${PACKAGE}" "Installing dependencies with Conan..."
 conan install . --output-folder=build --build=missing --profile=conan_profile 2>&1 | grep -E "(Installing|Already installed|Install finished)" | while read -r line; do
     echo -e "${GRAY}  $line${RESET}"
