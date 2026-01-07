@@ -7,6 +7,7 @@
 
 #include "Game.hpp"
 #include "../../engineCore/include/ecs/EngineComponents.hpp"
+#include "../include/config/EnemyConfig.hpp"
 #include <chrono>
 #include <cstdint>
 #include <memory>
@@ -38,6 +39,19 @@ Game::Game()
   spawnSystem = &world->registerSystem<server::SpawnSystem>();
   world->registerSystem<server::EntityLifetimeSystem>();
   world->registerSystem<server::LifetimeSystem>();
+
+  // Load enemy configurations
+  m_enemyConfigManager = std::make_shared<server::EnemyConfigManager>();
+  if (m_enemyConfigManager->loadFromFile("server/config/enemies.json")) {
+    spawnSystem->setEnemyConfigManager(m_enemyConfigManager);
+    
+    // Activer le spawn de rouges ET bleus en même temps (timers indépendants)
+    spawnSystem->enableMultipleSpawnTypes({"enemy_red", "enemy_blue"});
+    
+    std::cout << "[Game] Enemy configurations loaded successfully" << std::endl;
+  } else {
+    std::cerr << "[Game] Warning: Failed to load enemy configurations, using hardcoded values" << std::endl;
+  }
 
   initializeSystems();
 }

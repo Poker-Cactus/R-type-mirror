@@ -210,6 +210,7 @@ void PlayingState::render()
       constexpr Color COLOR_WHITE = {.r = 255, .g = 255, .b = 255, .a = 255};
       constexpr Color COLOR_PLAYER_BLUE = {.r = 100, .g = 150, .b = 255, .a = 255};
       constexpr Color COLOR_ENEMY_RED = {.r = 255, .g = 100, .b = 100, .a = 255};
+      constexpr Color COLOR_ENEMY_YELLOW = {.r = 255, .g = 255, .b = 50, .a = 255};
       constexpr Color COLOR_PROJECTILE_YELLOW = {.r = 255, .g = 255, .b = 100, .a = 255};
       constexpr Color COLOR_POWERUP_GREEN = {.r = 100, .g = 255, .b = 100, .a = 255};
       constexpr Color COLOR_EXPLOSION_ORANGE = {.r = 255, .g = 150, .b = 50, .a = 255};
@@ -223,6 +224,9 @@ void PlayingState::render()
         break;
       case ecs::SpriteId::ENEMY_SHIP:
         color = COLOR_ENEMY_RED;
+        break;
+      case ecs::SpriteId::ENEMY_YELLOW:
+        color = COLOR_ENEMY_YELLOW;
         break;
       case ecs::SpriteId::PROJECTILE:
         color = COLOR_PROJECTILE_YELLOW;
@@ -608,7 +612,20 @@ void PlayingState::loadSpriteTextures()
     std::cerr << "[PlayingState] ✗ Failed to load explosion.png: " << e.what() << '\n';
   }
 
-  constexpr int EXPECTED_TEXTURE_COUNT = 5;
+  // ENEMY_YELLOW = 6 (animated spritesheet: 256x64, 2 rows x 8 columns = 16 frames)
+  try {
+    void *enemy_yellow_tex = renderer->loadTexture(resolveAssetPath("client/assets/sprites/enemy_yellow.gif").c_str());
+    if (enemy_yellow_tex != nullptr) {
+      m_spriteTextures[ecs::SpriteId::ENEMY_YELLOW] = enemy_yellow_tex;
+      std::cout << "[PlayingState] ✓ Loaded enemy_yellow.gif" << '\n';
+    } else {
+      std::cerr << "[PlayingState] ✗ Failed to load enemy_yellow.gif (returned null)" << '\n';
+    }
+  } catch (const std::exception &e) {
+    std::cerr << "[PlayingState] ✗ Failed to load enemy_yellow.gif: " << e.what() << '\n';
+  }
+
+  constexpr int EXPECTED_TEXTURE_COUNT = 6;
   std::cout << "[PlayingState] Successfully loaded " << m_spriteTextures.size() << " / " << EXPECTED_TEXTURE_COUNT
             << " sprite textures" << '\n';
   if (m_spriteTextures.size() < EXPECTED_TEXTURE_COUNT) {
