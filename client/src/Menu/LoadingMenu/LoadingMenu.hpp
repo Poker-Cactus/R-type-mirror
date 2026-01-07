@@ -6,13 +6,14 @@
 class LoadingMenu
 {
 public:
-  LoadingMenu(){};
+  LoadingMenu(std::shared_ptr<IRenderer> renderer) : m_renderer(renderer){};
   ~LoadingMenu(){};
-  void init(IRenderer *renderer);
-  void render(int winWidth, int winHeight, IRenderer *renderer, LoadingScreen *loadingScreen, MenuState *currentState);
-  void process(IRenderer *renderer);
+  void init();
+  void render(int winWidth, int winHeight, LoadingScreen *loadingScreen, MenuState *currentState);
+  void process();
 
 private:
+  std::shared_ptr<IRenderer> m_renderer;
   void *backgroundTexture = nullptr;
   void *font = nullptr;
   void *title_font = nullptr;

@@ -1,9 +1,17 @@
+/*
+** EPITECH PROJECT, 2025
+** R-type-mirror
+** File description:
+** Menu.hpp
+*/
+
 #pragma once
 #include "Menu/LoadingMenu/LoadingMenu.hpp"
 #include "Menu/LobbyMenu/LobbyMenu.hpp"
 #include "Menu/MainMenu/MainMenu.hpp"
 #include "Menu/ProfileMenu/ProfileMenu.hpp"
 #include "Menu/SettingsMenu/SettingsMenu.hpp"
+#include <memory>
 #include <string>
 
 class Menu
@@ -33,14 +41,14 @@ private:
   void drawCenteredText(const std::string &text, int yOffset, const Color &color);
   void drawThickBorderedRect(int posX, int posY, int width, int height, const Color &color, int thickness);
   void drawSettingsRectangles(int winWidth, int winHeight, int titleHeight);
-  void renderMoonParalax(int winWidth, int winHeight, IRenderer *renderer);
+  void renderMoonParalax(int winWidth, int winHeight);
 
-  IRenderer *renderer;
-  MainMenu *mainMenu = nullptr;
-  LoadingMenu *loadingMenu = nullptr;
-  ProfileMenu *profileMenu = nullptr;
-  SettingsMenu *settingsMenu = nullptr;
-  LobbyMenu *lobbyMenu = nullptr;
+  std::shared_ptr<IRenderer> m_renderer;
+  std::shared_ptr<MainMenu> m_mainMenu;
+  std::shared_ptr<LoadingMenu> m_loadingMenu;
+  std::shared_ptr<ProfileMenu> m_profileMenu;
+  std::shared_ptr<SettingsMenu> m_settingsMenu;
+  std::shared_ptr<LobbyMenu> m_lobbyMenu;
 
   // Moon Paralax
   float backgroundOffsetX = 0.0f;
@@ -57,6 +65,6 @@ private:
   void *moonBack = nullptr;
 
   void *menu_font = nullptr;
-  LoadingScreen *loadingScreen = nullptr;
+  std::shared_ptr<LoadingScreen> loadingScreen;
   MenuState currentState = MenuState::LOADING;
 };

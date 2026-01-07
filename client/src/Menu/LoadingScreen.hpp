@@ -1,11 +1,19 @@
+/*
+** EPITECH PROJECT, 2025
+** R-type-mirror
+** File description:
+** LoadingScreen.hpp
+*/
+
 #pragma once
 #include "../../interface/IRenderer.hpp"
+#include <memory>
 
 class LoadingScreen
 {
 public:
-  LoadingScreen(IRenderer *renderer, void *font);
-  ~LoadingScreen() = default;
+  LoadingScreen(std::shared_ptr<IRenderer> renderer, void *font);
+  ~LoadingScreen();
 
   void start();
   void stop();
@@ -14,8 +22,8 @@ public:
   void setDuration(float duration);
 
 private:
-  IRenderer *renderer;
-  void *font;
+  std::shared_ptr<IRenderer> m_renderer;
+  void *m_font;
   bool active = false;
   float timer = 0.0f;
   float duration = 2.0f;

@@ -166,11 +166,6 @@ void Game::shutdown()
   // Notify server that we're leaving before shutting down
   sendLeaveToServer();
 
-  if (menu) {
-    menu->cleanup();
-    menu.reset();
-  }
-
   if (lobbyRoomState) {
     lobbyRoomState->cleanup();
     lobbyRoomState.reset();
@@ -179,6 +174,12 @@ void Game::shutdown()
   if (playingState) {
     playingState->cleanup();
     playingState.reset();
+  }
+
+  if (menu) {
+    menu->cleanup();
+    menu.reset();
+    renderer = nullptr;
   }
 
   if (m_networkManager) {

@@ -9,19 +9,40 @@
 #include "../interface/Color.hpp"
 #include "../interface/KeyCodes.hpp"
 #include <cmath>
+#include <memory>
 
-void SettingsMenu::init(IRenderer *renderer)
+SettingsMenu::SettingsMenu(std::shared_ptr<IRenderer> renderer)
+    : font(nullptr), titleFont(nullptr), helpFont(nullptr),
+      currentCategory(SettingsCategory::AUDIO), m_renderer(std::move(renderer))
+{
+}
+
+SettingsMenu::~SettingsMenu()
+{
+  // Libération des polices
+  if (font != nullptr && m_renderer != nullptr) {
+    m_renderer->freeFont(font);
+  }
+  if (titleFont != nullptr && m_renderer != nullptr) {
+    m_renderer->freeFont(titleFont);
+  }
+  if (helpFont != nullptr && m_renderer != nullptr) {
+    m_renderer->freeFont(helpFont);
+  }
+}
+
+void SettingsMenu::init()
 {
   try {
     const int fontSize = 32;
     const int titleFontSize = 48;
     const int helpFontSize = 18;
-    font = renderer->loadFont("client/assets/font.opf/r-type.otf", fontSize);
-    titleFont = renderer->loadFont("client/assets/font.opf/r-type.otf", titleFontSize);
-    helpFont = renderer->loadFont("client/assets/font.opf/r-type.otf", helpFontSize);
+    font = m_renderer->loadFont("client/assets/font.opf/r-type.otf", fontSize);
+    titleFont = m_renderer->loadFont("client/assets/font.opf/r-type.otf", titleFontSize);
+    helpFont = m_renderer->loadFont("client/assets/font.opf/r-type.otf", helpFontSize);
 
-    int winWidth = renderer->getWindowWidth();
-    int winHeight = renderer->getWindowHeight();
+    int winWidth = m_renderer->getWindowWidth();
+    int winHeight = m_renderer->getWindowHeight();
 
     std::vector<std::string> categoryLabels = {"Audio", "Graphics", "Controls"};
     const int tabWidth = winWidth / 4;
@@ -74,7 +95,7 @@ void SettingsMenu::initButtons(std::array<Component, N> &buttons, const std::vec
   }
 }
 
-void SettingsMenu::renderCategoryTab(IRenderer *renderer, const Component &tab, bool isActive)
+void SettingsMenu::renderCategoryTab(const Component &tab, bool isActive)
 {
   // Couleur du texte avec moins d'opacité pour les non-actifs
   Color textColor =
@@ -83,11 +104,11 @@ void SettingsMenu::renderCategoryTab(IRenderer *renderer, const Component &tab, 
   // Centrer le texte avec la grosse police
   int textWidth = 0;
   int textHeight = 0;
-  renderer->getTextSize(titleFont, tab.label, textWidth, textHeight);
+  m_renderer->getTextSize(titleFont, tab.label, textWidth, textHeight);
   int textX = tab.rectX + (tab.rectWidth - textWidth) / 2;
   int textY = tab.rectY + (tab.rectHeight - textHeight) / 2;
 
-  renderer->drawText(titleFont, tab.label, textX, textY, textColor);
+  m_renderer->drawText(titleFont, tab.label, textX, textY, textColor);
 
   // Souligner si actif (60% de la largeur du texte)
   if (isActive) {
@@ -98,12 +119,12 @@ void SettingsMenu::renderCategoryTab(IRenderer *renderer, const Component &tab, 
     int underlineThickness = 4;
 
     for (int i = 0; i < underlineThickness; i++) {
-      renderer->drawLine(underlineX, underlineY + i, underlineX + underlineWidth, underlineY + i, underlineColor);
+      m_renderer->drawLine(underlineX, underlineY + i, underlineX + underlineWidth, underlineY + i, underlineColor);
     }
   }
 }
 
-void SettingsMenu::renderButton(IRenderer *renderer, const Component &button)
+void SettingsMenu::renderButton(const Component &button)
 {
   const int borderThickness = 6;
 
@@ -112,11 +133,11 @@ void SettingsMenu::renderButton(IRenderer *renderer, const Component &button)
     Color bgColor = {.r = 5, .g = 10, .b = 25, .a = 120};
     Color border = {.r = 180, .g = 180, .b = 180, .a = 255};
 
-    renderer->drawRect(button.rectX, button.rectY, button.rectWidth, button.rectHeight, bgColor);
+    m_renderer->drawRect(button.rectX, button.rectY, button.rectWidth, button.rectHeight, bgColor);
 
     for (int i = 0; i < borderThickness; i++) {
       border.a = 255 - ((borderThickness - 1 - i) * 40);
-      renderer->drawRectOutline(button.rectX + i, button.rectY + i, button.rectWidth - (i * 2),
+      m_renderer->drawRectOutline(button.rectX + i, button.rectY + i, button.rectWidth - (i * 2),
                                 button.rectHeight - (i * 2), border);
     }
   }
@@ -124,42 +145,42 @@ void SettingsMenu::renderButton(IRenderer *renderer, const Component &button)
   // Centrer le texte verticalement dans le bouton
   int textWidth = 0;
   int textHeight = 0;
-  renderer->getTextSize(font, button.label, textWidth, textHeight);
+  m_renderer->getTextSize(font, button.label, textWidth, textHeight);
   int textX = button.rectX + 10; // Petit padding à gauche
   int textY = button.rectY + (button.rectHeight - textHeight) / 2;
 
   // Texte plus clair si sélectionné
   Color textColor =
     button.isSelected ? Color{.r = 255, .g = 255, .b = 255, .a = 255} : Color{.r = 180, .g = 180, .b = 180, .a = 255};
-  renderer->drawText(font, button.label, textX, textY, textColor);
+  m_renderer->drawText(font, button.label, textX, textY, textColor);
 }
 
-void SettingsMenu::render(int winWidth, int winHeight, IRenderer *renderer)
+void SettingsMenu::render(int winWidth, int winHeight)
 {
   const Color darkOverlay = {.r = 0, .g = 0, .b = 0, .a = 120};
-  renderer->drawRect(0, 0, winWidth, winHeight, darkOverlay);
+  m_renderer->drawRect(0, 0, winWidth, winHeight, darkOverlay);
 
   // Afficher les onglets de catégories
   for (size_t i = 0; i < categoryTabs.size(); i++) {
     bool isActive = (static_cast<size_t>(currentCategory) == i);
-    renderCategoryTab(renderer, categoryTabs[i], isActive);
+    renderCategoryTab(categoryTabs[i], isActive);
   }
 
   // Afficher les boutons de la catégorie sélectionnée
   switch (currentCategory) {
   case SettingsCategory::AUDIO:
     for (const auto &button : audioButtons) {
-      renderButton(renderer, button);
+      renderButton(button);
     }
     break;
   case SettingsCategory::GRAPHICS:
     for (const auto &button : graphicButtons) {
-      renderButton(renderer, button);
+      renderButton(button);
     }
     break;
   case SettingsCategory::CONTROLS:
     for (const auto &button : controlsButtons) {
-      renderButton(renderer, button);
+      renderButton(button);
     }
     break;
   }
@@ -168,19 +189,19 @@ void SettingsMenu::render(int winWidth, int winHeight, IRenderer *renderer)
   const Color helpTextColor = {.r = 255, .g = 255, .b = 255, .a = 200};
   const int helpTextX = 60;
   const int helpTextY = winHeight - 60; // Plus de marge en bas
-  renderer->drawText(helpFont, "Press return to get back", helpTextX, helpTextY, helpTextColor);
+  m_renderer->drawText(helpFont, "Press return to get back", helpTextX, helpTextY, helpTextColor);
 }
 
-void SettingsMenu::process(IRenderer *renderer)
+void SettingsMenu::process()
 {
   // Navigation entre les catégories (gauche/droite)
-  if (renderer->isKeyJustPressed(KeyCode::KEY_LEFT)) {
+  if (m_renderer->isKeyJustPressed(KeyCode::KEY_LEFT)) {
     int catIndex = static_cast<int>(currentCategory);
     if (catIndex > 0) {
       currentCategory = static_cast<SettingsCategory>(catIndex - 1);
     }
   }
-  if (renderer->isKeyJustPressed(KeyCode::KEY_RIGHT)) {
+  if (m_renderer->isKeyJustPressed(KeyCode::KEY_RIGHT)) {
     int catIndex = static_cast<int>(currentCategory);
     if (catIndex < 2) {
       currentCategory = static_cast<SettingsCategory>(catIndex + 1);
@@ -202,7 +223,7 @@ void SettingsMenu::process(IRenderer *renderer)
   }
 
   if (activeButtons != nullptr) {
-    if (renderer->isKeyJustPressed(KeyCode::KEY_DOWN)) {
+    if (m_renderer->isKeyJustPressed(KeyCode::KEY_DOWN)) {
       for (size_t i = 0; i < activeButtons->size(); i++) {
         if ((*activeButtons)[i].isSelected && i < activeButtons->size() - 1) {
           (*activeButtons)[i].isSelected = false;
@@ -211,7 +232,7 @@ void SettingsMenu::process(IRenderer *renderer)
         }
       }
     }
-    if (renderer->isKeyJustPressed(KeyCode::KEY_UP)) {
+    if (m_renderer->isKeyJustPressed(KeyCode::KEY_UP)) {
       for (size_t i = 0; i < activeButtons->size(); i++) {
         if ((*activeButtons)[i].isSelected && i > 0) {
           (*activeButtons)[i].isSelected = false;

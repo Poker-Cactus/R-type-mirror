@@ -10,7 +10,7 @@
 
 void Menu::processBack()
 {
-  if (renderer->isKeyJustPressed(KeyCode::KEY_BACKSPACE)) {
+  if (m_renderer->isKeyJustPressed(KeyCode::KEY_BACKSPACE)) {
     if (currentState == MenuState::LOADING) {
       return;
     }

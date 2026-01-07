@@ -33,12 +33,12 @@ enum class LobbyMenuOption : std::uint8_t { CREATE_LOBBY, JOIN_LOBBY, BACK };
 class LobbyMenu
 {
 public:
-  LobbyMenu() = default;
+  LobbyMenu(std::shared_ptr <IRenderer> renderer);
   ~LobbyMenu();
 
-  void init(IRenderer *renderer);
-  void render(const WindowDimensions &windowDims, IRenderer *renderer);
-  void process(IRenderer *renderer, MenuState *currentState);
+  void init();
+  void render(const WindowDimensions &windowDims);
+  void process(MenuState *currentState);
   void cleanup();
 
   // Network integration
@@ -53,39 +53,41 @@ public:
   [[nodiscard]] bool isCreatingLobby() const { return m_isCreatingLobby; }
 
 private:
-  void renderBackground(const WindowDimensions &windowDims, IRenderer *renderer);
-  void renderMenuOptions(const WindowDimensions &windowDims, IRenderer *renderer);
-  void renderLobbyCodeInput(const WindowDimensions &windowDims, IRenderer *renderer);
-  void handleMenuNavigation(IRenderer *renderer);
-  void handleTextInput(IRenderer *renderer);
+  std::shared_ptr<IRenderer> m_renderer;
+
+  void renderBackground(const WindowDimensions &windowDims);
+  void renderMenuOptions(const WindowDimensions &windowDims);
+  void renderLobbyCodeInput(const WindowDimensions &windowDims);
+  void handleMenuNavigation();
+  void handleTextInput();
   void selectCurrentOption(MenuState *currentState);
 
   // Assets
-  void *m_font = nullptr;
-  void *m_titleFont = nullptr;
-  void *m_moonSky = nullptr;
-  void *m_moonBack = nullptr;
-  void *m_moonMid = nullptr;
-  void *m_moonFront = nullptr;
-  void *m_moonFloor = nullptr;
+  void *m_font;
+  void *m_titleFont;
+  void *m_moonSky;
+  void *m_moonBack;
+  void *m_moonMid;
+  void *m_moonFront;
+  void *m_moonFloor;
 
   // Parallax offsets
-  float m_parallaxOffsetSky = 0.0F;
-  float m_parallaxOffsetBack = 0.0F;
-  float m_parallaxOffsetMid = 0.0F;
-  float m_parallaxOffsetFront = 0.0F;
-  float m_parallaxOffsetFloor = 0.0F;
+  float m_parallaxOffsetSky;
+  float m_parallaxOffsetBack;
+  float m_parallaxOffsetMid;
+  float m_parallaxOffsetFront;
+  float m_parallaxOffsetFloor;
 
   // Menu state
   std::vector<std::string> m_menuItems = {"Create Lobby", "Join Lobby", "Back"};
-  std::size_t m_currentIndex = 0;
-  bool m_isEnteringCode = false;
+  std::size_t m_currentIndex;
+  bool m_isEnteringCode;
   std::string m_lobbyCodeInput;
   static constexpr std::size_t MAX_LOBBY_CODE_LENGTH = 10;
 
   // Transition flags
-  bool m_shouldEnterLobbyRoom = false;
-  bool m_isCreatingLobby = false;
+  bool m_shouldEnterLobbyRoom;
+  bool m_isCreatingLobby;
 
   // Network
   std::shared_ptr<INetworkManager> m_networkManager;

@@ -51,7 +51,7 @@ private:
   void delegateInputToCurrentState();
 
   std::unique_ptr<Module<IRenderer>> module;
-  IRenderer *renderer = nullptr;
+  IRenderer *renderer;
   std::shared_ptr<ecs::World> m_world;
   std::shared_ptr<INetworkManager> m_networkManager;
   bool isRunning = false;

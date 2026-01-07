@@ -8,7 +8,15 @@
 #include "LoadingScreen.hpp"
 #include <cmath>
 
-LoadingScreen::LoadingScreen(IRenderer *renderer, void *font) : renderer(renderer), font(font) {}
+LoadingScreen::LoadingScreen(std::shared_ptr<IRenderer> renderer, void *font)
+    : m_renderer(std::move(renderer)), m_font(font)
+{
+}
+
+LoadingScreen::~LoadingScreen()
+{
+  m_font = nullptr;
+}
 
 void LoadingScreen::start()
 {
@@ -30,24 +38,24 @@ bool LoadingScreen::update(int winWidth, int winHeight)
     return true;
   }
 
-  timer += renderer->getDeltaTime();
+  timer += m_renderer->getDeltaTime();
 
   if (timer >= duration) {
     stop();
     return true;
   }
-  renderer->drawRect(0, 0, winWidth, winHeight, {0, 0, 0, 255});
+  m_renderer->drawRect(0, 0, winWidth, winHeight, {0, 0, 0, 255});
 
-  rotation += renderer->getDeltaTime() * 360.0f;
+  rotation += m_renderer->getDeltaTime() * 360.0f;
   if (rotation >= 360.0f) {
     rotation -= 360.0f;
   }
 
-  if (font != nullptr) {
+  if (m_font != nullptr) {
     std::string text = "Loading...";
     int textWidth = 0;
     int textHeight = 0;
-    renderer->getTextSize(font, text, textWidth, textHeight);
+    m_renderer->getTextSize(m_font, text, textWidth, textHeight);
 
     int x = winWidth - textWidth - 50;
     int y = winHeight - textHeight - 30;
@@ -55,7 +63,7 @@ bool LoadingScreen::update(int winWidth, int winHeight)
     float opacity = (std::sin(rotation * 3.14159f / 180.0f) + 1.0f) / 2.0f;
     int alpha = static_cast<int>(100 + opacity * 155);
 
-    renderer->drawText(font, text, x, y, {255, 255, 255, static_cast<unsigned char>(alpha)});
+    m_renderer->drawText(m_font, text, x, y, {255, 255, 255, static_cast<unsigned char>(alpha)});
   }
 
   return false;

@@ -1,3 +1,10 @@
+/*
+** EPITECH PROJECT, 2025
+** R-type-mirror
+** File description:
+** IRenderer.hpp
+*/
+
 #pragma once
 
 #include "IAudio.hpp"

@@ -7,15 +7,18 @@
 
 #pragma once
 #include "../../../interface/IRenderer.hpp"
+#include <memory>
 
 class ProfileMenu
 {
-public:
-  ProfileMenu() = default;
-  ~ProfileMenu(){};
-  void init(IRenderer *renderer);
-  void render(int winWidth, int winHeight, IRenderer *renderer);
-  void process(IRenderer *renderer);
+  public:
+    ProfileMenu(std::shared_ptr<IRenderer> m_renderer);
+    ~ProfileMenu();
 
-private:
+    void init();
+    void render(int winWidth, int winHeight);
+    void process();
+
+  private:
+    std::shared_ptr<IRenderer> m_renderer;
 };
