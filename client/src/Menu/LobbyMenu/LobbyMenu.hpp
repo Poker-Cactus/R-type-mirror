@@ -1,9 +1,7 @@
-/*
-** EPITECH PROJECT, 2025
-** R-Type
-** File description:
-** LobbyMenu - Menu for creating and joining game lobbies
-*/
+/**
+ * @file LobbyMenu.hpp
+ * @brief Lobby creation and joining interface
+ */
 
 #pragma once
 #include "../../../../network/include/INetworkManager.hpp"
@@ -15,20 +13,30 @@
 #include <vector>
 
 /**
- * @brief Window dimensions structure to prevent accidental parameter swaps
+ * @struct WindowDimensions
+ * @brief Window size container to prevent parameter confusion
  */
 struct WindowDimensions {
-  int width;
-  int height;
+  int width;  ///< Window width in pixels
+  int height; ///< Window height in pixels
 };
 
 /**
- * @brief Lobby selection options
+ * @enum LobbyMenuOption
+ * @brief Available lobby menu actions
  */
-enum class LobbyMenuOption : std::uint8_t { CREATE_LOBBY, JOIN_LOBBY, BACK };
+enum class LobbyMenuOption : std::uint8_t {
+  CREATE_LOBBY, ///< Create new lobby
+  JOIN_LOBBY,   ///< Join existing lobby
+  BACK          ///< Return to main menu
+};
 
 /**
- * @brief Menu for creating and joining game lobbies
+ * @class LobbyMenu
+ * @brief Interface for creating and joining game lobbies
+ *
+ * Allows players to either create a new lobby or join an existing one
+ * by entering a lobby code. Integrates with the network manager.
  */
 class LobbyMenu
 {
@@ -36,20 +44,58 @@ public:
   LobbyMenu() = default;
   ~LobbyMenu();
 
+  /**
+   * @brief Initialize lobby menu resources
+   * @param renderer Renderer interface
+   */
   void init(IRenderer *renderer);
+
+  /**
+   * @brief Render the lobby menu
+   * @param windowDims Window dimensions
+   * @param renderer Renderer interface
+   */
   void render(const WindowDimensions &windowDims, IRenderer *renderer);
+
+  /**
+   * @brief Process user input
+   * @param renderer Renderer interface
+   * @param currentState Pointer to current menu state
+   */
   void process(IRenderer *renderer, MenuState *currentState);
+
+  /**
+   * @brief Clean up lobby menu resources
+   */
   void cleanup();
 
-  // Network integration
+  /**
+   * @brief Set network manager for lobby operations
+   * @param networkManager Network manager instance
+   */
   void setNetworkManager(std::shared_ptr<INetworkManager> networkManager);
 
-  // Check if user wants to proceed to lobby room
+  /**
+   * @brief Check if player wants to enter lobby room
+   * @return true if transition to lobby room requested
+   */
   [[nodiscard]] bool shouldEnterLobbyRoom() const { return m_shouldEnterLobbyRoom; }
+
+  /**
+   * @brief Reset lobby room transition flag
+   */
   void resetLobbyRoomFlag() { m_shouldEnterLobbyRoom = false; }
 
-  // Get the lobby code to join (if joining existing)
+  /**
+   * @brief Get the lobby code to join
+   * @return Lobby code string
+   */
   [[nodiscard]] const std::string &getLobbyCodeToJoin() const { return m_lobbyCodeInput; }
+
+  /**
+   * @brief Check if player is creating a new lobby
+   * @return true if creating lobby
+   */
   [[nodiscard]] bool isCreatingLobby() const { return m_isCreatingLobby; }
 
 private:

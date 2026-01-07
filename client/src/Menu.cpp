@@ -7,7 +7,6 @@
 
 #include "Menu.hpp"
 #include "../include/AssetPath.hpp"
-#include "Menu/LoadingMenu/LoadingMenu.hpp"
 #include "Menu/LobbyMenu/LobbyMenu.hpp"
 #include "Menu/MainMenu/MainMenu.hpp"
 #include "Menu/ProfileMenu/ProfileMenu.hpp"
@@ -29,8 +28,9 @@ void Menu::init()
     const int titleFontSize = 48;
     menu_font = renderer->loadFont(resolveAssetPath("client/assets/font.opf/r-type.otf").c_str(), menuFontSize);
 
-    loadingMenu = new LoadingMenu();
-    loadingMenu->init(renderer);
+    // Initialiser IntroScreen
+    introScreen = new IntroScreen();
+    introScreen->init(renderer);
 
     // Initialiser MainMenu
     mainMenu = new MainMenu();
@@ -50,9 +50,6 @@ void Menu::init()
     moonMid = renderer->loadTexture("client/assets/moon-para/moon_mid.png");
     moonFront = renderer->loadTexture("client/assets/moon-para/moon_front.png");
     moonFloor = renderer->loadTexture("client/assets/moon-para/moon_floor.png");
-
-    // Initialiser le LoadingScreen
-    loadingScreen = new LoadingScreen(renderer, menu_font);
   } catch (const std::exception &e) {
     std::cerr << "Exception during menu initialization: " << e.what() << '\n';
   }
@@ -64,8 +61,10 @@ void Menu::render()
   int winHeight = renderer->getWindowHeight();
 
   switch (currentState) {
-  case MenuState::LOADING:
-    loadingMenu->render(winWidth, winHeight, renderer, loadingScreen, &currentState);
+  case MenuState::INTRO:
+    if (introScreen != nullptr) {
+      introScreen->render(winWidth, winHeight, renderer);
+    }
     break;
   case MenuState::MAIN_MENU:
     renderMoonParalax(winWidth, winHeight, renderer);
@@ -91,8 +90,10 @@ void Menu::render()
 void Menu::processInput()
 {
   switch (currentState) {
-  case MenuState::LOADING:
-    loadingMenu->process(renderer);
+  case MenuState::INTRO:
+    if (introScreen != nullptr && introScreen->process(renderer)) {
+      currentState = MenuState::MAIN_MENU;
+    }
     break;
   case MenuState::MAIN_MENU:
     mainMenu->process(&currentState, renderer);
