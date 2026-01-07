@@ -296,15 +296,18 @@ void Game::handleLobbyRoomTransition()
     return;
   }
 
+
   // Get lobby info from menu
   const bool isCreating = menu->isCreatingLobby();
   const std::string lobbyCode = menu->getLobbyCodeToJoin();
-  const Difficulty diff = menu->getSelectedDifficulty();
+  const Difficulty diff = menu->getLobbyMenu()->getSelectedDifficulty();
 
   std::cout << "[Game] Transitioning from MENU to LOBBY_ROOM" << '\n';
   std::cout << "[Game] Creating: " << (isCreating ? "yes" : "no");
   if (!isCreating) {
     std::cout << ", Code: " << lobbyCode;
+  } else {
+    std::cout << ", Difficulty: " << static_cast<int>(diff);
   }
   std::cout << '\n';
 

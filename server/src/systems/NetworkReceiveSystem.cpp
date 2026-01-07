@@ -224,7 +224,9 @@ void NetworkReceiveSystem::handleStartGame([[maybe_unused]] ecs::World &world, s
 
 void NetworkReceiveSystem::handleRequestLobby(const nlohmann::json &json, std::uint32_t clientId)
 {
-  std::cout << "[Server] handleRequestLobby called for client " << clientId << " with json: " << json.dump() << '\n';
+  std::cout << "[Server] === RECEIVED LOBBY REQUEST ===" << '\n';
+  std::cout << "[Server] Client ID: " << clientId << '\n';
+  std::cout << "[Server] Full JSON message: " << json.dump() << '\n';
 
   if (m_game == nullptr) {
     std::cerr << "[Server] Error: m_game is nullptr!" << '\n';
@@ -266,7 +268,13 @@ void NetworkReceiveSystem::handleRequestLobby(const nlohmann::json &json, std::u
     GameConfig::Difficulty difficulty = GameConfig::Difficulty::MEDIUM;
     if (json.contains("difficulty")) {
       int diffInt = json["difficulty"];
-      std::cout << "[Server] Received difficulty value: " << diffInt << '\n';
+      std::cout << "[Server] >>> DIFFICULTY RECEIVED: " << diffInt;
+      if (diffInt == 0) std::cout << " (EASY)";
+      else if (diffInt == 1) std::cout << " (MEDIUM)";
+      else if (diffInt == 2) std::cout << " (EXPERT)";
+      else std::cout << " (INVALID)";
+      std::cout << " <<<" << '\n';
+      
       if (diffInt >= 0 && diffInt <= 2) {
         difficulty = static_cast<GameConfig::Difficulty>(diffInt);
         std::cout << "[Server] Parsed difficulty as: " << static_cast<int>(difficulty) << " (" 
@@ -276,12 +284,15 @@ void NetworkReceiveSystem::handleRequestLobby(const nlohmann::json &json, std::u
         std::cout << "[Server] Invalid difficulty value: " << diffInt << ", using default MEDIUM" << '\n';
       }
     } else {
-      std::cout << "[Server] No difficulty field in JSON, using default MEDIUM" << '\n';
+      std::cout << "[Server] >>> NO DIFFICULTY FIELD IN MESSAGE, USING DEFAULT MEDIUM <<<" << '\n';
     }
 
     lobbyManager.createLobby(lobbyCode, difficulty);
     targetLobby = lobbyManager.getLobby(lobbyCode);
-    std::cout << "[Server] Created new lobbyblabla: " << lobbyCode << " for client " << clientId << " with difficulty : " << (difficulty == GameConfig::Difficulty::EASY ? "EASY" : difficulty == GameConfig::Difficulty::MEDIUM ? "MEDIUM" : "EXPERT") << '\n';
+    std::cout << "[Server] Created lobby '" << lobbyCode << "' with final difficulty: " 
+              << static_cast<int>(difficulty) << " (" 
+              << (difficulty == GameConfig::Difficulty::EASY ? "EASY" : 
+                  difficulty == GameConfig::Difficulty::MEDIUM ? "MEDIUM" : "EXPERT") << ")" << '\n';
   }
 
   // Try to join the lobby

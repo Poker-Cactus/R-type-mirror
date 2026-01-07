@@ -214,35 +214,35 @@ void PlayingState::renderHUD()
   // Draw hearts if texture is loaded
   if (m_heartsTexture != nullptr) {
     // Calculate heart display based on actual HP value
-    // Each 33.33 HP = 1 full heart (approximately 1/3 HP per heart unit)
+    // Each 100 HP = 1 full heart
     // Use floating point for precise heart calculation
-    float heartsValue = static_cast<float>(m_playerHealth) / 33.333f;
+    float heartsValue = static_cast<float>(m_playerHealth) / 100.0f;
     
     // Clamp to valid range (0.0 to 3.0 hearts max)
     heartsValue = std::max(0.0f, std::min(3.0f, heartsValue));
     
     // Convert hearts value to row index (0-6)
-    // Row 0: 3.0 hearts (100 HP) - 3 cœurs pleins
-    // Row 1: 2.5 hearts (83 HP) - 2.5 cœurs
-    // Row 2: 2.0 hearts (67 HP) - 2 cœurs
-    // Row 3: 1.5 hearts (50 HP) - 1.5 cœurs
-    // Row 4: 1.0 hearts (33 HP) - 1 cœur
-    // Row 5: 0.5 hearts (17 HP) - 0.5 cœur
-    // Row 6: 0.0 hearts (0 HP) - 0 cœurs
+    // 3.0 hearts = row 0 (full)
+    // 2.5 hearts = row 1
+    // 2.0 hearts = row 2
+    // 1.5 hearts = row 3
+    // 1.0 hearts = row 4
+    // 0.5 hearts = row 5
+    // 0.0 hearts = row 6 (empty)
     
     int heartRow = 0;
-    if (heartsValue >= 3.0f) {
-      heartRow = 0; // 3.0 hearts: full (3 cœurs)
-    } else if (heartsValue >= 2.5f) {
-      heartRow = 1; // 2.5 hearts
+    if (heartsValue >= 2.5f) {
+      heartRow = 0; // 2.5-3.0 hearts: full
     } else if (heartsValue >= 2.0f) {
-      heartRow = 2; // 2.0 hearts
+      heartRow = 1; // 2.0-2.4 hearts
     } else if (heartsValue >= 1.5f) {
-      heartRow = 3; // 1.5 hearts
+      heartRow = 2; // 1.5-1.9 hearts
     } else if (heartsValue >= 1.0f) {
-      heartRow = 4; // 1.0 hearts
+      heartRow = 3; // 1.0-1.4 hearts
     } else if (heartsValue >= 0.5f) {
-      heartRow = 5; // 0.5 hearts
+      heartRow = 4; // 0.5-0.9 hearts
+    } else if (heartsValue > 0.0f) {
+      heartRow = 5; // 0.1-0.4 hearts
     } else {
       heartRow = 6; // 0 hearts: empty
     }

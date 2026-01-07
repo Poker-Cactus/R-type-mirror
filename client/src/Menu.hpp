@@ -4,6 +4,7 @@
 #include "Menu/MainMenu/MainMenu.hpp"
 #include "Menu/ProfileMenu/ProfileMenu.hpp"
 #include "Menu/SettingsMenu/SettingsMenu.hpp"
+#include "../../common/include/Common.hpp"
 #include <string>
 
 class Menu
@@ -24,7 +25,8 @@ public:
   [[nodiscard]] bool isCreatingLobby() const;
   [[nodiscard]] std::string getLobbyCodeToJoin() const;
   void resetLobbySelection();
-  [[nodiscard]] Difficulty getSelectedDifficulty() const { return lobbyMenu ? lobbyMenu->getSelectedDifficulty() : Difficulty::MEDIUM; }
+  [[nodiscard]] Difficulty getCurrentDifficulty() const { return currentDifficulty; }
+  [[nodiscard]] LobbyMenu *getLobbyMenu() const { return lobbyMenu; }
 
   void processInput();
 
@@ -60,4 +62,5 @@ private:
   void *menu_font = nullptr;
   LoadingScreen *loadingScreen = nullptr;
   MenuState currentState = MenuState::LOADING;
+  Difficulty currentDifficulty = Difficulty::MEDIUM;
 };
