@@ -1,3 +1,10 @@
+/*
+** EPITECH PROJECT, 2025
+** R-type-mirror
+** File description:
+** Overlay.hpp
+*/
+
 /**
  * @file Overlay.hpp
  * @brief Screen overlay rendering
@@ -6,6 +13,7 @@
 #pragma once
 #include "../interface/IRenderer.hpp"
 #include <cstdint>
+#include <memory>
 
 /**
  * @struct ColorRGBA
@@ -32,14 +40,14 @@ public:
    * @param renderer Renderer interface
    * @param alpha Transparency (0=fully transparent, 255=fully opaque)
    */
-  Overlay(IRenderer *renderer, std::uint8_t alpha = DEFAULT_ALPHA);
+  Overlay(std::shared_ptr<IRenderer> renderer, std::uint8_t alpha = DEFAULT_ALPHA);
 
   /**
    * @brief Construct overlay with specified color
    * @param renderer Renderer interface
    * @param color RGBA color
    */
-  Overlay(IRenderer *renderer, const ColorRGBA &color);
+  Overlay(std::shared_ptr<IRenderer>, const ColorRGBA &color);
 
   /**
    * @brief Set overlay color
@@ -59,7 +67,7 @@ public:
   void render();
 
 private:
-  IRenderer *m_renderer;
+  std::shared_ptr<IRenderer> m_renderer;
   std::uint8_t m_red;
   std::uint8_t m_green;
   std::uint8_t m_blue;

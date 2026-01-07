@@ -19,8 +19,9 @@
 #include "../interface/KeyCodes.hpp"
 #include <iostream>
 
-PlayingState::PlayingState(IRenderer *renderer, const std::shared_ptr<ecs::World> &world, Settings &settings)
-    : renderer(renderer), world(world), background(nullptr), settings(settings)
+PlayingState::PlayingState(std::shared_ptr<IRenderer> renderer, const std::shared_ptr<ecs::World> &world,
+                           Settings &settings)
+    : renderer(std::move(renderer)), world(world), background(nullptr), settings(settings)
 {
 }
 
@@ -38,7 +39,7 @@ bool PlayingState::init()
 
   std::cout << "[PlayingState] Initializing with m_playerHealth = " << m_playerHealth << '\n';
 
-  settingsMenu = new SettingsMenu();
+  settingsMenu = std::make_shared<SettingsMenu>(renderer);
 
   // Initialiser le background parallaxe
   background = std::make_unique<ParallaxBackground>(renderer);
@@ -282,10 +283,10 @@ void PlayingState::renderHUD()
     // Each 100 HP = 1 full heart
     // Use floating point for precise heart calculation
     float heartsValue = static_cast<float>(m_playerHealth) / 100.0f;
-    
+
     // Clamp to valid range (0.0 to 3.0 hearts max)
     heartsValue = std::max(0.0f, std::min(3.0f, heartsValue));
-    
+
     // Convert hearts value to row index (0-6)
     // 3.0 hearts = row 0 (full)
     // 2.5 hearts = row 1
@@ -294,7 +295,7 @@ void PlayingState::renderHUD()
     // 1.0 hearts = row 4
     // 0.5 hearts = row 5
     // 0.0 hearts = row 6 (empty)
-    
+
     int heartRow = 0;
     if (heartsValue >= 2.5f) {
       heartRow = 0; // 2.5-3.0 hearts: full
@@ -311,16 +312,18 @@ void PlayingState::renderHUD()
     } else {
       heartRow = 6; // 0 hearts: empty
     }
-    
+
     // Calculate source Y position with rounding for exact pixel alignment
     int sourceY = static_cast<int>(std::round(heartRow * HEART_ROW_HEIGHT));
-    
+
     // Draw the appropriate heart row
     renderer->drawTextureRegion(
       m_heartsTexture,
       {.x = 0, .y = sourceY, .width = HEARTS_TEXTURE_WIDTH, .height = static_cast<int>(std::round(HEART_ROW_HEIGHT))},
-      {.x = HEARTS_X, .y = HEARTS_Y, .width = HEARTS_TEXTURE_WIDTH * DISPLAY_SCALE, .height = static_cast<int>(std::round(HEART_ROW_HEIGHT)) * DISPLAY_SCALE}
-    );
+      {.x = HEARTS_X,
+       .y = HEARTS_Y,
+       .width = HEARTS_TEXTURE_WIDTH * DISPLAY_SCALE,
+       .height = static_cast<int>(std::round(HEART_ROW_HEIGHT)) * DISPLAY_SCALE});
   }
 
   // Score text (only if font is loaded)
@@ -478,9 +481,6 @@ void PlayingState::processInput()
 {
   if (renderer == nullptr)
     return;
-
-  bool up = renderer->isKeyPressed(settings.up);
-  bool down = renderer->isKeyPressed(settings.down);
 
   if (renderer->isKeyPressed(settings.up)) {
     m_returnUp = true;

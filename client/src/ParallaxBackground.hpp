@@ -8,6 +8,7 @@
 #include "../interface/IRenderer.hpp"
 #include <string>
 #include <vector>
+#include <memory>
 
 /**
  * @struct Star
@@ -67,7 +68,7 @@ public:
    * @brief Construct parallax background
    * @param renderer Renderer interface
    */
-  ParallaxBackground(IRenderer *renderer);
+  ParallaxBackground(std::shared_ptr<IRenderer> renderer);
   ~ParallaxBackground();
 
   /**
@@ -122,7 +123,7 @@ public:
   void addStarLayerWithVariedColors(int starCount, float scrollSpeed, float minRadius, float maxRadius);
 
 private:
-  IRenderer *renderer;
+  std::shared_ptr<IRenderer> renderer;
   std::vector<ParallaxLayer> layers;
   int windowWidth = 0;
   int windowHeight = 0;

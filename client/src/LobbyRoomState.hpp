@@ -48,7 +48,7 @@ public:
    * @param world Shared pointer to ECS world
    * @param networkManager Network manager for lobby communication
    */
-  LobbyRoomState(IRenderer *renderer, const std::shared_ptr<ecs::World> &world,
+  LobbyRoomState(std::shared_ptr<IRenderer> renderer, const std::shared_ptr<ecs::World> &world,
                  std::shared_ptr<INetworkManager> networkManager);
   ~LobbyRoomState();
 
@@ -133,7 +133,7 @@ private:
   void renderLobbyText();
   void requestLobby();
 
-  IRenderer *renderer;
+  std::shared_ptr<IRenderer> renderer;
   std::shared_ptr<ecs::World> world;
   std::shared_ptr<INetworkManager> m_networkManager;
   std::unique_ptr<ParallaxBackground> background;

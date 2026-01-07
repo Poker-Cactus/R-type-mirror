@@ -31,7 +31,7 @@ public:
    * @param world Shared pointer to ECS world
    * @param settings Game settings reference
    */
-  PlayingState(IRenderer *renderer, const std::shared_ptr<ecs::World> &world, Settings &settings);
+  PlayingState(std::shared_ptr<IRenderer> renderer, const std::shared_ptr<ecs::World> &world, Settings &settings);
   ~PlayingState();
 
   /**
@@ -74,8 +74,8 @@ public:
   void changeAnimationPlayers(float delta_time);
 
 private:
-  IRenderer *renderer;                   ///< Renderer interface
-  std::shared_ptr<ecs::World> world;     ///< ECS world
+  std::shared_ptr<IRenderer> renderer; ///< Renderer interface
+  std::shared_ptr<ecs::World> world; ///< ECS world
   std::unique_ptr<ParallaxBackground> background; ///< Scrolling background
 
   std::unordered_map<std::uint32_t, void *> m_spriteTextures; ///< Sprite texture cache
@@ -103,7 +103,6 @@ private:
    */
   void updateAnimations(float deltaTime);
 
-
   /**
    * @brief Render heads-up display
    */
@@ -114,11 +113,11 @@ private:
    */
   void updateHUDFromWorld();
 
-  bool m_returnUp = false;   ///< Return to neutral animation from up
+  bool m_returnUp = false; ///< Return to neutral animation from up
   bool m_returnDown = false; ///< Return to neutral animation from down
 
-  int m_playerFrameIndex = 2;    ///< Current animation frame
-  int m_playerAnimToggle = 0;    ///< Animation toggle state
+  int m_playerFrameIndex = 2; ///< Current animation frame
+  int m_playerAnimToggle = 0; ///< Animation toggle state
   float m_playerAnimTimer = 0.f; ///< Animation timer
 
   /**
@@ -128,8 +127,8 @@ private:
   enum class PlayerAnimDirection { None, Up, Down };
   PlayerAnimDirection m_playerAnimDirection = PlayerAnimDirection::None; ///< Current anim direction
   bool m_playerAnimPlayingOnce = false; ///< Single-play animation flag
-  int m_playerAnimPhase = 0;            ///< Animation phase
+  int m_playerAnimPhase = 0; ///< Animation phase
 
-  Settings &settings;                   ///< Game settings reference
-  SettingsMenu *settingsMenu = nullptr; ///< Settings menu
+  Settings &settings; ///< Game settings reference
+  std::shared_ptr<SettingsMenu> settingsMenu; ///< Settings menu
 };

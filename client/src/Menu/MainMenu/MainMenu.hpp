@@ -1,3 +1,9 @@
+/*
+** EPITECH PROJECT, 2025
+** R-type-mirror
+** File description:
+** MainMenu.hpp
+*/
 /**
  * @file MainMenu.hpp
  * @brief Main menu screen interface
@@ -8,6 +14,7 @@
 #include "../MenuState.hpp"
 #include <array>
 #include <string>
+#include <memory>
 
 /**
  * @class MainMenu
@@ -19,34 +26,32 @@
 class MainMenu
 {
 public:
-  MainMenu() = default;
-  ~MainMenu() {}
+  MainMenu(std::shared_ptr<IRenderer> renderer);
+  ~MainMenu();
 
   /**
    * @brief Initialize menu resources
-   * @param renderer Renderer interface
    */
-  void init(IRenderer *renderer);
+  void init();
 
   /**
    * @brief Render the main menu
    * @param winWidth Window width
    * @param winHeight Window height
-   * @param renderer Renderer interface
    */
-  void render(int winWidth, int winHeight, IRenderer *renderer);
+  void render(int winWidth, int winHeight);
 
   /**
    * @brief Process user input
    * @param currentState Pointer to current menu state
-   * @param renderer Renderer interface
    */
-  void process(MenuState *currentState, IRenderer *renderer);
+  void process(MenuState *currentState);
 
 private:
+  std::shared_ptr<IRenderer> m_renderer;
   void *font;
-  void *planet = nullptr;
+  void *planet;
 
-  std::array<std::string, 4> mainMenuItems = {"Play", "Settings", "Profile", "Exit"};
-  int currentMenuIndex = 0;
+  std::array<std::string, 4> mainMenuItems;
+  int currentMenuIndex;
 };

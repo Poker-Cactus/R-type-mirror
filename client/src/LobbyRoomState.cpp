@@ -15,7 +15,7 @@
 #include <nlohmann/json.hpp>
 #include <utility>
 
-LobbyRoomState::LobbyRoomState(IRenderer *renderer, const std::shared_ptr<ecs::World> &world,
+LobbyRoomState::LobbyRoomState(std::shared_ptr<IRenderer> renderer, const std::shared_ptr<ecs::World> &world,
                                std::shared_ptr<INetworkManager> networkManager)
     : renderer(renderer), world(world), m_networkManager(std::move(networkManager)), background(nullptr),
       overlay(nullptr)
@@ -257,6 +257,8 @@ void LobbyRoomState::requestLobby()
 void LobbyRoomState::cleanup()
 {
   freeSpriteTextures();
+  if (renderer != nullptr && m_lobbyFont != nullptr)
+    renderer->freeFont(m_lobbyFont);
   m_lobbyFont = nullptr;
 }
 
