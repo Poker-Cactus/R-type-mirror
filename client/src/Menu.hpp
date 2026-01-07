@@ -9,6 +9,7 @@
 #include "Menu/MainMenu/MainMenu.hpp"
 #include "Menu/ProfileMenu/ProfileMenu.hpp"
 #include "Menu/SettingsMenu/SettingsMenu.hpp"
+#include "../../common/include/Common.hpp"
 #include <string>
 
 class Settings;
@@ -81,6 +82,8 @@ public:
    * @brief Reset lobby selection flags
    */
   void resetLobbySelection();
+  [[nodiscard]] Difficulty getCurrentDifficulty() const { return currentDifficulty; }
+  [[nodiscard]] LobbyMenu *getLobbyMenu() const { return lobbyMenu; }
 
   /**
    * @brief Process user input for current menu state
@@ -150,6 +153,7 @@ private:
   void *moonFront = nullptr;  ///< Front layer texture
   void *moonBack = nullptr;   ///< Back layer texture
 
-  void *menu_font = nullptr;  ///< Menu font
+  void *menu_font = nullptr;
+  Difficulty currentDifficulty = Difficulty::MEDIUM;
   MenuState currentState = MenuState::INTRO; ///< Current menu state
 };

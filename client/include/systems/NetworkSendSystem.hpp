@@ -9,6 +9,7 @@
 #include "../../engineCore/include/ecs/ISystem.hpp"
 #include "../../engineCore/include/ecs/components/Input.hpp"
 #include "../../network/include/INetworkManager.hpp"
+#include "../../common/include/Common.hpp"
 #include <nlohmann/json.hpp>
 
 /**
@@ -56,6 +57,7 @@ public:
    * @return Client identifier
    */
   std::uint32_t getClientId() const { return m_clientId; }
+  void sendSetDifficulty(Difficulty diff);
 
 protected:
 private:

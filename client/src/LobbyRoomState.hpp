@@ -4,6 +4,7 @@
  */
 
 #pragma once
+#include "../../common/include/Common.hpp"
 #include "../../engineCore/include/ecs/Entity.hpp"
 #include "../../network/include/INetworkManager.hpp"
 #include "../interface/IRenderer.hpp"
@@ -95,7 +96,7 @@ public:
    * @param isCreating Whether creating new lobby
    * @param lobbyCode Lobby code (for joining)
    */
-  void setLobbyMode(bool isCreating, const std::string &lobbyCode = "");
+  void setLobbyMode(bool isCreating, const std::string &lobbyCode = "", Difficulty difficulty = Difficulty::MEDIUM);
 
   /**
    * @brief Send leave lobby message to server
@@ -145,6 +146,7 @@ private:
   bool m_returnToMenuRequested = false;
   bool m_lobbyRequested = false;
   float m_timeSinceLobbyRequest = 0.0F;
+  Difficulty m_creationDifficulty = Difficulty::MEDIUM;
 
   // Lobby mode
   bool m_isCreatingLobby = true;

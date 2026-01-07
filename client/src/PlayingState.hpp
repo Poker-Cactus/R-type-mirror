@@ -90,16 +90,19 @@ private:
    */
   void freeSpriteTextures();
 
+  // HUD state
+  static constexpr int INITIAL_PLAYER_HEALTH = 100;
+  void *m_hudFont = nullptr;
+  void *m_heartsTexture = nullptr;
+  int m_playerHealth = INITIAL_PLAYER_HEALTH;
+  int m_playerMaxHealth = INITIAL_PLAYER_HEALTH;
+  int m_playerScore = 0;
   /**
    * @brief Update entity animations
    * @param deltaTime Time elapsed since last update
    */
   void updateAnimations(float deltaTime);
 
-  static constexpr int INITIAL_PLAYER_HEALTH = 100; ///< Starting player health
-  void *m_hudFont = nullptr;         ///< HUD font
-  int m_playerHealth = INITIAL_PLAYER_HEALTH; ///< Current player health
-  int m_playerScore = 0;             ///< Current player score
 
   /**
    * @brief Render heads-up display

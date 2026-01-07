@@ -4,6 +4,7 @@
  */
 
 #pragma once
+#include "../../../../common/include/Common.hpp"
 #include "../../../../network/include/INetworkManager.hpp"
 #include "../../../interface/IRenderer.hpp"
 #include "../MenuState.hpp"
@@ -97,14 +98,18 @@ public:
    * @return true if creating lobby
    */
   [[nodiscard]] bool isCreatingLobby() const { return m_isCreatingLobby; }
+  [[nodiscard]] Difficulty getSelectedDifficulty() const { return m_selectedDifficulty; }
 
 private:
   void renderBackground(const WindowDimensions &windowDims, IRenderer *renderer);
   void renderMenuOptions(const WindowDimensions &windowDims, IRenderer *renderer);
   void renderLobbyCodeInput(const WindowDimensions &windowDims, IRenderer *renderer);
+  void renderDifficultySelection(const WindowDimensions &windowDims, IRenderer *renderer);
   void handleMenuNavigation(IRenderer *renderer);
+  void handleDifficultyNavigation(IRenderer *renderer);
   void handleTextInput(IRenderer *renderer);
   void selectCurrentOption(MenuState *currentState);
+  void selectDifficultyOption();
 
   // Assets
   void *m_font = nullptr;
@@ -128,6 +133,12 @@ private:
   bool m_isEnteringCode = false;
   std::string m_lobbyCodeInput;
   static constexpr std::size_t MAX_LOBBY_CODE_LENGTH = 10;
+  
+  // Difficulty selection
+  bool m_isSelectingDifficulty = false;
+  std::vector<std::string> m_difficultyItems = {"Easy", "Medium", "Expert"};
+  std::size_t m_difficultyIndex = 1; // Default to Medium
+  Difficulty m_selectedDifficulty = Difficulty::MEDIUM;
 
   // Transition flags
   bool m_shouldEnterLobbyRoom = false;
