@@ -73,6 +73,8 @@ void LobbyMenu::render(const WindowDimensions &windowDims, IRenderer *renderer)
 
   if (m_isEnteringCode) {
     renderLobbyCodeInput(windowDims, renderer);
+  } else if (m_isSelectingDifficulty) {
+    renderDifficultySelection(windowDims, renderer);
   } else {
     renderMenuOptions(windowDims, renderer);
   }
@@ -229,10 +231,72 @@ void LobbyMenu::renderLobbyCodeInput(const WindowDimensions &windowDims, IRender
   renderer->drawText(m_font, instructions, instrX, instrY, instrColor);
 }
 
+void LobbyMenu::renderDifficultySelection(const WindowDimensions &windowDims, IRenderer *renderer)
+{
+  if (m_font == nullptr) {
+    return;
+  }
+
+  // Draw prompt
+  const std::string prompt = "Select Difficulty:";
+  int promptWidth = 0;
+  int promptHeight = 0;
+  renderer->getTextSize(m_font, prompt, promptWidth, promptHeight);
+
+  const int promptX = (windowDims.width - promptWidth) / 2;
+  const int promptY = ((windowDims.height - promptHeight) / 2) - 100;
+  const Color promptColor = {.r = 255, .g = 255, .b = 255, .a = 255};
+
+  renderer->drawText(m_font, prompt, promptX, promptY, promptColor);
+
+  // Render difficulty options
+  constexpr int ITEM_SPACING = 50;
+  const int startY = ((windowDims.height - promptHeight) / 2) - 20;
+
+  for (std::size_t i = 0; i < m_difficultyItems.size(); ++i) {
+    int textWidth = 0;
+    int textHeight = 0;
+    renderer->getTextSize(m_font, m_difficultyItems[i], textWidth, textHeight);
+
+    const int pos_x = (windowDims.width - textWidth) / 2;
+    const int pos_y = startY + (static_cast<int>(i) * ITEM_SPACING);
+
+    // Highlight selected item
+    const Color color = (i == m_difficultyIndex) ? Color{.r = 4, .g = 196, .b = 199, .a = 255}
+                                                 : Color{.r = 255, .g = 255, .b = 255, .a = 255};
+
+    renderer->drawText(m_font, m_difficultyItems[i], pos_x, pos_y, color);
+    
+    // Draw checkmark if this is the currently selected difficulty (persisted)
+    // Actually, we just highlight the current selection in the navigation. 
+    // The "selected" one is just the one we create with.
+  }
+
+  // Draw instructions
+  const std::string instructions = "ENTER to Create, BACKSPACE to Cancel";
+  int instrWidth = 0;
+  int instrHeight = 0;
+  renderer->getTextSize(m_font, instructions, instrWidth, instrHeight);
+
+  const int instrX = (windowDims.width - instrWidth) / 2;
+  const int instrY = windowDims.height - 80;
+  const Color instrColor = {.r = 150, .g = 150, .b = 150, .a = 255};
+
+  renderer->drawText(m_font, instructions, instrX, instrY, instrColor);
+}
+
 void LobbyMenu::process(IRenderer *renderer, MenuState *currentState)
 {
   if (m_isEnteringCode) {
     handleTextInput(renderer);
+  } else if (m_isSelectingDifficulty) {
+    handleDifficultyNavigation(renderer);
+    if (renderer->isKeyJustPressed(KeyCode::KEY_RETURN)) {
+      selectDifficultyOption();
+    }
+    if (renderer->isKeyJustPressed(KeyCode::KEY_BACKSPACE)) {
+      m_isSelectingDifficulty = false;
+    }
   } else {
     handleMenuNavigation(renderer);
 
@@ -254,6 +318,17 @@ void LobbyMenu::handleMenuNavigation(IRenderer *renderer)
 
   if (renderer->isKeyJustPressed(KeyCode::KEY_UP)) {
     m_currentIndex = (m_currentIndex - 1 + m_menuItems.size()) % m_menuItems.size();
+  }
+}
+
+void LobbyMenu::handleDifficultyNavigation(IRenderer *renderer)
+{
+  if (renderer->isKeyJustPressed(KeyCode::KEY_DOWN)) {
+    m_difficultyIndex = (m_difficultyIndex + 1) % m_difficultyItems.size();
+  }
+
+  if (renderer->isKeyJustPressed(KeyCode::KEY_UP)) {
+    m_difficultyIndex = (m_difficultyIndex - 1 + m_difficultyItems.size()) % m_difficultyItems.size();
   }
 }
 
@@ -309,10 +384,9 @@ void LobbyMenu::selectCurrentOption(MenuState *currentState)
 {
   switch (m_currentIndex) {
   case 0: // Create Lobby
-    std::cout << "[LobbyMenu] Creating new lobby" << '\n';
-    m_isCreatingLobby = true;
-    m_lobbyCodeInput.clear();
-    m_shouldEnterLobbyRoom = true;
+    std::cout << "[LobbyMenu] Select difficulty for new lobby" << '\n';
+    m_isSelectingDifficulty = true;
+    m_difficultyIndex = 1; // Reset to Medium
     break;
 
   case 1: // Join Lobby
@@ -328,4 +402,29 @@ void LobbyMenu::selectCurrentOption(MenuState *currentState)
   default:
     break;
   }
+}
+
+void LobbyMenu::selectDifficultyOption()
+{
+  switch (m_difficultyIndex) {
+  case 0:
+    m_selectedDifficulty = Difficulty::EASY;
+    break;
+  case 1:
+    m_selectedDifficulty = Difficulty::MEDIUM;
+    break;
+  case 2:
+    m_selectedDifficulty = Difficulty::EXPERT;
+    break;
+  }
+  
+  std::cout << "[LobbyMenu] Creating new lobby with difficulty: " 
+            << (m_selectedDifficulty == Difficulty::EASY ? "EASY" : 
+               (m_selectedDifficulty == Difficulty::MEDIUM ? "MEDIUM" : "EXPERT"))
+            << " (value: " << static_cast<int>(m_selectedDifficulty) << ")" << '\n';
+               
+  m_isCreatingLobby = true;
+  m_lobbyCodeInput.clear();
+  m_shouldEnterLobbyRoom = true;
+  m_isSelectingDifficulty = false;
 }

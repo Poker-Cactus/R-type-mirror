@@ -6,6 +6,7 @@
 */
 
 #include "Game.hpp"
+#include "systems/SpawnSystem.hpp"
 #include "../../engineCore/include/ecs/EngineComponents.hpp"
 #include <chrono>
 #include <cstdint>
@@ -96,9 +97,28 @@ void Game::spawnPlayer()
   world->addComponent(player, velocity);
 
   ecs::Health health;
-  health.hp = GameConfig::PLAYER_MAX_HP;
-  health.maxHp = GameConfig::PLAYER_MAX_HP;
+  int baseHealth = GameConfig::PLAYER_MAX_HP;
+  
+  // Adjust player health based on difficulty
+  switch (currentDifficulty) {
+  case Difficulty::EASY:
+    baseHealth = static_cast<int>(baseHealth * 1.5f); // 150 HP
+    break;
+  case Difficulty::MEDIUM:
+    // Normal health (100 HP)
+    break;
+  case Difficulty::EXPERT:
+    baseHealth = static_cast<int>(baseHealth * 0.75f); // 75 HP
+    break;
+  }
+  
+  health.hp = baseHealth;
+  health.maxHp = baseHealth;
   world->addComponent(player, health);
+
+  std::cout << "[Server] Spawning player with " << baseHealth << " HP (difficulty: " 
+            << (currentDifficulty == Difficulty::EASY ? "easy" : 
+                currentDifficulty == Difficulty::MEDIUM ? "medium" : "expert") << ")" << std::endl;
 
   ecs::Input input;
   input.up = false;
@@ -153,9 +173,28 @@ void Game::spawnPlayer(std::uint32_t networkId)
   world->addComponent(player, velocity);
 
   ecs::Health health;
-  health.hp = GameConfig::PLAYER_MAX_HP;
-  health.maxHp = GameConfig::PLAYER_MAX_HP;
+  int baseHealth = GameConfig::PLAYER_MAX_HP;
+  
+  // Adjust player health based on difficulty
+  switch (currentDifficulty) {
+  case Difficulty::EASY:
+    baseHealth = static_cast<int>(baseHealth * 1.5f); // 150 HP
+    break;
+  case Difficulty::MEDIUM:
+    // Normal health (100 HP)
+    break;
+  case Difficulty::EXPERT:
+    baseHealth = static_cast<int>(baseHealth * 0.75f); // 75 HP
+    break;
+  }
+  
+  health.hp = baseHealth;
+  health.maxHp = baseHealth;
   world->addComponent(player, health);
+
+  std::cout << "[Server] Spawning player with networkId " << networkId << " with " << baseHealth << " HP (difficulty: " 
+            << (currentDifficulty == Difficulty::EASY ? "easy" : 
+                currentDifficulty == Difficulty::MEDIUM ? "medium" : "expert") << ")" << std::endl;
 
   ecs::Input input;
   input.up = false;
@@ -277,6 +316,7 @@ void Game::startGame()
 {
   std::cout << "[Server] Starting game with " << m_lobbyClients.size() << " players" << '\n';
   gameStarted = true;
+  world->getSystem<server::SpawnSystem>()->difficulty = currentDifficulty;
 }
 
 bool Game::isGameStarted() const

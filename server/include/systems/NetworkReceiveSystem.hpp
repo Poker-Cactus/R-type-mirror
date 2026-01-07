@@ -38,6 +38,7 @@ private:
   void handleRequestLobby(const nlohmann::json &json, std::uint32_t clientId);
   void handleStartGame(ecs::World &world, std::uint32_t clientId);
   void handleLeaveLobby(ecs::World &world, std::uint32_t clientId);
+  void handleSetDifficulty(const nlohmann::json &json, std::uint32_t clientId);
 
   // Network helpers - properly serialize with Cap'n Proto
   void sendJsonMessage(std::uint32_t clientId, const nlohmann::json &message);

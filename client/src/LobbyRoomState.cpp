@@ -187,10 +187,11 @@ void LobbyRoomState::processInput()
   }
 }
 
-void LobbyRoomState::setLobbyMode(bool isCreating, const std::string &lobbyCode)
+void LobbyRoomState::setLobbyMode(bool isCreating, const std::string &lobbyCode, Difficulty difficulty)
 {
   m_isCreatingLobby = isCreating;
   m_targetLobbyCode = lobbyCode;
+  m_creationDifficulty = difficulty;
   m_lobbyRequested = false; // Reset so we can request again
   m_connectionState = LobbyConnectionState::CONNECTING;
   m_returnToMenuRequested = false;
@@ -225,7 +226,8 @@ void LobbyRoomState::requestLobby()
   if (m_isCreatingLobby) {
     message["type"] = "request_lobby";
     message["action"] = "create";
-  } else {
+    message["difficulty"] = static_cast<int>(m_creationDifficulty);
+} else {
     message["type"] = "request_lobby";
     message["action"] = "join";
     message["lobby_code"] = m_targetLobbyCode;

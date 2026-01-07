@@ -14,12 +14,12 @@ namespace GameConfig
 enum class Difficulty { EASY, MEDIUM, EXPERT };
 
 // Difficulty-based HP values
-// Easy: 3 hearts = 100 HP
-// Medium: 1.5 hearts = 50 HP
-// Expert: 0.5 hearts = 17 HP
+// Easy: 100 HP (easier survival)
+// Medium: 50 HP (standard challenge)
+// Expert: 30 HP (hard difficulty)
 constexpr int EASY_HP = 100;
 constexpr int MEDIUM_HP = 50;
-constexpr int EXPERT_HP = 17;
+constexpr int EXPERT_HP = 30;
 
 /**
  * @brief Get player starting HP based on difficulty

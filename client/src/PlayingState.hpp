@@ -74,6 +74,7 @@ private:
   void *m_hudFont = nullptr;
   void *m_heartsTexture = nullptr;
   int m_playerHealth = INITIAL_PLAYER_HEALTH;
+  int m_playerMaxHealth = INITIAL_PLAYER_HEALTH;
   int m_playerScore = 0;
 
   void renderHUD();

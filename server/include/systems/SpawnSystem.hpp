@@ -8,6 +8,8 @@
 #ifndef SERVER_SPAWN_SYSTEM_HPP_
 #define SERVER_SPAWN_SYSTEM_HPP_
 
+#include "../../../common/include/Common.hpp"
+
 #include "../../../engineCore/include/ecs/Entity.hpp"
 #include "../../../engineCore/include/ecs/ISystem.hpp"
 #include "../../../engineCore/include/ecs/World.hpp"
@@ -41,6 +43,7 @@ class SpawnSystem : public ecs::ISystem
 {
 public:
   SpawnSystem() : m_rng(std::random_device{}()) {}
+  Difficulty difficulty = Difficulty::MEDIUM;
 
   void update(ecs::World &world, float deltaTime) override
   {
@@ -58,7 +61,7 @@ public:
   {
     // Subscribe to spawn events
     m_spawnHandle = world.subscribeEvent<ecs::SpawnEntityEvent>(
-      [&world](const ecs::SpawnEntityEvent &event) { handleSpawnEvent(world, event); });
+      [this, &world](const ecs::SpawnEntityEvent &event) { this->handleSpawnEvent(world, event); });
   }
 
   [[nodiscard]] ecs::ComponentSignature getSignature() const override { return {}; }
@@ -115,7 +118,7 @@ private:
                                 yDist(m_rng), 0);
     world.emitEvent(event);
   }
-  static void handleSpawnEvent(ecs::World &world, const ecs::SpawnEntityEvent &event)
+  void handleSpawnEvent(ecs::World &world, const ecs::SpawnEntityEvent &event)
   {
     switch (event.type) {
     case ecs::SpawnEntityEvent::EntityType::ENEMY:
@@ -133,8 +136,20 @@ private:
     }
   }
 
-  static void spawnEnemy(ecs::World &world, float posX, float posY)
+  void spawnEnemy(ecs::World &world, float posX, float posY)
   {
+    float healthMult = 1.0f;
+    switch (difficulty) {
+    case Difficulty::EASY:
+      healthMult = 0.8f;
+      break;
+    case Difficulty::MEDIUM:
+      break;
+    case Difficulty::EXPERT:
+      healthMult = 1.5f;
+      break;
+    }
+
     ecs::Entity enemy = world.createEntity();
 
     world.addComponent(enemy, ecs::EnemyAI{});
@@ -152,8 +167,8 @@ private:
     world.addComponent(enemy, velocity);
 
     ecs::Health health;
-    health.hp = ENEMY_HEALTH;
-    health.maxHp = ENEMY_HEALTH;
+    health.hp = static_cast<int>(ENEMY_HEALTH * healthMult);
+    health.maxHp = static_cast<int>(ENEMY_HEALTH * healthMult);
     world.addComponent(enemy, health);
 
     world.addComponent(enemy, ecs::Collider{ENEMY_COLLIDER_SIZE, ENEMY_COLLIDER_SIZE});

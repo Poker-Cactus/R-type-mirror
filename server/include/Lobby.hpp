@@ -151,8 +151,8 @@ private:
   // Map client IDs to their player entities
   std::unordered_map<std::uint32_t, ecs::Entity> m_playerEntities;
 
-  // Game difficulty setting (hardcoded for now, can be changed before game starts)
-  GameConfig::Difficulty m_difficulty = GameConfig::Difficulty::EASY;
+  // Game difficulty setting
+  GameConfig::Difficulty m_difficulty = GameConfig::Difficulty::MEDIUM;
 };
 
 #endif /* !LOBBY_HPP_ */

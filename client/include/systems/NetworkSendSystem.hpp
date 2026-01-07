@@ -11,6 +11,7 @@
 #include "../../engineCore/include/ecs/ISystem.hpp"
 #include "../../engineCore/include/ecs/components/Input.hpp"
 #include "../../network/include/INetworkManager.hpp"
+#include "../../common/include/Common.hpp"
 #include <nlohmann/json.hpp>
 
 /**
@@ -33,6 +34,7 @@ public:
 
   void setClientId(std::uint32_t clientId) { m_clientId = clientId; }
   std::uint32_t getClientId() const { return m_clientId; }
+  void sendSetDifficulty(Difficulty diff);
 
 protected:
 private:

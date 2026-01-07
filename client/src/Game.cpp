@@ -299,6 +299,7 @@ void Game::handleLobbyRoomTransition()
   // Get lobby info from menu
   const bool isCreating = menu->isCreatingLobby();
   const std::string lobbyCode = menu->getLobbyCodeToJoin();
+  const Difficulty diff = menu->getSelectedDifficulty();
 
   std::cout << "[Game] Transitioning from MENU to LOBBY_ROOM" << '\n';
   std::cout << "[Game] Creating: " << (isCreating ? "yes" : "no");
@@ -325,7 +326,7 @@ void Game::handleLobbyRoomTransition()
   }
 
   // Set the lobby mode (create or join)
-  lobbyRoomState->setLobbyMode(isCreating, lobbyCode);
+  lobbyRoomState->setLobbyMode(isCreating, lobbyCode, diff);
 
   // Connect network callbacks to lobby state
   if (auto *networkReceiveSystem = m_world->getSystem<ClientNetworkReceiveSystem>()) {

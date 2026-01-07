@@ -208,39 +208,43 @@ void PlayingState::renderHUD()
   constexpr int HEARTS_X = 20;
   constexpr int HEARTS_Y = 20;
   constexpr int DISPLAY_SCALE = 2; // Scale up for better visibility
-  constexpr int MAX_HEALTH = 100;
   constexpr Color HUD_TEXT_WHITE = {.r = 255, .g = 255, .b = 255, .a = 255};
   constexpr int HUD_SCORE_OFFSET_Y = 50;
 
   // Draw hearts if texture is loaded
   if (m_heartsTexture != nullptr) {
-    // Calculate which row to display (0 = full hearts at bottom, 6 = empty hearts at top)
-    // Each row represents approximately 1/6 of health (16.67%)
-    // Row 0 (bottom): 84-100% HP
-    // Row 1: 67-83% HP
-    // Row 2: 50-66% HP
-    // Row 3: 34-49% HP
-    // Row 4: 17-33% HP
-    // Row 5: 1-16% HP
-    // Row 6 (top): 0% HP
+    // Calculate heart display based on actual HP value
+    // Each 33.33 HP = 1 full heart (approximately 1/3 HP per heart unit)
+    // Use floating point for precise heart calculation
+    float heartsValue = static_cast<float>(m_playerHealth) / 33.333f;
     
-    int healthPercent = (m_playerHealth * 100) / MAX_HEALTH;
+    // Clamp to valid range (0.0 to 3.0 hearts max)
+    heartsValue = std::max(0.0f, std::min(3.0f, heartsValue));
+    
+    // Convert hearts value to row index (0-6)
+    // Row 0: 3.0 hearts (100 HP) - 3 cœurs pleins
+    // Row 1: 2.5 hearts (83 HP) - 2.5 cœurs
+    // Row 2: 2.0 hearts (67 HP) - 2 cœurs
+    // Row 3: 1.5 hearts (50 HP) - 1.5 cœurs
+    // Row 4: 1.0 hearts (33 HP) - 1 cœur
+    // Row 5: 0.5 hearts (17 HP) - 0.5 cœur
+    // Row 6: 0.0 hearts (0 HP) - 0 cœurs
+    
     int heartRow = 0;
-    
-    if (healthPercent <= 0) {
-      heartRow = 6; // Empty hearts (top)
-    } else if (healthPercent <= 16) {
-      heartRow = 5;
-    } else if (healthPercent <= 33) {
-      heartRow = 4;
-    } else if (healthPercent <= 50) {
-      heartRow = 3;
-    } else if (healthPercent <= 67) {
-      heartRow = 2;
-    } else if (healthPercent <= 83) {
-      heartRow = 1;
+    if (heartsValue >= 3.0f) {
+      heartRow = 0; // 3.0 hearts: full (3 cœurs)
+    } else if (heartsValue >= 2.5f) {
+      heartRow = 1; // 2.5 hearts
+    } else if (heartsValue >= 2.0f) {
+      heartRow = 2; // 2.0 hearts
+    } else if (heartsValue >= 1.5f) {
+      heartRow = 3; // 1.5 hearts
+    } else if (heartsValue >= 1.0f) {
+      heartRow = 4; // 1.0 hearts
+    } else if (heartsValue >= 0.5f) {
+      heartRow = 5; // 0.5 hearts
     } else {
-      heartRow = 0; // Full hearts (bottom)
+      heartRow = 6; // 0 hearts: empty
     }
     
     // Calculate source Y position with rounding for exact pixel alignment
@@ -301,6 +305,7 @@ void PlayingState::updateHUDFromWorld()
         if (world->hasComponent<ecs::Health>(entity)) {
           const auto &health = world->getComponent<ecs::Health>(entity);
           m_playerHealth = health.hp;
+          m_playerMaxHealth = health.maxHp;
         }
         if (world->hasComponent<ecs::Score>(entity)) {
           const auto &score = world->getComponent<ecs::Score>(entity);

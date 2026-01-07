@@ -24,6 +24,7 @@ public:
   [[nodiscard]] bool isCreatingLobby() const;
   [[nodiscard]] std::string getLobbyCodeToJoin() const;
   void resetLobbySelection();
+  [[nodiscard]] Difficulty getSelectedDifficulty() const { return lobbyMenu ? lobbyMenu->getSelectedDifficulty() : Difficulty::MEDIUM; }
 
   void processInput();
 

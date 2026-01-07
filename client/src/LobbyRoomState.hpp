@@ -6,6 +6,7 @@
 */
 
 #pragma once
+#include "../../common/include/Common.hpp"
 #include "../../engineCore/include/ecs/Entity.hpp"
 #include "../../network/include/INetworkManager.hpp"
 #include "../interface/IRenderer.hpp"
@@ -45,7 +46,7 @@ public:
   [[nodiscard]] bool shouldReturnToMenu() const { return m_returnToMenuRequested; }
 
   // Set lobby mode before requesting
-  void setLobbyMode(bool isCreating, const std::string &lobbyCode = "");
+  void setLobbyMode(bool isCreating, const std::string &lobbyCode = "", Difficulty difficulty = Difficulty::MEDIUM);
 
   // Send leave message to server
   void sendLeaveLobby();
@@ -77,6 +78,7 @@ private:
   bool m_returnToMenuRequested = false;
   bool m_lobbyRequested = false;
   float m_timeSinceLobbyRequest = 0.0F;
+  Difficulty m_creationDifficulty = Difficulty::MEDIUM;
 
   // Lobby mode
   bool m_isCreatingLobby = true;

@@ -223,6 +223,7 @@ void Lobby::initializeSystems()
   }
   if (spawnSystem != nullptr) {
     spawnSystem->initialize(*m_world);
+    spawnSystem->difficulty = static_cast<Difficulty>(m_difficulty);
   }
 
   std::cout << "[Lobby:" << m_code << "] Initialized game systems" << '\n';
@@ -260,12 +261,6 @@ void Lobby::spawnPlayer(std::uint32_t clientId)
   health.maxHp = startingHP;
   m_world->addComponent(player, health);
 
-  std::cout << "[Lobby:" << m_code << "] Player " << clientId << " spawned with " << startingHP
-            << " HP (Difficulty: "
-            << (m_difficulty == GameConfig::Difficulty::EASY
-                  ? "EASY"
-                  : (m_difficulty == GameConfig::Difficulty::MEDIUM ? "MEDIUM" : "EXPERT"))
-            << ")" << '\n';
 
   ecs::Input input;
   input.up = false;
@@ -343,7 +338,7 @@ void Lobby::setDifficulty(GameConfig::Difficulty difficulty)
   std::cout << "[Lobby:" << m_code << "] Difficulty set to "
             << (difficulty == GameConfig::Difficulty::EASY
                   ? "EASY (100 HP)"
-                  : (difficulty == GameConfig::Difficulty::MEDIUM ? "MEDIUM (50 HP)" : "EXPERT (17 HP)"))
+                  : (difficulty == GameConfig::Difficulty::MEDIUM ? "MEDIUM (50 HP)" : "EXPERT (30 HP)"))
             << '\n';
 }
 

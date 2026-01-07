@@ -18,4 +18,6 @@
 
 constexpr std::size_t BUFFER_SIZE = 65535;
 
+enum class Difficulty { EASY, MEDIUM, EXPERT };
+
 #endif // COMMON_HPP_
