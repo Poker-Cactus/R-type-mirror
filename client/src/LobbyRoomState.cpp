@@ -245,6 +245,8 @@ void LobbyRoomState::requestLobby()
 void LobbyRoomState::cleanup()
 {
   freeSpriteTextures();
+  if (renderer != nullptr && m_lobbyFont != nullptr)
+    renderer->freeFont(m_lobbyFont);
   m_lobbyFont = nullptr;
 }
 
