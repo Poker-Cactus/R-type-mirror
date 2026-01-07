@@ -8,14 +8,23 @@
 #include "Game.hpp"
 #include "../interface/KeyCodes.hpp"
 #include "Menu/MenuState.hpp"
+#include "Settings.hpp"
 #include <cstddef>
 #include <iostream>
 #include <nlohmann/json.hpp>
 #include <span>
 
-Game::Game() : module(nullptr), renderer(nullptr), isRunning(false), currentState(GameState::MENU), m_serverHost("127.0.0.1"), m_serverPort("4242") {}
+Game::Game()
+    : module(nullptr), renderer(nullptr), isRunning(false), currentState(GameState::MENU), m_serverHost("127.0.0.1"),
+      m_serverPort("4242")
+{
+}
 
-Game::Game(const std::string &host, const std::string &port) : module(nullptr), renderer(nullptr), isRunning(false), currentState(GameState::MENU), m_serverHost(host), m_serverPort(port) {}
+Game::Game(const std::string &host, const std::string &port)
+    : module(nullptr), renderer(nullptr), isRunning(false), currentState(GameState::MENU), m_serverHost(host),
+      m_serverPort(port)
+{
+}
 
 Game::~Game()
 {
@@ -69,7 +78,7 @@ bool Game::init()
       std::cerr << "[Game::init] Warning: failed to set fullscreen: " << e.what() << '\n';
     }
 
-    menu = std::make_unique<Menu>(renderer);
+    menu = std::make_unique<Menu>(renderer, settings);
     menu->init();
 
     m_world = std::make_shared<ecs::World>();
@@ -106,7 +115,7 @@ bool Game::init()
         std::cout << "[Game] Game started callback triggered - transitioning to PLAYING" << '\n';
         // Ensure the playing state exists and is initialized (recreate after death)
         if (!this->playingState) {
-          this->playingState = std::make_unique<PlayingState>(this->renderer, this->m_world);
+          this->playingState = std::make_unique<PlayingState>(this->renderer, this->m_world, this->settings);
           if (!this->playingState->init()) {
             std::cerr << "[Game] Failed to initialize playing state on game_started" << '\n';
             // Fallback to menu if we cannot initialize rendering state
@@ -124,7 +133,7 @@ bool Game::init()
       });
     }
 
-    playingState = std::make_unique<PlayingState>(renderer, m_world);
+    playingState = std::make_unique<PlayingState>(renderer, m_world, settings);
     if (!playingState->init()) {
       std::cerr << "Failed to initialize playing state" << '\n';
       return false;
@@ -227,7 +236,6 @@ void Game::sendViewportToServer()
 void Game::processInput()
 {
   if (renderer != nullptr && !renderer->pollEvents()) {
-    // Don't allow immediate close in lobby - give network time to send messages
     constexpr float LOBBY_GRACE_PERIOD = 0.5F;
     if (currentState == GameState::LOBBY_ROOM && m_lobbyStateTime < LOBBY_GRACE_PERIOD) {
       std::cout << "[Game] Ignoring close request - lobby just started (" << m_lobbyStateTime << "s)" << '\n';
@@ -471,13 +479,13 @@ void Game::updatePlayerInput()
   }
 
   auto &input = m_world->getComponent<ecs::Input>(m_inputEntity);
-  input.up = renderer->isKeyPressed(KeyCode::KEY_UP) || renderer->isKeyPressed(KeyCode::KEY_W) ||
+  input.up = renderer->isKeyPressed(settings.up) || renderer->isKeyPressed(KeyCode::KEY_W) ||
     renderer->isKeyPressed(KeyCode::KEY_Z);
-  input.down = renderer->isKeyPressed(KeyCode::KEY_DOWN) || renderer->isKeyPressed(KeyCode::KEY_S);
-  input.left = renderer->isKeyPressed(KeyCode::KEY_LEFT) || renderer->isKeyPressed(KeyCode::KEY_A) ||
+  input.down = renderer->isKeyPressed(settings.down) || renderer->isKeyPressed(KeyCode::KEY_S);
+  input.left = renderer->isKeyPressed(settings.left) || renderer->isKeyPressed(KeyCode::KEY_A) ||
     renderer->isKeyPressed(KeyCode::KEY_Q);
-  input.right = renderer->isKeyPressed(KeyCode::KEY_RIGHT) || renderer->isKeyPressed(KeyCode::KEY_D);
-  input.shoot = renderer->isKeyPressed(KeyCode::KEY_SPACE);
+  input.right = renderer->isKeyPressed(settings.right) || renderer->isKeyPressed(KeyCode::KEY_D);
+  input.shoot = renderer->isKeyPressed(settings.shoot);
 }
 
 void Game::delegateInputToCurrentState()
@@ -523,6 +531,11 @@ void Game::ensureInputEntity()
 
 void Game::update(float deltaTime)
 {
+  if (settings.fullScreen != fullScreen) {
+    renderer->setFullscreen(settings.fullScreen);
+    fullScreen = settings.fullScreen;
+  }
+
   if (m_world) {
     m_world->update(deltaTime);
   }

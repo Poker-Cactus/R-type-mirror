@@ -1,9 +1,7 @@
-/*
-** EPITECH PROJECT, 2025
-** R-Type
-** File description:
-** LobbyRoomState.hpp
-*/
+/**
+ * @file LobbyRoomState.hpp
+ * @brief Pre-game lobby waiting room state
+ */
 
 #pragma once
 #include "../../common/include/Common.hpp"
@@ -22,41 +20,111 @@ class World;
 }
 
 /**
- * @brief Lobby connection state
+ * @enum LobbyConnectionState
+ * @brief Lobby connection status
  */
-enum class LobbyConnectionState : std::uint8_t { CONNECTING, JOINED, ERROR_STATE };
+enum class LobbyConnectionState : std::uint8_t {
+  CONNECTING,   ///< Attempting to connect
+  JOINED,       ///< Successfully joined
+  ERROR_STATE   ///< Connection error
+};
 
 /**
- * @brief Manages the lobby waiting room before game starts
+ * @class LobbyRoomState
+ * @brief Manages the pre-game lobby waiting room
+ *
+ * Players wait in this state after creating or joining a lobby
+ * until the game starts. Shows lobby code, player count, and
+ * provides ability to leave.
  */
 class LobbyRoomState
 {
 public:
+  static constexpr float CONNECTION_TIMEOUT = 5.0f; ///< Connection timeout in seconds
+
+  /**
+   * @brief Construct the lobby room state
+   * @param renderer Renderer interface
+   * @param world Shared pointer to ECS world
+   * @param networkManager Network manager for lobby communication
+   */
   LobbyRoomState(IRenderer *renderer, const std::shared_ptr<ecs::World> &world,
                  std::shared_ptr<INetworkManager> networkManager);
   ~LobbyRoomState();
 
+  /**
+   * @brief Initialize lobby room resources
+   * @return true if initialization succeeded
+   */
   bool init();
+
+  /**
+   * @brief Update lobby state
+   * @param deltaTime Time elapsed since last update
+   */
   void update(float deltaTime);
+
+  /**
+   * @brief Render lobby room UI
+   */
   void render();
+
+  /**
+   * @brief Process user input in lobby
+   */
   void processInput();
+
+  /**
+   * @brief Clean up lobby room resources
+   */
   void cleanup();
 
+  /**
+   * @brief Check if game should start
+   * @return true if server signaled game start
+   */
   [[nodiscard]] bool shouldStartGame() const { return m_startGameRequested; }
+
+  /**
+   * @brief Check if player wants to return to menu
+   * @return true if returning to menu
+   */
   [[nodiscard]] bool shouldReturnToMenu() const { return m_returnToMenuRequested; }
 
-  // Set lobby mode before requesting
+  /**
+   * @brief Set lobby mode before connection
+   * @param isCreating Whether creating new lobby
+   * @param lobbyCode Lobby code (for joining)
+   */
   void setLobbyMode(bool isCreating, const std::string &lobbyCode = "", Difficulty difficulty = Difficulty::MEDIUM);
 
-  // Send leave message to server
+  /**
+   * @brief Send leave lobby message to server
+   */
   void sendLeaveLobby();
 
-  // Callbacks from network
+  /**
+   * @brief Network callback: lobby joined successfully
+   * @param lobbyCode Assigned lobby code
+   */
   void onLobbyJoined(const std::string &lobbyCode);
+
+  /**
+   * @brief Network callback: lobby state update
+   * @param lobbyCode Current lobby code
+   * @param playerCount Number of players in lobby
+   */
   void onLobbyState(const std::string &lobbyCode, int playerCount);
+
+  /**
+   * @brief Network callback: error occurred
+   * @param errorMsg Error message
+   */
   void onError(const std::string &errorMsg);
 
-  // Send viewport (width/height) to server
+  /**
+   * @brief Send viewport dimensions to server
+   */
   void sendViewportToServer();
 
 private:

@@ -81,7 +81,6 @@ void Game::spawnPlayer()
 {
   ecs::Entity player = world->createEntity();
 
-  world->addComponent(player, ecs::PlayerControlled{});
   world->addComponent(player, ecs::GunOffset{GameConfig::PLAYER_GUN_OFFSET});
 
   ecs::Transform transform;
@@ -157,7 +156,6 @@ void Game::spawnPlayer(std::uint32_t networkId)
 {
   ecs::Entity player = world->createEntity();
 
-  world->addComponent(player, ecs::PlayerControlled{});
   world->addComponent(player, ecs::GunOffset{GameConfig::PLAYER_GUN_OFFSET});
 
   ecs::Transform transform;
