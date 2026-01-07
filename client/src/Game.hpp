@@ -37,10 +37,10 @@ public:
    * @brief High-level game states
    */
   enum class GameState : std::uint8_t {
-    MENU,       ///< Main menu
+    MENU, ///< Main menu
     LOBBY_ROOM, ///< Lobby waiting room
-    PLAYING,    ///< Active gameplay
-    PAUSED      ///< Game paused
+    PLAYING, ///< Active gameplay
+    PAUSED ///< Game paused
   };
 
   /**

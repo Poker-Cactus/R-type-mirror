@@ -63,7 +63,7 @@ bool Game::init()
       return false;
     }
 
-    renderer = std::shared_ptr<IRenderer>(module->create(), [this](IRenderer* ptr) {
+    renderer = std::shared_ptr<IRenderer>(module->create(), [this](IRenderer *ptr) {
       if (module) {
         module->destroy(ptr);
       }
@@ -192,7 +192,7 @@ void Game::shutdown()
     m_networkManager.reset();
   }
   m_world.reset();
-  
+
   // Reset renderer - custom deleter will call module->destroy
   renderer.reset();
   module.reset();
@@ -307,7 +307,6 @@ void Game::handleLobbyRoomTransition()
   if (!menu->shouldStartGame()) {
     return;
   }
-
 
   // Get lobby info from menu
   const bool isCreating = menu->isCreatingLobby();

@@ -9,7 +9,8 @@ public:
   LoadingMenu(){};
   ~LoadingMenu(){};
   void init(std::shared_ptr<IRenderer> renderer);
-  void render(int winWidth, int winHeight, std::shared_ptr<IRenderer> renderer, LoadingScreen *loadingScreen, MenuState *currentState);
+  void render(int winWidth, int winHeight, std::shared_ptr<IRenderer> renderer, LoadingScreen *loadingScreen,
+              MenuState *currentState);
   void process(std::shared_ptr<IRenderer> renderer);
 
 private:

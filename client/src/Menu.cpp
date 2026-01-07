@@ -15,7 +15,10 @@
 #include <iostream>
 #include <memory>
 
-Menu::Menu(std::shared_ptr<IRenderer> renderer, Settings &settings) : m_renderer(std::move(renderer)), settings(settings) {}
+Menu::Menu(std::shared_ptr<IRenderer> renderer, Settings &settings)
+    : m_renderer(std::move(renderer)), settings(settings)
+{
+}
 
 Menu::~Menu()
 {
@@ -219,33 +222,34 @@ void Menu::renderMoonParalax(int winWidth, int winHeight)
 
   if (moonSky != nullptr) {
     m_renderer->drawTextureEx(moonSky, static_cast<int>(parallaxOffsetSky), 0, winWidth, winHeight, 0.0, false, false);
-    m_renderer->drawTextureEx(moonSky, static_cast<int>(parallaxOffsetSky - winWidth), 0, winWidth, winHeight, 0.0, false,
-                            false);
+    m_renderer->drawTextureEx(moonSky, static_cast<int>(parallaxOffsetSky - winWidth), 0, winWidth, winHeight, 0.0,
+                              false, false);
   }
 
   if (moonBack != nullptr) {
-    m_renderer->drawTextureEx(moonBack, static_cast<int>(parallaxOffsetBack), 0, winWidth, winHeight, 0.0, false, false);
+    m_renderer->drawTextureEx(moonBack, static_cast<int>(parallaxOffsetBack), 0, winWidth, winHeight, 0.0, false,
+                              false);
     m_renderer->drawTextureEx(moonBack, static_cast<int>(parallaxOffsetBack - winWidth), 0, winWidth, winHeight, 0.0,
-                            false, false);
+                              false, false);
   }
 
   if (moonMid != nullptr) {
     m_renderer->drawTextureEx(moonMid, static_cast<int>(parallaxOffsetMid), 0, winWidth, winHeight, 0.0, false, false);
-    m_renderer->drawTextureEx(moonMid, static_cast<int>(parallaxOffsetMid - winWidth), 0, winWidth, winHeight, 0.0, false,
-                            false);
+    m_renderer->drawTextureEx(moonMid, static_cast<int>(parallaxOffsetMid - winWidth), 0, winWidth, winHeight, 0.0,
+                              false, false);
   }
 
   if (moonFront != nullptr) {
     m_renderer->drawTextureEx(moonFront, static_cast<int>(parallaxOffsetFront), 0, winWidth, winHeight, 0.0, false,
-                            false);
+                              false);
     m_renderer->drawTextureEx(moonFront, static_cast<int>(parallaxOffsetFront - winWidth), 0, winWidth, winHeight, 0.0,
-                            false, false);
+                              false, false);
   }
 
   if (moonFloor != nullptr) {
     m_renderer->drawTextureEx(moonFloor, static_cast<int>(parallaxOffsetFloor), 0, winWidth, winHeight, 0.0, false,
-                            false);
+                              false);
     m_renderer->drawTextureEx(moonFloor, static_cast<int>(parallaxOffsetFloor - winWidth), 0, winWidth, winHeight, 0.0,
-                            false, false);
+                              false, false);
   }
 }
