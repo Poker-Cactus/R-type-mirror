@@ -1,9 +1,7 @@
-/*
-** EPITECH PROJECT, 2025
-** R-Type
-** File description:
-** Client entry point
-*/
+/**
+ * @file main.cpp
+ * @brief Client application entry point
+ */
 
 #include "Game.hpp"
 #include <SDL2/SDL.h>
@@ -12,6 +10,10 @@
 #include <iostream>
 #include <string>
 
+/**
+ * @brief Display command-line usage information
+ * @param programName Name of the program executable
+ */
 static void printUsage(const char *programName)
 {
   std::cout << "Usage: " << programName << " [HOST] [PORT]\n"
@@ -25,6 +27,16 @@ static void printUsage(const char *programName)
             << std::endl;
 }
 
+/**
+ * @brief Main entry point for the R-Type client
+ *
+ * Parses command-line arguments for server connection details,
+ * initializes the game, and runs the main game loop.
+ *
+ * @param argc Argument count
+ * @param argv Argument values
+ * @return EXIT_SUCCESS on normal exit, EXIT_FAILURE on error
+ */
 int main(int argc, char **argv)
 {
   std::string host = "127.0.0.1";

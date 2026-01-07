@@ -7,15 +7,15 @@
 
 #include "Menu.hpp"
 #include "../include/AssetPath.hpp"
-#include "Menu/LoadingMenu/LoadingMenu.hpp"
 #include "Menu/LobbyMenu/LobbyMenu.hpp"
 #include "Menu/MainMenu/MainMenu.hpp"
 #include "Menu/ProfileMenu/ProfileMenu.hpp"
 #include "Menu/SettingsMenu/SettingsMenu.hpp"
 #include <cmath>
 #include <iostream>
+#include <memory>
 
-Menu::Menu(IRenderer *renderer) : m_renderer(renderer) {}
+Menu::Menu(std::shared_ptr<IRenderer> renderer, Settings &settings) : m_renderer(std::move(renderer)), settings(settings) {}
 
 Menu::~Menu()
 {
@@ -29,8 +29,9 @@ void Menu::init()
     // const int titleFontSize = 48;
     menu_font = m_renderer->loadFont(resolveAssetPath("client/assets/font.opf/r-type.otf").c_str(), menuFontSize);
 
-    m_loadingMenu = std::make_shared<LoadingMenu>(m_renderer);
-    m_loadingMenu->init();
+    // Initialiser IntroScreen
+    introScreen = std::make_shared<IntroScreen>(m_renderer);
+    introScreen->init();
 
     // Initialiser MainMenu
     m_mainMenu = std::make_shared<MainMenu>(m_renderer);
@@ -43,7 +44,7 @@ void Menu::init()
     m_profileMenu->init();
 
     m_settingsMenu = std::make_shared<SettingsMenu>(m_renderer);
-    m_settingsMenu->init();
+    m_settingsMenu->init(settings);
 
     moonSky = m_renderer->loadTexture("client/assets/moon-para/moon_sky.png");
     moonBack = m_renderer->loadTexture("client/assets/moon-para/moon_back.png");
@@ -51,8 +52,6 @@ void Menu::init()
     moonFront = m_renderer->loadTexture("client/assets/moon-para/moon_front.png");
     moonFloor = m_renderer->loadTexture("client/assets/moon-para/moon_floor.png");
 
-    // Initialiser le LoadingScreen
-    loadingScreen = std::make_shared<LoadingScreen>(m_renderer, menu_font);
   } catch (const std::exception &e) {
     std::cerr << "Exception during menu initialization: " << e.what() << '\n';
   }
@@ -64,8 +63,10 @@ void Menu::render()
   int winHeight = m_renderer->getWindowHeight();
 
   switch (currentState) {
-  case MenuState::LOADING:
-    m_loadingMenu->render(winWidth, winHeight, loadingScreen.get(), &currentState);
+  case MenuState::INTRO:
+    if (introScreen != nullptr) {
+      introScreen->render(winWidth, winHeight);
+    }
     break;
   case MenuState::MAIN_MENU:
     renderMoonParalax(winWidth, winHeight);
@@ -91,8 +92,10 @@ void Menu::render()
 void Menu::processInput()
 {
   switch (currentState) {
-  case MenuState::LOADING:
-    m_loadingMenu->process();
+  case MenuState::INTRO:
+    if (introScreen != nullptr && introScreen->process()) {
+      currentState = MenuState::MAIN_MENU;
+    }
     break;
   case MenuState::MAIN_MENU:
     m_mainMenu->process(&currentState);

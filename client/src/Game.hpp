@@ -1,9 +1,15 @@
+/**
+ * @file Game.hpp
+ * @brief Main game controller and state manager
+ */
+
 #pragma once
 #include "../../engineCore/include/ecs/Entity.hpp"
 #include "../../engineCore/include/ecs/World.hpp"
 #include "../../engineCore/include/ecs/components/Input.hpp"
 #include "../../network/include/AsioClient.hpp"
 #include "../ModuleLoader.hpp"
+#include "../include/Settings.hpp"
 #include "../include/systems/NetworkReceiveSystem.hpp"
 #include "../include/systems/NetworkSendSystem.hpp"
 #include "../interface/IRenderer.hpp"
@@ -17,22 +23,65 @@
 class INetworkManager;
 
 /**
- * @brief Main game controller managing lifecycle, states, and game loop
+ * @class Game
+ * @brief Main game controller managing lifecycle and state machine
+ *
+ * Orchestrates the entire game flow including initialization, main loop,
+ * state transitions (menu, lobby, gameplay), input handling, and cleanup.
  */
 class Game
 {
 public:
-  enum class GameState : std::uint8_t { MENU, LOBBY_ROOM, PLAYING, PAUSED };
+  /**
+   * @enum GameState
+   * @brief High-level game states
+   */
+  enum class GameState : std::uint8_t {
+    MENU,       ///< Main menu
+    LOBBY_ROOM, ///< Lobby waiting room
+    PLAYING,    ///< Active gameplay
+    PAUSED      ///< Game paused
+  };
 
+  /**
+   * @brief Construct game with default server connection
+   */
   Game();
+
+  /**
+   * @brief Construct game with specific server connection
+   * @param host Server hostname or IP
+   * @param port Server port
+   */
   Game(const std::string &host, const std::string &port);
   ~Game();
 
+  /**
+   * @brief Initialize game resources and subsystems
+   * @return true if initialization succeeded
+   */
   bool init();
+
+  /**
+   * @brief Run the main game loop
+   */
   void run();
+
+  /**
+   * @brief Shutdown and clean up game resources
+   */
   void shutdown();
 
+  /**
+   * @brief Set current game state
+   * @param newState New game state
+   */
   void setState(GameState newState);
+
+  /**
+   * @brief Get current game state
+   * @return Current game state
+   */
   [[nodiscard]] GameState getState() const;
 
 private:
@@ -51,7 +100,7 @@ private:
   void delegateInputToCurrentState();
 
   std::unique_ptr<Module<IRenderer>> module;
-  IRenderer *renderer;
+  std::shared_ptr<IRenderer> renderer;
   std::shared_ptr<ecs::World> m_world;
   std::shared_ptr<INetworkManager> m_networkManager;
   bool isRunning = false;
@@ -63,4 +112,6 @@ private:
   std::unique_ptr<LobbyRoomState> lobbyRoomState;
   std::unique_ptr<PlayingState> playingState;
   float m_lobbyStateTime = 0.0F;
+  Settings settings;
+  bool fullScreen = true;
 };

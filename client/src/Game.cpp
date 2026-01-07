@@ -8,6 +8,7 @@
 #include "Game.hpp"
 #include "../interface/KeyCodes.hpp"
 #include "Menu/MenuState.hpp"
+#include "Settings.hpp"
 #include <cstddef>
 #include <iostream>
 #include <nlohmann/json.hpp>
@@ -62,7 +63,11 @@ bool Game::init()
       return false;
     }
 
-    renderer = module->create();
+    renderer = std::shared_ptr<IRenderer>(module->create(), [this](IRenderer* ptr) {
+      if (module) {
+        module->destroy(ptr);
+      }
+    });
 
     if (renderer == nullptr) {
       std::cerr << "[Game::init] ERROR: Renderer is null" << '\n';
@@ -77,7 +82,7 @@ bool Game::init()
       std::cerr << "[Game::init] Warning: failed to set fullscreen: " << e.what() << '\n';
     }
 
-    menu = std::make_unique<Menu>(renderer);
+    menu = std::make_unique<Menu>(renderer, settings);
     menu->init();
 
     m_world = std::make_shared<ecs::World>();
@@ -114,7 +119,7 @@ bool Game::init()
         std::cout << "[Game] Game started callback triggered - transitioning to PLAYING" << '\n';
         // Ensure the playing state exists and is initialized (recreate after death)
         if (!this->playingState) {
-          this->playingState = std::make_unique<PlayingState>(this->renderer, this->m_world);
+          this->playingState = std::make_unique<PlayingState>(this->renderer, this->m_world, this->settings);
           if (!this->playingState->init()) {
             std::cerr << "[Game] Failed to initialize playing state on game_started" << '\n';
             // Fallback to menu if we cannot initialize rendering state
@@ -132,7 +137,7 @@ bool Game::init()
       });
     }
 
-    playingState = std::make_unique<PlayingState>(renderer, m_world);
+    playingState = std::make_unique<PlayingState>(renderer, m_world, settings);
     if (!playingState->init()) {
       std::cerr << "Failed to initialize playing state" << '\n';
       return false;
@@ -179,7 +184,7 @@ void Game::shutdown()
   if (menu) {
     menu->cleanup();
     menu.reset();
-    renderer = nullptr;
+    // Renderer will be automatically destroyed by shared_ptr when all references are gone
   }
 
   if (m_networkManager) {
@@ -187,10 +192,9 @@ void Game::shutdown()
     m_networkManager.reset();
   }
   m_world.reset();
-  if (module && renderer != nullptr) {
-    module->destroy(renderer);
-    renderer = nullptr;
-  }
+  
+  // Reset renderer - custom deleter will call module->destroy
+  renderer.reset();
   module.reset();
   isRunning = false;
 }
@@ -236,7 +240,6 @@ void Game::sendViewportToServer()
 void Game::processInput()
 {
   if (renderer != nullptr && !renderer->pollEvents()) {
-    // Don't allow immediate close in lobby - give network time to send messages
     constexpr float LOBBY_GRACE_PERIOD = 0.5F;
     if (currentState == GameState::LOBBY_ROOM && m_lobbyStateTime < LOBBY_GRACE_PERIOD) {
       std::cout << "[Game] Ignoring close request - lobby just started (" << m_lobbyStateTime << "s)" << '\n';
@@ -305,14 +308,18 @@ void Game::handleLobbyRoomTransition()
     return;
   }
 
+
   // Get lobby info from menu
   const bool isCreating = menu->isCreatingLobby();
   const std::string lobbyCode = menu->getLobbyCodeToJoin();
+  const Difficulty diff = menu->getLobbyMenu()->getSelectedDifficulty();
 
   std::cout << "[Game] Transitioning from MENU to LOBBY_ROOM" << '\n';
   std::cout << "[Game] Creating: " << (isCreating ? "yes" : "no");
   if (!isCreating) {
     std::cout << ", Code: " << lobbyCode;
+  } else {
+    std::cout << ", Difficulty: " << static_cast<int>(diff);
   }
   std::cout << '\n';
 
@@ -334,7 +341,7 @@ void Game::handleLobbyRoomTransition()
   }
 
   // Set the lobby mode (create or join)
-  lobbyRoomState->setLobbyMode(isCreating, lobbyCode);
+  lobbyRoomState->setLobbyMode(isCreating, lobbyCode, diff);
 
   // Connect network callbacks to lobby state
   if (auto *networkReceiveSystem = m_world->getSystem<ClientNetworkReceiveSystem>()) {
@@ -476,13 +483,13 @@ void Game::updatePlayerInput()
   }
 
   auto &input = m_world->getComponent<ecs::Input>(m_inputEntity);
-  input.up = renderer->isKeyPressed(KeyCode::KEY_UP) || renderer->isKeyPressed(KeyCode::KEY_W) ||
+  input.up = renderer->isKeyPressed(settings.up) || renderer->isKeyPressed(KeyCode::KEY_W) ||
     renderer->isKeyPressed(KeyCode::KEY_Z);
-  input.down = renderer->isKeyPressed(KeyCode::KEY_DOWN) || renderer->isKeyPressed(KeyCode::KEY_S);
-  input.left = renderer->isKeyPressed(KeyCode::KEY_LEFT) || renderer->isKeyPressed(KeyCode::KEY_A) ||
+  input.down = renderer->isKeyPressed(settings.down) || renderer->isKeyPressed(KeyCode::KEY_S);
+  input.left = renderer->isKeyPressed(settings.left) || renderer->isKeyPressed(KeyCode::KEY_A) ||
     renderer->isKeyPressed(KeyCode::KEY_Q);
-  input.right = renderer->isKeyPressed(KeyCode::KEY_RIGHT) || renderer->isKeyPressed(KeyCode::KEY_D);
-  input.shoot = renderer->isKeyPressed(KeyCode::KEY_SPACE);
+  input.right = renderer->isKeyPressed(settings.right) || renderer->isKeyPressed(KeyCode::KEY_D);
+  input.shoot = renderer->isKeyPressed(settings.shoot);
 }
 
 void Game::delegateInputToCurrentState()
@@ -528,6 +535,11 @@ void Game::ensureInputEntity()
 
 void Game::update(float deltaTime)
 {
+  if (settings.fullScreen != fullScreen) {
+    renderer->setFullscreen(settings.fullScreen);
+    fullScreen = settings.fullScreen;
+  }
+
   if (m_world) {
     m_world->update(deltaTime);
   }

@@ -105,3 +105,22 @@ void NetworkSendSystem::sendInputToServer(UNUSED ecs::Entity entity, const ecs::
 
   last = now;
 }
+
+void NetworkSendSystem::sendSetDifficulty(Difficulty diff)
+{
+  nlohmann::json message;
+  message["type"] = "set_difficulty";
+  std::string diffStr;
+  switch (diff) {
+  case Difficulty::EASY: diffStr = "easy"; break;
+  case Difficulty::MEDIUM: diffStr = "medium"; break;
+  case Difficulty::EXPERT: diffStr = "expert"; break;
+  }
+  message["difficulty"] = diffStr;
+
+  const std::string serialized = message.dump();
+  m_networkManager->send(
+    std::span<const std::byte>(reinterpret_cast<const std::byte *>(serialized.data()), serialized.size()), 0);
+
+  std::cout << "[Client][SEND] set difficulty to " << diffStr << std::endl;
+}

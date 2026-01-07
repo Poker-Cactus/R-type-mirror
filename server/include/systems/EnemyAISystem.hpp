@@ -17,8 +17,6 @@
 #include "../../../engineCore/include/ecs/events/GameEvents.hpp"
 #include "ecs/ComponentSignature.hpp"
 #include <cmath>
-#include <random>
-#include <unordered_map>
 #include <vector>
 
 namespace server
@@ -30,8 +28,6 @@ namespace server
 class EnemyAISystem : public ecs::ISystem
 {
 public:
-  EnemyAISystem() : m_rng(std::random_device{}()) {}
-
   void update(ecs::World &world, float deltaTime) override
   {
     std::vector<ecs::Entity> entities;
@@ -40,26 +36,24 @@ public:
     for (auto entity : entities) {
       auto &transform = world.getComponent<ecs::Transform>(entity);
       auto &velocity = world.getComponent<ecs::Velocity>(entity);
+      auto &pattern = world.getComponent<ecs::Pattern>(entity);
 
-      m_aiTimer[entity] += deltaTime;
-
-      // Initialize per-entity randomized shot delay
-      if (!m_nextShotDelay.contains(entity)) {
-        m_nextShotDelay[entity] = randomShotDelay();
-      }
-
-      // Simple AI: enemies with negative velocity move left
-      if (velocity.dx < 0) {
-        // Keep moving left
+      // Apply pattern-based movement
+      if (pattern.patternType == "sine_wave") {
+        // Horizontal movement (always moving left)
         velocity.dx = ENEMY_MOVE_SPEED;
-      }
 
-      // Shoot after a random cooldown so enemies feel less predictable
-      if (m_aiTimer[entity] >= m_nextShotDelay[entity]) {
-        ecs::ShootEvent shootEvent(entity, -1.0F, 0.0F);
-        world.emitEvent(shootEvent);
-        m_aiTimer[entity] = 0.0F;
-        m_nextShotDelay[entity] = randomShotDelay();
+        // Update phase based on deltaTime and frequency
+        pattern.phase += deltaTime * pattern.frequency;
+
+        // Calculate vertical velocity using sine wave
+        // velocity = amplitude * frequency * cos(phase)
+        velocity.dy = pattern.amplitude * pattern.frequency * std::cos(pattern.phase);
+
+      } else if (pattern.patternType == "straight") {
+        // Simple straight-line movement
+        velocity.dx = ENEMY_MOVE_SPEED;
+        velocity.dy = 0.0F;
       }
 
       // Destroy if off-screen (left side)
@@ -79,21 +73,9 @@ public:
   }
 
 private:
-  std::mt19937 m_rng;
-  std::unordered_map<ecs::Entity, float> m_aiTimer;
-  std::unordered_map<ecs::Entity, float> m_nextShotDelay;
-
   // AI behavior constants
-  static constexpr float ENEMY_MOVE_SPEED = -80.0F;
-  static constexpr float MIN_SHOT_DELAY = 1.5F;
-  static constexpr float MAX_SHOT_DELAY = 3.5F;
+  static constexpr float ENEMY_MOVE_SPEED = -384.0F;
   static constexpr float OFFSCREEN_DESTROY_X = -100.0F;
-
-  float randomShotDelay()
-  {
-    std::uniform_real_distribution<float> dist(MIN_SHOT_DELAY, MAX_SHOT_DELAY);
-    return dist(m_rng);
-  }
 };
 
 } // namespace server

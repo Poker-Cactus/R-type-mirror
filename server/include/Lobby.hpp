@@ -9,6 +9,7 @@
 #define LOBBY_HPP_
 
 #include "../../engineCore/include/ecs/World.hpp"
+#include "Difficulty.hpp"
 #include <nlohmann/json.hpp>
 
 // Forward declaration for network manager
@@ -119,6 +120,19 @@ public:
    */
   void sendJsonToClient(std::uint32_t clientId, const nlohmann::json &message) const;
 
+  /**
+   * @brief Set the difficulty for this lobby
+   * @param difficulty The game difficulty
+   * @note Must be called before startGame() to take effect
+   */
+  void setDifficulty(GameConfig::Difficulty difficulty);
+
+  /**
+   * @brief Get the current difficulty setting
+   * @return The game difficulty
+   */
+  [[nodiscard]] GameConfig::Difficulty getDifficulty() const;
+
 private:
   void initializeSystems();
   void spawnPlayer(std::uint32_t clientId);
@@ -136,6 +150,9 @@ private:
 
   // Map client IDs to their player entities
   std::unordered_map<std::uint32_t, ecs::Entity> m_playerEntities;
+
+  // Game difficulty setting
+  GameConfig::Difficulty m_difficulty = GameConfig::Difficulty::MEDIUM;
 };
 
 #endif /* !LOBBY_HPP_ */

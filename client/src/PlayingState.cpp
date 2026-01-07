@@ -19,8 +19,8 @@
 #include "../interface/KeyCodes.hpp"
 #include <iostream>
 
-PlayingState::PlayingState(IRenderer *renderer, const std::shared_ptr<ecs::World> &world)
-    : renderer(renderer), world(world), background(nullptr)
+PlayingState::PlayingState(std::shared_ptr<IRenderer> renderer, const std::shared_ptr<ecs::World> &world, Settings &settings)
+    : renderer(std::move(renderer)), world(world), background(nullptr), settings(settings)
 {
 }
 
@@ -38,6 +38,8 @@ bool PlayingState::init()
 
   std::cout << "[PlayingState] Initializing with m_playerHealth = " << m_playerHealth << '\n';
 
+  settingsMenu = std::make_shared<SettingsMenu>(renderer);
+
   // Initialiser le background parallaxe
   background = std::make_unique<ParallaxBackground>(renderer);
   if (!background->init()) {
@@ -47,6 +49,18 @@ bool PlayingState::init()
 
   // Load sprite textures
   loadSpriteTextures();
+
+  // Load hearts texture for health display
+  try {
+    m_heartsTexture = renderer->loadTexture("client/assets/life-bar/hearts.png");
+    if (m_heartsTexture != nullptr) {
+      std::cout << "[PlayingState] ✓ Loaded hearts.png for HP display" << '\n';
+    } else {
+      std::cerr << "[PlayingState] ✗ Failed to load hearts.png" << '\n';
+    }
+  } catch (const std::exception &e) {
+    std::cerr << "[PlayingState] ✗ Failed to load hearts.png: " << e.what() << '\n';
+  }
 
   // Load HUD font with fallback
   try {
@@ -75,6 +89,9 @@ void PlayingState::update(float delta_time)
     background->update(delta_time);
   }
   changeAnimationPlayers(delta_time);
+
+  // Update sprite animations
+  updateAnimations(delta_time);
 
   // Update HUD data from world state
   updateHUDFromWorld();
@@ -111,42 +128,94 @@ void PlayingState::render()
     auto textureIt = m_spriteTextures.find(sprite.spriteId);
 
     if (textureIt != m_spriteTextures.end() && textureIt->second != nullptr) {
-      // constexpr int PLAYER_FRAME_WIDTH = 166;
-      // constexpr int PLAYER_FRAME_HEIGHT = 86;
       constexpr int PLAYER_FRAME_WIDTH = 33; // 166 / 5
       constexpr int PLAYER_FRAME_HEIGHT = 17; // 86 / 5
-      int srcX = m_playerFrameIndex * PLAYER_FRAME_WIDTH;
-      int srcY = 0; // première ligne seulement
 
-      // Draw using actual texture
-      if (sprite.spriteId == ecs::SpriteId::PLAYER_SHIP) {
-        // Player ship is a spritesheet: 2450x150 with 7 frames
-        // Each frame is 350x150 (2450/7 = 350)
-        // Extract only the first frame (x=0, y=0, w=350, h=150)
-        renderer->drawTextureRegion(textureIt->second,
-                                    {.x = srcX, .y = srcY, .width = PLAYER_FRAME_WIDTH, .height = PLAYER_FRAME_HEIGHT},
-                                    {.x = static_cast<int>(transformComponent.x),
-                                     .y = static_cast<int>(transformComponent.y),
-                                     .width = static_cast<int>(sprite.width),
-                                     .height = static_cast<int>(sprite.height)}); // Destination
-      } else if (sprite.spriteId == ecs::SpriteId::PROJECTILE) {
-        // Projectile is a spritesheet: 422x92 with 2 frames
-        // Each frame is 211x92 (422/2 = 211)
-        // Extract only the first frame (x=0, y=0, w=211, h=92)
-        constexpr int PROJECTILE_FRAME_WIDTH = 211;
-        constexpr int PROJECTILE_FRAME_HEIGHT = 92;
-        renderer->drawTextureRegion(
-          textureIt->second,
-          {.x = 0, .y = 0, .width = PROJECTILE_FRAME_WIDTH, .height = PROJECTILE_FRAME_HEIGHT}, // Source: first frame
-          {.x = static_cast<int>(transformComponent.x),
-           .y = static_cast<int>(transformComponent.y),
-           .width = static_cast<int>(sprite.width),
-           .height = static_cast<int>(sprite.height)}); // Destination
-      } else {
-        // Other sprites: draw full texture
-        renderer->drawTextureEx(textureIt->second, static_cast<int>(transformComponent.x),
-                                static_cast<int>(transformComponent.y), static_cast<int>(sprite.width),
-                                static_cast<int>(sprite.height), 0.0, false, false);
+      bool rendered = false;
+
+      // Check if sprite is animated
+      if (sprite.animated && sprite.frameCount > 1) {
+        // Calculate frame dimensions and source rectangle for animated sprites
+        int frameWidth = 0;
+        int frameHeight = 0;
+
+        if (sprite.spriteId == ecs::SpriteId::ENEMY_SHIP) {
+          // Enemy ship: 533x36 with 16 frames
+          frameWidth = 533 / 16; // 33px per frame
+          frameHeight = 36;
+        } else if (sprite.spriteId == ecs::SpriteId::PLAYER_SHIP) {
+          frameWidth = PLAYER_FRAME_WIDTH;
+          frameHeight = PLAYER_FRAME_HEIGHT;
+        } else if (sprite.spriteId == ecs::SpriteId::PROJECTILE) {
+          frameWidth = 18;
+          frameHeight = 14;
+        }
+
+        if (frameWidth > 0 && frameHeight > 0) {
+          // Calculate source rectangle based on current frame
+          int srcX = sprite.currentFrame * frameWidth;
+          // Apply transform scale to sprite dimensions
+          int scaledWidth = static_cast<int>(sprite.width * transformComponent.scale);
+          int scaledHeight = static_cast<int>(sprite.height * transformComponent.scale);
+
+          // Debug: log animation state for enemy ships
+          static float debugTimer = 0.0f;
+          static float lastTime = 0.0f;
+          if (sprite.spriteId == ecs::SpriteId::ENEMY_SHIP) {
+            debugTimer += 0.016f; // Approximate frame time
+            if (debugTimer - lastTime >= 1.0f) {
+              std::cout << "[Render] Enemy sprite - animated: " << sprite.animated
+                        << ", currentFrame: " << sprite.currentFrame << ", srcX: " << srcX
+                        << ", frameWidth: " << frameWidth << std::endl;
+              lastTime = debugTimer;
+            }
+          }
+
+          renderer->drawTextureRegion(
+            textureIt->second, {.x = srcX, .y = 0, .width = frameWidth, .height = frameHeight}, // Source: current frame
+            {.x = static_cast<int>(transformComponent.x),
+             .y = static_cast<int>(transformComponent.y),
+             .width = scaledWidth,
+             .height = scaledHeight}); // Destination with scale applied
+          rendered = true;
+        }
+      }
+
+      // Non-animated or fallback rendering
+      if (!rendered) {
+        // Draw using actual texture
+        if (sprite.spriteId == ecs::SpriteId::PLAYER_SHIP) {
+          // Player ship is a spritesheet with player animation
+          int srcX = m_playerFrameIndex * PLAYER_FRAME_WIDTH;
+          int srcY = 0; // première ligne seulement
+          int scaledWidth = static_cast<int>(sprite.width * transformComponent.scale);
+          int scaledHeight = static_cast<int>(sprite.height * transformComponent.scale);
+          renderer->drawTextureRegion(
+            textureIt->second, {.x = srcX, .y = srcY, .width = PLAYER_FRAME_WIDTH, .height = PLAYER_FRAME_HEIGHT},
+            {.x = static_cast<int>(transformComponent.x),
+             .y = static_cast<int>(transformComponent.y),
+             .width = scaledWidth,
+             .height = scaledHeight}); // Destination with scale
+        } else if (sprite.spriteId == ecs::SpriteId::PROJECTILE) {
+          // Projectile is a spritesheet: 422x92 with 2 frames
+          constexpr int PROJECTILE_FRAME_WIDTH = 18;
+          constexpr int PROJECTILE_FRAME_HEIGHT = 14;
+          int scaledWidth = static_cast<int>(sprite.width * transformComponent.scale);
+          int scaledHeight = static_cast<int>(sprite.height * transformComponent.scale);
+          renderer->drawTextureRegion(
+            textureIt->second,
+            {.x = 0, .y = 0, .width = PROJECTILE_FRAME_WIDTH, .height = PROJECTILE_FRAME_HEIGHT}, // Source: first frame
+            {.x = static_cast<int>(transformComponent.x),
+             .y = static_cast<int>(transformComponent.y),
+             .width = scaledWidth,
+             .height = scaledHeight}); // Destination with scale
+        } else {
+          // Other sprites: draw full texture
+          int scaledWidth = static_cast<int>(sprite.width * transformComponent.scale);
+          int scaledHeight = static_cast<int>(sprite.height * transformComponent.scale);
+          renderer->drawTextureEx(textureIt->second, static_cast<int>(transformComponent.x),
+                                  static_cast<int>(transformComponent.y), scaledWidth, scaledHeight, 0.0, false, false);
+        }
       }
     } else {
       // Fallback: colored rectangles for missing textures
@@ -181,8 +250,10 @@ void PlayingState::render()
         break;
       }
 
-      renderer->drawRect(static_cast<int>(transformComponent.x), static_cast<int>(transformComponent.y),
-                         static_cast<int>(sprite.width), static_cast<int>(sprite.height), color);
+      int scaledWidth = static_cast<int>(sprite.width * transformComponent.scale);
+      int scaledHeight = static_cast<int>(sprite.height * transformComponent.scale);
+      renderer->drawRect(static_cast<int>(transformComponent.x), static_cast<int>(transformComponent.y), scaledWidth,
+                         scaledHeight, color);
     }
   }
 
@@ -192,55 +263,140 @@ void PlayingState::render()
 
 void PlayingState::renderHUD()
 {
-  if (renderer == nullptr || m_hudFont == nullptr) {
+  if (renderer == nullptr) {
     return;
   }
 
-  // Draw health bar
-  constexpr int HEALTH_BAR_X = 20;
-  constexpr int HEALTH_BAR_Y = 20;
-  constexpr int HEALTH_BAR_WIDTH = 200;
-  constexpr int HEALTH_BAR_HEIGHT = 20;
-  constexpr int HUD_BACKGROUND_COLOR_R = 50;
-  constexpr int HUD_BACKGROUND_COLOR_G = 50;
-  constexpr int HUD_BACKGROUND_COLOR_B = 50;
-  constexpr int HUD_BACKGROUND_ALPHA = 200;
-  constexpr Color HUD_BACKGROUND_COLOR = {
-    .r = HUD_BACKGROUND_COLOR_R, .g = HUD_BACKGROUND_COLOR_G, .b = HUD_BACKGROUND_COLOR_B, .a = HUD_BACKGROUND_ALPHA};
-  constexpr Color HUD_HEALTH_GREEN = {.r = 100, .g = 255, .b = 100, .a = 255};
-  constexpr Color HUD_HEALTH_YELLOW = {.r = 255, .g = 255, .b = 100, .a = 255};
-  constexpr Color HUD_HEALTH_RED = {.r = 255, .g = 100, .b = 100, .a = 255};
+  // Hearts texture properties
+  constexpr int HEARTS_TEXTURE_WIDTH = 33;
+  constexpr float HEART_ROW_HEIGHT = 76.0f / 7.0f; // 11.0 pixels per row, using float for precision
+  constexpr int HEARTS_X = 20;
+  constexpr int HEARTS_Y = 20;
+  constexpr int DISPLAY_SCALE = 2; // Scale up for better visibility
   constexpr Color HUD_TEXT_WHITE = {.r = 255, .g = 255, .b = 255, .a = 255};
-  constexpr int HEALTH_THRESHOLD_HIGH = 60;
-  constexpr int HEALTH_THRESHOLD_MID = 30;
-  constexpr int MAX_HEALTH = 100;
-  constexpr int HUD_TEXT_OFFSET_X = 5;
-  constexpr int HUD_TEXT_OFFSET_Y = 2;
-  constexpr int HUD_SCORE_OFFSET_Y = 30;
+  constexpr int HUD_SCORE_OFFSET_Y = 50;
 
-  // Background (dark gray)
-  renderer->drawRect(HEALTH_BAR_X, HEALTH_BAR_Y, HEALTH_BAR_WIDTH, HEALTH_BAR_HEIGHT, HUD_BACKGROUND_COLOR);
-
-  // Health fill (green to red based on health)
-  int healthWidth = (m_playerHealth * HEALTH_BAR_WIDTH) / MAX_HEALTH;
-  Color healthColor;
-  if (m_playerHealth > HEALTH_THRESHOLD_HIGH) {
-    healthColor = HUD_HEALTH_GREEN;
-  } else if (m_playerHealth > HEALTH_THRESHOLD_MID) {
-    healthColor = HUD_HEALTH_YELLOW;
-  } else {
-    healthColor = HUD_HEALTH_RED;
+  // Draw hearts if texture is loaded
+  if (m_heartsTexture != nullptr) {
+    // Calculate heart display based on actual HP value
+    // Each 100 HP = 1 full heart
+    // Use floating point for precise heart calculation
+    float heartsValue = static_cast<float>(m_playerHealth) / 100.0f;
+    
+    // Clamp to valid range (0.0 to 3.0 hearts max)
+    heartsValue = std::max(0.0f, std::min(3.0f, heartsValue));
+    
+    // Convert hearts value to row index (0-6)
+    // 3.0 hearts = row 0 (full)
+    // 2.5 hearts = row 1
+    // 2.0 hearts = row 2
+    // 1.5 hearts = row 3
+    // 1.0 hearts = row 4
+    // 0.5 hearts = row 5
+    // 0.0 hearts = row 6 (empty)
+    
+    int heartRow = 0;
+    if (heartsValue >= 2.5f) {
+      heartRow = 0; // 2.5-3.0 hearts: full
+    } else if (heartsValue >= 2.0f) {
+      heartRow = 1; // 2.0-2.4 hearts
+    } else if (heartsValue >= 1.5f) {
+      heartRow = 2; // 1.5-1.9 hearts
+    } else if (heartsValue >= 1.0f) {
+      heartRow = 3; // 1.0-1.4 hearts
+    } else if (heartsValue >= 0.5f) {
+      heartRow = 4; // 0.5-0.9 hearts
+    } else if (heartsValue > 0.0f) {
+      heartRow = 5; // 0.1-0.4 hearts
+    } else {
+      heartRow = 6; // 0 hearts: empty
+    }
+    
+    // Calculate source Y position with rounding for exact pixel alignment
+    int sourceY = static_cast<int>(std::round(heartRow * HEART_ROW_HEIGHT));
+    
+    // Draw the appropriate heart row
+    renderer->drawTextureRegion(
+      m_heartsTexture,
+      {.x = 0, .y = sourceY, .width = HEARTS_TEXTURE_WIDTH, .height = static_cast<int>(std::round(HEART_ROW_HEIGHT))},
+      {.x = HEARTS_X, .y = HEARTS_Y, .width = HEARTS_TEXTURE_WIDTH * DISPLAY_SCALE, .height = static_cast<int>(std::round(HEART_ROW_HEIGHT)) * DISPLAY_SCALE}
+    );
   }
-  renderer->drawRect(HEALTH_BAR_X, HEALTH_BAR_Y, healthWidth, HEALTH_BAR_HEIGHT, healthColor);
 
-  // Health text
-  std::string healthText = "HP: " + std::to_string(m_playerHealth) + "/" + std::to_string(MAX_HEALTH);
-  renderer->drawText(m_hudFont, healthText, HEALTH_BAR_X + HUD_TEXT_OFFSET_X, HEALTH_BAR_Y + HUD_TEXT_OFFSET_Y,
-                     HUD_TEXT_WHITE);
+  // Score text (only if font is loaded)
+  if (m_hudFont != nullptr) {
+    std::string scoreText = "Score: " + std::to_string(m_playerScore);
+    renderer->drawText(m_hudFont, scoreText, HEARTS_X, HEARTS_Y + HUD_SCORE_OFFSET_Y, HUD_TEXT_WHITE);
+  }
+}
 
-  // Score text
-  std::string scoreText = "Score: " + std::to_string(m_playerScore);
-  renderer->drawText(m_hudFont, scoreText, HEALTH_BAR_X, HEALTH_BAR_Y + HUD_SCORE_OFFSET_Y, HUD_TEXT_WHITE);
+void PlayingState::updateAnimations(float deltaTime)
+{
+  if (world == nullptr) {
+    return;
+  }
+
+  // Get all entities with sprite component
+  ecs::ComponentSignature sig;
+  sig.set(ecs::getComponentId<ecs::Sprite>());
+
+  std::vector<ecs::Entity> entities;
+  world->getEntitiesWithSignature(sig, entities);
+
+  int animatedCount = 0;
+  for (auto entity : entities) {
+    auto &sprite = world->getComponent<ecs::Sprite>(entity);
+
+    if (!sprite.animated || sprite.frameCount <= 1) {
+      continue;
+    }
+
+    // If the animation is non-looping and already finished, keep final frame
+    if (!sprite.loop) {
+      if (!sprite.reverseAnimation && sprite.currentFrame >= sprite.endFrame) {
+        continue;
+      }
+      if (sprite.reverseAnimation && sprite.currentFrame <= sprite.endFrame) {
+        continue;
+      }
+    }
+
+    animatedCount++;
+
+    // Update animation timer
+    sprite.animationTimer += deltaTime;
+
+    // Check if we should advance to next frame
+    if (sprite.animationTimer >= sprite.frameTime) {
+      sprite.animationTimer -= sprite.frameTime;
+
+      if (sprite.reverseAnimation) {
+        // Play animation in reverse (e.g., from frame 7 to 0)
+        if (sprite.currentFrame > sprite.endFrame) {
+          sprite.currentFrame--;
+        } else if (sprite.loop) {
+          sprite.currentFrame = sprite.startFrame; // Loop back
+        }
+      } else {
+        // Play animation forward
+        if (sprite.currentFrame < sprite.endFrame) {
+          sprite.currentFrame++;
+        } else if (sprite.loop) {
+          sprite.currentFrame = sprite.startFrame; // Loop back
+        }
+      }
+    }
+  }
+
+  // Debug: log once per second
+  static float debugTimer = 0.0f;
+  debugTimer += deltaTime;
+  if (debugTimer >= 1.0f) {
+    if (animatedCount > 0) {
+      std::cout << "[Animation] " << animatedCount << " animated sprites active" << std::endl;
+    }
+    debugTimer = 0.0f;
+  }
 }
 
 void PlayingState::updateHUDFromWorld()
@@ -283,6 +439,7 @@ void PlayingState::updateHUDFromWorld()
         if (world->hasComponent<ecs::Health>(entity)) {
           const auto &health = world->getComponent<ecs::Health>(entity);
           m_playerHealth = health.hp;
+          m_playerMaxHealth = health.maxHp;
         }
         if (world->hasComponent<ecs::Score>(entity)) {
           const auto &score = world->getComponent<ecs::Score>(entity);
@@ -322,9 +479,9 @@ void PlayingState::processInput()
   if (renderer == nullptr)
     return;
 
-  if (renderer->isKeyPressed(KeyCode::KEY_UP)) {
+  if (renderer->isKeyPressed(settings.up)) {
     m_returnUp = true;
-  } else if (renderer->isKeyPressed(KeyCode::KEY_DOWN)) {
+  } else if (renderer->isKeyPressed(settings.down)) {
     m_returnDown = true;
   } else {
     m_returnUp = false;
@@ -334,22 +491,52 @@ void PlayingState::processInput()
 
 void PlayingState::changeAnimationPlayers(float delta_time)
 {
+  // No input: reset to idle and clear any queued single-shot animation
   if (!m_returnUp && !m_returnDown) {
     m_playerAnimTimer = 0.f;
-    m_playerFrameIndex = 3;
+    m_playerFrameIndex = 2;
+    m_playerAnimDirection = PlayerAnimDirection::None;
+    m_playerAnimPlayingOnce = false;
+    m_playerAnimPhase = 0;
     return;
   }
 
+  // Determine desired direction based on current input
+  const PlayerAnimDirection desiredDirection = m_returnUp ? PlayerAnimDirection::Up : PlayerAnimDirection::Down;
+
+  // Start a new single-shot animation only on a fresh key press or direction change
+  if (desiredDirection != m_playerAnimDirection) {
+    m_playerAnimDirection = desiredDirection;
+    m_playerAnimPlayingOnce = true;
+    m_playerAnimPhase = 0;
+    m_playerAnimTimer = 0.f;
+    m_playerFrameIndex = 2; // start from neutral frame before stepping
+  }
+
+  if (!m_playerAnimPlayingOnce) {
+    return; // already played for this press
+  }
+
   m_playerAnimTimer += delta_time;
-  constexpr float ANIM_FRAME_DURATION = 0.15f;
+  constexpr float ANIM_FRAME_DURATION = 0.12f; // slightly faster for snappier feel
   if (m_playerAnimTimer >= ANIM_FRAME_DURATION) {
     m_playerAnimTimer = 0.f;
-    m_playerAnimToggle = (m_playerAnimToggle + 1) % 2;
+    m_playerAnimPhase++;
 
-    if (m_returnUp) {
-      m_playerFrameIndex = (m_playerAnimToggle == 0) ? 3 : 4;
-    } else if (m_returnDown) {
-      m_playerFrameIndex = (m_playerAnimToggle == 0) ? 1 : 2;
+    if (m_playerAnimDirection == PlayerAnimDirection::Up) {
+      if (m_playerAnimPhase == 1) {
+        m_playerFrameIndex = 3; // mid frame
+      } else {
+        m_playerFrameIndex = 4; // end frame
+        m_playerAnimPlayingOnce = false; // done for this press
+      }
+    } else if (m_playerAnimDirection == PlayerAnimDirection::Down) {
+      if (m_playerAnimPhase == 1) {
+        m_playerFrameIndex = 1; // mid frame
+      } else {
+        m_playerFrameIndex = 0; // end frame
+        m_playerAnimPlayingOnce = false; // done for this press
+      }
     }
   }
 }
@@ -363,6 +550,12 @@ void PlayingState::cleanup()
 
   // Free all loaded sprite textures
   freeSpriteTextures();
+
+  // Free hearts texture
+  if (m_heartsTexture != nullptr && renderer != nullptr) {
+    renderer->freeTexture(m_heartsTexture);
+    m_heartsTexture = nullptr;
+  }
 
   // Free HUD font
   if (m_hudFont != nullptr && renderer != nullptr) {
@@ -395,22 +588,22 @@ void PlayingState::loadSpriteTextures()
     std::cerr << "[PlayingState] ✗ Failed to load player_ship.png: " << e.what() << '\n';
   }
 
-  // ENEMY_SHIP = 2
+  // ENEMY_SHIP = 2 (animated spritesheet: 533x36, 16 frames)
   try {
-    void *enemy_tex = renderer->loadTexture("client/assets/sprites/enemy_ship.png");
+    void *enemy_tex = renderer->loadTexture(resolveAssetPath("client/assets/sprites/enemy_ship.gif").c_str());
     if (enemy_tex != nullptr) {
       m_spriteTextures[ecs::SpriteId::ENEMY_SHIP] = enemy_tex;
-      std::cout << "[PlayingState] ✓ Loaded enemy_ship.png" << '\n';
+      std::cout << "[PlayingState] ✓ Loaded enemy_ship.gif" << '\n';
     } else {
-      std::cerr << "[PlayingState] ✗ Failed to load enemy_ship.png (returned null)" << '\n';
+      std::cerr << "[PlayingState] ✗ Failed to load enemy_ship.gif (returned null)" << '\n';
     }
   } catch (const std::exception &e) {
-    std::cerr << "[PlayingState] ✗ Failed to load enemy_ship.png: " << e.what() << '\n';
+    std::cerr << "[PlayingState] ✗ Failed to load enemy_ship.gif: " << e.what() << '\n';
   }
 
   // PROJECTILE = 3 (spritesheet: 422x92, 2 frames, using first frame only)
   try {
-    void *projectile_tex = renderer->loadTexture("client/assets/sprites/projectile.png");
+    void *projectile_tex = renderer->loadTexture("client/assets/sprites/r-typesheet1.png");
     if (projectile_tex != nullptr) {
       m_spriteTextures[ecs::SpriteId::PROJECTILE] = projectile_tex;
       std::cout << "[PlayingState] ✓ Loaded projectile.png" << '\n';
