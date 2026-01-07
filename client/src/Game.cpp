@@ -34,6 +34,9 @@ Game::~Game()
 bool Game::init()
 {
   try {
+    // Load settings from file
+    settings.loadFromFile();
+
     // Try multiple paths for the SDL2 module
     const char *modulePaths[] = {
 #ifdef _WIN32
@@ -164,6 +167,9 @@ void Game::run()
 
 void Game::shutdown()
 {
+  // Save settings before shutting down
+  settings.saveToFile();
+
   // Notify server that we're leaving before shutting down
   sendLeaveToServer();
 
@@ -252,13 +258,17 @@ void Game::processInput()
     return;
   }
 
+  // Toggle fullscreen with M key (but not when editing profile)
   if (renderer != nullptr && renderer->isKeyJustPressed(KeyCode::KEY_M)) {
-    bool currentFullscreen = renderer->isFullscreen();
-    renderer->setFullscreen(!currentFullscreen);
-    std::cout << "[Game] Toggled fullscreen: " << (!currentFullscreen ? "ON" : "OFF") << '\n';
+    // Don't toggle fullscreen if we're editing a username in the profile menu
+    if (!(currentState == GameState::MENU && menu && menu->getState() == MenuState::PROFILE && menu->isProfileEditing())) {
+      bool currentFullscreen = renderer->isFullscreen();
+      renderer->setFullscreen(!currentFullscreen);
+      std::cout << "[Game] Toggled fullscreen: " << (!currentFullscreen ? "ON" : "OFF") << '\n';
 
-    // Send updated viewport to server
-    sendViewportToServer();
+      // Send updated viewport to server
+      sendViewportToServer();
+    }
   }
 
   handleMenuStateInput();
@@ -362,6 +372,20 @@ void Game::handleLobbyRoomTransition()
     networkReceiveSystem->setPlayerDeadCallback([this](const nlohmann::json &msg) {
       std::cout << "[Game] Received player_dead from server - returning to menu" << std::endl;
 
+      // Save highscore if we have the necessary information
+      if (msg.contains("score") && menu != nullptr) {
+        int finalScore = msg.value("score", 0);
+        Difficulty gameDifficulty = menu->getCurrentDifficulty();
+        std::string playerName = settings.username;
+
+        HighscoreEntry entry{playerName, finalScore, gameDifficulty};
+        if (highscoreManager.addHighscore(entry)) {
+          std::cout << "[Game] New highscore saved: " << playerName << " - " << finalScore 
+                    << " points (" << (gameDifficulty == Difficulty::EASY ? "Easy" : 
+                                     gameDifficulty == Difficulty::MEDIUM ? "Medium" : "Expert") << ")" << std::endl;
+        }
+      }
+
       // Stop accepting snapshots
       if (auto *netRec = m_world->getSystem<ClientNetworkReceiveSystem>()) {
         netRec->setAcceptSnapshots(false);
@@ -396,6 +420,8 @@ void Game::handleLobbyRoomTransition()
       currentState = GameState::MENU;
       if (menu) {
         menu->setState(MenuState::MAIN_MENU);
+        // Refresh highscores for when player returns to lobby menu
+        menu->refreshHighscoresIfInLobby();
       }
     });
 

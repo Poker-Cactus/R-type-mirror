@@ -5,8 +5,10 @@
 
 #pragma once
 #include "../../../../common/include/Common.hpp"
+#include "../../../../common/include/Highscore.hpp"
 #include "../../../../network/include/INetworkManager.hpp"
 #include "../../../interface/IRenderer.hpp"
+#include "../../../include/Settings.hpp"
 #include "../MenuState.hpp"
 #include <functional>
 #include <memory>
@@ -48,8 +50,9 @@ public:
   /**
    * @brief Initialize lobby menu resources
    * @param renderer Renderer interface
+   * @param settings Game settings reference
    */
-  void init(IRenderer *renderer);
+  void init(IRenderer *renderer, Settings &settings);
 
   /**
    * @brief Render the lobby menu
@@ -94,6 +97,11 @@ public:
   [[nodiscard]] const std::string &getLobbyCodeToJoin() const { return m_lobbyCodeInput; }
 
   /**
+   * @brief Refresh highscores from file
+   */
+  void refreshHighscores();
+
+  /**
    * @brief Check if player is creating a new lobby
    * @return true if creating lobby
    */
@@ -105,11 +113,15 @@ private:
   void renderMenuOptions(const WindowDimensions &windowDims, IRenderer *renderer);
   void renderLobbyCodeInput(const WindowDimensions &windowDims, IRenderer *renderer);
   void renderDifficultySelection(const WindowDimensions &windowDims, IRenderer *renderer);
+  void renderHighscores(const WindowDimensions &windowDims, IRenderer *renderer);
   void handleMenuNavigation(IRenderer *renderer);
   void handleDifficultyNavigation(IRenderer *renderer);
   void handleTextInput(IRenderer *renderer);
   void selectCurrentOption(MenuState *currentState);
   void selectDifficultyOption();
+
+  // Settings
+  Settings *m_settings = nullptr;
 
   // Assets
   void *m_font = nullptr;
@@ -146,4 +158,9 @@ private:
 
   // Network
   std::shared_ptr<INetworkManager> m_networkManager;
+  HighscoreManager m_highscoreManager;
+
+  // Highscore refresh timer
+  float m_highscoreRefreshTimer = 0.0F;
+  static constexpr float HIGHSCORE_REFRESH_INTERVAL = 3.0F; // Refresh every 3 seconds
 };

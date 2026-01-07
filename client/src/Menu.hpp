@@ -82,8 +82,24 @@ public:
    * @brief Reset lobby selection flags
    */
   void resetLobbySelection();
-  [[nodiscard]] Difficulty getCurrentDifficulty() const { return currentDifficulty; }
+  [[nodiscard]] Difficulty getCurrentDifficulty() const;
   [[nodiscard]] LobbyMenu *getLobbyMenu() const { return lobbyMenu; }
+
+  /**
+   * @brief Reset highscore refresh flag in lobby menu
+   */
+  void resetLobbyHighscoresRefresh();
+
+  /**
+   * @brief Check if profile menu is currently editing
+   * @return true if profile menu is in editing mode
+   */
+  [[nodiscard]] bool isProfileEditing() const { return profileMenu != nullptr && profileMenu->isEditing(); }
+
+  /**
+   * @brief Refresh highscores when entering lobby menu
+   */
+  void refreshHighscoresIfInLobby();
 
   /**
    * @brief Process user input for current menu state

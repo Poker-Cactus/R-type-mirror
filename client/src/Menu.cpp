@@ -37,10 +37,10 @@ void Menu::init()
     mainMenu->init(renderer);
 
     lobbyMenu = new LobbyMenu();
-    lobbyMenu->init(renderer);
+    lobbyMenu->init(renderer, settings);
 
     profileMenu = new ProfileMenu();
-    profileMenu->init(renderer);
+    profileMenu->init(renderer, settings);
 
     settingsMenu = new SettingsMenu();
     settingsMenu->init(renderer, settings);
@@ -118,6 +118,11 @@ void Menu::cleanup() {}
 void Menu::setState(MenuState newState)
 {
   currentState = newState;
+  
+  // Refresh highscores when entering lobby menu
+  if (newState == MenuState::LOBBY && lobbyMenu != nullptr) {
+    lobbyMenu->refreshHighscores();
+  }
 }
 
 void Menu::drawCenteredText(const std::string &text, int yOffset, const Color &color)
@@ -159,6 +164,13 @@ bool Menu::isCreatingLobby() const
   return lobbyMenu != nullptr && lobbyMenu->isCreatingLobby();
 }
 
+void Menu::refreshHighscoresIfInLobby()
+{
+  if (currentState == MenuState::LOBBY && lobbyMenu != nullptr) {
+    lobbyMenu->refreshHighscores();
+  }
+}
+
 std::string Menu::getLobbyCodeToJoin() const
 {
   if (lobbyMenu != nullptr) {
@@ -170,8 +182,19 @@ std::string Menu::getLobbyCodeToJoin() const
 void Menu::resetLobbySelection()
 {
   if (lobbyMenu != nullptr) {
+    // Cache the current difficulty before resetting
+    currentDifficulty = lobbyMenu->getSelectedDifficulty();
     lobbyMenu->resetLobbyRoomFlag();
   }
+}
+
+Difficulty Menu::getCurrentDifficulty() const
+{
+  // Return the actual selected difficulty from lobby menu if available
+  if (lobbyMenu != nullptr) {
+    return lobbyMenu->getSelectedDifficulty();
+  }
+  return currentDifficulty;
 }
 
 void Menu::renderMoonParalax(int winWidth, int winHeight, IRenderer *renderer)
