@@ -448,8 +448,8 @@ void LobbyMenu::renderHighscores(const WindowDimensions &windowDims, IRenderer *
       break;
     }
 
-    const std::string scoreText = std::to_string(i + 1) + ". " + entry.username + " - " + 
-                                  std::to_string(entry.score) + " (" + difficultyStr + ")";
+    const std::string scoreText = std::to_string(i + 1) + ". " + entry.username + "  " + 
+                                  std::to_string(entry.score) + "  " + difficultyStr;
 
     int scoreWidth = 0;
     int scoreHeight = 0;
