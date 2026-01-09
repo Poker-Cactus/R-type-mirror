@@ -41,6 +41,11 @@ struct Sprite : public IComponent {
   float animationTimer = 0.0f; // Internal timer for animation
   bool reverseAnimation = false; // Play animation in reverse order
 
+  // Spritesheet row and offset support
+  std::uint32_t row = 0; // Which row (0-indexed) to use in the spritesheet
+  std::uint32_t offsetX = 0; // Horizontal pixel offset (skip columns)
+  std::uint32_t offsetY = 0; // Vertical pixel offset (skip rows)
+
   [[nodiscard]] nlohmann::json toJson() const override
   {
     nlohmann::json json;
@@ -55,6 +60,9 @@ struct Sprite : public IComponent {
     json["loop"] = loop;
     json["frameTime"] = frameTime;
     json["reverseAnimation"] = reverseAnimation;
+    json["row"] = row;
+    json["offsetX"] = offsetX;
+    json["offsetY"] = offsetY;
     return json;
   }
 
@@ -74,6 +82,9 @@ struct Sprite : public IComponent {
     sprite.loop = json.value("loop", true);
     sprite.frameTime = json.value("frameTime", 0.1f);
     sprite.reverseAnimation = json.value("reverseAnimation", false);
+    sprite.row = json.value("row", 0u);
+    sprite.offsetX = json.value("offsetX", 0u);
+    sprite.offsetY = json.value("offsetY", 0u);
     return sprite;
   }
 };

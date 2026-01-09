@@ -71,13 +71,13 @@ private:
   static constexpr float DRONE_SCALE = 2.5f;
 
   // BUBBLE follower configuration
-  static constexpr float BUBBLE_OFFSET_X = -50.0f; // Behind the player
-  static constexpr float BUBBLE_OFFSET_Y = -20.0f; // Slightly above
+  static constexpr float BUBBLE_OFFSET_X = 50.0f; // Behind the player
+  static constexpr float BUBBLE_OFFSET_Y = 20.0f; // Slightly above
   static constexpr float BUBBLE_SMOOTHING = 10.0f;
-  static constexpr unsigned int BUBBLE_SPRITE_WIDTH = 600;
-  static constexpr unsigned int BUBBLE_SPRITE_HEIGHT = 866;
-  static constexpr unsigned int BUBBLE_FRAME_COUNT = 12;
-  static constexpr int BUBBLE_FRAME_WIDTH = BUBBLE_SPRITE_WIDTH / BUBBLE_FRAME_COUNT; // 50px (integer division)
+  static constexpr unsigned int BUBBLE_SPRITE_WIDTH = 289; // bubble.png width (actual)
+  static constexpr unsigned int BUBBLE_SPRITE_HEIGHT = 24; // bubble.png height
+  static constexpr unsigned int BUBBLE_FRAME_COUNT = 12; // 12 frames of 24px each
+  static constexpr int BUBBLE_FRAME_WIDTH = 24; // Frame width in pixels
   static constexpr float BUBBLE_SCALE = 2.5f;
 
   void handleCollision(ecs::World &world, const ecs::CollisionEvent &event)
@@ -108,13 +108,19 @@ private:
     std::cout << "[PowerupSystem] Player " << playerEntity << " collected powerup type "
               << static_cast<int>(powerup.type) << '\n';
 
+    // Get powerup position before destroying it (for BUBBLE spawn location)
+    float powerupY = 0.0f;
+    if (world.hasComponent<ecs::Transform>(powerupEntity)) {
+      powerupY = world.getComponent<ecs::Transform>(powerupEntity).y;
+    }
+
     // Apply power-up effect based on type
     switch (powerup.type) {
     case ecs::PowerupType::DRONE:
       spawnDroneFollower(world, playerEntity);
       break;
     case ecs::PowerupType::BUBBLE:
-      spawnBubbleFollower(world, playerEntity);
+      spawnBubbleFollower(world, playerEntity, powerupY);
       break;
     case ecs::PowerupType::BUBBLE_TRIPLE:
       // TODO: Implement shield
@@ -127,7 +133,8 @@ private:
     // Destroy the power-up entity after collection
     world.destroyEntity(powerupEntity);
   }
-  void spawnBubbleFollower(ecs::World &world, ecs::Entity player)
+
+  void spawnBubbleFollower(ecs::World &world, ecs::Entity player, float spawnY)
   {
     if (!world.hasComponent<ecs::Transform>(player)) {
       return;
@@ -135,42 +142,38 @@ private:
 
     const auto &playerTransform = world.getComponent<ecs::Transform>(player);
 
-    // Bubble follower appears to the left of the player's ship
-    float bubbleOffsetX = -60.0f; // Adjust as needed for your sprite size
-    float bubbleOffsetY = 0.0f; // Same vertical position as player
-
     ecs::Entity bubble = world.createEntity();
 
-    // Transform - start at player position + offset
+    // Transform - start at left side of screen at powerup Y position
     ecs::Transform transform;
-    transform.x = playerTransform.x + bubbleOffsetX;
-    transform.y = playerTransform.y + bubbleOffsetY;
+    transform.x = 0.0f; // Spawn from left edge of screen
+    transform.y = spawnY; // Use powerup's Y position
     transform.rotation = 0.0f;
     transform.scale = BUBBLE_SCALE;
     world.addComponent(bubble, transform);
 
-    // Follower component - links to player, stays at left
+    // Follower component - links to player, moves to ship's front tip
     ecs::Follower follower;
     follower.parent = player;
-    follower.offsetX = bubbleOffsetX;
-    follower.offsetY = bubbleOffsetY;
-    follower.smoothing = BUBBLE_SMOOTHING;
+    follower.offsetX = 120.0f; // A bit more to the right
+    follower.offsetY = 10.0f; // A bit lower
     world.addComponent(bubble, follower);
 
-    // Sprite - use second line of spritesheet
+    // Sprite - use second line of spritesheet (row 1)
     ecs::Sprite sprite;
     sprite.spriteId = ecs::SpriteId::BUBBLE;
-    sprite.width = BUBBLE_FRAME_WIDTH;
-    sprite.height = BUBBLE_SPRITE_HEIGHT / 2; // Use half height for one row
+    sprite.width = BUBBLE_FRAME_WIDTH; // Width of one frame
+    sprite.height = BUBBLE_SPRITE_HEIGHT; // Height of one row (not total spritesheet)
     sprite.animated = true;
     sprite.frameCount = BUBBLE_FRAME_COUNT;
-    sprite.startFrame = 11;
-    sprite.endFrame = 0;
-    sprite.currentFrame = 11;
-    sprite.frameTime = 0.1f;
-    sprite.reverseAnimation = true;
+    sprite.startFrame = 0;
+    sprite.endFrame = BUBBLE_FRAME_COUNT - 1; // 0 to 11 (12 frames)
+    sprite.currentFrame = 0;
+    sprite.frameTime = 0.08f; // Slightly faster animation
+    sprite.reverseAnimation = false; // Play forward to avoid loop cut
     sprite.loop = true;
-    // sprite.row = 1; // <-- Utilise la deuxième ligne (row index 1)
+    sprite.row = 0; // bubble.png has only one row
+    sprite.offsetX = 0; // No horizontal offset needed
     world.addComponent(bubble, sprite);
 
     // Networked so clients can see the bubble
@@ -178,7 +181,8 @@ private:
     net.networkId = bubble;
     world.addComponent(bubble, net);
 
-    std::cout << "[PowerupSystem] Spawned bubble follower " << bubble << " for player " << player << " (spritesheet row 2)\n";
+    std::cout << "[PowerupSystem] Spawned bubble follower " << bubble << " for player " << player << " at y=" << spawnY
+              << " (moving to ship tip)\n";
   }
 
   void spawnDroneFollower(ecs::World &world, ecs::Entity player)

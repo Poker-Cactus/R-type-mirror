@@ -134,7 +134,7 @@ private:
   static constexpr int POWERUP_FRAME_WIDTH = POWERUP_SPRITE_SHEET_WIDTH / POWERUP_TOTAL_FRAMES; // 12px per frame
   static constexpr float POWERUP_VELOCITY_X = -100.0F; // Slow drift left
   static constexpr float POWERUP_COLLIDER_SIZE = 32.0F;
-  static constexpr float POWERUP_SCALE = 2.0F;
+  static constexpr float POWERUP_SCALE = 4.0F;
 
   static constexpr float PROJECTILE_COLLIDER_SIZE = 8.0F;
   static constexpr unsigned int PROJECTILE_SPRITE_WIDTH = 84;
@@ -186,19 +186,6 @@ private:
     // Alternate powerup types: DRONE first, then BUBBLE
     ecs::PowerupType powerupType = (m_powerupSpawnCount % 2 == 0) ? ecs::PowerupType::DRONE : ecs::PowerupType::BUBBLE;
     m_powerupSpawnCount++;
-
-    // ecs::Sprite powerupSprite;
-    // powerupSprite.spriteId = ecs::SpriteId::POWERUP;
-    // powerupSprite.width = POWERUP_FRAME_WIDTH;
-    // powerupSprite.height = POWERUP_SPRITE_HEIGHT;
-    // powerupSprite.animated = false;
-    // powerupSprite.frameCount = POWERUP_FRAME_COUNT;
-    // powerupSprite.startFrame = 0;
-    // powerupSprite.endFrame = POWERUP_FRAME_COUNT - 1;
-    // powerupSprite.currentFrame = 0;
-    // powerupSprite.frameTime = 0.1f;
-    // powerupSprite.loop = true;
-    // world.addComponent(powerupSprite, powerupSprite);
 
     spawnPowerup(world, spawnX, spawnY, powerupType);
   }

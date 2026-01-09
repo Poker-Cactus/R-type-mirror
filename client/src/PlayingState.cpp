@@ -140,31 +140,39 @@ void PlayingState::render()
         int frameWidth = 0;
         int frameHeight = 0;
 
-        if (sprite.spriteId == ecs::SpriteId::ENEMY_SHIP) {
-          // Enemy ship: 533x36 with 16 frames
+        switch (sprite.spriteId) {
+        case ecs::SpriteId::ENEMY_SHIP:
           frameWidth = 533 / 16; // 33px per frame
           frameHeight = 36;
-        } else if (sprite.spriteId == ecs::SpriteId::PLAYER_SHIP) {
+          break;
+        case ecs::SpriteId::PLAYER_SHIP:
           frameWidth = PLAYER_FRAME_WIDTH;
           frameHeight = PLAYER_FRAME_HEIGHT;
-        } else if (sprite.spriteId == ecs::SpriteId::PROJECTILE) {
+          break;
+        case ecs::SpriteId::PROJECTILE:
           frameWidth = 18;
           frameHeight = 14;
-        } else if (sprite.spriteId == ecs::SpriteId::POWERUP) {
-          // Powerup: R-Type_Items.png (84x12 total, 7 frames, using first 4)
-          // Frame 0=BUBBLE, 1=BUBBLE_TRIPLE, 2=BUBBLE_RUBAN, 3=DRONE
+          break;
+        case ecs::SpriteId::POWERUP:
           frameWidth = 12; // 84 / 7 = 12px per frame
           frameHeight = 12;
-        } else if (sprite.spriteId == ecs::SpriteId::DRONE || sprite.spriteId == ecs::SpriteId::BUBBLE ||
-                   sprite.spriteId == ecs::SpriteId::BUBBLE_TRIPLE || sprite.spriteId == ecs::SpriteId::BUBBLE_RUBAN) {
+          break;
+        case ecs::SpriteId::DRONE:
+        case ecs::SpriteId::BUBBLE:
+        case ecs::SpriteId::BUBBLE_TRIPLE:
+        case ecs::SpriteId::BUBBLE_RUBAN:
           // Legacy drone/bubble: use sprite dimensions from server
           frameWidth = static_cast<int>(sprite.width);
           frameHeight = static_cast<int>(sprite.height);
+          break;
+        default:
+          break;
         }
 
         if (frameWidth > 0 && frameHeight > 0) {
-          // Calculate source rectangle based on current frame
-          int srcX = sprite.currentFrame * frameWidth;
+          // Calculate source rectangle based on current frame, row, and offset
+          int srcX = static_cast<int>(sprite.offsetX) + (sprite.currentFrame * frameWidth);
+          int srcY = static_cast<int>(sprite.offsetY) + (sprite.row * frameHeight);
           // Apply transform scale to sprite dimensions
           int scaledWidth = static_cast<int>(sprite.width * transformComponent.scale);
           int scaledHeight = static_cast<int>(sprite.height * transformComponent.scale);
@@ -183,7 +191,8 @@ void PlayingState::render()
           }
 
           renderer->drawTextureRegion(
-            textureIt->second, {.x = srcX, .y = 0, .width = frameWidth, .height = frameHeight}, // Source: current frame
+            textureIt->second,
+            {.x = srcX, .y = srcY, .width = frameWidth, .height = frameHeight}, // Source: current frame + row
             {.x = static_cast<int>(transformComponent.x),
              .y = static_cast<int>(transformComponent.y),
              .width = scaledWidth,
@@ -222,7 +231,6 @@ void PlayingState::render()
              .height = scaledHeight}); // Destination with scale
         } else if (sprite.spriteId == ecs::SpriteId::POWERUP) {
           // Powerup: R-Type_Items.png (84x12 total, 7 frames, using first 4)
-          // Frame 0=BUBBLE, 1=BUBBLE_TRIPLE, 2=BUBBLE_RUBAN, 3=DRONE
           constexpr int POWERUP_FRAME_WIDTH = 12; // 84 / 7 = 12px per frame
           constexpr int POWERUP_FRAME_HEIGHT = 12;
           int srcX = sprite.currentFrame * POWERUP_FRAME_WIDTH;
@@ -702,10 +710,10 @@ void PlayingState::loadSpriteTextures()
 
   // BUBBLE = 7 (uses powerup texture as fallback)
   try {
-    void *bubble_tex = renderer->loadTexture("client/assets/r-typesheet2.gif");
+    void *bubble_tex = renderer->loadTexture("client/assets/sprites/bubble.png");
     if (bubble_tex != nullptr) {
       m_spriteTextures[ecs::SpriteId::BUBBLE] = bubble_tex;
-      std::cout << "[PlayingState] ✓ Loaded r-typesheet2.gif" << '\n';
+      std::cout << "[PlayingState] ✓ Loaded bubble.png" << '\n';
     } else {
       // Fallback to powerup texture for bubbles
       if (m_spriteTextures.find(ecs::SpriteId::POWERUP) != m_spriteTextures.end()) {
