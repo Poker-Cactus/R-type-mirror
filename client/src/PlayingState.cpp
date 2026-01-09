@@ -150,6 +150,16 @@ void PlayingState::render()
         } else if (sprite.spriteId == ecs::SpriteId::PROJECTILE) {
           frameWidth = 18;
           frameHeight = 14;
+        } else if (sprite.spriteId == ecs::SpriteId::POWERUP) {
+          // Powerup: R-Type_Items.png (84x12 total, 7 frames, using first 4)
+          // Frame 0=BUBBLE, 1=BUBBLE_TRIPLE, 2=BUBBLE_RUBAN, 3=DRONE
+          frameWidth = 12; // 84 / 7 = 12px per frame
+          frameHeight = 12;
+        } else if (sprite.spriteId == ecs::SpriteId::DRONE || sprite.spriteId == ecs::SpriteId::BUBBLE ||
+                   sprite.spriteId == ecs::SpriteId::BUBBLE_TRIPLE || sprite.spriteId == ecs::SpriteId::BUBBLE_RUBAN) {
+          // Legacy drone/bubble: use sprite dimensions from server
+          frameWidth = static_cast<int>(sprite.width);
+          frameHeight = static_cast<int>(sprite.height);
         }
 
         if (frameWidth > 0 && frameHeight > 0) {
@@ -210,6 +220,20 @@ void PlayingState::render()
              .y = static_cast<int>(transformComponent.y),
              .width = scaledWidth,
              .height = scaledHeight}); // Destination with scale
+        } else if (sprite.spriteId == ecs::SpriteId::POWERUP) {
+          // Powerup: R-Type_Items.png (84x12 total, 7 frames, using first 4)
+          // Frame 0=BUBBLE, 1=BUBBLE_TRIPLE, 2=BUBBLE_RUBAN, 3=DRONE
+          constexpr int POWERUP_FRAME_WIDTH = 12; // 84 / 7 = 12px per frame
+          constexpr int POWERUP_FRAME_HEIGHT = 12;
+          int srcX = sprite.currentFrame * POWERUP_FRAME_WIDTH;
+          int scaledWidth = static_cast<int>(sprite.width * transformComponent.scale);
+          int scaledHeight = static_cast<int>(sprite.height * transformComponent.scale);
+          renderer->drawTextureRegion(textureIt->second,
+                                      {.x = srcX, .y = 0, .width = POWERUP_FRAME_WIDTH, .height = POWERUP_FRAME_HEIGHT},
+                                      {.x = static_cast<int>(transformComponent.x),
+                                       .y = static_cast<int>(transformComponent.y),
+                                       .width = scaledWidth,
+                                       .height = scaledHeight});
         } else {
           // Other sprites: draw full texture
           int scaledWidth = static_cast<int>(sprite.width * transformComponent.scale);
@@ -245,6 +269,18 @@ void PlayingState::render()
         break;
       case ecs::SpriteId::EXPLOSION:
         color = COLOR_EXPLOSION_ORANGE;
+        break;
+      case ecs::SpriteId::DRONE:
+        color = COLOR_POWERUP_GREEN; // Drones use same color as powerups
+        break;
+      case ecs::SpriteId::BUBBLE:
+        color = COLOR_POWERUP_GREEN; // Drones use same color as powerups
+        break;
+      case ecs::SpriteId::BUBBLE_TRIPLE:
+        color = COLOR_POWERUP_GREEN; // Drones use same color as powerups
+        break;
+      case ecs::SpriteId::BUBBLE_RUBAN:
+        color = COLOR_POWERUP_GREEN; // Drones use same color as powerups
         break;
       default:
         color = COLOR_FALLBACK_GRAY;
@@ -617,19 +653,6 @@ void PlayingState::loadSpriteTextures()
     std::cerr << "[PlayingState] ✗ Failed to load projectile.png: " << e.what() << '\n';
   }
 
-  // POWERUP = 5
-  try {
-    void *powerup_tex = renderer->loadTexture("client/assets/sprites/powerup.png");
-    if (powerup_tex != nullptr) {
-      m_spriteTextures[ecs::SpriteId::POWERUP] = powerup_tex;
-      std::cout << "[PlayingState] ✓ Loaded powerup.png" << '\n';
-    } else {
-      std::cerr << "[PlayingState] ✗ Failed to load powerup.png (returned null)" << '\n';
-    }
-  } catch (const std::exception &e) {
-    std::cerr << "[PlayingState] ✗ Failed to load powerup.png: " << e.what() << '\n';
-  }
-
   // EXPLOSION = 4
   try {
     void *explosion_tex = renderer->loadTexture("client/assets/sprites/explosion.png");
@@ -643,7 +666,104 @@ void PlayingState::loadSpriteTextures()
     std::cerr << "[PlayingState] ✗ Failed to load explosion.png: " << e.what() << '\n';
   }
 
-  constexpr int EXPECTED_TEXTURE_COUNT = 5;
+  // POWERUP = 5 (spritesheet: R-Type_Items.png with 7 frames, using first 4)
+  try {
+    void *powerup_tex = renderer->loadTexture("client/assets/R-Type_Items.png");
+    if (powerup_tex != nullptr) {
+      m_spriteTextures[ecs::SpriteId::POWERUP] = powerup_tex;
+      std::cout << "[PlayingState] ✓ Loaded R-Type_Items.png" << '\n';
+    } else {
+      std::cerr << "[PlayingState] ✗ Failed to load R-Type_Items.png (returned null)" << '\n';
+    }
+  } catch (const std::exception &e) {
+    std::cerr << "[PlayingState] ✗ Failed to load R-Type_Items.png: " << e.what() << '\n';
+  }
+
+  // DRONE = 6 (uses powerup texture as fallback)
+  try {
+    void *drone_tex = renderer->loadTexture("client/assets/r-typesheet3.gif");
+    if (drone_tex != nullptr) {
+      m_spriteTextures[ecs::SpriteId::DRONE] = drone_tex;
+      std::cout << "[PlayingState] ✓ Loaded r-typesheet2.gif" << '\n';
+    } else {
+      // Fallback to powerup texture for drones
+      if (m_spriteTextures.find(ecs::SpriteId::POWERUP) != m_spriteTextures.end()) {
+        m_spriteTextures[ecs::SpriteId::DRONE] = m_spriteTextures[ecs::SpriteId::POWERUP];
+        std::cout << "[PlayingState] ✓ Using powerup.png for drone (fallback)" << '\n';
+      }
+    }
+  } catch (const std::exception &e) {
+    // Fallback to powerup texture for drones
+    if (m_spriteTextures.find(ecs::SpriteId::POWERUP) != m_spriteTextures.end()) {
+      m_spriteTextures[ecs::SpriteId::DRONE] = m_spriteTextures[ecs::SpriteId::POWERUP];
+      std::cout << "[PlayingState] ✓ Using powerup.png for drone (fallback after error)" << '\n';
+    }
+  }
+
+  // BUBBLE = 7 (uses powerup texture as fallback)
+  try {
+    void *bubble_tex = renderer->loadTexture("client/assets/r-typesheet2.gif");
+    if (bubble_tex != nullptr) {
+      m_spriteTextures[ecs::SpriteId::BUBBLE] = bubble_tex;
+      std::cout << "[PlayingState] ✓ Loaded r-typesheet2.gif" << '\n';
+    } else {
+      // Fallback to powerup texture for bubbles
+      if (m_spriteTextures.find(ecs::SpriteId::POWERUP) != m_spriteTextures.end()) {
+        m_spriteTextures[ecs::SpriteId::BUBBLE] = m_spriteTextures[ecs::SpriteId::POWERUP];
+        std::cout << "[PlayingState] ✓ Using powerup.png for bubble triple (fallback)" << '\n';
+      }
+    }
+  } catch (const std::exception &e) {
+    // Fallback to powerup texture for bubbles
+    if (m_spriteTextures.find(ecs::SpriteId::POWERUP) != m_spriteTextures.end()) {
+      m_spriteTextures[ecs::SpriteId::BUBBLE] = m_spriteTextures[ecs::SpriteId::POWERUP];
+      std::cout << "[PlayingState] ✓ Using powerup.png for bubble triple (fallback after error)" << '\n';
+    }
+  }
+
+  // BUBBLE = 8 (uses powerup texture as fallback)
+  try {
+    void *buble_triple_tex = renderer->loadTexture("client/assets/r-typesheet2.gif");
+    if (buble_triple_tex != nullptr) {
+      m_spriteTextures[ecs::SpriteId::BUBBLE_TRIPLE] = buble_triple_tex;
+      std::cout << "[PlayingState] ✓ Loaded r-typesheet2.gif" << '\n';
+    } else {
+      // Fallback to powerup texture for bubbles
+      if (m_spriteTextures.find(ecs::SpriteId::POWERUP) != m_spriteTextures.end()) {
+        m_spriteTextures[ecs::SpriteId::BUBBLE_TRIPLE] = m_spriteTextures[ecs::SpriteId::POWERUP];
+        std::cout << "[PlayingState] ✓ Using powerup.png for bubble triple (fallback)" << '\n';
+      }
+    }
+  } catch (const std::exception &e) {
+    // Fallback to powerup texture for BUBBLE_TRIPLEs
+    if (m_spriteTextures.find(ecs::SpriteId::POWERUP) != m_spriteTextures.end()) {
+      m_spriteTextures[ecs::SpriteId::BUBBLE_TRIPLE] = m_spriteTextures[ecs::SpriteId::POWERUP];
+      std::cout << "[PlayingState] ✓ Using powerup.png for bubble triple (fallback after error)" << '\n';
+    }
+  }
+
+  // BUBBLE = 9 (uses powerup texture as fallback)
+  try {
+    void *buble_triple_tex = renderer->loadTexture("client/assets/r-typesheet2.gif");
+    if (buble_triple_tex != nullptr) {
+      m_spriteTextures[ecs::SpriteId::BUBBLE_RUBAN] = buble_triple_tex;
+      std::cout << "[PlayingState] ✓ Loaded r-typesheet2.gif" << '\n';
+    } else {
+      // Fallback to powerup texture for bubbles
+      if (m_spriteTextures.find(ecs::SpriteId::POWERUP) != m_spriteTextures.end()) {
+        m_spriteTextures[ecs::SpriteId::BUBBLE_RUBAN] = m_spriteTextures[ecs::SpriteId::POWERUP];
+        std::cout << "[PlayingState] ✓ Using powerup.png for ruban bubble (fallback)" << '\n';
+      }
+    }
+  } catch (const std::exception &e) {
+    // Fallback to powerup texture for BUBBLE_RUBANs
+    if (m_spriteTextures.find(ecs::SpriteId::POWERUP) != m_spriteTextures.end()) {
+      m_spriteTextures[ecs::SpriteId::BUBBLE_RUBAN] = m_spriteTextures[ecs::SpriteId::POWERUP];
+      std::cout << "[PlayingState] ✓ Using powerup.png for ruban bubble (fallback after error)" << '\n';
+    }
+  }
+
+  constexpr int EXPECTED_TEXTURE_COUNT = 9;
   std::cout << "[PlayingState] Successfully loaded " << m_spriteTextures.size() << " / " << EXPECTED_TEXTURE_COUNT
             << " sprite textures" << '\n';
   if (m_spriteTextures.size() < EXPECTED_TEXTURE_COUNT) {

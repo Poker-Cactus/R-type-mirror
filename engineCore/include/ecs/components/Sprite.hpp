@@ -88,6 +88,10 @@ constexpr std::uint32_t ENEMY_SHIP = 2;
 constexpr std::uint32_t PROJECTILE = 3;
 constexpr std::uint32_t EXPLOSION = 4;
 constexpr std::uint32_t POWERUP = 5;
+constexpr std::uint32_t DRONE = 6;
+constexpr std::uint32_t BUBBLE = 7;
+constexpr std::uint32_t BUBBLE_TRIPLE = 8;
+constexpr std::uint32_t BUBBLE_RUBAN = 9;
 } // namespace SpriteId
 
 } // namespace ecs

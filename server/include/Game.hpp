@@ -7,8 +7,8 @@
 
 #ifndef GAME_HPP_
 #define GAME_HPP_
-#include "../../engineCore/include/ecs/World.hpp"
 #include "../../common/include/Common.hpp"
+#include "../../engineCore/include/ecs/World.hpp"
 #include "Difficulty.hpp"
 #include "LobbyManager.hpp"
 #include "ServerSystems.hpp"
@@ -76,6 +76,7 @@ private:
   server::DeathSystem *deathSystem = nullptr;
   server::ShootingSystem *shootingSystem = nullptr;
   server::ScoreSystem *scoreSystem = nullptr;
+  server::PowerupSystem *powerupSystem = nullptr;
   server::SpawnSystem *spawnSystem = nullptr;
 
   std::unordered_set<std::uint32_t> m_lobbyClients;

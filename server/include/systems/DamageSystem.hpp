@@ -14,6 +14,7 @@
 #include "../../../engineCore/include/ecs/components/Health.hpp"
 #include "../../../engineCore/include/ecs/components/Input.hpp"
 #include "../../../engineCore/include/ecs/components/Owner.hpp"
+#include "../../../engineCore/include/ecs/components/Powerup.hpp"
 #include "../../../engineCore/include/ecs/components/Velocity.hpp"
 #include "../../../engineCore/include/ecs/events/EventListenerHandle.hpp"
 #include "../../../engineCore/include/ecs/events/GameEvents.hpp"
@@ -65,6 +66,11 @@ private:
 
     // Check if entities are still alive (might have been destroyed in a previous collision)
     if (!world.isAlive(entityA) || !world.isAlive(entityB)) {
+      return;
+    }
+
+    // Skip if either entity is a powerup - PowerupSystem handles those
+    if (world.hasComponent<ecs::Powerup>(entityA) || world.hasComponent<ecs::Powerup>(entityB)) {
       return;
     }
 

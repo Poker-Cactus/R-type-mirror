@@ -11,6 +11,7 @@
 #include "../../../engineCore/include/ecs/Entity.hpp"
 #include "../../../engineCore/include/ecs/ISystem.hpp"
 #include "../../../engineCore/include/ecs/World.hpp"
+#include "../../../engineCore/include/ecs/components/Follower.hpp"
 #include "../../../engineCore/include/ecs/components/Input.hpp"
 #include "../../../engineCore/include/ecs/components/Transform.hpp"
 #include "../../../engineCore/include/ecs/events/EventListenerHandle.hpp"
@@ -100,10 +101,48 @@ private:
     const float offsetX = 105.0F;
     const float offsetY = 25.0F;
 
-    // Emit spawn event for projectile
+    // Emit spawn event for projectile from the shooter
     ecs::SpawnEntityEvent spawnEvent(ecs::SpawnEntityEvent::EntityType::PROJECTILE, transform.x + offsetX,
                                      transform.y + offsetY, event.shooter);
     world.emitEvent(spawnEvent);
+
+    // Also make all drones following this player shoot
+    spawnDroneProjectiles(world, event.shooter);
+  }
+
+  static void spawnDroneProjectiles(ecs::World &world, ecs::Entity player)
+  {
+    // Find all drones that follow this player
+    ecs::ComponentSignature droneSig;
+    droneSig.set(ecs::getComponentId<ecs::Follower>());
+    droneSig.set(ecs::getComponentId<ecs::Transform>());
+
+    std::vector<ecs::Entity> drones;
+    world.getEntitiesWithSignature(droneSig, drones);
+
+    const float droneOffsetX = 30.0F; // Smaller offset for drone projectiles
+    const float droneOffsetY = 10.0F;
+
+    for (const auto &drone : drones) {
+      if (!world.isAlive(drone)) {
+        continue;
+      }
+
+      const auto &follower = world.getComponent<ecs::Follower>(drone);
+
+      // Only shoot if this drone follows the player who shot
+      if (follower.parent != player) {
+        continue;
+      }
+
+      const auto &droneTransform = world.getComponent<ecs::Transform>(drone);
+
+      // Spawn projectile from drone position
+      ecs::SpawnEntityEvent droneSpawnEvent(ecs::SpawnEntityEvent::EntityType::PROJECTILE,
+                                            droneTransform.x + droneOffsetX, droneTransform.y + droneOffsetY,
+                                            player); // Owner is still the player for scoring
+      world.emitEvent(droneSpawnEvent);
+    }
   }
 };
 

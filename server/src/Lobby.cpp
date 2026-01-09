@@ -201,8 +201,10 @@ void Lobby::initializeSystems()
   auto *deathSystem = &m_world->registerSystem<server::DeathSystem>();
   auto *shootingSystem = &m_world->registerSystem<server::ShootingSystem>();
   auto *scoreSystem = &m_world->registerSystem<server::ScoreSystem>();
+  auto *powerupSystem = &m_world->registerSystem<server::PowerupSystem>();
 
   m_world->registerSystem<server::EnemyAISystem>();
+  m_world->registerSystem<server::FollowerSystem>();
 
   auto *spawnSystem = &m_world->registerSystem<server::SpawnSystem>();
   m_world->registerSystem<server::EntityLifetimeSystem>();
@@ -220,6 +222,9 @@ void Lobby::initializeSystems()
   }
   if (scoreSystem != nullptr) {
     scoreSystem->initialize(*m_world);
+  }
+  if (powerupSystem != nullptr) {
+    powerupSystem->initialize(*m_world);
   }
   if (spawnSystem != nullptr) {
     spawnSystem->initialize(*m_world);
@@ -260,8 +265,7 @@ void Lobby::spawnPlayer(std::uint32_t clientId)
   health.maxHp = startingHP;
   m_world->addComponent(player, health);
 
-  std::cout << "[Lobby:" << m_code << "] Player " << clientId << " spawned with " << startingHP
-            << " HP (Difficulty: "
+  std::cout << "[Lobby:" << m_code << "] Player " << clientId << " spawned with " << startingHP << " HP (Difficulty: "
             << (m_difficulty == GameConfig::Difficulty::EASY
                   ? "EASY"
                   : (m_difficulty == GameConfig::Difficulty::MEDIUM ? "MEDIUM" : "EXPERT"))
@@ -347,4 +351,7 @@ void Lobby::setDifficulty(GameConfig::Difficulty difficulty)
             << '\n';
 }
 
-GameConfig::Difficulty Lobby::getDifficulty() const { return m_difficulty; }
+GameConfig::Difficulty Lobby::getDifficulty() const
+{
+  return m_difficulty;
+}
