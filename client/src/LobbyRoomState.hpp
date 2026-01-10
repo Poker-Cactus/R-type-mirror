@@ -151,6 +151,7 @@ private:
   // Lobby mode
   bool m_isCreatingLobby = true;
   std::string m_targetLobbyCode;
+  bool m_joinAsSpectator = false;
 
   // Lobby info
   LobbyConnectionState m_connectionState = LobbyConnectionState::CONNECTING;

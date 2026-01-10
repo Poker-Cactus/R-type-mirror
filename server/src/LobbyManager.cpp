@@ -26,7 +26,7 @@ bool LobbyManager::createLobby(const std::string &code, GameConfig::Difficulty d
   return true;
 }
 
-bool LobbyManager::joinLobby(const std::string &code, std::uint32_t clientId)
+bool LobbyManager::joinLobby(const std::string &code, std::uint32_t clientId, bool asSpectator)
 {
   auto lobby_it = m_lobbies.find(code);
   if (lobby_it == m_lobbies.end()) {
@@ -36,7 +36,7 @@ bool LobbyManager::joinLobby(const std::string &code, std::uint32_t clientId)
 
   leaveLobby(clientId);
 
-  if (lobby_it->second->addClient(clientId)) {
+  if (lobby_it->second->addClient(clientId, asSpectator)) {
     m_clientToLobby[clientId] = code;
     return true;
   }

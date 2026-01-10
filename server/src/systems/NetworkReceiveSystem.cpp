@@ -239,6 +239,11 @@ void NetworkReceiveSystem::handleRequestLobby(const nlohmann::json &json, std::u
   // Get action from request (default to "create" for backwards compatibility)
   const std::string action = json.value("action", "create");
   const std::string requestedCode = json.value("lobby_code", "");
+  const bool asSpectator = json.value("spectator", false);
+
+  if (asSpectator) {
+    std::cout << "[Server] Client " << clientId << " wants to join as SPECTATOR" << '\n';
+  }
 
   std::string lobbyCode;
   Lobby *targetLobby = nullptr;
@@ -296,8 +301,9 @@ void NetworkReceiveSystem::handleRequestLobby(const nlohmann::json &json, std::u
   }
 
   // Try to join the lobby
-  if (lobbyManager.joinLobby(lobbyCode, clientId)) {
-    std::cout << "[Server] Client " << clientId << " joined lobby " << lobbyCode << '\n';
+  if (lobbyManager.joinLobby(lobbyCode, clientId, asSpectator)) {
+    std::cout << "[Server] Client " << clientId << " joined lobby " << lobbyCode 
+              << (asSpectator ? " as spectator" : "") << '\n';
     sendLobbyResponse(clientId, {"lobby_joined", lobbyCode});
 
     // Notify client about current lobby state

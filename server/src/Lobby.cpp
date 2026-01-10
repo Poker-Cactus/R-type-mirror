@@ -37,6 +37,7 @@ Lobby::~Lobby()
 
   // Clear all client tracking
   m_clients.clear();
+  m_spectators.clear();
   m_playerEntities.clear();
 
   // Clear world systems and entities before shared_ptr destruction
@@ -49,24 +50,33 @@ Lobby::~Lobby()
   unregisterWorldLobbyMapping(m_world.get());
 }
 
-bool Lobby::addClient(std::uint32_t clientId)
+bool Lobby::addClient(std::uint32_t clientId, bool asSpectator)
 {
   auto [_, inserted] = m_clients.insert(clientId);
   if (inserted) {
-    std::cout << "[Lobby:" << m_code << "] Player " << clientId << " joined (" << m_clients.size() << " players)"
-              << '\n';
+    if (asSpectator) {
+      m_spectators.insert(clientId);
+      std::cout << "[Lobby:" << m_code << "] Spectator " << clientId << " joined (" << m_clients.size() << " total, "
+                << m_spectators.size() << " spectators)" << '\n';
+    } else {
+      std::cout << "[Lobby:" << m_code << "] Player " << clientId << " joined (" << m_clients.size() << " total)"
+                << '\n';
+    }
   }
   return inserted;
 }
 
 bool Lobby::removeClient(std::uint32_t clientId)
 {
-  // Destroy the player entity if it exists
+  // Destroy the player entity if it exists (spectators don't have entities)
   destroyPlayerEntity(clientId);
+
+  // Remove from spectators if present
+  m_spectators.erase(clientId);
 
   auto removed = m_clients.erase(clientId) > 0;
   if (removed) {
-    std::cout << "[Lobby:" << m_code << "] Player " << clientId << " left (" << m_clients.size() << " remaining)"
+    std::cout << "[Lobby:" << m_code << "] Client " << clientId << " left (" << m_clients.size() << " remaining)"
               << '\n';
   }
   return removed;
@@ -97,6 +107,11 @@ bool Lobby::hasClient(std::uint32_t clientId) const
   return m_clients.find(clientId) != m_clients.end();
 }
 
+bool Lobby::isSpectator(std::uint32_t clientId) const
+{
+  return m_spectators.find(clientId) != m_spectators.end();
+}
+
 void Lobby::startGame()
 {
   if (m_gameStarted) {
@@ -108,12 +123,17 @@ void Lobby::startGame()
   // Initialize systems for this lobby's world
   initializeSystems();
 
-  // Spawn player entities for all clients in this lobby
+  // Spawn player entities only for non-spectator clients
+  int playerCount = 0;
   for (std::uint32_t clientId : m_clients) {
-    spawnPlayer(clientId);
+    if (!isSpectator(clientId)) {
+      spawnPlayer(clientId);
+      playerCount++;
+    }
   }
 
-  std::cout << "[Lobby:" << m_code << "] Game started with " << m_clients.size() << " players" << '\n';
+  std::cout << "[Lobby:" << m_code << "] Game started with " << playerCount << " players and " 
+            << m_spectators.size() << " spectators" << '\n';
 }
 
 void Lobby::stopGame()
