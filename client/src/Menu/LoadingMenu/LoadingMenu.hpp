@@ -6,11 +6,12 @@
 class LoadingMenu
 {
 public:
-  LoadingMenu() {}
-  ~LoadingMenu() {}
-  void init(IRenderer *renderer);
-  void render(int winWidth, int winHeight, IRenderer *renderer, LoadingScreen *loadingScreen, MenuState *currentState);
-  void process(IRenderer *renderer);
+  LoadingMenu(){};
+  ~LoadingMenu(){};
+  void init(std::shared_ptr<IRenderer> renderer);
+  void render(int winWidth, int winHeight, std::shared_ptr<IRenderer> renderer, LoadingScreen *loadingScreen,
+              MenuState *currentState);
+  void process(std::shared_ptr<IRenderer> renderer);
 
 private:
   void *backgroundTexture = nullptr;

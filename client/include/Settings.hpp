@@ -1,33 +1,41 @@
-/*
-** EPITECH PROJECT, 2025
-** R-type-mirror
-** File description:
-** Settings.hpp
-*/
+/**
+ * @file Settings.hpp
+ * @brief Game settings configuration
+ */
 
 #ifndef SETTINGS_HPP
 #define SETTINGS_HPP
 
 #include "../interface/KeyCodes.hpp"
 
+/**
+ * @class Settings
+ * @brief Manages user preferences and game settings
+ *
+ * This class stores all configurable settings including audio levels,
+ * input controls, and graphics options.
+ */
 class Settings
 {
 public:
   Settings() = default;
   ~Settings() = default;
+
   // AUDIO Settings
-  int masterVolume = 100;
-  int musicVolume = 100;
-  int sfxVolume = 100;
+  int masterVolume = 100; ///< Master volume level (0-100)
+  int musicVolume = 100;  ///< Music volume level (0-100)
+  int sfxVolume = 100;    ///< Sound effects volume level (0-100)
+
   // CONTROL Settings
-  int up = KeyCode::KEY_UP;
-  int down = KeyCode::KEY_DOWN;
-  int left = KeyCode::KEY_LEFT;
-  int right = KeyCode::KEY_RIGHT;
-  int shoot = KeyCode::KEY_SPACE;
-  int chargedShoot = KeyCode::KEY_E;
+  int up = KeyCode::KEY_UP;            ///< Key binding for moving up
+  int down = KeyCode::KEY_DOWN;        ///< Key binding for moving down
+  int left = KeyCode::KEY_LEFT;        ///< Key binding for moving left
+  int right = KeyCode::KEY_RIGHT;      ///< Key binding for moving right
+  int shoot = KeyCode::KEY_SPACE;      ///< Key binding for shooting
+  int chargedShoot = KeyCode::KEY_E;   ///< Key binding for charged shot
+
   // GRAPHIC Settings
-  bool fullScreen = true;
+  bool fullScreen = true; ///< Fullscreen mode toggle
 
 private:
 };

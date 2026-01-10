@@ -15,7 +15,7 @@
 #include <nlohmann/json.hpp>
 #include <utility>
 
-LobbyRoomState::LobbyRoomState(IRenderer *renderer, const std::shared_ptr<ecs::World> &world,
+LobbyRoomState::LobbyRoomState(std::shared_ptr<IRenderer> renderer, const std::shared_ptr<ecs::World> &world,
                                std::shared_ptr<INetworkManager> networkManager)
     : renderer(renderer), world(world), m_networkManager(std::move(networkManager)), background(nullptr),
       overlay(nullptr)
@@ -73,8 +73,15 @@ void LobbyRoomState::update([[maybe_unused]] float deltaTime)
     requestLobby();
     m_lobbyRequested = true;
     m_timeSinceLobbyRequest = 0.0F;
-  } else if (m_lobbyRequested) {
+  } else if (m_lobbyRequested && m_connectionState == LobbyConnectionState::CONNECTING) {
     m_timeSinceLobbyRequest += deltaTime;
+
+    // Check for connection timeout
+    if (m_timeSinceLobbyRequest >= CONNECTION_TIMEOUT) {
+      std::cerr << "[LobbyRoomState] Connection timeout - unable to reach server" << '\n';
+      m_connectionState = LobbyConnectionState::ERROR_STATE;
+      m_errorMessage = "Unable to connect to server";
+    }
   }
 }
 
@@ -106,10 +113,13 @@ void LobbyRoomState::renderLobbyText()
   std::string line2;
 
   switch (m_connectionState) {
-  case LobbyConnectionState::CONNECTING:
-    line1 = "Connecting to lobby...";
-    line2 = "";
+  case LobbyConnectionState::CONNECTING: {
+    int elapsedSeconds = static_cast<int>(m_timeSinceLobbyRequest);
+    int remainingSeconds = static_cast<int>(CONNECTION_TIMEOUT - m_timeSinceLobbyRequest);
+    line1 = "Connecting to lobby... (" + std::to_string(elapsedSeconds) + "s)";
+    line2 = "Timeout in " + std::to_string(std::max(0, remainingSeconds)) + "s";
     break;
+  }
   case LobbyConnectionState::JOINED:
     line1 = "Lobby: " + m_lobbyCode + " (" + std::to_string(m_playerCount) + " player" +
       (m_playerCount != 1 ? "s" : "") + ")";
@@ -187,10 +197,11 @@ void LobbyRoomState::processInput()
   }
 }
 
-void LobbyRoomState::setLobbyMode(bool isCreating, const std::string &lobbyCode)
+void LobbyRoomState::setLobbyMode(bool isCreating, const std::string &lobbyCode, Difficulty difficulty)
 {
   m_isCreatingLobby = isCreating;
   m_targetLobbyCode = lobbyCode;
+  m_creationDifficulty = difficulty;
   m_lobbyRequested = false; // Reset so we can request again
   m_connectionState = LobbyConnectionState::CONNECTING;
   m_returnToMenuRequested = false;
@@ -225,7 +236,8 @@ void LobbyRoomState::requestLobby()
   if (m_isCreatingLobby) {
     message["type"] = "request_lobby";
     message["action"] = "create";
-  } else {
+    message["difficulty"] = static_cast<int>(m_creationDifficulty);
+} else {
     message["type"] = "request_lobby";
     message["action"] = "join";
     message["lobby_code"] = m_targetLobbyCode;
@@ -245,6 +257,8 @@ void LobbyRoomState::requestLobby()
 void LobbyRoomState::cleanup()
 {
   freeSpriteTextures();
+  if (renderer != nullptr && m_lobbyFont != nullptr)
+    renderer->freeFont(m_lobbyFont);
   m_lobbyFont = nullptr;
 }
 

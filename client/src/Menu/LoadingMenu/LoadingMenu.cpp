@@ -10,7 +10,7 @@
 #include "../../../interface/KeyCodes.hpp"
 #include <cmath>
 
-void LoadingMenu::init(IRenderer *renderer)
+void LoadingMenu::init(std::shared_ptr<IRenderer> renderer)
 {
   try {
     const int fontSize = 24;
@@ -24,7 +24,7 @@ void LoadingMenu::init(IRenderer *renderer)
   }
 }
 
-void LoadingMenu::render(int winWidth, int winHeight, IRenderer *renderer, LoadingScreen *loadingScreen,
+void LoadingMenu::render(int winWidth, int winHeight, std::shared_ptr<IRenderer> renderer, LoadingScreen *loadingScreen,
                          MenuState *currentState)
 {
   if (loadingScreen != nullptr && loadingScreen->isActive()) {
@@ -95,7 +95,7 @@ void LoadingMenu::render(int winWidth, int winHeight, IRenderer *renderer, Loadi
   }
 }
 
-void LoadingMenu::process(IRenderer *renderer)
+void LoadingMenu::process(std::shared_ptr<IRenderer> renderer)
 {
   if (renderer->isKeyJustPressed(KeyCode::KEY_RETURN) && !isZooming) {
     isZooming = true;

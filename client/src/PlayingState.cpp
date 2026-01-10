@@ -19,8 +19,9 @@
 #include "../interface/KeyCodes.hpp"
 #include <iostream>
 
-PlayingState::PlayingState(IRenderer *renderer, const std::shared_ptr<ecs::World> &world, Settings &settings)
-    : renderer(renderer), world(world), background(nullptr), settings(settings)
+PlayingState::PlayingState(std::shared_ptr<IRenderer> renderer, const std::shared_ptr<ecs::World> &world,
+                           Settings &settings)
+    : renderer(std::move(renderer)), world(world), background(nullptr), settings(settings)
 {
 }
 
@@ -38,7 +39,7 @@ bool PlayingState::init()
 
   std::cout << "[PlayingState] Initializing with m_playerHealth = " << m_playerHealth << '\n';
 
-  settingsMenu = new SettingsMenu();
+  settingsMenu = std::make_shared<SettingsMenu>(renderer);
 
   // Initialiser le background parallaxe
   background = std::make_unique<ParallaxBackground>(renderer);
@@ -49,6 +50,18 @@ bool PlayingState::init()
 
   // Load sprite textures
   loadSpriteTextures();
+
+  // Load hearts texture for health display
+  try {
+    m_heartsTexture = renderer->loadTexture("client/assets/life-bar/hearts.png");
+    if (m_heartsTexture != nullptr) {
+      std::cout << "[PlayingState] ✓ Loaded hearts.png for HP display" << '\n';
+    } else {
+      std::cerr << "[PlayingState] ✗ Failed to load hearts.png" << '\n';
+    }
+  } catch (const std::exception &e) {
+    std::cerr << "[PlayingState] ✗ Failed to load hearts.png: " << e.what() << '\n';
+  }
 
   // Load HUD font with fallback
   try {
@@ -251,55 +264,73 @@ void PlayingState::render()
 
 void PlayingState::renderHUD()
 {
-  if (renderer == nullptr || m_hudFont == nullptr) {
+  if (renderer == nullptr) {
     return;
   }
 
-  // Draw health bar
-  constexpr int HEALTH_BAR_X = 20;
-  constexpr int HEALTH_BAR_Y = 20;
-  constexpr int HEALTH_BAR_WIDTH = 200;
-  constexpr int HEALTH_BAR_HEIGHT = 20;
-  constexpr int HUD_BACKGROUND_COLOR_R = 50;
-  constexpr int HUD_BACKGROUND_COLOR_G = 50;
-  constexpr int HUD_BACKGROUND_COLOR_B = 50;
-  constexpr int HUD_BACKGROUND_ALPHA = 200;
-  constexpr Color HUD_BACKGROUND_COLOR = {
-    .r = HUD_BACKGROUND_COLOR_R, .g = HUD_BACKGROUND_COLOR_G, .b = HUD_BACKGROUND_COLOR_B, .a = HUD_BACKGROUND_ALPHA};
-  constexpr Color HUD_HEALTH_GREEN = {.r = 100, .g = 255, .b = 100, .a = 255};
-  constexpr Color HUD_HEALTH_YELLOW = {.r = 255, .g = 255, .b = 100, .a = 255};
-  constexpr Color HUD_HEALTH_RED = {.r = 255, .g = 100, .b = 100, .a = 255};
+  // Hearts texture properties
+  constexpr int HEARTS_TEXTURE_WIDTH = 33;
+  constexpr float HEART_ROW_HEIGHT = 76.0f / 7.0f; // 11.0 pixels per row, using float for precision
+  constexpr int HEARTS_X = 20;
+  constexpr int HEARTS_Y = 20;
+  constexpr int DISPLAY_SCALE = 2; // Scale up for better visibility
   constexpr Color HUD_TEXT_WHITE = {.r = 255, .g = 255, .b = 255, .a = 255};
-  constexpr int HEALTH_THRESHOLD_HIGH = 60;
-  constexpr int HEALTH_THRESHOLD_MID = 30;
-  constexpr int MAX_HEALTH = 100;
-  constexpr int HUD_TEXT_OFFSET_X = 5;
-  constexpr int HUD_TEXT_OFFSET_Y = 2;
-  constexpr int HUD_SCORE_OFFSET_Y = 30;
+  constexpr int HUD_SCORE_OFFSET_Y = 50;
 
-  // Background (dark gray)
-  renderer->drawRect(HEALTH_BAR_X, HEALTH_BAR_Y, HEALTH_BAR_WIDTH, HEALTH_BAR_HEIGHT, HUD_BACKGROUND_COLOR);
+  // Draw hearts if texture is loaded
+  if (m_heartsTexture != nullptr) {
+    // Calculate heart display based on actual HP value
+    // Each 100 HP = 1 full heart
+    // Use floating point for precise heart calculation
+    float heartsValue = static_cast<float>(m_playerHealth) / 100.0f;
 
-  // Health fill (green to red based on health)
-  int healthWidth = (m_playerHealth * HEALTH_BAR_WIDTH) / MAX_HEALTH;
-  Color healthColor;
-  if (m_playerHealth > HEALTH_THRESHOLD_HIGH) {
-    healthColor = HUD_HEALTH_GREEN;
-  } else if (m_playerHealth > HEALTH_THRESHOLD_MID) {
-    healthColor = HUD_HEALTH_YELLOW;
-  } else {
-    healthColor = HUD_HEALTH_RED;
+    // Clamp to valid range (0.0 to 3.0 hearts max)
+    heartsValue = std::max(0.0f, std::min(3.0f, heartsValue));
+
+    // Convert hearts value to row index (0-6)
+    // 3.0 hearts = row 0 (full)
+    // 2.5 hearts = row 1
+    // 2.0 hearts = row 2
+    // 1.5 hearts = row 3
+    // 1.0 hearts = row 4
+    // 0.5 hearts = row 5
+    // 0.0 hearts = row 6 (empty)
+
+    int heartRow = 0;
+    if (heartsValue >= 2.5f) {
+      heartRow = 0; // 2.5-3.0 hearts: full
+    } else if (heartsValue >= 2.0f) {
+      heartRow = 1; // 2.0-2.4 hearts
+    } else if (heartsValue >= 1.5f) {
+      heartRow = 2; // 1.5-1.9 hearts
+    } else if (heartsValue >= 1.0f) {
+      heartRow = 3; // 1.0-1.4 hearts
+    } else if (heartsValue >= 0.5f) {
+      heartRow = 4; // 0.5-0.9 hearts
+    } else if (heartsValue > 0.0f) {
+      heartRow = 5; // 0.1-0.4 hearts
+    } else {
+      heartRow = 6; // 0 hearts: empty
+    }
+
+    // Calculate source Y position with rounding for exact pixel alignment
+    int sourceY = static_cast<int>(std::round(heartRow * HEART_ROW_HEIGHT));
+
+    // Draw the appropriate heart row
+    renderer->drawTextureRegion(
+      m_heartsTexture,
+      {.x = 0, .y = sourceY, .width = HEARTS_TEXTURE_WIDTH, .height = static_cast<int>(std::round(HEART_ROW_HEIGHT))},
+      {.x = HEARTS_X,
+       .y = HEARTS_Y,
+       .width = HEARTS_TEXTURE_WIDTH * DISPLAY_SCALE,
+       .height = static_cast<int>(std::round(HEART_ROW_HEIGHT)) * DISPLAY_SCALE});
   }
-  renderer->drawRect(HEALTH_BAR_X, HEALTH_BAR_Y, healthWidth, HEALTH_BAR_HEIGHT, healthColor);
 
-  // Health text
-  std::string healthText = "HP: " + std::to_string(m_playerHealth) + "/" + std::to_string(MAX_HEALTH);
-  renderer->drawText(m_hudFont, healthText, HEALTH_BAR_X + HUD_TEXT_OFFSET_X, HEALTH_BAR_Y + HUD_TEXT_OFFSET_Y,
-                     HUD_TEXT_WHITE);
-
-  // Score text
-  std::string scoreText = "Score: " + std::to_string(m_playerScore);
-  renderer->drawText(m_hudFont, scoreText, HEALTH_BAR_X, HEALTH_BAR_Y + HUD_SCORE_OFFSET_Y, HUD_TEXT_WHITE);
+  // Score text (only if font is loaded)
+  if (m_hudFont != nullptr) {
+    std::string scoreText = "Score: " + std::to_string(m_playerScore);
+    renderer->drawText(m_hudFont, scoreText, HEARTS_X, HEARTS_Y + HUD_SCORE_OFFSET_Y, HUD_TEXT_WHITE);
+  }
 }
 
 void PlayingState::updateAnimations(float deltaTime)
@@ -411,6 +442,7 @@ void PlayingState::updateHUDFromWorld()
         if (world->hasComponent<ecs::Health>(entity)) {
           const auto &health = world->getComponent<ecs::Health>(entity);
           m_playerHealth = health.hp;
+          m_playerMaxHealth = health.maxHp;
         }
         if (world->hasComponent<ecs::Score>(entity)) {
           const auto &score = world->getComponent<ecs::Score>(entity);
@@ -449,9 +481,6 @@ void PlayingState::processInput()
 {
   if (renderer == nullptr)
     return;
-
-  bool up = renderer->isKeyPressed(settings.up);
-  bool down = renderer->isKeyPressed(settings.down);
 
   if (renderer->isKeyPressed(settings.up)) {
     m_returnUp = true;
@@ -524,6 +553,12 @@ void PlayingState::cleanup()
 
   // Free all loaded sprite textures
   freeSpriteTextures();
+
+  // Free hearts texture
+  if (m_heartsTexture != nullptr && renderer != nullptr) {
+    renderer->freeTexture(m_heartsTexture);
+    m_heartsTexture = nullptr;
+  }
 
   // Free HUD font
   if (m_hudFont != nullptr && renderer != nullptr) {

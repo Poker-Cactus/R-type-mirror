@@ -10,6 +10,27 @@
 #include "../interface/Color.hpp"
 #include "../interface/KeyCodes.hpp"
 #include <cmath>
+#include <memory>
+
+SettingsMenu::SettingsMenu(std::shared_ptr<IRenderer> renderer)
+    : m_renderer(std::move(renderer)), font(nullptr), titleFont(nullptr), helpFont(nullptr),
+      currentCategory(SettingsCategory::AUDIO)
+{
+}
+
+SettingsMenu::~SettingsMenu()
+{
+  // Libération des polices
+  if (font != nullptr && m_renderer != nullptr) {
+    m_renderer->freeFont(font);
+  }
+  if (titleFont != nullptr && m_renderer != nullptr) {
+    m_renderer->freeFont(titleFont);
+  }
+  if (helpFont != nullptr && m_renderer != nullptr) {
+    m_renderer->freeFont(helpFont);
+  }
+}
 
 static int clampInt(int value, int minValue, int maxValue)
 {
@@ -22,19 +43,19 @@ static int clampInt(int value, int minValue, int maxValue)
   return value;
 }
 
-void SettingsMenu::init(IRenderer *renderer, Settings &settings)
+void SettingsMenu::init(Settings &settings)
 {
   this->settings = &settings;
   try {
     const int fontSize = 32;
     const int titleFontSize = 48;
     const int helpFontSize = 18;
-    font = renderer->loadFont("client/assets/font.opf/r-type.otf", fontSize);
-    titleFont = renderer->loadFont("client/assets/font.opf/r-type.otf", titleFontSize);
-    helpFont = renderer->loadFont("client/assets/font.opf/r-type.otf", helpFontSize);
+    font = m_renderer->loadFont("client/assets/font.opf/r-type.otf", fontSize);
+    titleFont = m_renderer->loadFont("client/assets/font.opf/r-type.otf", titleFontSize);
+    helpFont = m_renderer->loadFont("client/assets/font.opf/r-type.otf", helpFontSize);
 
-    int winWidth = renderer->getWindowWidth();
-    int winHeight = renderer->getWindowHeight();
+    int winWidth = m_renderer->getWindowWidth();
+    int winHeight = m_renderer->getWindowHeight();
 
     std::vector<std::string> categoryLabels = {"Audio", "Graphics", "Controls"};
     const int tabWidth = winWidth / 4;
@@ -156,7 +177,7 @@ void SettingsMenu::applyDelta(SettingItem &item, int direction)
   }
 }
 
-int SettingsMenu::captureKeyJustPressed(IRenderer *renderer) const
+int SettingsMenu::captureKeyJustPressed() const
 {
   const int candidates[] = {
     KeyCode::KEY_RETURN, KeyCode::KEY_ESCAPE, KeyCode::KEY_BACKSPACE, KeyCode::KEY_TAB,  KeyCode::KEY_SPACE,
@@ -172,25 +193,25 @@ int SettingsMenu::captureKeyJustPressed(IRenderer *renderer) const
   };
 
   for (int key : candidates) {
-    if (renderer->isKeyJustPressed(key)) {
+    if (m_renderer->isKeyJustPressed(key)) {
       return key;
     }
   }
   return KeyCode::KEY_UNKNOWN;
 }
 
-void SettingsMenu::renderCategoryTab(IRenderer *renderer, const Component &tab, bool isActive)
+void SettingsMenu::renderCategoryTab(const Component &tab, bool isActive)
 {
   Color textColor =
     isActive ? Color{.r = 255, .g = 255, .b = 255, .a = 255} : Color{.r = 150, .g = 150, .b = 150, .a = 120};
 
   int textWidth = 0;
   int textHeight = 0;
-  renderer->getTextSize(titleFont, tab.label, textWidth, textHeight);
+  m_renderer->getTextSize(titleFont, tab.label, textWidth, textHeight);
   int textX = tab.rectX + (tab.rectWidth - textWidth) / 2;
   int textY = tab.rectY + (tab.rectHeight - textHeight) / 2;
 
-  renderer->drawText(titleFont, tab.label, textX, textY, textColor);
+  m_renderer->drawText(titleFont, tab.label, textX, textY, textColor);
 
   if (isActive) {
     Color underlineColor = {.r = 255, .g = 255, .b = 255, .a = 255};
@@ -200,12 +221,12 @@ void SettingsMenu::renderCategoryTab(IRenderer *renderer, const Component &tab, 
     int underlineThickness = 4;
 
     for (int i = 0; i < underlineThickness; i++) {
-      renderer->drawLine(underlineX, underlineY + i, underlineX + underlineWidth, underlineY + i, underlineColor);
+      m_renderer->drawLine(underlineX, underlineY + i, underlineX + underlineWidth, underlineY + i, underlineColor);
     }
   }
 }
 
-void SettingsMenu::renderRow(IRenderer *renderer, const Component &rowRect, const SettingItem &item, bool selected)
+void SettingsMenu::renderRow(const Component &rowRect, const SettingItem &item, bool selected)
 {
   const int borderThickness = 6;
 
@@ -213,24 +234,24 @@ void SettingsMenu::renderRow(IRenderer *renderer, const Component &rowRect, cons
     Color bgColor = {.r = 5, .g = 10, .b = 25, .a = 120};
     Color border = {.r = 180, .g = 180, .b = 180, .a = 255};
 
-    renderer->drawRect(rowRect.rectX, rowRect.rectY, rowRect.rectWidth, rowRect.rectHeight, bgColor);
+    m_renderer->drawRect(rowRect.rectX, rowRect.rectY, rowRect.rectWidth, rowRect.rectHeight, bgColor);
 
     for (int i = 0; i < borderThickness; i++) {
       border.a = 255 - ((borderThickness - 1 - i) * 40);
-      renderer->drawRectOutline(rowRect.rectX + i, rowRect.rectY + i, rowRect.rectWidth - (i * 2),
+      m_renderer->drawRectOutline(rowRect.rectX + i, rowRect.rectY + i, rowRect.rectWidth - (i * 2),
                                 rowRect.rectHeight - (i * 2), border);
     }
   }
 
   int textWidth = 0;
   int textHeight = 0;
-  renderer->getTextSize(font, item.label, textWidth, textHeight);
+  m_renderer->getTextSize(font, item.label, textWidth, textHeight);
   int textX = rowRect.rectX + 10;
   int textY = rowRect.rectY + (rowRect.rectHeight - textHeight) / 2;
 
   Color textColor =
     selected ? Color{.r = 255, .g = 255, .b = 255, .a = 255} : Color{.r = 180, .g = 180, .b = 180, .a = 255};
-  renderer->drawText(font, item.label, textX, textY, textColor);
+  m_renderer->drawText(font, item.label, textX, textY, textColor);
 
   const std::string value = itemValueText(item);
   if (!value.empty()) {
@@ -241,21 +262,21 @@ void SettingsMenu::renderRow(IRenderer *renderer, const Component &rowRect, cons
 
     int valueW = 0;
     int valueH = 0;
-    renderer->getTextSize(font, displayValue, valueW, valueH);
+    m_renderer->getTextSize(font, displayValue, valueW, valueH);
     const int valueX = rowRect.rectX + rowRect.rectWidth - valueW - 10;
     const int valueY = rowRect.rectY + (rowRect.rectHeight - valueH) / 2;
-    renderer->drawText(font, displayValue, valueX, valueY, textColor);
+    m_renderer->drawText(font, displayValue, valueX, valueY, textColor);
   }
 }
 
-void SettingsMenu::render(int winWidth, int winHeight, IRenderer *renderer)
+void SettingsMenu::render(int winWidth, int winHeight)
 {
   const Color darkOverlay = {.r = 0, .g = 0, .b = 0, .a = 120};
-  renderer->drawRect(0, 0, winWidth, winHeight, darkOverlay);
+  m_renderer->drawRect(0, 0, winWidth, winHeight, darkOverlay);
 
   for (size_t i = 0; i < categoryTabs.size(); i++) {
     bool isActive = (static_cast<size_t>(currentCategory) == i);
-    renderCategoryTab(renderer, categoryTabs[i], isActive);
+    renderCategoryTab(categoryTabs[i], isActive);
   }
 
   const auto &items = activeItems();
@@ -272,13 +293,13 @@ void SettingsMenu::render(int winWidth, int winHeight, IRenderer *renderer)
     row.rectWidth = rowWidth;
     row.rectHeight = rowHeight;
     const bool selected = (i == selectedIndex);
-    renderRow(renderer, row, items[i], selected);
+    renderRow(row, items[i], selected);
   }
 
   const Color helpTextColor = {.r = 255, .g = 255, .b = 255, .a = 200};
   const int helpTextX = 60;
   const int helpTextY = winHeight - 60;
-  renderer->drawText(helpFont, "Press return to get back", helpTextX, helpTextY, helpTextColor);
+  m_renderer->drawText(helpFont, "Press return to get back", helpTextX, helpTextY, helpTextColor);
 }
 
 bool SettingsMenu::keyAlreadyInUse(int key)
@@ -295,20 +316,20 @@ bool SettingsMenu::keyAlreadyInUse(int key)
   return false;
 }
 
-void SettingsMenu::process(IRenderer *renderer)
+void SettingsMenu::process()
 {
   if (settings == nullptr) {
     return;
   }
 
   if (isCapturingKey) {
-    if (renderer->isKeyJustPressed(KeyCode::KEY_ESCAPE) || renderer->isKeyJustPressed(KeyCode::KEY_RETURN)) {
+    if (m_renderer->isKeyJustPressed(KeyCode::KEY_ESCAPE) || m_renderer->isKeyJustPressed(KeyCode::KEY_RETURN)) {
       isCapturingKey = false;
       isEditing = false;
       return;
     }
 
-    int key = captureKeyJustPressed(renderer);
+    int key = captureKeyJustPressed();
     if (key != KeyCode::KEY_UNKNOWN) {
       auto &items = activeItems();
       if (!items.empty() && selectedIndex < items.size()) {
@@ -326,19 +347,19 @@ void SettingsMenu::process(IRenderer *renderer)
     return;
   }
 
-  if (renderer->isKeyJustPressed(KeyCode::KEY_ESCAPE)) {
+  if (m_renderer->isKeyJustPressed(KeyCode::KEY_ESCAPE)) {
     isEditing = false;
     return;
   }
 
-  if (renderer->isKeyJustPressed(KeyCode::KEY_LEFT) && !isEditing) {
+  if (m_renderer->isKeyJustPressed(KeyCode::KEY_LEFT) && !isEditing) {
     int catIndex = static_cast<int>(currentCategory);
     if (catIndex > 0) {
       currentCategory = static_cast<SettingsCategory>(catIndex - 1);
       selectedIndex = 0;
     }
   }
-  if (renderer->isKeyJustPressed(KeyCode::KEY_RIGHT) && !isEditing) {
+  if (m_renderer->isKeyJustPressed(KeyCode::KEY_RIGHT) && !isEditing) {
     int catIndex = static_cast<int>(currentCategory);
     if (catIndex < 2) {
       currentCategory = static_cast<SettingsCategory>(catIndex + 1);
@@ -351,20 +372,20 @@ void SettingsMenu::process(IRenderer *renderer)
     return;
   }
 
-  if (renderer->isKeyJustPressed(KeyCode::KEY_DOWN)) {
+  if (m_renderer->isKeyJustPressed(KeyCode::KEY_DOWN)) {
     if (selectedIndex + 1 < items.size()) {
       selectedIndex++;
       isEditing = false;
     }
   }
-  if (renderer->isKeyJustPressed(KeyCode::KEY_UP)) {
+  if (m_renderer->isKeyJustPressed(KeyCode::KEY_UP)) {
     if (selectedIndex > 0) {
       selectedIndex--;
       isEditing = false;
     }
   }
 
-  if (renderer->isKeyJustPressed(KeyCode::KEY_RETURN)) {
+  if (m_renderer->isKeyJustPressed(KeyCode::KEY_RETURN)) {
     auto &item = items[selectedIndex];
     if (item.type == SettingItemType::KEYBIND) {
       isEditing = true;
@@ -381,10 +402,10 @@ void SettingsMenu::process(IRenderer *renderer)
 
   // Only modify values while in edit mode
   if (isEditing) {
-    if (renderer->isKeyJustPressed(KeyCode::KEY_LEFT)) {
+    if (m_renderer->isKeyJustPressed(KeyCode::KEY_LEFT)) {
       applyDelta(items[selectedIndex], -1);
     }
-    if (renderer->isKeyJustPressed(KeyCode::KEY_RIGHT)) {
+    if (m_renderer->isKeyJustPressed(KeyCode::KEY_RIGHT)) {
       applyDelta(items[selectedIndex], +1);
     }
   }

@@ -8,6 +8,8 @@
 #ifndef SERVER_SPAWN_SYSTEM_HPP_
 #define SERVER_SPAWN_SYSTEM_HPP_
 
+#include "../../../common/include/Common.hpp"
+
 #include "../../../engineCore/include/ecs/Entity.hpp"
 #include "../../../engineCore/include/ecs/ISystem.hpp"
 #include "../../../engineCore/include/ecs/World.hpp"
@@ -40,6 +42,7 @@ class SpawnSystem : public ecs::ISystem
 {
 public:
   SpawnSystem() : m_rng(std::random_device{}()) {}
+  Difficulty difficulty = Difficulty::MEDIUM;
 
   void update(ecs::World &world, float deltaTime) override
   {
@@ -69,7 +72,7 @@ public:
   {
     // Subscribe to spawn events
     m_spawnHandle = world.subscribeEvent<ecs::SpawnEntityEvent>(
-      [&world](const ecs::SpawnEntityEvent &event) { handleSpawnEvent(world, event); });
+      [this, &world](const ecs::SpawnEntityEvent &event) { this->handleSpawnEvent(world, event); });
   }
 
   [[nodiscard]] ecs::ComponentSignature getSignature() const override { return {}; }

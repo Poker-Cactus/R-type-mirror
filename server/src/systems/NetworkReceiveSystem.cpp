@@ -82,6 +82,8 @@ void NetworkReceiveSystem::handleMessage(ecs::World &world, const std::string &m
       handleLeaveLobby(world, clientId);
     } else if (type == "viewport") {
       handleViewport(world, json, clientId);
+    } else if (type == "set_difficulty") {
+      handleSetDifficulty(json, clientId);
     } else {
       std::cerr << "[Server] Unknown message type from client " << clientId << ": " << type << '\n';
     }
@@ -222,7 +224,9 @@ void NetworkReceiveSystem::handleStartGame([[maybe_unused]] ecs::World &world, s
 
 void NetworkReceiveSystem::handleRequestLobby(const nlohmann::json &json, std::uint32_t clientId)
 {
-  std::cout << "[Server] handleRequestLobby called for client " << clientId << '\n';
+  std::cout << "[Server] === RECEIVED LOBBY REQUEST ===" << '\n';
+  std::cout << "[Server] Client ID: " << clientId << '\n';
+  std::cout << "[Server] Full JSON message: " << json.dump() << '\n';
 
   if (m_game == nullptr) {
     std::cerr << "[Server] Error: m_game is nullptr!" << '\n';
@@ -259,9 +263,36 @@ void NetworkReceiveSystem::handleRequestLobby(const nlohmann::json &json, std::u
     // Create a new lobby with simple numeric code
     static int lobbyCounter = 0;
     lobbyCode = std::to_string(++lobbyCounter);
-    lobbyManager.createLobby(lobbyCode);
+
+    // Parse difficulty
+    GameConfig::Difficulty difficulty = GameConfig::Difficulty::MEDIUM;
+    if (json.contains("difficulty")) {
+      int diffInt = json["difficulty"];
+      std::cout << "[Server] >>> DIFFICULTY RECEIVED: " << diffInt;
+      if (diffInt == 0) std::cout << " (EASY)";
+      else if (diffInt == 1) std::cout << " (MEDIUM)";
+      else if (diffInt == 2) std::cout << " (EXPERT)";
+      else std::cout << " (INVALID)";
+      std::cout << " <<<" << '\n';
+      
+      if (diffInt >= 0 && diffInt <= 2) {
+        difficulty = static_cast<GameConfig::Difficulty>(diffInt);
+        std::cout << "[Server] Parsed difficulty as: " << static_cast<int>(difficulty) << " (" 
+                  << (difficulty == GameConfig::Difficulty::EASY ? "EASY" : 
+                      difficulty == GameConfig::Difficulty::MEDIUM ? "MEDIUM" : "EXPERT") << ")" << '\n';
+      } else {
+        std::cout << "[Server] Invalid difficulty value: " << diffInt << ", using default MEDIUM" << '\n';
+      }
+    } else {
+      std::cout << "[Server] >>> NO DIFFICULTY FIELD IN MESSAGE, USING DEFAULT MEDIUM <<<" << '\n';
+    }
+
+    lobbyManager.createLobby(lobbyCode, difficulty);
     targetLobby = lobbyManager.getLobby(lobbyCode);
-    std::cout << "[Server] Created new lobby: " << lobbyCode << " for client " << clientId << '\n';
+    std::cout << "[Server] Created lobby '" << lobbyCode << "' with final difficulty: " 
+              << static_cast<int>(difficulty) << " (" 
+              << (difficulty == GameConfig::Difficulty::EASY ? "EASY" : 
+                  difficulty == GameConfig::Difficulty::MEDIUM ? "MEDIUM" : "EXPERT") << ")" << '\n';
   }
 
   // Try to join the lobby
@@ -398,4 +429,47 @@ void NetworkReceiveSystem::handleLeaveLobby([[maybe_unused]] ecs::World &world, 
   nlohmann::json response;
   response["type"] = "lobby_left";
   sendJsonMessage(clientId, response);
+}
+
+void NetworkReceiveSystem::handleSetDifficulty(const nlohmann::json &json, std::uint32_t clientId)
+{
+  if (!json.contains("difficulty")) {
+    std::cerr << "[Server] set_difficulty message from client " << clientId << " has no 'difficulty' field" << '\n';
+    return;
+  }
+
+  std::string diffStr = json["difficulty"].get<std::string>();
+  Difficulty diff;
+  if (diffStr == "easy") {
+    diff = Difficulty::EASY;
+  } else if (diffStr == "medium") {
+    diff = Difficulty::MEDIUM;
+  } else if (diffStr == "expert") {
+    diff = Difficulty::EXPERT;
+  } else {
+    std::cerr << "[Server] Invalid difficulty from client " << clientId << ": " << diffStr << '\n';
+    return;
+  }
+
+  if (m_game == nullptr) {
+    return;
+  }
+
+  auto *lobby = m_game->getLobbyManager().getClientLobby(clientId);
+  if (lobby == nullptr) {
+    sendErrorResponse(clientId, "Not in any lobby");
+    return;
+  }
+
+  // Convert Difficulty to GameConfig::Difficulty
+  GameConfig::Difficulty gameConfigDiff;
+  if (diff == Difficulty::EASY) {
+    gameConfigDiff = GameConfig::Difficulty::EASY;
+  } else if (diff == Difficulty::MEDIUM) {
+    gameConfigDiff = GameConfig::Difficulty::MEDIUM;
+  } else {
+    gameConfigDiff = GameConfig::Difficulty::EXPERT;
+  }
+
+  lobby->setDifficulty(gameConfigDiff);
 }
