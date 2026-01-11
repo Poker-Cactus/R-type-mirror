@@ -41,6 +41,6 @@ public:
    */
   void process();
 
-  private:
-    std::shared_ptr<IRenderer> m_renderer;
+private:
+  std::shared_ptr<IRenderer> m_renderer;
 };

@@ -132,8 +132,8 @@ void Lobby::startGame()
     }
   }
 
-  std::cout << "[Lobby:" << m_code << "] Game started with " << playerCount << " players and " 
-            << m_spectators.size() << " spectators" << '\n';
+  std::cout << "[Lobby:" << m_code << "] Game started with " << playerCount << " players and " << m_spectators.size()
+            << " spectators" << '\n';
 }
 
 void Lobby::stopGame()
@@ -280,8 +280,7 @@ void Lobby::spawnPlayer(std::uint32_t clientId)
   health.maxHp = startingHP;
   m_world->addComponent(player, health);
 
-  std::cout << "[Lobby:" << m_code << "] Player " << clientId << " spawned with " << startingHP
-            << " HP (Difficulty: "
+  std::cout << "[Lobby:" << m_code << "] Player " << clientId << " spawned with " << startingHP << " HP (Difficulty: "
             << (m_difficulty == GameConfig::Difficulty::EASY
                   ? "EASY"
                   : (m_difficulty == GameConfig::Difficulty::MEDIUM ? "MEDIUM" : "EXPERT"))
@@ -367,4 +366,7 @@ void Lobby::setDifficulty(GameConfig::Difficulty difficulty)
             << '\n';
 }
 
-GameConfig::Difficulty Lobby::getDifficulty() const { return m_difficulty; }
+GameConfig::Difficulty Lobby::getDifficulty() const
+{
+  return m_difficulty;
+}

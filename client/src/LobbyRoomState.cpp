@@ -114,7 +114,8 @@ void LobbyRoomState::renderLobbyText()
     if (m_lobbyRequested) {
       int elapsedSeconds = static_cast<int>(m_timeSinceLobbyRequest);
       int remainingSeconds = static_cast<int>(CONNECTION_TIMEOUT - m_timeSinceLobbyRequest);
-      line1 = "Connecting to lobby" + std::string(m_joinAsSpectator ? " (Spectator)" : "") + "... (" + std::to_string(elapsedSeconds) + "s)";
+      line1 = "Connecting to lobby" + std::string(m_joinAsSpectator ? " (Spectator)" : "") + "... (" +
+        std::to_string(elapsedSeconds) + "s)";
       line2 = "Timeout in " + std::to_string(std::max(0, remainingSeconds)) + "s";
     } else {
       line1 = "Spectator mode: " + std::string(m_joinAsSpectator ? "ON" : "OFF") + " (Press R to toggle)";
@@ -179,7 +180,7 @@ void LobbyRoomState::processInput()
   }
 
   // R to toggle spectator mode before joining
-  if (m_connectionState == LobbyConnectionState::CONNECTING && !m_lobbyRequested && 
+  if (m_connectionState == LobbyConnectionState::CONNECTING && !m_lobbyRequested &&
       renderer->isKeyJustPressed(KeyCode::KEY_R)) {
     m_joinAsSpectator = !m_joinAsSpectator;
     std::cout << "[LobbyRoomState] Spectator mode: " << (m_joinAsSpectator ? "ON" : "OFF") << '\n';
@@ -188,7 +189,8 @@ void LobbyRoomState::processInput()
   // ENTER to confirm and send lobby request
   if (m_connectionState == LobbyConnectionState::CONNECTING && !m_lobbyRequested &&
       renderer->isKeyJustPressed(KeyCode::KEY_RETURN)) {
-    std::cout << "[LobbyRoomState] Sending lobby request (Spectator: " << (m_joinAsSpectator ? "YES" : "NO") << ")" << '\n';
+    std::cout << "[LobbyRoomState] Sending lobby request (Spectator: " << (m_joinAsSpectator ? "YES" : "NO") << ")"
+              << '\n';
     requestLobby();
     m_lobbyRequested = true;
     m_timeSinceLobbyRequest = 0.0F;
@@ -256,7 +258,7 @@ void LobbyRoomState::requestLobby()
     message["action"] = "create";
     message["difficulty"] = static_cast<int>(m_creationDifficulty);
     message["spectator"] = m_joinAsSpectator;
-} else {
+  } else {
     message["type"] = "request_lobby";
     message["action"] = "join";
     message["lobby_code"] = m_targetLobbyCode;

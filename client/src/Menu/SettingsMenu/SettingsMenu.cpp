@@ -239,7 +239,7 @@ void SettingsMenu::renderRow(const Component &rowRect, const SettingItem &item, 
     for (int i = 0; i < borderThickness; i++) {
       border.a = 255 - ((borderThickness - 1 - i) * 40);
       m_renderer->drawRectOutline(rowRect.rectX + i, rowRect.rectY + i, rowRect.rectWidth - (i * 2),
-                                rowRect.rectHeight - (i * 2), border);
+                                  rowRect.rectHeight - (i * 2), border);
     }
   }
 

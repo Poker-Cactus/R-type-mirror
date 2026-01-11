@@ -112,9 +112,15 @@ void NetworkSendSystem::sendSetDifficulty(Difficulty diff)
   message["type"] = "set_difficulty";
   std::string diffStr;
   switch (diff) {
-  case Difficulty::EASY: diffStr = "easy"; break;
-  case Difficulty::MEDIUM: diffStr = "medium"; break;
-  case Difficulty::EXPERT: diffStr = "expert"; break;
+  case Difficulty::EASY:
+    diffStr = "easy";
+    break;
+  case Difficulty::MEDIUM:
+    diffStr = "medium";
+    break;
+  case Difficulty::EXPERT:
+    diffStr = "expert";
+    break;
   }
   message["difficulty"] = diffStr;
 

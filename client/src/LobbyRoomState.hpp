@@ -24,9 +24,9 @@ class World;
  * @brief Lobby connection status
  */
 enum class LobbyConnectionState : std::uint8_t {
-  CONNECTING,   ///< Attempting to connect
-  JOINED,       ///< Successfully joined
-  ERROR_STATE   ///< Connection error
+  CONNECTING, ///< Attempting to connect
+  JOINED, ///< Successfully joined
+  ERROR_STATE ///< Connection error
 };
 
 /**

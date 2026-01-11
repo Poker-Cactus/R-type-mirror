@@ -13,8 +13,8 @@
 #include "../../../interface/IRenderer.hpp"
 #include "../MenuState.hpp"
 #include <array>
-#include <string>
 #include <memory>
+#include <string>
 
 /**
  * @class MainMenu
