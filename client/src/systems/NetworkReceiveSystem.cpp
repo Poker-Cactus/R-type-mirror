@@ -47,6 +47,11 @@ void ClientNetworkReceiveSystem::update(ecs::World &world, float deltaTime)
       continue;
     }
 
+    // Ignore simple protocol-level keepalive/debug messages that are not JSON
+    if (message == "PING" || message == "PONG") {
+      continue;
+    }
+
     try {
       auto json = nlohmann::json::parse(message);
       std::string type = json["type"].get<std::string>();

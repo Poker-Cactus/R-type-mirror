@@ -37,7 +37,7 @@ void InfoMode::setupCategoryLayout()
   const int LEFT_COLUMN_X = 0;
   const int RIGHT_COLUMN_X = 250;
   const int TOP_ROW_Y = 0;
-  const int BOTTOM_ROW_Y = 120;
+  const int BOTTOM_ROW_Y = 200;  // Increased from 120 to accommodate more lines in categories
 
   // Left column - top and bottom
   m_categoryPositions.push_back({0, LEFT_COLUMN_X, TOP_ROW_Y});    // CPU & RAM (top-left)

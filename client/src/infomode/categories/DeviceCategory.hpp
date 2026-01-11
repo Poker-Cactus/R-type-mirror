@@ -61,9 +61,30 @@ private:
    */
   std::string getDisplayResolution() const;
 
+  /**
+   * @brief Get system architecture
+   * @return CPU architecture
+   */
+  std::string getArchitecture() const;
+
+  /**
+   * @brief Get memory information
+   * @return RAM size and usage
+   */
+  std::string getMemoryInfo() const;
+
+  /**
+   * @brief Get storage information
+   * @return Disk space information
+   */
+  std::string getStorageInfo() const;
+
   // Cached information (updated infrequently)
   mutable std::string m_osInfo;
+  mutable std::string m_architectureInfo;
   mutable std::string m_graphicsInfo;
   mutable std::string m_displayInfo;
+  mutable std::string m_memoryInfo;
+  mutable std::string m_storageInfo;
   mutable bool m_infoCached = false;
 };
