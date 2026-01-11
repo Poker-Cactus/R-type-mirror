@@ -53,11 +53,16 @@ void InfoMode::processInput()
   if (m_renderer == nullptr)
     return;
 
-  // Toggle info mode with "i" key
-  if (m_renderer->isKeyPressed(KeyCode::KEY_I)) {
+  // Toggle info mode with "i" key - only on key press, not hold
+  bool iKeyPressed = m_renderer->isKeyPressed(KeyCode::KEY_I);
+  
+  if (iKeyPressed && !m_iKeyWasPressed) {
+    // Key was just pressed (transition from not pressed to pressed)
     m_isActive = !m_isActive;
     std::cout << "[InfoMode] Info mode toggled: " << (m_isActive ? "ON" : "OFF") << '\n';
   }
+  
+  m_iKeyWasPressed = iKeyPressed;
 }
 
 void InfoMode::render(int x, int y)

@@ -120,6 +120,7 @@ private:
   std::shared_ptr<IRenderer> m_renderer; ///< Renderer interface
   void *m_hudFont; ///< HUD font for text rendering
   bool m_isActive = false; ///< Info mode state
+  bool m_iKeyWasPressed = false; ///< Track previous state of I key for proper toggle
 
   std::vector<std::unique_ptr<InfoCategory>> m_categories; ///< All available categories
   std::vector<CategoryPosition> m_categoryPositions; ///< Positions for each category
