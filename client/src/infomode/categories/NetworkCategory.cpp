@@ -33,7 +33,7 @@ std::vector<std::string> NetworkCategory::getInfoLines() const
   std::vector<std::string> lines;
 
   // Connection Status with visual indicator
-  std::string status = m_connected ? "Connected ✓" : "Disconnected ✗";
+  std::string status = m_connected ? "Connected [OK]" : "Disconnected [FAIL]";
   lines.push_back("Status: " + status);
 
   // Latency with color coding

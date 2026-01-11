@@ -19,11 +19,12 @@
 #include "../include/systems/NetworkSendSystem.hpp"
 #include "../interface/Geometry.hpp"
 #include "../interface/KeyCodes.hpp"
+#include "../../network/include/AsioClient.hpp"
 #include <iostream>
 
 PlayingState::PlayingState(std::shared_ptr<IRenderer> renderer, const std::shared_ptr<ecs::World> &world,
-                           Settings &settings)
-    : renderer(std::move(renderer)), world(world), background(nullptr), settings(settings)
+                           Settings &settings, std::shared_ptr<INetworkManager> networkManager)
+    : renderer(std::move(renderer)), world(world), background(nullptr), settings(settings), m_networkManager(networkManager)
 {
 }
 
@@ -116,6 +117,15 @@ void PlayingState::update(float delta_time)
   // Update info mode
   if (m_infoMode) {
     m_infoMode->update(delta_time);
+  }
+
+  // Send ping periodically to measure latency
+  if (m_networkManager) {
+    m_pingTimer += delta_time;
+    if (m_pingTimer >= 2.0f) { // Ping every 2 seconds
+      static_cast<AsioClient*>(m_networkManager.get())->sendPing();
+      m_pingTimer = 0.0f;
+    }
   }
 }
 
@@ -566,9 +576,19 @@ void PlayingState::updateHUDFromWorld(float deltaTime)
     // Update game statistics in info mode
     m_infoMode->setGameStats(totalEntities, playerCount, enemyCount, projectileCount, gameTimeAccumulator);
 
-    // Set basic network data (can be enhanced with real network stats later)
-    // For now, assume connected with placeholder values
-    m_infoMode->setNetworkData(25.0f, true, 15); // 25ms latency, connected, 15 packets/sec
+    // Set real network data
+    if (m_networkManager) {
+      float latency = m_networkManager->getLatency();
+      bool connected = m_networkManager->isConnected();
+      int packetsPerSec = m_networkManager->getPacketsPerSecond();
+      int uploadBps = m_networkManager->getUploadBytesPerSecond();
+      int downloadBps = m_networkManager->getDownloadBytesPerSecond();
+      m_infoMode->setNetworkData(latency, connected, packetsPerSec);
+      m_infoMode->setNetworkBandwidth(uploadBps, downloadBps);
+    } else {
+      m_infoMode->setNetworkData(-1.0f, false, 0);
+      m_infoMode->setNetworkBandwidth(0, 0);
+    }
   }
 }
 

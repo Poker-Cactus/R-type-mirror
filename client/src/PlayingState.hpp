@@ -9,6 +9,7 @@
 #include "Menu/SettingsMenu/SettingsMenu.hpp"
 #include "ParallaxBackground.hpp"
 #include "infomode/InfoMode.hpp"
+#include "../../network/include/INetworkManager.hpp"
 #include <memory>
 #include <unordered_map>
 
@@ -31,8 +32,9 @@ public:
    * @param renderer Renderer interface
    * @param world Shared pointer to ECS world
    * @param settings Game settings reference
+   * @param networkManager Network manager for stats
    */
-  PlayingState(std::shared_ptr<IRenderer> renderer, const std::shared_ptr<ecs::World> &world, Settings &settings);
+  PlayingState(std::shared_ptr<IRenderer> renderer, const std::shared_ptr<ecs::World> &world, Settings &settings, std::shared_ptr<INetworkManager> networkManager);
   ~PlayingState();
 
   /**
@@ -139,4 +141,7 @@ private:
   float m_fpsAccumulator = 0.0f; ///< Time accumulator for FPS calculation
   int m_fpsFrameCount = 0; ///< Frame count for FPS calculation
   float m_currentFps = 0.0f; ///< Current calculated FPS
+
+  std::shared_ptr<INetworkManager> m_networkManager; ///< Network manager for stats
+  float m_pingTimer = 0.0f; ///< Timer for sending pings
 };

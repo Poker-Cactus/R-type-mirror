@@ -99,6 +99,13 @@ public:
    */
   void setNetworkData(float latency, bool connected, int packetsPerSecond);
 
+  /**
+   * @brief Set network bandwidth data
+   * @param uploadBytes Upload bytes per second
+   * @param downloadBytes Download bytes per second
+   */
+  void setNetworkBandwidth(int uploadBytes, int downloadBytes);
+
 private:
   /**
    * @brief Initialize all info categories

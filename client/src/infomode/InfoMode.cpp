@@ -150,3 +150,14 @@ void InfoMode::setNetworkData(float latency, bool connected, int packetsPerSecon
     }
   }
 }
+
+void InfoMode::setNetworkBandwidth(int uploadBytes, int downloadBytes)
+{
+  // Find network category and update its bandwidth data
+  for (auto& category : m_categories) {
+    if (auto* networkCategory = dynamic_cast<NetworkCategory*>(category.get())) {
+      networkCategory->setBandwidth(uploadBytes, downloadBytes);
+      break;
+    }
+  }
+}
