@@ -18,7 +18,7 @@
  * @brief Window size container to prevent parameter confusion
  */
 struct WindowDimensions {
-  int width;  ///< Window width in pixels
+  int width; ///< Window width in pixels
   int height; ///< Window height in pixels
 };
 
@@ -28,8 +28,8 @@ struct WindowDimensions {
  */
 enum class LobbyMenuOption : std::uint8_t {
   CREATE_LOBBY, ///< Create new lobby
-  JOIN_LOBBY,   ///< Join existing lobby
-  BACK          ///< Return to main menu
+  JOIN_LOBBY, ///< Join existing lobby
+  BACK ///< Return to main menu
 };
 
 /**
@@ -42,7 +42,7 @@ enum class LobbyMenuOption : std::uint8_t {
 class LobbyMenu
 {
 public:
-  LobbyMenu(std::shared_ptr <IRenderer> renderer);
+  LobbyMenu(std::shared_ptr<IRenderer> renderer);
   ~LobbyMenu();
 
   /**
@@ -135,7 +135,7 @@ private:
   bool m_isEnteringCode;
   std::string m_lobbyCodeInput;
   static constexpr std::size_t MAX_LOBBY_CODE_LENGTH = 10;
-  
+
   // Difficulty selection
   bool m_isSelectingDifficulty = false;
   std::vector<std::string> m_difficultyItems = {"Easy", "Medium", "Expert"};

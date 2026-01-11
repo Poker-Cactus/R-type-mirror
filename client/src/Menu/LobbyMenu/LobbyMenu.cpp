@@ -10,12 +10,12 @@
 #include "../../../interface/KeyCodes.hpp"
 #include <iostream>
 
-LobbyMenu::LobbyMenu(std::shared_ptr <IRenderer> renderer)
+LobbyMenu::LobbyMenu(std::shared_ptr<IRenderer> renderer)
     : m_renderer(std::move(renderer)), m_font(nullptr), m_titleFont(nullptr), m_moonSky(nullptr), m_moonBack(nullptr),
       m_moonMid(nullptr), m_moonFront(nullptr), m_moonFloor(nullptr), m_parallaxOffsetSky(0.0F),
-      m_parallaxOffsetBack(0.0F), m_parallaxOffsetMid(0.0F), m_parallaxOffsetFront(0.0F),
-      m_parallaxOffsetFloor(0.0F), m_currentIndex(0), m_isEnteringCode(false), m_lobbyCodeInput(""),
-      m_shouldEnterLobbyRoom(false), m_isCreatingLobby(false), m_networkManager(nullptr)
+      m_parallaxOffsetBack(0.0F), m_parallaxOffsetMid(0.0F), m_parallaxOffsetFront(0.0F), m_parallaxOffsetFloor(0.0F),
+      m_currentIndex(0), m_isEnteringCode(false), m_lobbyCodeInput(""), m_shouldEnterLobbyRoom(false),
+      m_isCreatingLobby(false), m_networkManager(nullptr)
 {
 }
 
@@ -291,9 +291,9 @@ void LobbyMenu::renderDifficultySelection(const WindowDimensions &windowDims)
                                                  : Color{.r = 255, .g = 255, .b = 255, .a = 255};
 
     m_renderer->drawText(m_font, m_difficultyItems[i], pos_x, pos_y, color);
-    
+
     // Draw checkmark if this is the currently selected difficulty (persisted)
-    // Actually, we just highlight the current selection in the navigation. 
+    // Actually, we just highlight the current selection in the navigation.
     // The "selected" one is just the one we create with.
   }
 
@@ -442,12 +442,13 @@ void LobbyMenu::selectDifficultyOption()
     m_selectedDifficulty = Difficulty::EXPERT;
     break;
   }
-  
-  std::cout << "[LobbyMenu] Creating new lobby with difficulty: " 
-            << (m_selectedDifficulty == Difficulty::EASY ? "EASY" : 
-               (m_selectedDifficulty == Difficulty::MEDIUM ? "MEDIUM" : "EXPERT"))
+
+  std::cout << "[LobbyMenu] Creating new lobby with difficulty: "
+            << (m_selectedDifficulty == Difficulty::EASY
+                  ? "EASY"
+                  : (m_selectedDifficulty == Difficulty::MEDIUM ? "MEDIUM" : "EXPERT"))
             << " (value: " << static_cast<int>(m_selectedDifficulty) << ")" << '\n';
-               
+
   m_isCreatingLobby = true;
   m_lobbyCodeInput.clear();
   m_shouldEnterLobbyRoom = true;
