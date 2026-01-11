@@ -8,6 +8,7 @@
 #include "../interface/IRenderer.hpp"
 #include "Menu/SettingsMenu/SettingsMenu.hpp"
 #include "ParallaxBackground.hpp"
+#include "infomode/InfoMode.hpp"
 #include <memory>
 #include <unordered_map>
 
@@ -111,10 +112,12 @@ private:
   /**
    * @brief Update HUD data from ECS world
    */
-  void updateHUDFromWorld();
+  void updateHUDFromWorld(float deltaTime);
 
   bool m_returnUp = false; ///< Return to neutral animation from up
   bool m_returnDown = false; ///< Return to neutral animation from down
+
+  std::unique_ptr<InfoMode> m_infoMode; ///< Info mode manager
 
   int m_playerFrameIndex = 2; ///< Current animation frame
   int m_playerAnimToggle = 0; ///< Animation toggle state
