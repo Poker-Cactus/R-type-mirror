@@ -134,4 +134,9 @@ private:
 
   Settings &settings; ///< Game settings reference
   std::shared_ptr<SettingsMenu> settingsMenu; ///< Settings menu
+
+  // FPS tracking
+  float m_fpsAccumulator = 0.0f; ///< Time accumulator for FPS calculation
+  int m_fpsFrameCount = 0; ///< Frame count for FPS calculation
+  float m_currentFps = 0.0f; ///< Current calculated FPS
 };

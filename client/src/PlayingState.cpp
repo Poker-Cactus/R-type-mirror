@@ -90,6 +90,17 @@ bool PlayingState::init()
 
 void PlayingState::update(float delta_time)
 {
+  // Calculate FPS
+  m_fpsAccumulator += delta_time;
+  m_fpsFrameCount++;
+
+  // Update FPS every second
+  if (m_fpsAccumulator >= 1.0f) {
+    m_currentFps = static_cast<float>(m_fpsFrameCount) / m_fpsAccumulator;
+    m_fpsAccumulator = 0.0f;
+    m_fpsFrameCount = 0;
+  }
+
   // Mettre à jour le background
   if (background) {
     background->update(delta_time);
@@ -494,8 +505,8 @@ void PlayingState::updateHUDFromWorld(float deltaTime)
 
   // Update info mode with current game data
   if (m_infoMode) {
-    // For now, FPS calculation is not implemented, so pass 0.0f
-    m_infoMode->setGameData(m_playerHealth, m_playerScore, 0.0f);
+    // Pass real FPS value
+    m_infoMode->setGameData(m_playerHealth, m_playerScore, m_currentFps);
 
     // Collect real entity statistics
     int totalEntities = 0;
