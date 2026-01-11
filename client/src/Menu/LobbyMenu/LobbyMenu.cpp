@@ -6,6 +6,7 @@
 */
 
 #include "LobbyMenu.hpp"
+#include "../../../include/Settings.hpp"
 #include "../../../interface/Geometry.hpp"
 #include "../../../interface/KeyCodes.hpp"
 #include <iostream>
@@ -229,12 +230,12 @@ void LobbyMenu::renderLobbyCodeInput(const WindowDimensions &windowDims, IRender
   renderer->drawText(m_font, instructions, instrX, instrY, instrColor);
 }
 
-void LobbyMenu::process(IRenderer *renderer, MenuState *currentState)
+void LobbyMenu::process(IRenderer *renderer, MenuState *currentState, Settings &settings)
 {
   if (m_isEnteringCode) {
     handleTextInput(renderer);
   } else {
-    handleMenuNavigation(renderer);
+    handleMenuNavigation(renderer, settings);
 
     if (renderer->isKeyJustPressed(KeyCode::KEY_RETURN)) {
       selectCurrentOption(currentState);
@@ -246,13 +247,14 @@ void LobbyMenu::process(IRenderer *renderer, MenuState *currentState)
   }
 }
 
-void LobbyMenu::handleMenuNavigation(IRenderer *renderer)
+void LobbyMenu::handleMenuNavigation(IRenderer *renderer, Settings &settings)
 {
-  if (renderer->isKeyJustPressed(KeyCode::KEY_DOWN)) {
+  
+  if (renderer->isKeyJustPressed(settings.down)) {
     m_currentIndex = (m_currentIndex + 1) % m_menuItems.size();
   }
 
-  if (renderer->isKeyJustPressed(KeyCode::KEY_UP)) {
+  if (renderer->isKeyJustPressed(settings.up)) {
     m_currentIndex = (m_currentIndex - 1 + m_menuItems.size()) % m_menuItems.size();
   }
 }

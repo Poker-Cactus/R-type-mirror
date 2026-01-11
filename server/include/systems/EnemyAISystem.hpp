@@ -81,32 +81,40 @@ public:
         // Simple straight-line movement
         velocity.dx = ENEMY_MOVE_SPEED;
         velocity.dy = 0.0F;
+      } else {
+        // Default or "none" pattern: keep velocity as configured
+        // velocity.dx and velocity.dy are already set from config
       }
       
-      // Update directional frames for yellow bee (sprite ID 6)
-      if (auto* sprite = world.getComponent<ecs::Sprite>(entity)) {
-        if (sprite->id == ecs::SpriteId::ENEMY_YELLOW) {
-          // Yellow bee has 2 rows of 8 frames:
-          // Row 0 (frames 0-7): Downward movement (dy > 0)
-          // Row 1 (frames 8-15): Upward movement (dy < 0)
+      // Update rotation for yellow bee based on velocity direction
+      if (world.hasComponent<ecs::Sprite>(entity)) {
+        auto& sprite = world.getComponent<ecs::Sprite>(entity);
+        if (sprite.spriteId == ecs::SpriteId::ENEMY_YELLOW) {
+          // Calculate rotation angle from velocity (in degrees)
+          // Base sprite faces left, so add 180° to make it face right
+          float targetAngle = std::atan2(velocity.dy, velocity.dx) * (180.0F / 3.14159265F) + 180.0F;
           
-          // Calculate angle from velocity
-          float angle = std::atan2(velocity.dy, velocity.dx);
+          // Smooth rotation: interpolate towards target angle
+          float currentAngle = transform.rotation;
+          float angleDiff = targetAngle - currentAngle;
           
-          // Normalize angle to [0, 2*PI)
-          if (angle < 0) {
-            angle += 2.0F * 3.14159265F;
+          // Normalize angle difference to [-180, 180]
+          while (angleDiff > 180.0F) angleDiff -= 360.0F;
+          while (angleDiff < -180.0F) angleDiff += 360.0F;
+          
+          // Smooth rotation speed (degrees per second)
+          constexpr float ROTATION_SPEED = 180.0F;
+          float maxRotation = ROTATION_SPEED * deltaTime;
+          
+          if (std::abs(angleDiff) < maxRotation) {
+            transform.rotation = targetAngle;
+          } else {
+            transform.rotation += (angleDiff > 0 ? maxRotation : -maxRotation);
           }
           
-          // Determine frame based on angle and direction
-          // 8 directions per row, each covering 45 degrees (PI/4)
-          int frameInRow = static_cast<int>((angle / (2.0F * 3.14159265F)) * 8.0F) % 8;
-          
-          // Select row based on vertical direction
-          int row = (velocity.dy >= 0.0F) ? 0 : 1;
-          
-          // Final frame = row * 8 + frameInRow
-          sprite->currentFrame = row * 8 + frameInRow;
+          // Normalize final angle to [0, 360)
+          while (transform.rotation >= 360.0F) transform.rotation -= 360.0F;
+          while (transform.rotation < 0.0F) transform.rotation += 360.0F;
         }
       }
 

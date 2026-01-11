@@ -331,14 +331,14 @@ void SettingsMenu::process(IRenderer *renderer)
     return;
   }
 
-  if (renderer->isKeyJustPressed(KeyCode::KEY_LEFT) && !isEditing) {
+  if (renderer->isKeyJustPressed(settings->left) && !isEditing) {
     int catIndex = static_cast<int>(currentCategory);
     if (catIndex > 0) {
       currentCategory = static_cast<SettingsCategory>(catIndex - 1);
       selectedIndex = 0;
     }
   }
-  if (renderer->isKeyJustPressed(KeyCode::KEY_RIGHT) && !isEditing) {
+  if (renderer->isKeyJustPressed(settings->right) && !isEditing) {
     int catIndex = static_cast<int>(currentCategory);
     if (catIndex < 2) {
       currentCategory = static_cast<SettingsCategory>(catIndex + 1);
@@ -351,13 +351,13 @@ void SettingsMenu::process(IRenderer *renderer)
     return;
   }
 
-  if (renderer->isKeyJustPressed(KeyCode::KEY_DOWN)) {
+  if (renderer->isKeyJustPressed(settings->down)) {
     if (selectedIndex + 1 < items.size()) {
       selectedIndex++;
       isEditing = false;
     }
   }
-  if (renderer->isKeyJustPressed(KeyCode::KEY_UP)) {
+  if (renderer->isKeyJustPressed(settings->up)) {
     if (selectedIndex > 0) {
       selectedIndex--;
       isEditing = false;
@@ -381,10 +381,10 @@ void SettingsMenu::process(IRenderer *renderer)
 
   // Only modify values while in edit mode
   if (isEditing) {
-    if (renderer->isKeyJustPressed(KeyCode::KEY_LEFT)) {
+    if (renderer->isKeyJustPressed(settings->left)) {
       applyDelta(items[selectedIndex], -1);
     }
-    if (renderer->isKeyJustPressed(KeyCode::KEY_RIGHT)) {
+    if (renderer->isKeyJustPressed(settings->right)) {
       applyDelta(items[selectedIndex], +1);
     }
   }

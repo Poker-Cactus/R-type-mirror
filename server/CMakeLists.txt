@@ -13,6 +13,7 @@ add_executable(server
     src/WorldLobbyRegistry.cpp
 
     src/config/EnemyConfig.cpp
+    src/config/LevelConfig.cpp
 
     src/systems/NetworkReceiveSystem.cpp
     src/systems/NetworkSendSystem.cpp

@@ -95,7 +95,7 @@ void Menu::processInput()
     loadingMenu->process(renderer);
     break;
   case MenuState::MAIN_MENU:
-    mainMenu->process(&currentState, renderer);
+    mainMenu->process(&currentState, renderer, settings);
     break;
   case MenuState::PROFILE:
     profileMenu->process(renderer);
@@ -104,7 +104,7 @@ void Menu::processInput()
     settingsMenu->process(renderer);
     break;
   case MenuState::LOBBY:
-    lobbyMenu->process(renderer, &currentState);
+    lobbyMenu->process(renderer, &currentState, settings);
     break;
   default:
     break;

@@ -4,6 +4,8 @@
 #include <array>
 #include <string>
 
+class Settings;
+
 class MainMenu
 {
 public:
@@ -11,7 +13,7 @@ public:
   ~MainMenu() {}
   void init(IRenderer *renderer);
   void render(int winWidth, int winHeight, IRenderer *renderer);
-  void process(MenuState *currentState, IRenderer *renderer);
+  void process(MenuState *currentState, IRenderer *renderer, Settings &settings);
 
 private:
   void *font;

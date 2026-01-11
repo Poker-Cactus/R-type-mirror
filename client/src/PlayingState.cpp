@@ -137,11 +137,31 @@ void PlayingState::render()
         } else if (sprite.spriteId == ecs::SpriteId::PROJECTILE) {
           frameWidth = 18;
           frameHeight = 14;
+        } else if (sprite.spriteId == ecs::SpriteId::ENEMY_YELLOW) {
+          // Yellow Bee: 256x64 with 2 rows x 8 columns = 16 frames
+          frameWidth = 256 / 8;  // 32px per frame
+          frameHeight = 64 / 2;  // 32px per frame (2 rows)
         }
 
         if (frameWidth > 0 && frameHeight > 0) {
           // Calculate source rectangle based on current frame
-          int srcX = sprite.currentFrame * frameWidth;
+          int srcX = 0;
+          int srcY = 0;
+          
+          // For sprites with multiple rows (like Yellow Bee: 2 rows x 8 columns)
+          if (sprite.spriteId == ecs::SpriteId::ENEMY_YELLOW) {
+            // Yellow Bee: 16 frames in 2 rows of 8
+            int framesPerRow = 8;
+            int row = sprite.currentFrame / framesPerRow;
+            int col = sprite.currentFrame % framesPerRow;
+            srcX = col * frameWidth;
+            srcY = row * frameHeight;
+          } else {
+            // Single row spritesheets (ENEMY_SHIP, PLAYER_SHIP, PROJECTILE)
+            srcX = sprite.currentFrame * frameWidth;
+            srcY = 0;
+          }
+          
           // Apply transform scale to sprite dimensions
           int scaledWidth = static_cast<int>(sprite.width * transformComponent.scale);
           int scaledHeight = static_cast<int>(sprite.height * transformComponent.scale);
@@ -160,7 +180,7 @@ void PlayingState::render()
           }
 
           renderer->drawTextureRegion(
-            textureIt->second, {.x = srcX, .y = 0, .width = frameWidth, .height = frameHeight}, // Source: current frame
+            textureIt->second, {.x = srcX, .y = srcY, .width = frameWidth, .height = frameHeight}, // Source: current frame
             {.x = static_cast<int>(transformComponent.x),
              .y = static_cast<int>(transformComponent.y),
              .width = scaledWidth,
@@ -197,6 +217,31 @@ void PlayingState::render()
              .y = static_cast<int>(transformComponent.y),
              .width = scaledWidth,
              .height = scaledHeight}); // Destination with scale
+        } else if (sprite.spriteId == ecs::SpriteId::ENEMY_YELLOW) {
+          // Yellow Bee: Use frame 8 (first of bottom row = left-facing)
+          constexpr int YELLOW_BEE_FRAME_WIDTH = 32;
+          constexpr int YELLOW_BEE_FRAME_HEIGHT = 32;
+          constexpr int YELLOW_BEE_FRAME = 8; // Bottom row, first frame
+          int framesPerRow = 8;
+          int row = YELLOW_BEE_FRAME / framesPerRow;
+          int col = YELLOW_BEE_FRAME % framesPerRow;
+          int srcX = col * YELLOW_BEE_FRAME_WIDTH;
+          int srcY = row * YELLOW_BEE_FRAME_HEIGHT;
+          
+          int scaledWidth = static_cast<int>(sprite.width * transformComponent.scale);
+          int scaledHeight = static_cast<int>(sprite.height * transformComponent.scale);
+          
+          // Calculate rotation angle based on velocity
+          float rotation = transformComponent.rotation;
+          
+          renderer->drawTextureRegionEx(
+            textureIt->second,
+            {.x = srcX, .y = srcY, .width = YELLOW_BEE_FRAME_WIDTH, .height = YELLOW_BEE_FRAME_HEIGHT},
+            {.x = static_cast<int>(transformComponent.x),
+             .y = static_cast<int>(transformComponent.y),
+             .width = scaledWidth,
+             .height = scaledHeight},
+            rotation, false, false);
         } else {
           // Other sprites: draw full texture
           int scaledWidth = static_cast<int>(sprite.width * transformComponent.scale);
@@ -614,7 +659,7 @@ void PlayingState::loadSpriteTextures()
 
   // ENEMY_YELLOW = 6 (animated spritesheet: 256x64, 2 rows x 8 columns = 16 frames)
   try {
-    void *enemy_yellow_tex = renderer->loadTexture(resolveAssetPath("client/assets/sprites/enemy_yellow.gif").c_str());
+    void *enemy_yellow_tex = renderer->loadTexture(resolveAssetPath("client/assets/sprites/enemy_yellow.gif"));
     if (enemy_yellow_tex != nullptr) {
       m_spriteTextures[ecs::SpriteId::ENEMY_YELLOW] = enemy_yellow_tex;
       std::cout << "[PlayingState] ✓ Loaded enemy_yellow.gif" << '\n';

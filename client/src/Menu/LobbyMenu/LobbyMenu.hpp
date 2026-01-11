@@ -14,6 +14,8 @@
 #include <string>
 #include <vector>
 
+class Settings;
+
 /**
  * @brief Window dimensions structure to prevent accidental parameter swaps
  */
@@ -38,7 +40,7 @@ public:
 
   void init(IRenderer *renderer);
   void render(const WindowDimensions &windowDims, IRenderer *renderer);
-  void process(IRenderer *renderer, MenuState *currentState);
+  void process(IRenderer *renderer, MenuState *currentState, Settings &settings);
   void cleanup();
 
   // Network integration
@@ -56,7 +58,7 @@ private:
   void renderBackground(const WindowDimensions &windowDims, IRenderer *renderer);
   void renderMenuOptions(const WindowDimensions &windowDims, IRenderer *renderer);
   void renderLobbyCodeInput(const WindowDimensions &windowDims, IRenderer *renderer);
-  void handleMenuNavigation(IRenderer *renderer);
+  void handleMenuNavigation(IRenderer *renderer, Settings &settings);
   void handleTextInput(IRenderer *renderer);
   void selectCurrentOption(MenuState *currentState);
 

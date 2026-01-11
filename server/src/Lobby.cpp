@@ -10,6 +10,7 @@
 #include "../../network/include/INetworkManager.hpp"
 #include "../include/Game.hpp"
 #include "../include/ServerSystems.hpp"
+#include "../include/config/EnemyConfig.hpp"
 #include "WorldLobbyRegistry.hpp"
 #include <iostream>
 #include <nlohmann/json.hpp>
@@ -223,6 +224,22 @@ void Lobby::initializeSystems()
   }
   if (spawnSystem != nullptr) {
     spawnSystem->initialize(*m_world);
+    
+    // Set enemy config manager if available
+    if (m_enemyConfigManager) {
+      spawnSystem->setEnemyConfigManager(m_enemyConfigManager);
+    }
+    
+    // Set level config manager if available and start level
+    if (m_levelConfigManager) {
+      spawnSystem->setLevelConfigManager(m_levelConfigManager);
+      spawnSystem->startLevel("level_1");
+      std::cout << "[Lobby:" << m_code << "] Level config manager set, started level_1" << std::endl;
+    } else if (m_enemyConfigManager) {
+      // Fallback to multi-type spawning if no level config
+      spawnSystem->enableMultipleSpawnTypes({"enemy_blue"});
+      std::cout << "[Lobby:" << m_code << "] Enemy config manager set on SpawnSystem" << std::endl;
+    }
   }
 
   std::cout << "[Lobby:" << m_code << "] Initialized game systems" << '\n';
@@ -321,4 +338,16 @@ void Lobby::sendJsonToClient(std::uint32_t clientId, const nlohmann::json &messa
   const auto serialized = m_networkManager->getPacketHandler()->serialize(jsonStr);
   m_networkManager->send(
     std::span<const std::byte>(reinterpret_cast<const std::byte *>(serialized.data()), serialized.size()), clientId);
+}
+
+void Lobby::setEnemyConfigManager(std::shared_ptr<server::EnemyConfigManager> configManager)
+{
+  m_enemyConfigManager = configManager;
+  std::cout << "[Lobby:" << m_code << "] Enemy config manager set" << std::endl;
+}
+
+void Lobby::setLevelConfigManager(std::shared_ptr<server::LevelConfigManager> configManager)
+{
+  m_levelConfigManager = configManager;
+  std::cout << "[Lobby:" << m_code << "] Level config manager set" << std::endl;
 }

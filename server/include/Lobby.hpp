@@ -11,8 +11,12 @@
 #include "../../engineCore/include/ecs/World.hpp"
 #include <nlohmann/json.hpp>
 
-// Forward declaration for network manager
+// Forward declarations
 class INetworkManager;
+namespace server { 
+  class EnemyConfigManager;
+  class LevelConfigManager;
+}
 #include <cstdint>
 #include <memory>
 #include <string>
@@ -119,6 +123,18 @@ public:
    */
   void sendJsonToClient(std::uint32_t clientId, const nlohmann::json &message) const;
 
+  /**
+   * @brief Set the enemy configuration manager for this lobby
+   * @param configManager Shared pointer to enemy config manager
+   */
+  void setEnemyConfigManager(std::shared_ptr<server::EnemyConfigManager> configManager);
+
+  /**
+   * @brief Set the level configuration manager for this lobby
+   * @param configManager Shared pointer to level config manager
+   */
+  void setLevelConfigManager(std::shared_ptr<server::LevelConfigManager> configManager);
+
 private:
   void initializeSystems();
   void spawnPlayer(std::uint32_t clientId);
@@ -136,6 +152,12 @@ private:
 
   // Map client IDs to their player entities
   std::unordered_map<std::uint32_t, ecs::Entity> m_playerEntities;
+
+  // Enemy configuration manager
+  std::shared_ptr<server::EnemyConfigManager> m_enemyConfigManager;
+  
+  // Level configuration manager
+  std::shared_ptr<server::LevelConfigManager> m_levelConfigManager;
 };
 
 #endif /* !LOBBY_HPP_ */

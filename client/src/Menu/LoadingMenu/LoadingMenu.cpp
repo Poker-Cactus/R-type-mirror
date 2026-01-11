@@ -9,6 +9,7 @@
 #include "../../../interface/Geometry.hpp"
 #include "../../../interface/KeyCodes.hpp"
 #include <cmath>
+#include <iostream>
 
 void LoadingMenu::init(IRenderer *renderer)
 {
@@ -27,15 +28,28 @@ void LoadingMenu::init(IRenderer *renderer)
 void LoadingMenu::render(int winWidth, int winHeight, IRenderer *renderer, LoadingScreen *loadingScreen,
                          MenuState *currentState)
 {
+  // CRITICAL: Check renderer first before any calls
+  if (renderer == nullptr) {
+    std::cerr << "[LoadingMenu] ERROR: renderer is nullptr!" << std::endl;
+    return;
+  }
+  
+  std::cout << "[LoadingMenu] Rendering... renderer=" << renderer << std::endl;
+  
+  std::cout << "[LoadingMenu] Checking loadingScreen..." << std::endl;
   if (loadingScreen != nullptr && loadingScreen->isActive()) {
+    std::cout << "[LoadingMenu] LoadingScreen active, updating..." << std::endl;
     if (loadingScreen->update(winWidth, winHeight)) {
       *currentState = MenuState::MAIN_MENU;
     }
     return;
   }
 
+  std::cout << "[LoadingMenu] Checking isZooming..." << std::endl;
   if (isZooming) {
+    std::cout << "[LoadingMenu] isZooming=true, getting deltaTime..." << std::endl;
     zoomTimer += renderer->getDeltaTime();
+    std::cout << "[LoadingMenu] Got deltaTime" << std::endl;
 
     float progress = zoomTimer / zoomDuration;
 
@@ -52,20 +66,31 @@ void LoadingMenu::render(int winWidth, int winHeight, IRenderer *renderer, Loadi
     zoomScale = 0.3f + (progress * progress * 9.7f);
   }
 
-  backgroundOffsetX += renderer->getDeltaTime() * 20.0f;
+  std::cout << "[LoadingMenu] Getting deltaTime for backgroundOffsetX..." << std::endl;
+  float deltaTime = renderer->getDeltaTime();
+  std::cout << "[LoadingMenu] Got deltaTime=" << deltaTime << std::endl;
+  backgroundOffsetX += deltaTime * 20.0f;
   if (backgroundOffsetX >= winWidth) {
     backgroundOffsetX = 0.0f;
   }
 
+  std::cout << "[LoadingMenu] Drawing textures..." << std::endl;
+
   if (backgroundTexture != nullptr) {
+    std::cout << "[LoadingMenu] Drawing background 1..." << std::endl;
     renderer->drawTextureEx(backgroundTexture, static_cast<int>(backgroundOffsetX), 0, winWidth, winHeight, 0.0, false,
                             false);
+    std::cout << "[LoadingMenu] Drawing background 2..." << std::endl;
     renderer->drawTextureEx(backgroundTexture, static_cast<int>(backgroundOffsetX - winWidth), 0, winWidth, winHeight,
                             0.0, false, false);
+    std::cout << "[LoadingMenu] Background drawn" << std::endl;
   }
+  std::cout << "[LoadingMenu] Checking planet..." << std::endl;
   if (planet != nullptr) {
+    std::cout << "[LoadingMenu] Getting planet texture size..." << std::endl;
     int planetWidth, planetHeight;
     renderer->getTextureSize(planet, planetWidth, planetHeight);
+    std::cout << "[LoadingMenu] Got planetWidth=" << planetWidth << ", planetHeight=" << planetHeight << std::endl;
 
     float scale = static_cast<float>(std::min(winWidth, winHeight)) * zoomScale /
       static_cast<float>(std::max(planetWidth, planetHeight));

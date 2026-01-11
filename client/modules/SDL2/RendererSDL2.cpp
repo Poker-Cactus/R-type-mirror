@@ -447,10 +447,31 @@ void RendererSDL2::drawTextureRegion(void *texture, const Rect &src, const Rect 
   SDL_RenderCopy(renderer, static_cast<SDL_Texture *>(texture), &srcRect, &dstRect);
 }
 
+void RendererSDL2::drawTextureRegionEx(void *texture, const Rect &src, const Rect &dst, double angle, bool flipX,
+                                       bool flipY)
+{
+  if (texture == nullptr || renderer == nullptr) {
+    return;
+  }
+
+  SDL_Rect srcRect = {src.x, src.y, src.width, src.height};
+  SDL_Rect dstRect = {dst.x + cameraOffsetX, dst.y + cameraOffsetY, dst.width, dst.height};
+  
+  SDL_RendererFlip flip = SDL_FLIP_NONE;
+  if (flipX) {
+    flip = static_cast<SDL_RendererFlip>(flip | SDL_FLIP_HORIZONTAL);
+  }
+  if (flipY) {
+    flip = static_cast<SDL_RendererFlip>(flip | SDL_FLIP_VERTICAL);
+  }
+
+  SDL_RenderCopyEx(renderer, static_cast<SDL_Texture *>(texture), &srcRect, &dstRect, angle, nullptr, flip);
+}
+
 void RendererSDL2::drawTextureEx(void *texture, int posX, int posY, int width, int height, double angle, bool flipX,
                                  bool flipY)
 {
-  if (texture == nullptr) {
+  if (texture == nullptr || renderer == nullptr) {
     return;
   }
 

@@ -6,6 +6,7 @@
 */
 
 #include "MainMenu.hpp"
+#include "../../../include/Settings.hpp"
 #include "../../../interface/Geometry.hpp"
 #include "../../../interface/KeyCodes.hpp"
 #include <iostream>
@@ -41,14 +42,14 @@ void MainMenu::render(int winWidth, int winHeight, IRenderer *renderer)
   }
 }
 
-void MainMenu::process(MenuState *currentState, IRenderer *renderer)
+void MainMenu::process(MenuState *currentState, IRenderer *renderer, Settings &settings)
 {
-  // Flèche bas - descendre dans le menu
-  if (renderer->isKeyJustPressed(KeyCode::KEY_DOWN)) {
+  // Use settings for menu navigation
+  
+  if (renderer->isKeyJustPressed(settings.down)) {
     currentMenuIndex = (currentMenuIndex + 1) % mainMenuItems.size();
   }
-  // Flèche haut - monter dans le menu
-  if (renderer->isKeyJustPressed(KeyCode::KEY_UP)) {
+  if (renderer->isKeyJustPressed(settings.up)) {
     currentMenuIndex = (currentMenuIndex - 1 + mainMenuItems.size()) % mainMenuItems.size();
   }
   if (renderer->isKeyJustPressed(KeyCode::KEY_RETURN)) {
