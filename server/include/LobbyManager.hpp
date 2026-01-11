@@ -41,9 +41,10 @@ public:
    * @brief Add a client to a lobby
    * @param code The lobby code
    * @param clientId The client identifier
+   * @param asSpectator Whether to join as spectator
    * @return true if client was added successfully
    */
-  bool joinLobby(const std::string &code, std::uint32_t clientId);
+  bool joinLobby(const std::string &code, std::uint32_t clientId, bool asSpectator = false);
 
   /**
    * @brief Remove a client from their current lobby

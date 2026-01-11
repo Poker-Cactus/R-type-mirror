@@ -14,8 +14,7 @@
 #include "../../../interface/KeyCodes.hpp"
 #include <cmath>
 
-IntroScreen::IntroScreen(std::shared_ptr<IRenderer> renderer) : m_renderer(std::move(renderer))
-{}
+IntroScreen::IntroScreen(std::shared_ptr<IRenderer> renderer) : m_renderer(std::move(renderer)) {}
 
 IntroScreen::~IntroScreen()
 {
@@ -73,9 +72,9 @@ void IntroScreen::render(int winWidth, int winHeight)
   // Render background
   if (m_backgroundTexture != nullptr) {
     m_renderer->drawTextureEx(m_backgroundTexture, static_cast<int>(m_backgroundOffsetX), 0, winWidth, winHeight, 0.0,
-                            false, false);
+                              false, false);
     m_renderer->drawTextureEx(m_backgroundTexture, static_cast<int>(m_backgroundOffsetX - winWidth), 0, winWidth,
-                            winHeight, 0.0, false, false);
+                              winHeight, 0.0, false, false);
   }
 
   // Render planet with zoom effect

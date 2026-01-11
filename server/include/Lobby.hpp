@@ -38,9 +38,10 @@ public:
   /**
    * @brief Add a client to the lobby
    * @param clientId The client identifier
+   * @param asSpectator Whether to add as spectator (no player entity created)
    * @return true if client was added, false if already present
    */
-  bool addClient(std::uint32_t clientId);
+  bool addClient(std::uint32_t clientId, bool asSpectator = false);
 
   /**
    * @brief Remove a client from the lobby
@@ -48,6 +49,13 @@ public:
    * @return true if client was removed, false if not found
    */
   bool removeClient(std::uint32_t clientId);
+
+  /**
+   * @brief Check if a client is a spectator
+   * @param clientId The client identifier
+   * @return true if client is a spectator
+   */
+  [[nodiscard]] bool isSpectator(std::uint32_t clientId) const;
 
   /**
    * @brief Check if lobby is empty
@@ -140,6 +148,7 @@ private:
 
   std::string m_code;
   std::unordered_set<std::uint32_t> m_clients;
+  std::unordered_set<std::uint32_t> m_spectators;
   bool m_gameStarted = false;
 
   // Isolated game world for this lobby

@@ -9,14 +9,9 @@
 #include "../../../../common/include/Common.hpp"
 #include <cmath>
 
-ProfileMenu::ProfileMenu(std::shared_ptr<IRenderer> renderer)
-    : m_renderer(std::move(renderer))
-{
-}
+ProfileMenu::ProfileMenu(std::shared_ptr<IRenderer> renderer) : m_renderer(std::move(renderer)) {}
 
-ProfileMenu::~ProfileMenu()
-{
-}
+ProfileMenu::~ProfileMenu() {}
 
 void ProfileMenu::init()
 {
