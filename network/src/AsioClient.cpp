@@ -69,7 +69,7 @@ void AsioClient::stop()
 void AsioClient::send(std::span<const std::byte> data, UNUSED const std::uint32_t &targetEndpointId)
 {
   // Track upload stats
-  m_uploadByteCount += data.size();
+  m_uploadByteCount += static_cast<int>(data.size());
   m_packetCount++; // Assuming each send is a packet
 
   m_socket.async_send_to(
@@ -99,18 +99,18 @@ void AsioClient::receive()
                           }
                           if (!error && bytesTransferred > 0) {
                             // Track download stats
-                            m_downloadByteCount += bytesTransferred;
+                            m_downloadByteCount += static_cast<int>(bytesTransferred);
                             m_packetCount++; // Assuming each receive is a packet
 
                             try {
-                              NetworkPacket message(*buffer, 0, bytesTransferred);
+                              NetworkPacket message(*buffer, 0, static_cast<std::uint32_t>(bytesTransferred));
                               m_incomingMessages.push(message);
 
                               // Check for pong response
                               auto deserialized = getPacketHandler()->deserialize(*buffer, bytesTransferred);
                               if (deserialized && *deserialized == "PONG" && m_pingPending) {
                                 auto now = std::chrono::steady_clock::now();
-                                m_latency = std::chrono::duration_cast<std::chrono::milliseconds>(now - m_pingStartTime).count();
+                                m_latency = static_cast<float>(std::chrono::duration_cast<std::chrono::milliseconds>(now - m_pingStartTime).count());
                                 m_pingPending = false;
                               }
                             } catch (const std::exception &e) {
@@ -148,9 +148,9 @@ int AsioClient::getPacketsPerSecond() const
   auto now = std::chrono::steady_clock::now();
   auto elapsed = std::chrono::duration_cast<std::chrono::seconds>(now - m_statsResetTime).count();
   if (elapsed >= 1) {
-    m_packetsPerSecond = m_packetCount / elapsed;
-    m_uploadBytesPerSecond = m_uploadByteCount / elapsed;
-    m_downloadBytesPerSecond = m_downloadByteCount / elapsed;
+    m_packetsPerSecond = static_cast<int>(m_packetCount / elapsed);
+    m_uploadBytesPerSecond = static_cast<int>(m_uploadByteCount / elapsed);
+    m_downloadBytesPerSecond = static_cast<int>(m_downloadByteCount / elapsed);
     m_packetCount = 0;
     m_uploadByteCount = 0;
     m_downloadByteCount = 0;

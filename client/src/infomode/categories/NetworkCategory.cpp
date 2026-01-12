@@ -116,7 +116,7 @@ std::string NetworkCategory::getLocalIPAddress() const
   if (gethostname(buffer, sizeof(buffer)) == 0) {
     hostent* host = gethostbyname(buffer);
     if (host && host->h_addr_list[0]) {
-      in_addr addr;
+      struct in_addr addr;
       addr.s_addr = *(u_long*)host->h_addr_list[0];
       return inet_ntoa(addr);
     }
@@ -126,7 +126,7 @@ std::string NetworkCategory::getLocalIPAddress() const
 
 #ifdef __unix__
   // Unix-like systems
-  ifaddrs* ifaddr, *ifa;
+  struct ifaddrs* ifaddr, *ifa;
   char host[NI_MAXHOST];
 
   if (getifaddrs(&ifaddr) == -1) {
@@ -139,7 +139,7 @@ std::string NetworkCategory::getLocalIPAddress() const
     int family = ifa->ifa_addr->sa_family;
 
     if (family == AF_INET && strcmp(ifa->ifa_name, "lo") != 0) { // Skip loopback
-      if (getnameinfo(ifa->ifa_addr, sizeof(sockaddr_in), host, NI_MAXHOST, nullptr, 0, NI_NUMERICHOST) == 0) {
+      if (getnameinfo(ifa->ifa_addr, sizeof(struct sockaddr_in), host, NI_MAXHOST, nullptr, 0, NI_NUMERICHOST) == 0) {
         freeifaddrs(ifaddr);
         return std::string(host);
       }
@@ -248,4 +248,5 @@ std::string NetworkCategory::getNetworkInterface() const
   freeifaddrs(ifaddr);
   return activeInterface;
 #endif
+  return "Unknown";
 }

@@ -144,7 +144,7 @@ void AsioServer::receive()
           }
         }
 
-        NetworkPacket message(*buffer, clientId, bytesTransferred);
+        NetworkPacket message(*buffer, clientId, static_cast<std::uint32_t>(bytesTransferred));
         m_incomingMessages.push(message);
 
         receive();
