@@ -15,14 +15,14 @@
 #include <span>
 
 Game::Game()
-    : module(nullptr), renderer(nullptr), m_serverHost("127.0.0.1"), m_serverPort("4242"), isRunning(false),
-      currentState(GameState::MENU)
+    : module(nullptr), renderer(nullptr), isRunning(false), currentState(GameState::MENU), m_serverHost("127.0.0.1"),
+      m_serverPort("4242")
 {
 }
 
 Game::Game(const std::string &host, const std::string &port)
-    : module(nullptr), renderer(nullptr), m_serverHost(host), m_serverPort(port), isRunning(false),
-      currentState(GameState::MENU)
+    : module(nullptr), renderer(nullptr), isRunning(false), currentState(GameState::MENU), m_serverHost(host),
+      m_serverPort(port)
 {
 }
 
