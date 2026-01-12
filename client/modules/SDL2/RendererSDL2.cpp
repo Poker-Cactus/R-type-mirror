@@ -456,7 +456,7 @@ void RendererSDL2::drawTextureRegionEx(void *texture, const Rect &src, const Rec
 
   SDL_Rect srcRect = {src.x, src.y, src.width, src.height};
   SDL_Rect dstRect = {dst.x + cameraOffsetX, dst.y + cameraOffsetY, dst.width, dst.height};
-  
+
   SDL_RendererFlip flip = SDL_FLIP_NONE;
   if (flipX) {
     flip = static_cast<SDL_RendererFlip>(flip | SDL_FLIP_HORIZONTAL);

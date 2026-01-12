@@ -56,27 +56,27 @@ public:
         // Zigzag: diagonal up, then diagonal down in a repeating pattern
         // amplitude = hauteur totale du zigzag
         // frequency = vitesse de changement de direction
-        
+
         // Calculer la position Y relative au point de spawn
         float relativeY = transform.y - pattern.phase; // phase stocke le Y initial
-        
+
         // Si on n'a pas encore initialisé le Y de départ
         if (pattern.phase == 0.0F) {
           pattern.phase = transform.y; // Stocker le Y initial dans phase
           relativeY = 0.0F;
         }
-        
+
         // Changer de direction quand on atteint l'amplitude
         if (relativeY > pattern.amplitude) {
           velocity.dy = -std::abs(velocity.dy); // Vers le bas
         } else if (relativeY < -pattern.amplitude) {
           velocity.dy = std::abs(velocity.dy); // Vers le haut
         }
-        
+
         // Garder la vélocité diagonale constante
         // velocity.dx reste inchangé (mouvement horizontal)
         // velocity.dy est déjà défini dans la config et inversé selon la position
-        
+
       } else if (pattern.patternType == "straight") {
         // Simple straight-line movement
         velocity.dx = ENEMY_MOVE_SPEED;
@@ -85,36 +85,40 @@ public:
         // Default or "none" pattern: keep velocity as configured
         // velocity.dx and velocity.dy are already set from config
       }
-      
+
       // Update rotation for yellow bee based on velocity direction
       if (world.hasComponent<ecs::Sprite>(entity)) {
-        auto& sprite = world.getComponent<ecs::Sprite>(entity);
+        auto &sprite = world.getComponent<ecs::Sprite>(entity);
         if (sprite.spriteId == ecs::SpriteId::ENEMY_YELLOW) {
           // Calculate rotation angle from velocity (in degrees)
           // Base sprite faces left, so add 180° to make it face right
           float targetAngle = std::atan2(velocity.dy, velocity.dx) * (180.0F / 3.14159265F) + 180.0F;
-          
+
           // Smooth rotation: interpolate towards target angle
           float currentAngle = transform.rotation;
           float angleDiff = targetAngle - currentAngle;
-          
+
           // Normalize angle difference to [-180, 180]
-          while (angleDiff > 180.0F) angleDiff -= 360.0F;
-          while (angleDiff < -180.0F) angleDiff += 360.0F;
-          
+          while (angleDiff > 180.0F)
+            angleDiff -= 360.0F;
+          while (angleDiff < -180.0F)
+            angleDiff += 360.0F;
+
           // Smooth rotation speed (degrees per second)
           constexpr float ROTATION_SPEED = 180.0F;
           float maxRotation = ROTATION_SPEED * deltaTime;
-          
+
           if (std::abs(angleDiff) < maxRotation) {
             transform.rotation = targetAngle;
           } else {
             transform.rotation += (angleDiff > 0 ? maxRotation : -maxRotation);
           }
-          
+
           // Normalize final angle to [0, 360)
-          while (transform.rotation >= 360.0F) transform.rotation -= 360.0F;
-          while (transform.rotation < 0.0F) transform.rotation += 360.0F;
+          while (transform.rotation >= 360.0F)
+            transform.rotation -= 360.0F;
+          while (transform.rotation < 0.0F)
+            transform.rotation += 360.0F;
         }
       }
 

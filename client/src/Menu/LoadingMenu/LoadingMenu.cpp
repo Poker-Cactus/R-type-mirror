@@ -33,9 +33,9 @@ void LoadingMenu::render(int winWidth, int winHeight, std::shared_ptr<IRenderer>
     std::cerr << "[LoadingMenu] ERROR: renderer is nullptr!" << std::endl;
     return;
   }
-  
+
   std::cout << "[LoadingMenu] Rendering... renderer=" << renderer << std::endl;
-  
+
   std::cout << "[LoadingMenu] Checking loadingScreen..." << std::endl;
   if (loadingScreen != nullptr && loadingScreen->isActive()) {
     std::cout << "[LoadingMenu] LoadingScreen active, updating..." << std::endl;

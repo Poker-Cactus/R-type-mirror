@@ -15,10 +15,11 @@
 
 #include "../../network/include/INetworkManager.hpp"
 
-namespace server { 
-  class EnemyConfigManager;
-  class LevelConfigManager;
-}
+namespace server
+{
+class EnemyConfigManager;
+class LevelConfigManager;
+} // namespace server
 
 /**
  * @brief Manages creation and access to game lobbies

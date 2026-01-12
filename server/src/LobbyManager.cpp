@@ -19,12 +19,12 @@ bool LobbyManager::createLobby(const std::string &code, GameConfig::Difficulty d
 
   // Pass the network manager (if any) to the lobby so it can send direct messages
   m_lobbies[code] = std::make_unique<Lobby>(code, m_networkManager);
-  
+
   // Pass enemy config manager to the lobby
   if (m_enemyConfigManager) {
     m_lobbies[code]->setEnemyConfigManager(m_enemyConfigManager);
   }
-  
+
   // Pass level config manager to the lobby
   if (m_levelConfigManager) {
     m_lobbies[code]->setLevelConfigManager(m_levelConfigManager);
@@ -32,7 +32,7 @@ bool LobbyManager::createLobby(const std::string &code, GameConfig::Difficulty d
 
   // Set the difficulty before the game starts
   m_lobbies[code]->setDifficulty(difficulty);
-  
+
   std::cout << "[LobbyManager] Created lobby: " << code << '\n';
   return true;
 }

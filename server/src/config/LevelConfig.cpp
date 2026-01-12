@@ -38,12 +38,11 @@ bool LevelConfigManager::loadFromFile(const std::string &filepath)
         continue;
       }
       m_configs[config.id] = config;
-      std::cout << "[LevelConfig] Loaded level: " << config.id << " (" << config.name << ") with " 
+      std::cout << "[LevelConfig] Loaded level: " << config.id << " (" << config.name << ") with "
                 << config.waves.size() << " waves" << std::endl;
     }
 
-    std::cout << "[LevelConfig] Successfully loaded " << m_configs.size() << " levels from " << filepath
-              << std::endl;
+    std::cout << "[LevelConfig] Successfully loaded " << m_configs.size() << " levels from " << filepath << std::endl;
     return true;
 
   } catch (const nlohmann::json::exception &e) {

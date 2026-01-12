@@ -14,10 +14,11 @@
 
 // Forward declarations
 class INetworkManager;
-namespace server { 
-  class EnemyConfigManager;
-  class LevelConfigManager;
-}
+namespace server
+{
+class EnemyConfigManager;
+class LevelConfigManager;
+} // namespace server
 #include <cstdint>
 #include <memory>
 #include <string>
@@ -178,7 +179,7 @@ private:
 
   // Enemy configuration manager
   std::shared_ptr<server::EnemyConfigManager> m_enemyConfigManager;
-  
+
   // Level configuration manager
   std::shared_ptr<server::LevelConfigManager> m_levelConfigManager;
 

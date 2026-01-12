@@ -244,12 +244,12 @@ void Lobby::initializeSystems()
   }
   if (spawnSystem != nullptr) {
     spawnSystem->initialize(*m_world);
-    
+
     // Set enemy config manager if available
     if (m_enemyConfigManager) {
       spawnSystem->setEnemyConfigManager(m_enemyConfigManager);
     }
-    
+
     // Set level config manager if available and start level
     if (m_levelConfigManager) {
       spawnSystem->setLevelConfigManager(m_levelConfigManager);

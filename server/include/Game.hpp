@@ -21,7 +21,7 @@ namespace server
 {
 class EnemyConfigManager;
 class LevelConfigManager;
-}
+} // namespace server
 
 // Game configuration constants
 namespace GameConfig

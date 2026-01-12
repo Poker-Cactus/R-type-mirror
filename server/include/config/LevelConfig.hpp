@@ -20,12 +20,12 @@ namespace server
  * @brief Configuration for a single enemy spawn in a wave
  */
 struct EnemySpawn {
-  std::string enemyType;  // ID de l'ennemi (enemy_red, enemy_blue, etc.)
-  float x;                // Position X (ou -1 pour aléatoire)
-  float y;                // Position Y (ou -1 pour aléatoire)
-  float delay;            // Délai avant spawn (en secondes depuis le début de la vague)
-  int count;              // Nombre d'ennemis à spawner (défaut: 1)
-  float spacing;          // Espacement entre les ennemis du groupe (défaut: 50.0)
+  std::string enemyType; // ID de l'ennemi (enemy_red, enemy_blue, etc.)
+  float x; // Position X (ou -1 pour aléatoire)
+  float y; // Position Y (ou -1 pour aléatoire)
+  float delay; // Délai avant spawn (en secondes depuis le début de la vague)
+  int count; // Nombre d'ennemis à spawner (défaut: 1)
+  float spacing; // Espacement entre les ennemis du groupe (défaut: 50.0)
 
   static EnemySpawn fromJson(const nlohmann::json &json)
   {
@@ -46,8 +46,8 @@ struct EnemySpawn {
 struct WaveConfig {
   std::string id;
   std::string name;
-  float startTime;                    // Temps de début de la vague (en secondes depuis le début du niveau)
-  std::vector<EnemySpawn> spawns;     // Liste des ennemis à spawner dans cette vague
+  float startTime; // Temps de début de la vague (en secondes depuis le début du niveau)
+  std::vector<EnemySpawn> spawns; // Liste des ennemis à spawner dans cette vague
 
   static WaveConfig fromJson(const nlohmann::json &json)
   {

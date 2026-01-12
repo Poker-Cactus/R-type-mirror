@@ -52,13 +52,19 @@ public:
    * @brief Set the enemy configuration manager
    * @param configManager Shared pointer to enemy config manager
    */
-  void setEnemyConfigManager(std::shared_ptr<EnemyConfigManager> configManager) { m_enemyConfigManager = configManager; }
+  void setEnemyConfigManager(std::shared_ptr<EnemyConfigManager> configManager)
+  {
+    m_enemyConfigManager = configManager;
+  }
 
   /**
    * @brief Set the level configuration manager
    * @param configManager Shared pointer to level config manager
    */
-  void setLevelConfigManager(std::shared_ptr<LevelConfigManager> configManager) { m_levelConfigManager = configManager; }
+  void setLevelConfigManager(std::shared_ptr<LevelConfigManager> configManager)
+  {
+    m_levelConfigManager = configManager;
+  }
 
   /**
    * @brief Start a level by ID
@@ -86,7 +92,8 @@ public:
     m_enemyTypeTimers.clear();
     m_spawnQueue.clear();
 
-    std::cout << "[SpawnSystem] Started level: " << config->name << " (" << config->waves.size() << " waves)" << std::endl;
+    std::cout << "[SpawnSystem] Started level: " << config->name << " (" << config->waves.size() << " waves)"
+              << std::endl;
   }
 
   /**
@@ -139,7 +146,7 @@ public:
     if (m_spawnTimer >= config->spawn.spawnInterval) {
       spawnEnemyGroup(world, m_currentEnemyType);
       m_spawnTimer = 0.0F;
-      
+
       // Alterner automatiquement entre les types d'ennemis
       cycleEnemyType();
     }
@@ -213,7 +220,8 @@ public:
       m_enemyTypeTimers[type] = 0.0F;
       std::cout << "[SpawnSystem] Enabled multi-spawn for enemy type: " << type << std::endl;
     }
-    std::cout << "[SpawnSystem] Multi-spawn mode activated with " << m_enemyTypeTimers.size() << " enemy types" << std::endl;
+    std::cout << "[SpawnSystem] Multi-spawn mode activated with " << m_enemyTypeTimers.size() << " enemy types"
+              << std::endl;
   }
 
   /**
@@ -229,7 +237,7 @@ public:
 
       const EnemyConfig *config = m_enemyConfigManager->getConfig(enemyType);
       if (config && timer >= config->spawn.spawnInterval) {
-        std::cout << "[SpawnSystem] Spawning group of " << enemyType << " (timer=" << timer 
+        std::cout << "[SpawnSystem] Spawning group of " << enemyType << " (timer=" << timer
                   << ", interval=" << config->spawn.spawnInterval << ")" << std::endl;
         spawnEnemyGroup(world, enemyType);
         timer = 0.0F;
@@ -259,10 +267,10 @@ public:
         m_spawnQueue.erase(m_spawnQueue.begin());
         continue;
       }
-      
+
       // Spawn single enemy (count should always be 1 now)
       spawnEnemyFromConfig(world, queuedSpawn.x, queuedSpawn.y, queuedSpawn.enemyType);
-      
+
       m_spawnQueueTimer -= queuedSpawn.delay;
       m_spawnQueue.erase(m_spawnQueue.begin());
     }
@@ -281,11 +289,11 @@ public:
     // Check if we need to trigger the next wave
     while (m_nextWaveIndex < m_currentLevel->waves.size()) {
       const auto &wave = m_currentLevel->waves[m_nextWaveIndex];
-      
+
       if (m_levelTime >= wave.startTime) {
-        std::cout << "[SpawnSystem] Triggering wave " << m_nextWaveIndex << ": " << wave.name 
+        std::cout << "[SpawnSystem] Triggering wave " << m_nextWaveIndex << ": " << wave.name
                   << " (time=" << m_levelTime << ")" << std::endl;
-        
+
         // Get viewport width to spawn just outside screen
         float worldWidth = DEFAULT_VIEWPORT_WIDTH;
         ecs::ComponentSignature playerSig;
@@ -299,43 +307,37 @@ public:
             worldWidth = std::max(worldWidth, static_cast<float>(viewport.width));
           }
         }
-        
+
         // Queue all spawns in this wave
         // If count > 1, create individual spawns with incrementing delays
         for (const auto &spawn : wave.spawns) {
           // Get enemy config to calculate proper delay based on velocity
-          const EnemyConfig *enemyConfig = m_enemyConfigManager ? m_enemyConfigManager->getConfig(spawn.enemyType) : nullptr;
+          const EnemyConfig *enemyConfig =
+            m_enemyConfigManager ? m_enemyConfigManager->getConfig(spawn.enemyType) : nullptr;
           float enemyVelocity = enemyConfig ? std::abs(enemyConfig->velocity.dx) : 384.0f; // Default velocity
-          
+
           // Calculate delay to maintain spacing: delay = spacing / velocity
           float spawnDelayPerEnemy = (enemyVelocity > 0.0f) ? (spawn.spacing / enemyVelocity) : 0.08f;
-          
+
           std::uniform_real_distribution<float> yVariation(-30.0f, 30.0f);
           for (int i = 0; i < spawn.count; ++i) {
             float offsetY = yVariation(m_rng);
             float individualDelay = spawn.delay + i * spawnDelayPerEnemy;
-            
+
             // Spawn just outside the right edge of screen (worldWidth + 100px)
             // Don't add offsetX here - let the delay create natural spacing
             float spawnX = worldWidth + 100.0f;
-            
-            m_spawnQueue.push_back({
-              spawnX,
-              spawn.y + offsetY,
-              individualDelay,
-              spawn.enemyType,
-              1,  // Spawn only 1 enemy per queue entry
-              0.0f
-            });
+
+            m_spawnQueue.push_back({spawnX, spawn.y + offsetY, individualDelay, spawn.enemyType,
+                                    1, // Spawn only 1 enemy per queue entry
+                                    0.0f});
           }
         }
-        
+
         // Sort spawn queue by delay
         std::sort(m_spawnQueue.begin(), m_spawnQueue.end(),
-                  [](const QueuedSpawn &a, const QueuedSpawn &b) {
-                    return a.delay < b.delay;
-                  });
-        
+                  [](const QueuedSpawn &a, const QueuedSpawn &b) { return a.delay < b.delay; });
+
         m_spawnQueueTimer = 0.0F;
         m_nextWaveIndex++;
       } else {
@@ -373,8 +375,8 @@ private:
     float y;
     float delay;
     std::string enemyType;
-    int count;           // Nombre d'ennemis à spawner
-    float spacing;       // Espacement entre les ennemis
+    int count; // Nombre d'ennemis à spawner
+    float spacing; // Espacement entre les ennemis
   };
   std::vector<QueuedSpawn> m_spawnQueue;
 
@@ -473,14 +475,10 @@ private:
       float delay = i * config->spawn.spawnDelay;
       m_spawnQueue.push_back({spawnX, y, delay, enemyType, 1, 0.0F});
     }
-    
-    std::cout << "[SpawnSystem] Queued " << groupSize << " enemies of type '" << enemyType 
-              << "' at X=" << spawnX << std::endl;
+
+    std::cout << "[SpawnSystem] Queued " << groupSize << " enemies of type '" << enemyType << "' at X=" << spawnX
+              << std::endl;
   }
-
-
-
-
 
   /**
    * @brief Spawn an enemy from configuration
@@ -510,8 +508,7 @@ private:
     ecs::Entity enemy = world.createEntity();
 
     // Pattern component
-    world.addComponent(enemy,
-                       ecs::Pattern{config->pattern.type, config->pattern.amplitude, config->pattern.frequency});
+    world.addComponent(enemy, ecs::Pattern{config->pattern.type, config->pattern.amplitude, config->pattern.frequency});
 
     // Transform component
     ecs::Transform transform;
@@ -550,7 +547,7 @@ private:
     sprite.reverseAnimation = config->sprite.reverseAnimation;
     world.addComponent(enemy, sprite);
 
-    std::cout << "[SpawnSystem] Spawned enemy '" << enemyType << "' (spriteId=" << config->sprite.spriteId 
+    std::cout << "[SpawnSystem] Spawned enemy '" << enemyType << "' (spriteId=" << config->sprite.spriteId
               << ", pattern=" << config->pattern.type << ") at (" << posX << ", " << posY << ")" << std::endl;
 
     // Networked component
@@ -563,7 +560,8 @@ private:
   {
     switch (event.type) {
     case ecs::SpawnEntityEvent::EntityType::ENEMY:
-      std::cerr << "[SpawnSystem] WARNING: SpawnEntityEvent for ENEMY is deprecated, use spawnEnemyFromConfig instead" << std::endl;
+      std::cerr << "[SpawnSystem] WARNING: SpawnEntityEvent for ENEMY is deprecated, use spawnEnemyFromConfig instead"
+                << std::endl;
       break;
     case ecs::SpawnEntityEvent::EntityType::PROJECTILE:
       spawnProjectile(world, event.x, event.y, event.spawner);

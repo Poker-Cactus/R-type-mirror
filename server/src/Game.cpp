@@ -49,10 +49,10 @@ Game::Game()
   m_enemyConfigManager = std::make_shared<server::EnemyConfigManager>();
   if (m_enemyConfigManager->loadFromFile("server/config/enemies.json")) {
     spawnSystem->setEnemyConfigManager(m_enemyConfigManager);
-    
+
     // Pass enemy config manager to lobby manager
     m_lobbyManager.setEnemyConfigManager(m_enemyConfigManager);
-    
+
     std::cout << "[Game] Enemy configurations loaded successfully" << std::endl;
   } else {
     std::cerr << "[Game] Warning: Failed to load enemy configurations" << std::endl;
@@ -62,13 +62,13 @@ Game::Game()
   m_levelConfigManager = std::make_shared<server::LevelConfigManager>();
   if (m_levelConfigManager->loadFromFile("server/config/levels.json")) {
     spawnSystem->setLevelConfigManager(m_levelConfigManager);
-    
+
     // Pass level config manager to lobby manager
     m_lobbyManager.setLevelConfigManager(m_levelConfigManager);
-    
+
     // Start level 1
     spawnSystem->startLevel("level_1");
-    
+
     std::cout << "[Game] Level configurations loaded successfully" << std::endl;
   } else {
     std::cerr << "[Game] Warning: Failed to load level configurations, using test spawns" << std::endl;

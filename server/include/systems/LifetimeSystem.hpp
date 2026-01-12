@@ -137,7 +137,7 @@ public:
       // This allows enemies to spawn off-screen on the right and come in
       bool offLeft = transform.x < left;
       bool offTopOrBottom = transform.y < top || transform.y > bottom;
-      
+
       // Only destroy projectiles/enemies that go too far right (prevent infinite accumulation)
       bool tooFarRight = transform.x > right;
 
