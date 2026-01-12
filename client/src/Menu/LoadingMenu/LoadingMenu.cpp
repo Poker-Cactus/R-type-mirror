@@ -74,23 +74,15 @@ void LoadingMenu::render(int winWidth, int winHeight, std::shared_ptr<IRenderer>
     backgroundOffsetX = 0.0f;
   }
 
-  std::cout << "[LoadingMenu] Drawing textures..." << std::endl;
-
   if (backgroundTexture != nullptr) {
-    std::cout << "[LoadingMenu] Drawing background 1..." << std::endl;
     renderer->drawTextureEx(backgroundTexture, static_cast<int>(backgroundOffsetX), 0, winWidth, winHeight, 0.0, false,
                             false);
-    std::cout << "[LoadingMenu] Drawing background 2..." << std::endl;
     renderer->drawTextureEx(backgroundTexture, static_cast<int>(backgroundOffsetX - winWidth), 0, winWidth, winHeight,
                             0.0, false, false);
-    std::cout << "[LoadingMenu] Background drawn" << std::endl;
   }
-  std::cout << "[LoadingMenu] Checking planet..." << std::endl;
   if (planet != nullptr) {
-    std::cout << "[LoadingMenu] Getting planet texture size..." << std::endl;
     int planetWidth, planetHeight;
     renderer->getTextureSize(planet, planetWidth, planetHeight);
-    std::cout << "[LoadingMenu] Got planetWidth=" << planetWidth << ", planetHeight=" << planetHeight << std::endl;
 
     float scale = static_cast<float>(std::min(winWidth, winHeight)) * zoomScale /
       static_cast<float>(std::max(planetWidth, planetHeight));
