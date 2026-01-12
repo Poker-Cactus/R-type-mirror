@@ -96,7 +96,7 @@ private:
   std::unordered_map<ecs::Entity, bool> m_prevChargedShootState;
   float m_currentTime = 0.0F;
   const float SHOOT_COOLDOWN = 0.05F; // 5 shots per second
-  const float CHARGED_SHOOT_COOLDOWN = 1.0F; // 1 charged shot per second
+  const float CHARGED_SHOOT_COOLDOWN = 2.0F; // 3 charged shot per second
 
   bool canShoot(ecs::Entity entity)
   {
