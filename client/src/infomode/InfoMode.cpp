@@ -165,3 +165,5 @@ void InfoMode::setNetworkBandwidth(int uploadBytes, int downloadBytes)
     }
   }
 }
+
+// yep
