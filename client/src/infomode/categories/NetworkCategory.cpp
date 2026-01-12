@@ -125,7 +125,7 @@ std::string NetworkCategory::getLocalIPAddress() const
 
 #else
   // Unix-like systems
-  struct ifaddrs* ifaddr, *ifa;
+  ifaddrs* ifaddr, *ifa;
   char host[NI_MAXHOST];
 
   if (getifaddrs(&ifaddr) == -1) {
@@ -138,7 +138,7 @@ std::string NetworkCategory::getLocalIPAddress() const
     int family = ifa->ifa_addr->sa_family;
 
     if (family == AF_INET && strcmp(ifa->ifa_name, "lo") != 0) { // Skip loopback
-      if (getnameinfo(ifa->ifa_addr, sizeof(struct sockaddr_in), host, NI_MAXHOST, nullptr, 0, NI_NUMERICHOST) == 0) {
+      if (getnameinfo(ifa->ifa_addr, sizeof(sockaddr_in), host, NI_MAXHOST, nullptr, 0, NI_NUMERICHOST) == 0) {
         freeifaddrs(ifaddr);
         return std::string(host);
       }
@@ -212,7 +212,7 @@ std::string NetworkCategory::getNetworkInterface() const
 
 #else
   // Unix-like systems - get active network interface
-  struct ifaddrs* ifaddr, *ifa;
+  ifaddrs* ifaddr, *ifa;
 
   if (getifaddrs(&ifaddr) == -1) {
     return "Unknown";
@@ -229,7 +229,7 @@ std::string NetworkCategory::getNetworkInterface() const
       // Check if interface is up and running
       int sock = socket(AF_INET, SOCK_DGRAM, 0);
       if (sock >= 0) {
-        struct ifreq ifr;
+        ifreq ifr;
         memset(&ifr, 0, sizeof(ifr));
         strncpy(ifr.ifr_name, ifa->ifa_name, IFNAMSIZ - 1);
 
