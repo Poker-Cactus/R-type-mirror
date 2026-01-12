@@ -1,7 +1,7 @@
 project(network)
 
 if(WIN32)
-    add_definitions(-D_WIN32_WINNT=0x0601)
+    add_definitions(-D_WIN32_WINNT=0x0601 -D_WINSOCK_DEPRECATED_NO_WARNINGS)
 endif()
 
 find_package(CapnProto REQUIRED)
