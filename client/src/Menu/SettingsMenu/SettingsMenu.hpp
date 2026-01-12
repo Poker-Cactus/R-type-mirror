@@ -1,3 +1,9 @@
+/*
+** EPITECH PROJECT, 2025
+** R-type-mirror
+** File description:
+** SettingsMenu.hpp
+*/
 /**
  * @file SettingsMenu.hpp
  * @brief Settings configuration menu interface
@@ -9,6 +15,7 @@
 #include "Settings.hpp"
 #include <array>
 #include <cstdint>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -17,12 +24,12 @@
  * @brief UI component with position and selection state
  */
 struct Component {
-  int rectX = 0;           ///< X position
-  int rectY = 0;           ///< Y position
-  int rectWidth = 0;       ///< Width
-  int rectHeight = 0;      ///< Height
+  int rectX = 0; ///< X position
+  int rectY = 0; ///< Y position
+  int rectWidth = 0; ///< Width
+  int rectHeight = 0; ///< Height
   bool isSelected = false; ///< Selection state
-  std::string label;       ///< Display label
+  std::string label; ///< Display label
 };
 
 /**
@@ -30,9 +37,9 @@ struct Component {
  * @brief Settings menu categories
  */
 enum class SettingsCategory : std::uint8_t {
-  AUDIO = 0,    ///< Audio settings
+  AUDIO = 0, ///< Audio settings
   GRAPHICS = 1, ///< Graphics settings
-  CONTROLS = 2  ///< Control bindings
+  CONTROLS = 2 ///< Control bindings
 };
 
 /**
@@ -40,9 +47,9 @@ enum class SettingsCategory : std::uint8_t {
  * @brief Type of setting control
  */
 enum class SettingItemType : std::uint8_t {
-  SLIDER_INT,  ///< Integer slider
+  SLIDER_INT, ///< Integer slider
   TOGGLE_BOOL, ///< Boolean toggle
-  KEYBIND      ///< Key binding
+  KEYBIND ///< Key binding
 };
 
 /**
@@ -50,13 +57,13 @@ enum class SettingItemType : std::uint8_t {
  * @brief Individual setting entry
  */
 struct SettingItem {
-  std::string label;                      ///< Setting label
+  std::string label; ///< Setting label
   SettingItemType type = SettingItemType::SLIDER_INT; ///< Control type
-  int minValue = 0;                       ///< Minimum value (for sliders)
-  int maxValue = 100;                     ///< Maximum value (for sliders)
-  int step = 5;                           ///< Step increment (for sliders)
-  int *intTarget = nullptr;               ///< Target integer variable
-  bool *boolTarget = nullptr;             ///< Target boolean variable
+  int minValue = 0; ///< Minimum value (for sliders)
+  int maxValue = 100; ///< Maximum value (for sliders)
+  int step = 5; ///< Step increment (for sliders)
+  int *intTarget = nullptr; ///< Target integer variable
+  bool *boolTarget = nullptr; ///< Target boolean variable
 };
 
 /**
@@ -69,31 +76,29 @@ struct SettingItem {
 class SettingsMenu
 {
 public:
-  SettingsMenu() = default;
-  ~SettingsMenu() {};
+  SettingsMenu(std::shared_ptr<IRenderer> renderer);
+  ~SettingsMenu();
 
   /**
    * @brief Initialize settings menu
    * @param renderer Renderer interface
-   * @param settings Game settings reference
    */
-  void init(IRenderer *renderer, Settings &settings);
+  void init(Settings &settings);
 
   /**
    * @brief Render the settings menu
    * @param winWidth Window width
    * @param winHeight Window height
-   * @param renderer Renderer interface
    */
-  void render(int winWidth, int winHeight, IRenderer *renderer);
+  void render(int winWidth, int winHeight);
 
   /**
    * @brief Process user input
-   * @param renderer Renderer interface
    */
-  void process(IRenderer *renderer);
+  void process();
 
 private:
+  std::shared_ptr<IRenderer> m_renderer;
   Settings *settings = nullptr;
   void *font;
   void *titleFont;
@@ -101,7 +106,7 @@ private:
 
   // Catégories
   std::array<Component, 3> categoryTabs;
-  SettingsCategory currentCategory = SettingsCategory::AUDIO;
+  SettingsCategory currentCategory;
 
   std::vector<SettingItem> audioItems;
   std::vector<SettingItem> graphicItems;
@@ -114,9 +119,9 @@ private:
   std::vector<SettingItem> &activeItems();
   std::string itemValueText(const SettingItem &item) const;
   void applyDelta(SettingItem &item, int direction);
-  int captureKeyJustPressed(IRenderer *renderer) const;
+  int captureKeyJustPressed() const;
 
-  void renderRow(IRenderer *renderer, const Component &rowRect, const SettingItem &item, bool selected);
-  void renderCategoryTab(IRenderer *renderer, const Component &tab, bool isActive);
+  void renderRow(const Component &rowRect, const SettingItem &item, bool selected);
+  void renderCategoryTab(const Component &tab, bool isActive);
   bool keyAlreadyInUse(int key);
 };

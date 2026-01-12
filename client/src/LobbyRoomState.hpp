@@ -24,9 +24,9 @@ class World;
  * @brief Lobby connection status
  */
 enum class LobbyConnectionState : std::uint8_t {
-  CONNECTING,   ///< Attempting to connect
-  JOINED,       ///< Successfully joined
-  ERROR_STATE   ///< Connection error
+  CONNECTING, ///< Attempting to connect
+  JOINED, ///< Successfully joined
+  ERROR_STATE ///< Connection error
 };
 
 /**
@@ -48,7 +48,7 @@ public:
    * @param world Shared pointer to ECS world
    * @param networkManager Network manager for lobby communication
    */
-  LobbyRoomState(IRenderer *renderer, const std::shared_ptr<ecs::World> &world,
+  LobbyRoomState(std::shared_ptr<IRenderer> renderer, const std::shared_ptr<ecs::World> &world,
                  std::shared_ptr<INetworkManager> networkManager);
   ~LobbyRoomState();
 
@@ -133,7 +133,7 @@ private:
   void renderLobbyText();
   void requestLobby();
 
-  IRenderer *renderer;
+  std::shared_ptr<IRenderer> renderer;
   std::shared_ptr<ecs::World> world;
   std::shared_ptr<INetworkManager> m_networkManager;
   std::unique_ptr<ParallaxBackground> background;
@@ -151,6 +151,7 @@ private:
   // Lobby mode
   bool m_isCreatingLobby = true;
   std::string m_targetLobbyCode;
+  bool m_joinAsSpectator = false;
 
   // Lobby info
   LobbyConnectionState m_connectionState = LobbyConnectionState::CONNECTING;

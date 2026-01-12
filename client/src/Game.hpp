@@ -37,10 +37,10 @@ public:
    * @brief High-level game states
    */
   enum class GameState : std::uint8_t {
-    MENU,       ///< Main menu
+    MENU, ///< Main menu
     LOBBY_ROOM, ///< Lobby waiting room
-    PLAYING,    ///< Active gameplay
-    PAUSED      ///< Game paused
+    PLAYING, ///< Active gameplay
+    PAUSED ///< Game paused
   };
 
   /**
@@ -100,14 +100,14 @@ private:
   void delegateInputToCurrentState();
 
   std::unique_ptr<Module<IRenderer>> module;
-  IRenderer *renderer = nullptr;
+  std::shared_ptr<IRenderer> renderer;
   std::shared_ptr<ecs::World> m_world;
   std::shared_ptr<INetworkManager> m_networkManager;
+  bool isRunning = false;
+  GameState currentState = GameState::MENU;
   std::string m_serverHost = "127.0.0.1";
   std::string m_serverPort = "4242";
   ecs::Entity m_inputEntity{0};
-  bool isRunning = false;
-  GameState currentState = GameState::MENU;
   std::unique_ptr<Menu> menu;
   std::unique_ptr<LobbyRoomState> lobbyRoomState;
   std::unique_ptr<PlayingState> playingState;

@@ -63,7 +63,11 @@ bool Game::init()
       return false;
     }
 
-    renderer = module->create();
+    renderer = std::shared_ptr<IRenderer>(module->create(), [this](IRenderer *ptr) {
+      if (module) {
+        module->destroy(ptr);
+      }
+    });
 
     if (renderer == nullptr) {
       std::cerr << "[Game::init] ERROR: Renderer is null" << '\n';
@@ -167,11 +171,6 @@ void Game::shutdown()
   // Notify server that we're leaving before shutting down
   sendLeaveToServer();
 
-  if (menu) {
-    menu->cleanup();
-    menu.reset();
-  }
-
   if (lobbyRoomState) {
     lobbyRoomState->cleanup();
     lobbyRoomState.reset();
@@ -182,15 +181,20 @@ void Game::shutdown()
     playingState.reset();
   }
 
+  if (menu) {
+    menu->cleanup();
+    menu.reset();
+    // Renderer will be automatically destroyed by shared_ptr when all references are gone
+  }
+
   if (m_networkManager) {
     m_networkManager->stop();
     m_networkManager.reset();
   }
   m_world.reset();
-  if (module && renderer != nullptr) {
-    module->destroy(renderer);
-    renderer = nullptr;
-  }
+
+  // Reset renderer - custom deleter will call module->destroy
+  renderer.reset();
   module.reset();
   isRunning = false;
 }
@@ -303,7 +307,6 @@ void Game::handleLobbyRoomTransition()
   if (!menu->shouldStartGame()) {
     return;
   }
-
 
   // Get lobby info from menu
   const bool isCreating = menu->isCreatingLobby();
@@ -479,12 +482,10 @@ void Game::updatePlayerInput()
   }
 
   auto &input = m_world->getComponent<ecs::Input>(m_inputEntity);
-  input.up = renderer->isKeyPressed(settings.up) || renderer->isKeyPressed(KeyCode::KEY_W) ||
-    renderer->isKeyPressed(KeyCode::KEY_Z);
-  input.down = renderer->isKeyPressed(settings.down) || renderer->isKeyPressed(KeyCode::KEY_S);
-  input.left = renderer->isKeyPressed(settings.left) || renderer->isKeyPressed(KeyCode::KEY_A) ||
-    renderer->isKeyPressed(KeyCode::KEY_Q);
-  input.right = renderer->isKeyPressed(settings.right) || renderer->isKeyPressed(KeyCode::KEY_D);
+  input.up = renderer->isKeyPressed(settings.up);
+  input.down = renderer->isKeyPressed(settings.down);
+  input.left = renderer->isKeyPressed(settings.left);
+  input.right = renderer->isKeyPressed(settings.right);
   input.shoot = renderer->isKeyPressed(settings.shoot);
 }
 

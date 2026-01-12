@@ -12,8 +12,13 @@
 #include "Difficulty.hpp"
 #include <nlohmann/json.hpp>
 
-// Forward declaration for network manager
+// Forward declarations
 class INetworkManager;
+namespace server
+{
+class EnemyConfigManager;
+class LevelConfigManager;
+} // namespace server
 #include <cstdint>
 #include <memory>
 #include <string>
@@ -38,9 +43,10 @@ public:
   /**
    * @brief Add a client to the lobby
    * @param clientId The client identifier
+   * @param asSpectator Whether to add as spectator (no player entity created)
    * @return true if client was added, false if already present
    */
-  bool addClient(std::uint32_t clientId);
+  bool addClient(std::uint32_t clientId, bool asSpectator = false);
 
   /**
    * @brief Remove a client from the lobby
@@ -48,6 +54,13 @@ public:
    * @return true if client was removed, false if not found
    */
   bool removeClient(std::uint32_t clientId);
+
+  /**
+   * @brief Check if a client is a spectator
+   * @param clientId The client identifier
+   * @return true if client is a spectator
+   */
+  [[nodiscard]] bool isSpectator(std::uint32_t clientId) const;
 
   /**
    * @brief Check if lobby is empty
@@ -121,6 +134,18 @@ public:
   void sendJsonToClient(std::uint32_t clientId, const nlohmann::json &message) const;
 
   /**
+   * @brief Set the enemy configuration manager for this lobby
+   * @param configManager Shared pointer to enemy config manager
+   */
+  void setEnemyConfigManager(std::shared_ptr<server::EnemyConfigManager> configManager);
+
+  /**
+   * @brief Set the level configuration manager for this lobby
+   * @param configManager Shared pointer to level config manager
+   */
+  void setLevelConfigManager(std::shared_ptr<server::LevelConfigManager> configManager);
+
+  /**
    * @brief Set the difficulty for this lobby
    * @param difficulty The game difficulty
    * @note Must be called before startGame() to take effect
@@ -140,6 +165,7 @@ private:
 
   std::string m_code;
   std::unordered_set<std::uint32_t> m_clients;
+  std::unordered_set<std::uint32_t> m_spectators;
   bool m_gameStarted = false;
 
   // Isolated game world for this lobby
@@ -150,6 +176,12 @@ private:
 
   // Map client IDs to their player entities
   std::unordered_map<std::uint32_t, ecs::Entity> m_playerEntities;
+
+  // Enemy configuration manager
+  std::shared_ptr<server::EnemyConfigManager> m_enemyConfigManager;
+
+  // Level configuration manager
+  std::shared_ptr<server::LevelConfigManager> m_levelConfigManager;
 
   // Game difficulty setting
   GameConfig::Difficulty m_difficulty = GameConfig::Difficulty::MEDIUM;
