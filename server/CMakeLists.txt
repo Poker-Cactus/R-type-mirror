@@ -1,5 +1,9 @@
 project(server)
 
+if(WIN32)
+    add_definitions(-D_WIN32_WINNT=0x0601)
+endif()
+
 # capnp_generate_cpp(CAPNP_SRCS CAPNP_HDRS
     # include/GameMessage.capnp
 # )

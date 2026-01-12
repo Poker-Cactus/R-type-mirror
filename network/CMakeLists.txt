@@ -1,5 +1,9 @@
 project(network)
 
+if(WIN32)
+    add_definitions(-D_WIN32_WINNT=0x0601)
+endif()
+
 find_package(CapnProto REQUIRED)
 find_package(asio REQUIRED)
 
