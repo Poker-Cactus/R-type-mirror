@@ -122,10 +122,8 @@ std::string NetworkCategory::getLocalIPAddress() const
     }
   }
   return "Unknown";
-#endif
-
-#ifdef __unix__
-  // Unix-like systems
+#else
+  // Unix-like systems (Linux, macOS, etc.)
   struct ifaddrs* ifaddr, *ifa;
   char host[NI_MAXHOST];
 
@@ -210,11 +208,9 @@ std::string NetworkCategory::getNetworkInterface() const
     free(adapterInfo);
   }
   return "Unknown";
-#endif
-
-#ifdef __unix__
-  // Unix-like systems - get active network interface
-  ifaddrs* ifaddr, *ifa;
+#else
+  // Unix-like systems - get active network interface (Linux, macOS, etc.)
+  struct ifaddrs* ifaddr, *ifa;
 
   if (getifaddrs(&ifaddr) == -1) {
     return "Unknown";
@@ -231,7 +227,7 @@ std::string NetworkCategory::getNetworkInterface() const
       // Check if interface is up and running
       int sock = socket(AF_INET, SOCK_DGRAM, 0);
       if (sock >= 0) {
-        ifreq ifr;
+        struct ifreq ifr;
         memset(&ifr, 0, sizeof(ifr));
         strncpy(ifr.ifr_name, ifa->ifa_name, IFNAMSIZ - 1);
 
@@ -248,5 +244,4 @@ std::string NetworkCategory::getNetworkInterface() const
   freeifaddrs(ifaddr);
   return activeInterface;
 #endif
-  return "Unknown";
 }
