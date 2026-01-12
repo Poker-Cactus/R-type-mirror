@@ -9,6 +9,7 @@
 #include "../../../interface/Geometry.hpp"
 #include "../../../interface/KeyCodes.hpp"
 #include <cmath>
+#include <iostream>
 
 void LoadingMenu::init(std::shared_ptr<IRenderer> renderer)
 {
@@ -27,15 +28,28 @@ void LoadingMenu::init(std::shared_ptr<IRenderer> renderer)
 void LoadingMenu::render(int winWidth, int winHeight, std::shared_ptr<IRenderer> renderer, LoadingScreen *loadingScreen,
                          MenuState *currentState)
 {
+  // CRITICAL: Check renderer first before any calls
+  if (renderer == nullptr) {
+    std::cerr << "[LoadingMenu] ERROR: renderer is nullptr!" << std::endl;
+    return;
+  }
+
+  std::cout << "[LoadingMenu] Rendering... renderer=" << renderer << std::endl;
+
+  std::cout << "[LoadingMenu] Checking loadingScreen..." << std::endl;
   if (loadingScreen != nullptr && loadingScreen->isActive()) {
+    std::cout << "[LoadingMenu] LoadingScreen active, updating..." << std::endl;
     if (loadingScreen->update(winWidth, winHeight)) {
       *currentState = MenuState::MAIN_MENU;
     }
     return;
   }
 
+  std::cout << "[LoadingMenu] Checking isZooming..." << std::endl;
   if (isZooming) {
+    std::cout << "[LoadingMenu] isZooming=true, getting deltaTime..." << std::endl;
     zoomTimer += renderer->getDeltaTime();
+    std::cout << "[LoadingMenu] Got deltaTime" << std::endl;
 
     float progress = zoomTimer / zoomDuration;
 
@@ -52,7 +66,10 @@ void LoadingMenu::render(int winWidth, int winHeight, std::shared_ptr<IRenderer>
     zoomScale = 0.3f + (progress * progress * 9.7f);
   }
 
-  backgroundOffsetX += renderer->getDeltaTime() * 20.0f;
+  std::cout << "[LoadingMenu] Getting deltaTime for backgroundOffsetX..." << std::endl;
+  float deltaTime = renderer->getDeltaTime();
+  std::cout << "[LoadingMenu] Got deltaTime=" << deltaTime << std::endl;
+  backgroundOffsetX += deltaTime * 20.0f;
   if (backgroundOffsetX >= winWidth) {
     backgroundOffsetX = 0.0f;
   }

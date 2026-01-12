@@ -508,12 +508,10 @@ void Game::updatePlayerInput()
   }
 
   auto &input = m_world->getComponent<ecs::Input>(m_inputEntity);
-  input.up = renderer->isKeyPressed(settings.up) || renderer->isKeyPressed(KeyCode::KEY_W) ||
-    renderer->isKeyPressed(KeyCode::KEY_Z);
-  input.down = renderer->isKeyPressed(settings.down) || renderer->isKeyPressed(KeyCode::KEY_S);
-  input.left = renderer->isKeyPressed(settings.left) || renderer->isKeyPressed(KeyCode::KEY_A) ||
-    renderer->isKeyPressed(KeyCode::KEY_Q);
-  input.right = renderer->isKeyPressed(settings.right) || renderer->isKeyPressed(KeyCode::KEY_D);
+  input.up = renderer->isKeyPressed(settings.up);
+  input.down = renderer->isKeyPressed(settings.down);
+  input.left = renderer->isKeyPressed(settings.left);
+  input.right = renderer->isKeyPressed(settings.right);
   input.shoot = renderer->isKeyPressed(settings.shoot);
 }
 

@@ -12,8 +12,13 @@
 #include "Difficulty.hpp"
 #include <nlohmann/json.hpp>
 
-// Forward declaration for network manager
+// Forward declarations
 class INetworkManager;
+namespace server
+{
+class EnemyConfigManager;
+class LevelConfigManager;
+} // namespace server
 #include <cstdint>
 #include <memory>
 #include <string>
@@ -129,6 +134,18 @@ public:
   void sendJsonToClient(std::uint32_t clientId, const nlohmann::json &message) const;
 
   /**
+   * @brief Set the enemy configuration manager for this lobby
+   * @param configManager Shared pointer to enemy config manager
+   */
+  void setEnemyConfigManager(std::shared_ptr<server::EnemyConfigManager> configManager);
+
+  /**
+   * @brief Set the level configuration manager for this lobby
+   * @param configManager Shared pointer to level config manager
+   */
+  void setLevelConfigManager(std::shared_ptr<server::LevelConfigManager> configManager);
+
+  /**
    * @brief Set the difficulty for this lobby
    * @param difficulty The game difficulty
    * @note Must be called before startGame() to take effect
@@ -159,6 +176,12 @@ private:
 
   // Map client IDs to their player entities
   std::unordered_map<std::uint32_t, ecs::Entity> m_playerEntities;
+
+  // Enemy configuration manager
+  std::shared_ptr<server::EnemyConfigManager> m_enemyConfigManager;
+
+  // Level configuration manager
+  std::shared_ptr<server::LevelConfigManager> m_levelConfigManager;
 
   // Game difficulty setting
   GameConfig::Difficulty m_difficulty = GameConfig::Difficulty::MEDIUM;

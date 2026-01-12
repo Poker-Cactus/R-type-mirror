@@ -6,6 +6,7 @@
 */
 
 #include "LobbyMenu.hpp"
+#include "../../../include/Settings.hpp"
 #include "../../../interface/Geometry.hpp"
 #include "../../../interface/KeyCodes.hpp"
 #include <iostream>
@@ -336,7 +337,7 @@ void LobbyMenu::renderDifficultySelection(const WindowDimensions &windowDims)
   m_renderer->drawText(m_font, instructions, instrX, instrY, instrColor);
 }
 
-void LobbyMenu::process(MenuState *currentState)
+void LobbyMenu::process(MenuState *currentState, Settings &settings)
 {
   if (m_isEnteringCode) {
     handleTextInput();
@@ -349,7 +350,7 @@ void LobbyMenu::process(MenuState *currentState)
       m_isSelectingDifficulty = false;
     }
   } else {
-    handleMenuNavigation();
+    handleMenuNavigation(settings);
 
     if (m_renderer->isKeyJustPressed(KeyCode::KEY_RETURN)) {
       selectCurrentOption(currentState);
@@ -361,13 +362,13 @@ void LobbyMenu::process(MenuState *currentState)
   }
 }
 
-void LobbyMenu::handleMenuNavigation()
+void LobbyMenu::handleMenuNavigation(Settings &settings)
 {
-  if (m_renderer->isKeyJustPressed(KeyCode::KEY_DOWN)) {
+  if (m_renderer->isKeyJustPressed(settings.down)) {
     m_currentIndex = (m_currentIndex + 1) % m_menuItems.size();
   }
 
-  if (m_renderer->isKeyJustPressed(KeyCode::KEY_UP)) {
+  if (m_renderer->isKeyJustPressed(settings.up)) {
     m_currentIndex = (m_currentIndex - 1 + m_menuItems.size()) % m_menuItems.size();
   }
 }

@@ -15,6 +15,8 @@
 #include <string>
 #include <vector>
 
+class Settings;
+
 /**
  * @struct WindowDimensions
  * @brief Window size container to prevent parameter confusion
@@ -57,16 +59,15 @@ public:
   /**
    * @brief Render the lobby menu
    * @param windowDims Window dimensions
-   * @param renderer Renderer interface
    */
   void render(const WindowDimensions &windowDims);
 
   /**
    * @brief Process user input
-   * @param renderer Renderer interface
    * @param currentState Pointer to current menu state
+   * @param settings Settings reference for key bindings
    */
-  void process(MenuState *currentState);
+  void process(MenuState *currentState, Settings &settings);
 
   /**
    * @brief Clean up lobby menu resources
@@ -116,7 +117,7 @@ private:
   void renderLobbyCodeInput(const WindowDimensions &windowDims);
   void renderDifficultySelection(const WindowDimensions &windowDims);
   void renderHighscores(const WindowDimensions &windowDims);
-  void handleMenuNavigation();
+  void handleMenuNavigation(Settings &settings);
   void handleDifficultyNavigation();
   void handleTextInput();
   void selectCurrentOption(MenuState *currentState);
