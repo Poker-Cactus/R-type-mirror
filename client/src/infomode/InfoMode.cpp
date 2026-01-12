@@ -166,4 +166,4 @@ void InfoMode::setNetworkBandwidth(int uploadBytes, int downloadBytes)
   }
 }
 
-// yep
+// bah ecoute a cause de cafard on doit re trigger la ci hein
