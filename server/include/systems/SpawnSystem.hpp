@@ -21,7 +21,6 @@
 #include "../../../engineCore/include/ecs/components/Owner.hpp"
 #include "../../../engineCore/include/ecs/components/Pattern.hpp"
 #include "../../../engineCore/include/ecs/components/PlayerId.hpp"
-#include "../../../engineCore/include/ecs/components/Powerup.hpp"
 #include "../../../engineCore/include/ecs/components/Sprite.hpp"
 #include "../../../engineCore/include/ecs/components/Transform.hpp"
 #include "../../../engineCore/include/ecs/components/Velocity.hpp"
@@ -36,6 +35,9 @@
 
 namespace server
 {
+
+// Local enum for powerup types (not an ECS component)
+enum class PowerupType { DRONE = 0, BUBBLE = 1, BUBBLE_TRIPLE = 2, BUBBLE_RUBAN = 3 };
 
 /**
  * @brief System that handles entity spawning via events
@@ -184,7 +186,17 @@ private:
     float spawnY = yDist(m_rng);
 
     // Alternate powerup types: DRONE first, then BUBBLE
-    ecs::PowerupType powerupType = (m_powerupSpawnCount % 2 == 0) ? ecs::PowerupType::DRONE : ecs::PowerupType::BUBBLE;
+    PowerupType powerupType;
+    int cycle = m_powerupSpawnCount % 4;
+    if (cycle == 0) {
+      powerupType = PowerupType::DRONE;
+    } else if (cycle == 1) {
+      powerupType = PowerupType::BUBBLE;
+    } else if (cycle == 2) {
+      powerupType = PowerupType::BUBBLE_TRIPLE;
+    } else {
+      powerupType = PowerupType::BUBBLE_RUBAN;
+    }
     m_powerupSpawnCount++;
 
     spawnPowerup(world, spawnX, spawnY, powerupType);
@@ -376,8 +388,7 @@ private:
     world.addComponent(projectile, ownerComp);
   }
 
-  static void spawnPowerup(ecs::World &world, float posX, float posY,
-                           ecs::PowerupType powerupType = ecs::PowerupType::DRONE)
+  static void spawnPowerup(ecs::World &world, float posX, float posY, PowerupType powerupType = PowerupType::DRONE)
   {
     ecs::Entity powerup = world.createEntity();
 
@@ -398,12 +409,8 @@ private:
     // Collider for pickup detection
     world.addComponent(powerup, ecs::Collider{POWERUP_COLLIDER_SIZE, POWERUP_COLLIDER_SIZE});
 
-    // Powerup component - marks this as collectible with the specified type
-    ecs::Powerup powerupComp;
-    powerupComp.type = powerupType;
-    world.addComponent(powerup, powerupComp);
-
     // Sprite - all powerups use POWERUP spriteId with different currentFrame
+    // Frame 0=BUBBLE, Frame 1=BUBBLE_TRIPLE, Frame 2=BUBBLE_RUBAN, Frame 3=DRONE
     // R-Type_Items.png: Frame 0=BUBBLE, Frame 1=BUBBLE_TRIPLE, Frame 2=BUBBLE_RUBAN, Frame 3=DRONE
     ecs::Sprite sprite;
     sprite.spriteId = ecs::SpriteId::POWERUP;
@@ -416,22 +423,22 @@ private:
 
     // Select starting frame and animation range based on powerup type
     switch (powerupType) {
-    case ecs::PowerupType::BUBBLE:
+    case PowerupType::BUBBLE:
       sprite.startFrame = 0;
       sprite.endFrame = 0;
       sprite.currentFrame = 0;
       break;
-    case ecs::PowerupType::BUBBLE_TRIPLE:
+    case PowerupType::BUBBLE_TRIPLE:
       sprite.startFrame = 1;
       sprite.endFrame = 1;
       sprite.currentFrame = 1;
       break;
-    case ecs::PowerupType::BUBBLE_RUBAN:
+    case PowerupType::BUBBLE_RUBAN:
       sprite.startFrame = 2;
       sprite.endFrame = 2;
       sprite.currentFrame = 2;
       break;
-    case ecs::PowerupType::DRONE:
+    case PowerupType::DRONE:
     default:
       sprite.startFrame = 3;
       sprite.endFrame = 3;

@@ -102,7 +102,9 @@ constexpr std::uint32_t POWERUP = 5;
 constexpr std::uint32_t DRONE = 6;
 constexpr std::uint32_t BUBBLE = 7;
 constexpr std::uint32_t BUBBLE_TRIPLE = 8;
-constexpr std::uint32_t BUBBLE_RUBAN = 9;
+constexpr std::uint32_t BUBBLE_RUBAN1 = 9;
+constexpr std::uint32_t BUBBLE_RUBAN2 = 10;
+constexpr std::uint32_t BUBBLE_RUBAN3 = 11;
 } // namespace SpriteId
 
 } // namespace ecs

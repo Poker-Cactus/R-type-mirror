@@ -12,6 +12,7 @@
 #include "../../../engineCore/include/ecs/ISystem.hpp"
 #include "../../../engineCore/include/ecs/World.hpp"
 #include "../../../engineCore/include/ecs/components/Follower.hpp"
+#include "../../../engineCore/include/ecs/components/Sprite.hpp"
 #include "../../../engineCore/include/ecs/components/Transform.hpp"
 #include "ecs/ComponentSignature.hpp"
 #include <vector>
@@ -61,10 +62,25 @@ public:
       float targetX = parentTransform.x + follower.offsetX;
       float targetY = parentTransform.y + follower.offsetY;
 
-      // Smoothly interpolate towards target position
-      float lerpFactor = 1.0f - std::exp(-follower.smoothing * deltaTime);
-      transform.x += (targetX - transform.x) * lerpFactor;
-      transform.y += (targetY - transform.y) * lerpFactor;
+      // Check if this is a bubble (instant positioning instead of smooth)
+      bool isBubble = false;
+      if (world.hasComponent<ecs::Sprite>(entity)) {
+        const auto &sprite = world.getComponent<ecs::Sprite>(entity);
+        isBubble = (sprite.spriteId == ecs::SpriteId::BUBBLE || sprite.spriteId == ecs::SpriteId::BUBBLE_TRIPLE ||
+                    sprite.spriteId == ecs::SpriteId::BUBBLE_RUBAN1 ||
+                    sprite.spriteId == ecs::SpriteId::BUBBLE_RUBAN2 || sprite.spriteId == ecs::SpriteId::BUBBLE_RUBAN3);
+      }
+
+      if (isBubble) {
+        // Instant positioning for bubbles (no smooth movement)
+        transform.x = targetX;
+        transform.y = targetY;
+      } else {
+        // Smoothly interpolate towards target position for other followers (drones)
+        float lerpFactor = 1.0f - std::exp(-follower.smoothing * deltaTime);
+        transform.x += (targetX - transform.x) * lerpFactor;
+        transform.y += (targetY - transform.y) * lerpFactor;
+      }
     }
   }
 

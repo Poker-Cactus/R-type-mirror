@@ -14,7 +14,7 @@
 #include "../../../engineCore/include/ecs/components/Health.hpp"
 #include "../../../engineCore/include/ecs/components/Input.hpp"
 #include "../../../engineCore/include/ecs/components/Owner.hpp"
-#include "../../../engineCore/include/ecs/components/Powerup.hpp"
+#include "../../../engineCore/include/ecs/components/Sprite.hpp"
 #include "../../../engineCore/include/ecs/components/Velocity.hpp"
 #include "../../../engineCore/include/ecs/events/EventListenerHandle.hpp"
 #include "../../../engineCore/include/ecs/events/GameEvents.hpp"
@@ -69,8 +69,20 @@ private:
       return;
     }
 
-    // Skip if either entity is a powerup - PowerupSystem handles those
-    if (world.hasComponent<ecs::Powerup>(entityA) || world.hasComponent<ecs::Powerup>(entityB)) {
+    // Skip if either entity is a powerup (POWERUP sprite) - PowerupSystem handles those
+    bool isAPowerup = false;
+    bool isBPowerup = false;
+
+    if (world.hasComponent<ecs::Sprite>(entityA)) {
+      const auto &spriteA = world.getComponent<ecs::Sprite>(entityA);
+      isAPowerup = (spriteA.spriteId == ecs::SpriteId::POWERUP);
+    }
+    if (world.hasComponent<ecs::Sprite>(entityB)) {
+      const auto &spriteB = world.getComponent<ecs::Sprite>(entityB);
+      isBPowerup = (spriteB.spriteId == ecs::SpriteId::POWERUP);
+    }
+
+    if (isAPowerup || isBPowerup) {
       return;
     }
 

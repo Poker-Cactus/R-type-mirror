@@ -15,7 +15,6 @@
 #include "../../../engineCore/include/ecs/components/Follower.hpp"
 #include "../../../engineCore/include/ecs/components/Input.hpp"
 #include "../../../engineCore/include/ecs/components/Networked.hpp"
-#include "../../../engineCore/include/ecs/components/Powerup.hpp"
 #include "../../../engineCore/include/ecs/components/Sprite.hpp"
 #include "../../../engineCore/include/ecs/components/Transform.hpp"
 #include "../../../engineCore/include/ecs/events/EventListenerHandle.hpp"
@@ -24,6 +23,15 @@
 #include <cmath>
 #include <iostream>
 #include <vector>
+
+typedef struct BubbleTypeConfig {
+  unsigned int spriteWidth;
+  unsigned int spriteHeight;
+  unsigned int frameCount;
+  int frameWidth;
+  float scale;
+  std::uint32_t spriteId;
+} BubbleTypeConfig;
 
 namespace server
 {
@@ -71,14 +79,39 @@ private:
   static constexpr float DRONE_SCALE = 2.5f;
 
   // BUBBLE follower configuration
-  static constexpr float BUBBLE_OFFSET_X = 50.0f; // Behind the player
-  static constexpr float BUBBLE_OFFSET_Y = 20.0f; // Slightly above
-  static constexpr float BUBBLE_SMOOTHING = 10.0f;
   static constexpr unsigned int BUBBLE_SPRITE_WIDTH = 289; // bubble.png width (actual)
   static constexpr unsigned int BUBBLE_SPRITE_HEIGHT = 24; // bubble.png height
   static constexpr unsigned int BUBBLE_FRAME_COUNT = 12; // 12 frames of 24px each
   static constexpr int BUBBLE_FRAME_WIDTH = 24; // Frame width in pixels
   static constexpr float BUBBLE_SCALE = 2.5f;
+
+  static constexpr unsigned int BUBBLE_TRIPLE_SPRITE_WIDTH = 181; // bubble.png width (actual)
+  static constexpr unsigned int BUBBLE_TRIPLE_SPRITE_HEIGHT = 23; // bubble.png height
+  static constexpr unsigned int BUBBLE_TRIPLE_FRAME_COUNT = 6;
+  static constexpr int BUBBLE_TRIPLE_FRAME_WIDTH =
+    BUBBLE_TRIPLE_SPRITE_WIDTH / BUBBLE_TRIPLE_FRAME_COUNT; // Frame width in pixels
+  static constexpr float BUBBLE_TRIPLE_SCALE = 2.5f;
+
+  static constexpr unsigned int BUBBLE_RUBAN1_SPRITE_WIDTH = 128; // bubble.png width (actual)
+  static constexpr unsigned int BUBBLE_RUBAN1_SPRITE_HEIGHT = 34; // bubble.png height
+  static constexpr unsigned int BUBBLE_RUBAN1_FRAME_COUNT = 4;
+  static constexpr int BUBBLE_RUBAN1_FRAME_WIDTH =
+    BUBBLE_RUBAN1_SPRITE_WIDTH / BUBBLE_RUBAN1_FRAME_COUNT; // Frame width in pixels
+  static constexpr float BUBBLE_RUBAN1_SCALE = 2.5f;
+
+  static constexpr unsigned int BUBBLE_RUBAN2_SPRITE_WIDTH = 137; // bubble.png width (actual)
+  static constexpr unsigned int BUBBLE_RUBAN2_SPRITE_HEIGHT = 30; // bubble.png height
+  static constexpr unsigned int BUBBLE_RUBAN2_FRAME_COUNT = 4;
+  static constexpr int BUBBLE_RUBAN2_FRAME_WIDTH =
+    BUBBLE_RUBAN2_SPRITE_WIDTH / BUBBLE_RUBAN2_FRAME_COUNT; // Frame width in pixels
+  static constexpr float BUBBLE_RUBAN2_SCALE = 2.5f;
+
+  static constexpr unsigned int BUBBLE_RUBAN3_SPRITE_WIDTH = 139; // bubble.png width (actual)
+  static constexpr unsigned int BUBBLE_RUBAN3_SPRITE_HEIGHT = 26; // bubble.png height
+  static constexpr unsigned int BUBBLE_RUBAN3_FRAME_COUNT = 4;
+  static constexpr int BUBBLE_RUBAN3_FRAME_WIDTH =
+    BUBBLE_RUBAN3_SPRITE_WIDTH / BUBBLE_RUBAN3_FRAME_COUNT; // Frame width in pixels
+  static constexpr float BUBBLE_RUBAN3_SCALE = 2.5f;
 
   void handleCollision(ecs::World &world, const ecs::CollisionEvent &event)
   {
@@ -93,40 +126,73 @@ private:
     ecs::Entity powerupEntity = 0;
     ecs::Entity playerEntity = 0;
 
-    if (world.hasComponent<ecs::Powerup>(entityA) && world.hasComponent<ecs::Input>(entityB)) {
-      powerupEntity = entityA;
-      playerEntity = entityB;
-    } else if (world.hasComponent<ecs::Powerup>(entityB) && world.hasComponent<ecs::Input>(entityA)) {
-      powerupEntity = entityB;
-      playerEntity = entityA;
-    } else {
+    // Check if one entity is a POWERUP sprite and the other is a player
+    if (world.hasComponent<ecs::Sprite>(entityA) && world.hasComponent<ecs::Input>(entityB)) {
+      const auto &sprite = world.getComponent<ecs::Sprite>(entityA);
+      if (sprite.spriteId == ecs::SpriteId::POWERUP) {
+        powerupEntity = entityA;
+        playerEntity = entityB;
+      }
+    } else if (world.hasComponent<ecs::Sprite>(entityB) && world.hasComponent<ecs::Input>(entityA)) {
+      const auto &sprite = world.getComponent<ecs::Sprite>(entityB);
+      if (sprite.spriteId == ecs::SpriteId::POWERUP) {
+        powerupEntity = entityB;
+        playerEntity = entityA;
+      }
+    }
+
+    if (powerupEntity == 0) {
       return; // Not a player-powerup collision
     }
 
-    const auto &powerup = world.getComponent<ecs::Powerup>(powerupEntity);
-
-    std::cout << "[PowerupSystem] Player " << playerEntity << " collected powerup type "
-              << static_cast<int>(powerup.type) << '\n';
+    // Determine powerup type from sprite currentFrame
+    // Frame 0=BUBBLE, 1=BUBBLE_TRIPLE, 2=BUBBLE_RUBAN, 3=DRONE
+    const auto &powerupSprite = world.getComponent<ecs::Sprite>(powerupEntity);
+    std::cout << "[PowerupSystem] Player " << playerEntity << " collected powerup frame " << powerupSprite.currentFrame
+              << '\n';
 
     // Get powerup position before destroying it (for BUBBLE spawn location)
+    float powerupX = 0.0f;
     float powerupY = 0.0f;
     if (world.hasComponent<ecs::Transform>(powerupEntity)) {
-      powerupY = world.getComponent<ecs::Transform>(powerupEntity).y;
+      const auto &powerupTransform = world.getComponent<ecs::Transform>(powerupEntity);
+      powerupX = powerupTransform.x;
+      powerupY = powerupTransform.y;
     }
-
-    // Apply power-up effect based on type
-    switch (powerup.type) {
-    case ecs::PowerupType::DRONE:
+    BubbleTypeConfig config;
+    // Apply power-up effect based on frame (type)
+    switch (powerupSprite.currentFrame) {
+    case 3: // DRONE
       spawnDroneFollower(world, playerEntity);
       break;
-    case ecs::PowerupType::BUBBLE:
-      spawnBubbleFollower(world, playerEntity, powerupY);
+    case 0: // BUBBLE
+      config.spriteWidth = BUBBLE_SPRITE_WIDTH;
+      config.spriteHeight = BUBBLE_SPRITE_HEIGHT;
+      config.frameCount = BUBBLE_FRAME_COUNT;
+      config.frameWidth = BUBBLE_FRAME_WIDTH;
+      config.scale = BUBBLE_SCALE;
+      config.spriteId = ecs::SpriteId::BUBBLE;
+      spawnBubbleFollower(world, playerEntity, powerupX, powerupY, config);
       break;
-    case ecs::PowerupType::BUBBLE_TRIPLE:
-      // TODO: Implement shield
+    case 1: // BUBBLE_TRIPLE
+      config.spriteWidth = BUBBLE_TRIPLE_SPRITE_WIDTH;
+      config.spriteHeight = BUBBLE_TRIPLE_SPRITE_HEIGHT;
+      config.frameCount = BUBBLE_TRIPLE_FRAME_COUNT;
+      config.frameWidth = BUBBLE_TRIPLE_FRAME_WIDTH;
+      config.scale = BUBBLE_TRIPLE_SCALE;
+      config.spriteId = ecs::SpriteId::BUBBLE_TRIPLE;
+      spawnBubbleFollower(world, playerEntity, powerupX, powerupY, config);
       break;
-    case ecs::PowerupType::BUBBLE_RUBAN:
-      // TODO: Implement weapon upgrade
+    case 2: // BUBBLE_RUBAN2
+      config.spriteWidth = BUBBLE_RUBAN2_SPRITE_WIDTH;
+      config.spriteHeight = BUBBLE_RUBAN2_SPRITE_HEIGHT;
+      config.frameCount = BUBBLE_RUBAN2_FRAME_COUNT;
+      config.frameWidth = BUBBLE_RUBAN2_FRAME_WIDTH;
+      config.scale = BUBBLE_RUBAN2_SCALE;
+      config.spriteId = ecs::SpriteId::BUBBLE_RUBAN2;
+      spawnBubbleFollower(world, playerEntity, powerupX, powerupY, config);
+      break;
+    default:
       break;
     }
 
@@ -134,42 +200,44 @@ private:
     world.destroyEntity(powerupEntity);
   }
 
-  void spawnBubbleFollower(ecs::World &world, ecs::Entity player, float spawnY)
+  void spawnBubbleFollower(ecs::World &world, ecs::Entity player, float spawnX, float spawnY,
+                           BubbleTypeConfig bubbleConfig)
   {
     if (!world.hasComponent<ecs::Transform>(player)) {
       return;
     }
 
-    const auto &playerTransform = world.getComponent<ecs::Transform>(player);
+    // First, destroy any existing bubble follower for this player
+    destroyExistingBubbleFollower(world, player);
 
     ecs::Entity bubble = world.createEntity();
 
-    // Transform - start at left side of screen at powerup Y position
+    // Transform - spawn at powerup position
     ecs::Transform transform;
-    transform.x = 0.0f; // Spawn from left edge of screen
+    transform.x = spawnX; // Spawn where powerup was collected
     transform.y = spawnY; // Use powerup's Y position
     transform.rotation = 0.0f;
-    transform.scale = BUBBLE_SCALE;
+    transform.scale = bubbleConfig.scale;
     world.addComponent(bubble, transform);
 
     // Follower component - links to player, moves to ship's front tip
     ecs::Follower follower;
     follower.parent = player;
-    follower.offsetX = 120.0f; // A bit more to the right
+    follower.offsetX = 120.0f; // A bit to the right
     follower.offsetY = 10.0f; // A bit lower
     world.addComponent(bubble, follower);
 
-    // Sprite - use second line of spritesheet (row 1)
+    // Sprite
     ecs::Sprite sprite;
-    sprite.spriteId = ecs::SpriteId::BUBBLE;
-    sprite.width = BUBBLE_FRAME_WIDTH; // Width of one frame
-    sprite.height = BUBBLE_SPRITE_HEIGHT; // Height of one row (not total spritesheet)
+    sprite.spriteId = bubbleConfig.spriteId;
+    sprite.width = bubbleConfig.frameWidth; // Width of one frame
+    sprite.height = bubbleConfig.spriteHeight;
     sprite.animated = true;
-    sprite.frameCount = BUBBLE_FRAME_COUNT;
+    sprite.frameCount = bubbleConfig.frameCount;
     sprite.startFrame = 0;
-    sprite.endFrame = BUBBLE_FRAME_COUNT - 1; // 0 to 11 (12 frames)
+    sprite.endFrame = bubbleConfig.frameCount - 1; // 0 to 11 (12 frames)
     sprite.currentFrame = 0;
-    sprite.frameTime = 0.08f; // Slightly faster animation
+    sprite.frameTime = 0.3f; // Slightly faster animation
     sprite.reverseAnimation = false; // Play forward to avoid loop cut
     sprite.loop = true;
     sprite.row = 0; // bubble.png has only one row
@@ -258,6 +326,38 @@ private:
       }
     }
     return count;
+  }
+
+  /**
+   * @brief Destroy existing bubble follower for a player
+   * Checks if the follower has a bubble sprite (BUBBLE, BUBBLE_TRIPLE, or BUBBLE_RUBAN*)
+   */
+  void destroyExistingBubbleFollower(ecs::World &world, ecs::Entity player)
+  {
+    ecs::ComponentSignature sig;
+    sig.set(ecs::getComponentId<ecs::Follower>());
+    sig.set(ecs::getComponentId<ecs::Sprite>());
+
+    std::vector<ecs::Entity> followers;
+    world.getEntitiesWithSignature(sig, followers);
+
+    for (const auto &entity : followers) {
+      if (world.isAlive(entity)) {
+        const auto &follower = world.getComponent<ecs::Follower>(entity);
+        if (follower.parent == player) {
+          const auto &sprite = world.getComponent<ecs::Sprite>(entity);
+          // Check if it's a bubble (spriteId 7, 8, 9, 10, or 11)
+          if (sprite.spriteId == ecs::SpriteId::BUBBLE || sprite.spriteId == ecs::SpriteId::BUBBLE_TRIPLE ||
+              sprite.spriteId == ecs::SpriteId::BUBBLE_RUBAN1 || sprite.spriteId == ecs::SpriteId::BUBBLE_RUBAN2 ||
+              sprite.spriteId == ecs::SpriteId::BUBBLE_RUBAN3) {
+            std::cout << "[PowerupSystem] Destroying existing bubble follower " << entity
+                      << " (spriteId: " << sprite.spriteId << ")\n";
+            world.destroyEntity(entity);
+            return; // Only destroy one bubble per player
+          }
+        }
+      }
+    }
   }
 };
 

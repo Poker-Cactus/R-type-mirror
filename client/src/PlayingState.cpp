@@ -131,7 +131,6 @@ void PlayingState::render()
     if (textureIt != m_spriteTextures.end() && textureIt->second != nullptr) {
       constexpr int PLAYER_FRAME_WIDTH = 33; // 166 / 5
       constexpr int PLAYER_FRAME_HEIGHT = 17; // 86 / 5
-
       bool rendered = false;
 
       // Check if sprite is animated
@@ -160,7 +159,9 @@ void PlayingState::render()
         case ecs::SpriteId::DRONE:
         case ecs::SpriteId::BUBBLE:
         case ecs::SpriteId::BUBBLE_TRIPLE:
-        case ecs::SpriteId::BUBBLE_RUBAN:
+        case ecs::SpriteId::BUBBLE_RUBAN1:
+        case ecs::SpriteId::BUBBLE_RUBAN2:
+        case ecs::SpriteId::BUBBLE_RUBAN3:
           // Legacy drone/bubble: use sprite dimensions from server
           frameWidth = static_cast<int>(sprite.width);
           frameHeight = static_cast<int>(sprite.height);
@@ -278,16 +279,12 @@ void PlayingState::render()
       case ecs::SpriteId::EXPLOSION:
         color = COLOR_EXPLOSION_ORANGE;
         break;
-      case ecs::SpriteId::DRONE:
-        color = COLOR_POWERUP_GREEN; // Drones use same color as powerups
-        break;
       case ecs::SpriteId::BUBBLE:
-        color = COLOR_POWERUP_GREEN; // Drones use same color as powerups
-        break;
       case ecs::SpriteId::BUBBLE_TRIPLE:
-        color = COLOR_POWERUP_GREEN; // Drones use same color as powerups
-        break;
-      case ecs::SpriteId::BUBBLE_RUBAN:
+      case ecs::SpriteId::BUBBLE_RUBAN1:
+      case ecs::SpriteId::BUBBLE_RUBAN2:
+      case ecs::SpriteId::BUBBLE_RUBAN3:
+      case ecs::SpriteId::DRONE:
         color = COLOR_POWERUP_GREEN; // Drones use same color as powerups
         break;
       default:
@@ -731,10 +728,10 @@ void PlayingState::loadSpriteTextures()
 
   // BUBBLE = 8 (uses powerup texture as fallback)
   try {
-    void *buble_triple_tex = renderer->loadTexture("client/assets/r-typesheet2.gif");
+    void *buble_triple_tex = renderer->loadTexture("client/assets/sprites/bubble_triple.png");
     if (buble_triple_tex != nullptr) {
       m_spriteTextures[ecs::SpriteId::BUBBLE_TRIPLE] = buble_triple_tex;
-      std::cout << "[PlayingState] ✓ Loaded r-typesheet2.gif" << '\n';
+      std::cout << "[PlayingState] ✓ Loaded bubble_triple.png" << '\n';
     } else {
       // Fallback to powerup texture for bubbles
       if (m_spriteTextures.find(ecs::SpriteId::POWERUP) != m_spriteTextures.end()) {
@@ -750,28 +747,70 @@ void PlayingState::loadSpriteTextures()
     }
   }
 
-  // BUBBLE = 9 (uses powerup texture as fallback)
+  // BUBBLE_RUBAN1 = 9 (uses powerup texture as fallback)
   try {
-    void *buble_triple_tex = renderer->loadTexture("client/assets/r-typesheet2.gif");
+    void *buble_triple_tex = renderer->loadTexture("client/assets/sprites/bubble_ruban1.png");
     if (buble_triple_tex != nullptr) {
-      m_spriteTextures[ecs::SpriteId::BUBBLE_RUBAN] = buble_triple_tex;
-      std::cout << "[PlayingState] ✓ Loaded r-typesheet2.gif" << '\n';
+      m_spriteTextures[ecs::SpriteId::BUBBLE_RUBAN1] = buble_triple_tex;
+      std::cout << "[PlayingState] ✓ Loaded bubble_ruban1.png" << '\n';
     } else {
       // Fallback to powerup texture for bubbles
       if (m_spriteTextures.find(ecs::SpriteId::POWERUP) != m_spriteTextures.end()) {
-        m_spriteTextures[ecs::SpriteId::BUBBLE_RUBAN] = m_spriteTextures[ecs::SpriteId::POWERUP];
+        m_spriteTextures[ecs::SpriteId::BUBBLE_RUBAN1] = m_spriteTextures[ecs::SpriteId::POWERUP];
         std::cout << "[PlayingState] ✓ Using powerup.png for ruban bubble (fallback)" << '\n';
       }
     }
   } catch (const std::exception &e) {
-    // Fallback to powerup texture for BUBBLE_RUBANs
+    // Fallback to powerup texture for BUBBLE_RUBAN1s
     if (m_spriteTextures.find(ecs::SpriteId::POWERUP) != m_spriteTextures.end()) {
-      m_spriteTextures[ecs::SpriteId::BUBBLE_RUBAN] = m_spriteTextures[ecs::SpriteId::POWERUP];
+      m_spriteTextures[ecs::SpriteId::BUBBLE_RUBAN1] = m_spriteTextures[ecs::SpriteId::POWERUP];
       std::cout << "[PlayingState] ✓ Using powerup.png for ruban bubble (fallback after error)" << '\n';
     }
   }
 
-  constexpr int EXPECTED_TEXTURE_COUNT = 9;
+  // BUBBLE_RUBAN2 = 10 (uses powerup texture as fallback)
+  try {
+    void *buble_triple_tex = renderer->loadTexture("client/assets/sprites/bubble_ruban2.png");
+    if (buble_triple_tex != nullptr) {
+      m_spriteTextures[ecs::SpriteId::BUBBLE_RUBAN2] = buble_triple_tex;
+      std::cout << "[PlayingState] ✓ Loaded bubble_ruban2.png" << '\n';
+    } else {
+      // Fallback to powerup texture for bubbles
+      if (m_spriteTextures.find(ecs::SpriteId::POWERUP) != m_spriteTextures.end()) {
+        m_spriteTextures[ecs::SpriteId::BUBBLE_RUBAN2] = m_spriteTextures[ecs::SpriteId::POWERUP];
+        std::cout << "[PlayingState] ✓ Using powerup.png for ruban bubble (fallback)" << '\n';
+      }
+    }
+  } catch (const std::exception &e) {
+    // Fallback to powerup texture for BUBBLE_RUBAN2s
+    if (m_spriteTextures.find(ecs::SpriteId::POWERUP) != m_spriteTextures.end()) {
+      m_spriteTextures[ecs::SpriteId::BUBBLE_RUBAN2] = m_spriteTextures[ecs::SpriteId::POWERUP];
+      std::cout << "[PlayingState] ✓ Using powerup.png for ruban bubble (fallback after error)" << '\n';
+    }
+  }
+
+  // BUBBLE_RUBAN3 = 11 (uses powerup texture as fallback)
+  try {
+    void *buble_triple_tex = renderer->loadTexture("client/assets/sprites/bubble_ruban3.png");
+    if (buble_triple_tex != nullptr) {
+      m_spriteTextures[ecs::SpriteId::BUBBLE_RUBAN3] = buble_triple_tex;
+      std::cout << "[PlayingState] ✓ Loaded bubble_ruban3.png" << '\n';
+    } else {
+      // Fallback to powerup texture for bubbles
+      if (m_spriteTextures.find(ecs::SpriteId::POWERUP) != m_spriteTextures.end()) {
+        m_spriteTextures[ecs::SpriteId::BUBBLE_RUBAN3] = m_spriteTextures[ecs::SpriteId::POWERUP];
+        std::cout << "[PlayingState] ✓ Using powerup.png for ruban bubble (fallback)" << '\n';
+      }
+    }
+  } catch (const std::exception &e) {
+    // Fallback to powerup texture for BUBBLE_RUBAN3s
+    if (m_spriteTextures.find(ecs::SpriteId::POWERUP) != m_spriteTextures.end()) {
+      m_spriteTextures[ecs::SpriteId::BUBBLE_RUBAN3] = m_spriteTextures[ecs::SpriteId::POWERUP];
+      std::cout << "[PlayingState] ✓ Using powerup.png for ruban bubble (fallback after error)" << '\n';
+    }
+  }
+
+  constexpr int EXPECTED_TEXTURE_COUNT = 11;
   std::cout << "[PlayingState] Successfully loaded " << m_spriteTextures.size() << " / " << EXPECTED_TEXTURE_COUNT
             << " sprite textures" << '\n';
   if (m_spriteTextures.size() < EXPECTED_TEXTURE_COUNT) {
