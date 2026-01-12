@@ -479,9 +479,6 @@ void PlayingState::processInput()
   if (renderer == nullptr)
     return;
 
-  bool up = renderer->isKeyPressed(settings.up);
-  bool down = renderer->isKeyPressed(settings.down);
-
   if (renderer->isKeyPressed(settings.up)) {
     m_returnUp = true;
   } else if (renderer->isKeyPressed(settings.down)) {

@@ -15,14 +15,14 @@
 #include <span>
 
 Game::Game()
-    : module(nullptr), renderer(nullptr), isRunning(false), currentState(GameState::MENU), m_serverHost("127.0.0.1"),
-      m_serverPort("4242")
+    : module(nullptr), renderer(nullptr), m_serverHost("127.0.0.1"), m_serverPort("4242"), isRunning(false),
+      currentState(GameState::MENU)
 {
 }
 
 Game::Game(const std::string &host, const std::string &port)
-    : module(nullptr), renderer(nullptr), isRunning(false), currentState(GameState::MENU), m_serverHost(host),
-      m_serverPort(port)
+    : module(nullptr), renderer(nullptr), m_serverHost(host), m_serverPort(port), isRunning(false),
+      currentState(GameState::MENU)
 {
 }
 
@@ -359,7 +359,7 @@ void Game::handleLobbyRoomTransition()
       }
     });
     // Player-dead: server told us our player is dead and we should return to menu
-    networkReceiveSystem->setPlayerDeadCallback([this](const nlohmann::json &msg) {
+    networkReceiveSystem->setPlayerDeadCallback([this](UNUSED const nlohmann::json &msg) {
       std::cout << "[Game] Received player_dead from server - returning to menu" << std::endl;
 
       // Stop accepting snapshots

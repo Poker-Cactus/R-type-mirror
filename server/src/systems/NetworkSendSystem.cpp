@@ -65,7 +65,7 @@ std::vector<std::uint32_t> NetworkSendSystem::getActiveGameClients() const
   return activeClients;
 }
 
-void NetworkSendSystem::update(ecs::World &world, float deltaTime)
+void NetworkSendSystem::update(UNUSED ecs::World &world, float deltaTime)
 {
   static float logAccumulator = 0.0f;
   logAccumulator += deltaTime;

@@ -8,16 +8,16 @@
 #include "ProfileMenu.hpp"
 #include <cmath>
 
-void ProfileMenu::init(IRenderer *renderer)
+void ProfileMenu::init([[maybe_unused]] IRenderer *renderer)
 {
   try {
   } catch (const std::exception &e) {
   }
 }
 
-void ProfileMenu::render(int winWidth, int winHeight, IRenderer *renderer)
+void ProfileMenu::render([[maybe_unused]] int winWidth, [[maybe_unused]] int winHeight, [[maybe_unused]] IRenderer *renderer)
 {
   // TODO: Afficher le lobby
 }
 
-void ProfileMenu::process(IRenderer *renderer) {}
+void ProfileMenu::process([[maybe_unused]] IRenderer *renderer) {}
