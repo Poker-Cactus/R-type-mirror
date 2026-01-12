@@ -649,6 +649,19 @@ void PlayingState::loadSpriteTextures()
   if (m_spriteTextures.size() < EXPECTED_TEXTURE_COUNT) {
     std::cerr << "[PlayingState] Missing textures will use fallback colored rectangles" << '\n';
   }
+
+  // CHARGED_PROJECTILE = 6
+  try {
+    void *charged_projectile_tex = renderer->loadTexture("client/assets/sprites/chargedShot.png");
+    if (charged_projectile_tex != nullptr) {
+      m_spriteTextures[ecs::SpriteId::CHARGED_PROJECTILE] = charged_projectile_tex;
+      std::cout << "[PlayingState] ✓ Loaded charged_projectile.png" << '\n';
+    } else {
+      std::cerr << "[PlayingState] ✗ Failed to load charged_projectile.png (returned null)" << '\n';
+    }
+  } catch (const std::exception &e) {
+    std::cerr << "[PlayingState] ✗ Failed to load charged_projectile.png: " << e.what() << '\n';
+  }
 }
 
 void PlayingState::freeSpriteTextures()

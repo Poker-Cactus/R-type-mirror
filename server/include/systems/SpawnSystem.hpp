@@ -119,6 +119,13 @@ private:
   static constexpr float PROJECTILE_VELOCITY_MULTIPLIER = 400.0F;
   static constexpr float DIRECTION_THRESHOLD = 0.01F;
 
+  // Charged projectile configuration
+  static constexpr float CHARGED_PROJECTILE_COLLIDER_SIZE = 16.0F;
+  static constexpr unsigned int CHARGED_PROJECTILE_SPRITE_WIDTH = 165;
+  static constexpr unsigned int CHARGED_PROJECTILE_SPRITE_HEIGHT = 16;
+  static constexpr float CHARGED_PROJECTILE_VELOCITY = 800.0F;
+  static constexpr float CHARGED_PROJECTILE_SCALE = 2.0F;
+
   /**
    * @brief Spawn a group of Enemy Red with random count (1-5)
    */
@@ -233,6 +240,9 @@ private:
     case ecs::SpawnEntityEvent::EntityType::PROJECTILE:
       spawnProjectile(world, event.x, event.y, event.spawner);
       break;
+    case ecs::SpawnEntityEvent::EntityType::CHARGED_PROJECTILE:
+      spawnChargedProjectile(world, event.x, event.y, event.spawner);
+      break;
     case ecs::SpawnEntityEvent::EntityType::POWERUP:
       spawnPowerup(world, event.x, event.y);
       break;
@@ -300,6 +310,57 @@ private:
     world.addComponent(projectile, net);
 
     // Track owner to prevent self-damage
+    ecs::Owner ownerComp;
+    ownerComp.ownerId = owner;
+    world.addComponent(projectile, ownerComp);
+  }
+
+  static void spawnChargedProjectile(ecs::World &world, float posX, float posY, ecs::Entity owner)
+  {
+    float directionX = 0.0F;
+    if (std::abs(directionX) < DIRECTION_THRESHOLD && world.hasComponent<ecs::Velocity>(owner)) {
+      directionX = world.getComponent<ecs::Velocity>(owner).dx;
+    }
+    if (std::abs(directionX) < DIRECTION_THRESHOLD) {
+      directionX = 1.0F;
+    }
+
+    ecs::Entity projectile = world.createEntity();
+
+    float offsetX = 0.0F;
+    if (world.hasComponent<ecs::GunOffset>(owner)) {
+      offsetX = world.getComponent<ecs::GunOffset>(owner).x;
+    }
+
+    ecs::Transform transform;
+    transform.x = posX + offsetX;
+    transform.y = posY;
+    transform.rotation = 0.0F;
+    transform.scale = CHARGED_PROJECTILE_SCALE;
+    world.addComponent(projectile, transform);
+
+    ecs::Velocity velocity;
+    velocity.dx = CHARGED_PROJECTILE_VELOCITY * (directionX >= 0.0F ? 1.0F : -1.0F);
+    velocity.dy = 0.0F;
+    world.addComponent(projectile, velocity);
+
+    world.addComponent(projectile, ecs::Collider{CHARGED_PROJECTILE_COLLIDER_SIZE, CHARGED_PROJECTILE_COLLIDER_SIZE});
+
+    ecs::Sprite sprite;
+    sprite.spriteId = ecs::SpriteId::CHARGED_PROJECTILE;
+    sprite.width = CHARGED_PROJECTILE_SPRITE_WIDTH;
+    sprite.height = CHARGED_PROJECTILE_SPRITE_HEIGHT;
+    sprite.animated = true;
+    sprite.frameCount = 2;
+    sprite.loop = false;
+    sprite.startFrame = 0;
+    sprite.endFrame = 1;
+    world.addComponent(projectile, sprite);
+
+    ecs::Networked net;
+    net.networkId = projectile;
+    world.addComponent(projectile, net);
+
     ecs::Owner ownerComp;
     ownerComp.ownerId = owner;
     world.addComponent(projectile, ownerComp);
