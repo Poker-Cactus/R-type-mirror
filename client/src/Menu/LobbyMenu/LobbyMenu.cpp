@@ -509,7 +509,12 @@ void LobbyMenu::selectCurrentOption(MenuState *currentState)
     m_lobbyCodeInput.clear();
     break;
 
-  case 2: // Back
+  case 2: // Clear Highscores
+    std::cout << "[LobbyMenu] Clearing highscores" << '\n';
+    m_highscoreManager.clearHighscores();
+    break;
+
+  case 3: // Back
     *currentState = MenuState::MAIN_MENU;
     break;
 

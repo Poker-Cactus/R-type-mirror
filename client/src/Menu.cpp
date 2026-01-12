@@ -105,7 +105,7 @@ void Menu::processInput()
     m_mainMenu->process(&currentState, settings);
     break;
   case MenuState::PROFILE:
-    m_profileMenu->process();
+    m_profileMenu->process(&currentState, settings);
     break;
   case MenuState::SETTINGS:
     m_settingsMenu->process();

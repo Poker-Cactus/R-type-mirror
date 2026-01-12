@@ -102,6 +102,12 @@ bool HighscoreManager::isHighscore(int score) const
   return score > m_highscores.back().score;
 }
 
+void HighscoreManager::clearHighscores()
+{
+  m_highscores.clear();
+  saveToFile();
+}
+
 void HighscoreManager::sortHighscores()
 {
   std::sort(m_highscores.begin(), m_highscores.end(),

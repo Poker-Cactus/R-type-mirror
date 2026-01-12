@@ -33,6 +33,7 @@ struct WindowDimensions {
 enum class LobbyMenuOption : std::uint8_t {
   CREATE_LOBBY, ///< Create new lobby
   JOIN_LOBBY, ///< Join existing lobby
+  CLEAR_HIGHSCORES, ///< Clear highscores
   BACK ///< Return to main menu
 };
 
@@ -143,7 +144,7 @@ private:
   float m_parallaxOffsetFloor;
 
   // Menu state
-  std::vector<std::string> m_menuItems = {"Create Lobby", "Join Lobby", "Back"};
+  std::vector<std::string> m_menuItems = {"Create Lobby", "Join Lobby", "Clear Highscores", "Back"};
   std::size_t m_currentIndex;
   bool m_isEnteringCode;
   std::string m_lobbyCodeInput;

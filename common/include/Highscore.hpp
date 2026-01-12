@@ -76,6 +76,11 @@ public:
    */
   bool refreshHighscores() { return loadFromFile(); }
 
+  /**
+   * @brief Clear all highscores
+   */
+  void clearHighscores();
+
 private:
   static constexpr std::size_t MAX_HIGHSCORES = 5;  ///< Maximum number of highscores to keep
   static constexpr const char *HIGHSCORE_FILE = "highscores.json";  ///< Filename for highscore storage

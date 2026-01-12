@@ -47,10 +47,10 @@ void ProfileMenu::render(UNUSED int winWidth, UNUSED int winHeight)
   // Username label
   int labelWidth = 0;
   int labelHeight = 0;
-  m_renderer->getTextSize(font, "Username:", labelWidth, labelHeight);
+  m_renderer->getTextSize(font, "Username", labelWidth, labelHeight);
   int labelX = (winWidth - labelWidth) / 2;
   int labelY = winHeight / 2 - 60;
-  m_renderer->drawText(font, "Username:", labelX, labelY, Color{255, 255, 255, 255});
+  m_renderer->drawText(font, "Username", labelX, labelY, Color{255, 255, 255, 255});
 
   // Username input box
   int boxWidth = 300;
@@ -95,4 +95,48 @@ void ProfileMenu::render(UNUSED int winWidth, UNUSED int winHeight)
   m_renderer->drawText(font, "Use arrow keys to navigate, Enter to select/edit", (winWidth - 400) / 2, helpY, Color{255, 255, 255, 200});
 }
 
-void ProfileMenu::process() {}
+void ProfileMenu::process(MenuState *currentState, Settings &settings)
+{
+  if (!isEditingUsername) {
+    // Navigation
+    if (m_renderer->isKeyJustPressed(settings.up)) {
+      selectedOption = (selectedOption - 1 + 2) % 2;
+    }
+    if (m_renderer->isKeyJustPressed(settings.down)) {
+      selectedOption = (selectedOption + 1) % 2;
+    }
+    if (m_renderer->isKeyJustPressed(KeyCode::KEY_RETURN)) {
+      if (selectedOption == 0) {
+        isEditingUsername = true;
+      } else if (selectedOption == 1) {
+        // Save
+        m_settings->username = currentUsername;
+        *currentState = MenuState::MAIN_MENU;
+      }
+    }
+  } else {
+    // Editing username
+    // Handle text input
+    for (int key = KeyCode::KEY_A; key <= KeyCode::KEY_Z; ++key) {
+      if (m_renderer->isKeyJustPressed(key) && currentUsername.length() < 8) {
+        char c = 'a' + (key - KeyCode::KEY_A);
+        currentUsername += c;
+      }
+    }
+    for (int key = KeyCode::KEY_0; key <= KeyCode::KEY_9; ++key) {
+      if (m_renderer->isKeyJustPressed(key) && currentUsername.length() < 8) {
+        char c = '0' + (key - KeyCode::KEY_0);
+        currentUsername += c;
+      }
+    }
+    if (m_renderer->isKeyJustPressed(KeyCode::KEY_SPACE) && currentUsername.length() < 8) {
+      currentUsername += ' ';
+    }
+    if (m_renderer->isKeyJustPressed(KeyCode::KEY_BACKSPACE) && !currentUsername.empty()) {
+      currentUsername.pop_back();
+    }
+    if (m_renderer->isKeyJustPressed(KeyCode::KEY_RETURN)) {
+      isEditingUsername = false;
+    }
+  }
+}

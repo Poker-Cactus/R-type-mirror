@@ -12,6 +12,7 @@
 #pragma once
 #include "../../../interface/IRenderer.hpp"
 #include "../../../include/Settings.hpp"
+#include "../MenuState.hpp"
 #include <memory>
 
 /**
@@ -40,8 +41,10 @@ public:
 
   /**
    * @brief Process user input
+   * @param currentState Pointer to current menu state
+   * @param settings Settings reference for key bindings
    */
-  void process();
+  void process(MenuState *currentState, Settings &settings);
 
   /**
    * @brief Check if the profile menu is currently in editing mode
