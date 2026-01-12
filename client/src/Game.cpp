@@ -66,7 +66,11 @@ bool Game::init()
       return false;
     }
 
-    renderer = module->create();
+    renderer = std::shared_ptr<IRenderer>(module->create(), [this](IRenderer *ptr) {
+      if (module) {
+        module->destroy(ptr);
+      }
+    });
 
     if (renderer == nullptr) {
       std::cerr << "[Game::init] ERROR: Renderer is null" << '\n';
@@ -118,7 +122,7 @@ bool Game::init()
         std::cout << "[Game] Game started callback triggered - transitioning to PLAYING" << '\n';
         // Ensure the playing state exists and is initialized (recreate after death)
         if (!this->playingState) {
-          this->playingState = std::make_unique<PlayingState>(this->renderer, this->m_world, this->settings);
+          this->playingState = std::make_unique<PlayingState>(this->renderer, this->m_world, this->settings, this->m_networkManager);
           if (!this->playingState->init()) {
             std::cerr << "[Game] Failed to initialize playing state on game_started" << '\n';
             // Fallback to menu if we cannot initialize rendering state
@@ -136,7 +140,7 @@ bool Game::init()
       });
     }
 
-    playingState = std::make_unique<PlayingState>(renderer, m_world, settings);
+    playingState = std::make_unique<PlayingState>(renderer, m_world, settings, m_networkManager);
     if (!playingState->init()) {
       std::cerr << "Failed to initialize playing state" << '\n';
       return false;
@@ -173,11 +177,6 @@ void Game::shutdown()
   // Notify server that we're leaving before shutting down
   sendLeaveToServer();
 
-  if (menu) {
-    menu->cleanup();
-    menu.reset();
-  }
-
   if (lobbyRoomState) {
     lobbyRoomState->cleanup();
     lobbyRoomState.reset();
@@ -188,15 +187,20 @@ void Game::shutdown()
     playingState.reset();
   }
 
+  if (menu) {
+    menu->cleanup();
+    menu.reset();
+    // Renderer will be automatically destroyed by shared_ptr when all references are gone
+  }
+
   if (m_networkManager) {
     m_networkManager->stop();
     m_networkManager.reset();
   }
   m_world.reset();
-  if (module && renderer != nullptr) {
-    module->destroy(renderer);
-    renderer = nullptr;
-  }
+
+  // Reset renderer - custom deleter will call module->destroy
+  renderer.reset();
   module.reset();
   isRunning = false;
 }
@@ -314,7 +318,6 @@ void Game::handleLobbyRoomTransition()
     return;
   }
 
-
   // Get lobby info from menu
   const bool isCreating = menu->isCreatingLobby();
   const std::string lobbyCode = menu->getLobbyCodeToJoin();
@@ -369,7 +372,7 @@ void Game::handleLobbyRoomTransition()
       }
     });
     // Player-dead: server told us our player is dead and we should return to menu
-    networkReceiveSystem->setPlayerDeadCallback([this](const nlohmann::json &msg) {
+    networkReceiveSystem->setPlayerDeadCallback([this](UNUSED const nlohmann::json &msg) {
       std::cout << "[Game] Received player_dead from server - returning to menu" << std::endl;
 
       // Save highscore if we have the necessary information

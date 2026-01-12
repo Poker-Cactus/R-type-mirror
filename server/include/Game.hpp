@@ -7,8 +7,8 @@
 
 #ifndef GAME_HPP_
 #define GAME_HPP_
-#include "../../engineCore/include/ecs/World.hpp"
 #include "../../common/include/Common.hpp"
+#include "../../engineCore/include/ecs/World.hpp"
 #include "Difficulty.hpp"
 #include "LobbyManager.hpp"
 #include "ServerSystems.hpp"

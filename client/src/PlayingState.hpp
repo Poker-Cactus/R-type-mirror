@@ -8,6 +8,8 @@
 #include "../interface/IRenderer.hpp"
 #include "Menu/SettingsMenu/SettingsMenu.hpp"
 #include "ParallaxBackground.hpp"
+#include "infomode/InfoMode.hpp"
+#include "../../network/include/INetworkManager.hpp"
 #include <memory>
 #include <unordered_map>
 
@@ -30,8 +32,9 @@ public:
    * @param renderer Renderer interface
    * @param world Shared pointer to ECS world
    * @param settings Game settings reference
+   * @param networkManager Network manager for stats
    */
-  PlayingState(IRenderer *renderer, const std::shared_ptr<ecs::World> &world, Settings &settings);
+  PlayingState(std::shared_ptr<IRenderer> renderer, const std::shared_ptr<ecs::World> &world, Settings &settings, std::shared_ptr<INetworkManager> networkManager);
   ~PlayingState();
 
   /**
@@ -74,8 +77,8 @@ public:
   void changeAnimationPlayers(float delta_time);
 
 private:
-  IRenderer *renderer;                   ///< Renderer interface
-  std::shared_ptr<ecs::World> world;     ///< ECS world
+  std::shared_ptr<IRenderer> renderer; ///< Renderer interface
+  std::shared_ptr<ecs::World> world; ///< ECS world
   std::unique_ptr<ParallaxBackground> background; ///< Scrolling background
 
   std::unordered_map<std::uint32_t, void *> m_spriteTextures; ///< Sprite texture cache
@@ -103,7 +106,6 @@ private:
    */
   void updateAnimations(float deltaTime);
 
-
   /**
    * @brief Render heads-up display
    */
@@ -112,13 +114,15 @@ private:
   /**
    * @brief Update HUD data from ECS world
    */
-  void updateHUDFromWorld();
+  void updateHUDFromWorld(float deltaTime);
 
-  bool m_returnUp = false;   ///< Return to neutral animation from up
+  bool m_returnUp = false; ///< Return to neutral animation from up
   bool m_returnDown = false; ///< Return to neutral animation from down
 
-  int m_playerFrameIndex = 2;    ///< Current animation frame
-  int m_playerAnimToggle = 0;    ///< Animation toggle state
+  std::unique_ptr<InfoMode> m_infoMode; ///< Info mode manager
+
+  int m_playerFrameIndex = 2; ///< Current animation frame
+  int m_playerAnimToggle = 0; ///< Animation toggle state
   float m_playerAnimTimer = 0.f; ///< Animation timer
 
   /**
@@ -128,8 +132,16 @@ private:
   enum class PlayerAnimDirection { None, Up, Down };
   PlayerAnimDirection m_playerAnimDirection = PlayerAnimDirection::None; ///< Current anim direction
   bool m_playerAnimPlayingOnce = false; ///< Single-play animation flag
-  int m_playerAnimPhase = 0;            ///< Animation phase
+  int m_playerAnimPhase = 0; ///< Animation phase
 
-  Settings &settings;                   ///< Game settings reference
-  SettingsMenu *settingsMenu = nullptr; ///< Settings menu
+  Settings &settings; ///< Game settings reference
+  std::shared_ptr<SettingsMenu> settingsMenu; ///< Settings menu
+
+  // FPS tracking
+  float m_fpsAccumulator = 0.0f; ///< Time accumulator for FPS calculation
+  int m_fpsFrameCount = 0; ///< Frame count for FPS calculation
+  float m_currentFps = 0.0f; ///< Current calculated FPS
+
+  std::shared_ptr<INetworkManager> m_networkManager; ///< Network manager for stats
+  float m_pingTimer = 0.0f; ///< Timer for sending pings
 };

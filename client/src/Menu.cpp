@@ -13,8 +13,12 @@
 #include "Menu/SettingsMenu/SettingsMenu.hpp"
 #include <cmath>
 #include <iostream>
+#include <memory>
 
-Menu::Menu(IRenderer *renderer, Settings &settings) : renderer(renderer), settings(settings) {}
+Menu::Menu(std::shared_ptr<IRenderer> renderer, Settings &settings)
+    : m_renderer(std::move(renderer)), settings(settings)
+{
+}
 
 Menu::~Menu()
 {
@@ -25,31 +29,33 @@ void Menu::init()
 {
   try {
     const int menuFontSize = 24;
-    const int titleFontSize = 48;
-    menu_font = renderer->loadFont(resolveAssetPath("client/assets/font.opf/r-type.otf").c_str(), menuFontSize);
+    // const int titleFontSize = 48;
+    menu_font = m_renderer->loadFont(resolveAssetPath("client/assets/font.opf/r-type.otf").c_str(), menuFontSize);
 
     // Initialiser IntroScreen
-    introScreen = new IntroScreen();
-    introScreen->init(renderer);
+    introScreen = std::make_shared<IntroScreen>(m_renderer);
+    introScreen->init();
 
     // Initialiser MainMenu
-    mainMenu = new MainMenu();
-    mainMenu->init(renderer);
+    m_mainMenu = std::make_shared<MainMenu>(m_renderer);
+    m_mainMenu->init();
 
-    lobbyMenu = new LobbyMenu();
-    lobbyMenu->init(renderer, settings);
+    m_lobbyMenu = std::make_shared<LobbyMenu>(m_renderer);
+    m_lobbyMenu->init(settings);
 
-    profileMenu = new ProfileMenu();
-    profileMenu->init(renderer, settings);
 
-    settingsMenu = new SettingsMenu();
-    settingsMenu->init(renderer, settings);
+    m_profileMenu = std::make_shared<ProfileMenu>(m_renderer);
+    m_profileMenu->init(settings);
 
-    moonSky = renderer->loadTexture("client/assets/moon-para/moon_sky.png");
-    moonBack = renderer->loadTexture("client/assets/moon-para/moon_back.png");
-    moonMid = renderer->loadTexture("client/assets/moon-para/moon_mid.png");
-    moonFront = renderer->loadTexture("client/assets/moon-para/moon_front.png");
-    moonFloor = renderer->loadTexture("client/assets/moon-para/moon_floor.png");
+    m_settingsMenu = std::make_shared<SettingsMenu>(m_renderer);
+    m_settingsMenu->init(settings);
+
+    moonSky = m_renderer->loadTexture("client/assets/moon-para/moon_sky.png");
+    moonBack = m_renderer->loadTexture("client/assets/moon-para/moon_back.png");
+    moonMid = m_renderer->loadTexture("client/assets/moon-para/moon_mid.png");
+    moonFront = m_renderer->loadTexture("client/assets/moon-para/moon_front.png");
+    moonFloor = m_renderer->loadTexture("client/assets/moon-para/moon_floor.png");
+
   } catch (const std::exception &e) {
     std::cerr << "Exception during menu initialization: " << e.what() << '\n';
   }
@@ -57,29 +63,29 @@ void Menu::init()
 
 void Menu::render()
 {
-  int winWidth = renderer->getWindowWidth();
-  int winHeight = renderer->getWindowHeight();
+  int winWidth = m_renderer->getWindowWidth();
+  int winHeight = m_renderer->getWindowHeight();
 
   switch (currentState) {
   case MenuState::INTRO:
     if (introScreen != nullptr) {
-      introScreen->render(winWidth, winHeight, renderer);
+      introScreen->render(winWidth, winHeight);
     }
     break;
   case MenuState::MAIN_MENU:
-    renderMoonParalax(winWidth, winHeight, renderer);
-    mainMenu->render(winWidth, winHeight, renderer);
+    renderMoonParalax(winWidth, winHeight);
+    m_mainMenu->render(winWidth, winHeight);
     break;
   case MenuState::PROFILE:
-    renderMoonParalax(winWidth, winHeight, renderer);
-    profileMenu->render(winWidth, winHeight, renderer);
+    renderMoonParalax(winWidth, winHeight);
+    m_profileMenu->render(winWidth, winHeight);
     break;
   case MenuState::LOBBY:
-    lobbyMenu->render({.width = winWidth, .height = winHeight}, renderer);
+    m_lobbyMenu->render({.width = winWidth, .height = winHeight});
     break;
   case MenuState::SETTINGS:
-    renderMoonParalax(winWidth, winHeight, renderer);
-    settingsMenu->render(winWidth, winHeight, renderer);
+    renderMoonParalax(winWidth, winHeight);
+    m_settingsMenu->render(winWidth, winHeight);
     break;
   case MenuState::EXIT:
     // Exit state - nothing to render
@@ -91,21 +97,21 @@ void Menu::processInput()
 {
   switch (currentState) {
   case MenuState::INTRO:
-    if (introScreen != nullptr && introScreen->process(renderer)) {
+    if (introScreen != nullptr && introScreen->process()) {
       currentState = MenuState::MAIN_MENU;
     }
     break;
   case MenuState::MAIN_MENU:
-    mainMenu->process(&currentState, renderer);
+    m_mainMenu->process(&currentState);
     break;
   case MenuState::PROFILE:
-    profileMenu->process(renderer);
+    m_profileMenu->process();
     break;
   case MenuState::SETTINGS:
-    settingsMenu->process(renderer);
+    m_settingsMenu->process();
     break;
   case MenuState::LOBBY:
-    lobbyMenu->process(renderer, &currentState);
+    m_lobbyMenu->process(&currentState);
     break;
   default:
     break;
@@ -113,15 +119,35 @@ void Menu::processInput()
   processBack();
 }
 
-void Menu::cleanup() {}
+void Menu::cleanup()
+{
+  if (menu_font != nullptr && m_renderer != nullptr)
+    m_renderer->freeFont(menu_font);
+  if (moonFloor != nullptr && m_renderer != nullptr)
+    m_renderer->freeTexture(moonFloor);
+  if (moonSky != nullptr && m_renderer != nullptr)
+    m_renderer->freeTexture(moonSky);
+  if (moonMid != nullptr && m_renderer != nullptr)
+    m_renderer->freeTexture(moonMid);
+  if (moonFront != nullptr && m_renderer != nullptr)
+    m_renderer->freeTexture(moonFront);
+  if (moonBack != nullptr && m_renderer != nullptr)
+    m_renderer->freeTexture(moonBack);
+  menu_font = nullptr;
+  moonFloor = nullptr;
+  moonSky = nullptr;
+  moonMid = nullptr;
+  moonFront = nullptr;
+  moonBack = nullptr;
+}
 
 void Menu::setState(MenuState newState)
 {
   currentState = newState;
   
   // Refresh highscores when entering lobby menu
-  if (newState == MenuState::LOBBY && lobbyMenu != nullptr) {
-    lobbyMenu->refreshHighscores();
+  if (newState == MenuState::LOBBY && m_lobbyMenu != nullptr) {
+    m_lobbyMenu->refreshHighscores();
   }
 }
 
@@ -131,17 +157,17 @@ void Menu::drawCenteredText(const std::string &text, int yOffset, const Color &c
     return;
   }
 
-  int winWidth = renderer->getWindowWidth();
-  int winHeight = renderer->getWindowHeight();
+  int winWidth = m_renderer->getWindowWidth();
+  int winHeight = m_renderer->getWindowHeight();
 
   int textWidth = 0;
   int textHeight = 0;
-  renderer->getTextSize(menu_font, text, textWidth, textHeight);
+  m_renderer->getTextSize(menu_font, text, textWidth, textHeight);
 
   int pos_x = (winWidth - textWidth) / 2;
   int pos_y = ((winHeight - textHeight) / 2) + yOffset;
 
-  renderer->drawText(menu_font, text, pos_x, pos_y, color);
+  m_renderer->drawText(menu_font, text, pos_x, pos_y, color);
 }
 
 MenuState Menu::getState() const
@@ -152,7 +178,7 @@ MenuState Menu::getState() const
 bool Menu::shouldStartGame() const
 {
   // Only transition to lobby room when user explicitly chooses to create/join
-  if (lobbyMenu != nullptr && lobbyMenu->shouldEnterLobbyRoom()) {
+  if (m_lobbyMenu != nullptr && m_lobbyMenu->shouldEnterLobbyRoom()) {
     std::cout << "[Menu] shouldStartGame() returning true - User selected lobby action" << '\n';
     return true;
   }
@@ -161,45 +187,45 @@ bool Menu::shouldStartGame() const
 
 bool Menu::isCreatingLobby() const
 {
-  return lobbyMenu != nullptr && lobbyMenu->isCreatingLobby();
+  return m_lobbyMenu != nullptr && m_lobbyMenu->isCreatingLobby();
 }
 
 void Menu::refreshHighscoresIfInLobby()
 {
-  if (currentState == MenuState::LOBBY && lobbyMenu != nullptr) {
-    lobbyMenu->refreshHighscores();
+  if (currentState == MenuState::LOBBY && m_lobbyMenu != nullptr) {
+    m_lobbyMenu->refreshHighscores();
   }
 }
 
 std::string Menu::getLobbyCodeToJoin() const
 {
-  if (lobbyMenu != nullptr) {
-    return lobbyMenu->getLobbyCodeToJoin();
+  if (m_lobbyMenu != nullptr) {
+    return m_lobbyMenu->getLobbyCodeToJoin();
   }
   return "";
 }
 
 void Menu::resetLobbySelection()
 {
-  if (lobbyMenu != nullptr) {
+  if (m_lobbyMenu != nullptr) {
     // Cache the current difficulty before resetting
-    currentDifficulty = lobbyMenu->getSelectedDifficulty();
-    lobbyMenu->resetLobbyRoomFlag();
+    currentDifficulty = m_lobbyMenu->getSelectedDifficulty();
+    m_lobbyMenu->resetLobbyRoomFlag();
   }
 }
 
 Difficulty Menu::getCurrentDifficulty() const
 {
   // Return the actual selected difficulty from lobby menu if available
-  if (lobbyMenu != nullptr) {
-    return lobbyMenu->getSelectedDifficulty();
+  if (m_lobbyMenu != nullptr) {
+    return m_lobbyMenu->getSelectedDifficulty();
   }
   return currentDifficulty;
 }
 
-void Menu::renderMoonParalax(int winWidth, int winHeight, IRenderer *renderer)
+void Menu::renderMoonParalax(int winWidth, int winHeight)
 {
-  float deltaTime = renderer->getDeltaTime();
+  float deltaTime = m_renderer->getDeltaTime();
 
   parallaxOffsetSky += deltaTime * 5.0f;
   parallaxOffsetBack += deltaTime * 15.0f;
@@ -219,34 +245,35 @@ void Menu::renderMoonParalax(int winWidth, int winHeight, IRenderer *renderer)
     parallaxOffsetFloor = 0.0f;
 
   if (moonSky != nullptr) {
-    renderer->drawTextureEx(moonSky, static_cast<int>(parallaxOffsetSky), 0, winWidth, winHeight, 0.0, false, false);
-    renderer->drawTextureEx(moonSky, static_cast<int>(parallaxOffsetSky - winWidth), 0, winWidth, winHeight, 0.0, false,
-                            false);
+    m_renderer->drawTextureEx(moonSky, static_cast<int>(parallaxOffsetSky), 0, winWidth, winHeight, 0.0, false, false);
+    m_renderer->drawTextureEx(moonSky, static_cast<int>(parallaxOffsetSky - winWidth), 0, winWidth, winHeight, 0.0,
+                              false, false);
   }
 
   if (moonBack != nullptr) {
-    renderer->drawTextureEx(moonBack, static_cast<int>(parallaxOffsetBack), 0, winWidth, winHeight, 0.0, false, false);
-    renderer->drawTextureEx(moonBack, static_cast<int>(parallaxOffsetBack - winWidth), 0, winWidth, winHeight, 0.0,
-                            false, false);
+    m_renderer->drawTextureEx(moonBack, static_cast<int>(parallaxOffsetBack), 0, winWidth, winHeight, 0.0, false,
+                              false);
+    m_renderer->drawTextureEx(moonBack, static_cast<int>(parallaxOffsetBack - winWidth), 0, winWidth, winHeight, 0.0,
+                              false, false);
   }
 
   if (moonMid != nullptr) {
-    renderer->drawTextureEx(moonMid, static_cast<int>(parallaxOffsetMid), 0, winWidth, winHeight, 0.0, false, false);
-    renderer->drawTextureEx(moonMid, static_cast<int>(parallaxOffsetMid - winWidth), 0, winWidth, winHeight, 0.0, false,
-                            false);
+    m_renderer->drawTextureEx(moonMid, static_cast<int>(parallaxOffsetMid), 0, winWidth, winHeight, 0.0, false, false);
+    m_renderer->drawTextureEx(moonMid, static_cast<int>(parallaxOffsetMid - winWidth), 0, winWidth, winHeight, 0.0,
+                              false, false);
   }
 
   if (moonFront != nullptr) {
-    renderer->drawTextureEx(moonFront, static_cast<int>(parallaxOffsetFront), 0, winWidth, winHeight, 0.0, false,
-                            false);
-    renderer->drawTextureEx(moonFront, static_cast<int>(parallaxOffsetFront - winWidth), 0, winWidth, winHeight, 0.0,
-                            false, false);
+    m_renderer->drawTextureEx(moonFront, static_cast<int>(parallaxOffsetFront), 0, winWidth, winHeight, 0.0, false,
+                              false);
+    m_renderer->drawTextureEx(moonFront, static_cast<int>(parallaxOffsetFront - winWidth), 0, winWidth, winHeight, 0.0,
+                              false, false);
   }
 
   if (moonFloor != nullptr) {
-    renderer->drawTextureEx(moonFloor, static_cast<int>(parallaxOffsetFloor), 0, winWidth, winHeight, 0.0, false,
-                            false);
-    renderer->drawTextureEx(moonFloor, static_cast<int>(parallaxOffsetFloor - winWidth), 0, winWidth, winHeight, 0.0,
-                            false, false);
+    m_renderer->drawTextureEx(moonFloor, static_cast<int>(parallaxOffsetFloor), 0, winWidth, winHeight, 0.0, false,
+                              false);
+    m_renderer->drawTextureEx(moonFloor, static_cast<int>(parallaxOffsetFloor - winWidth), 0, winWidth, winHeight, 0.0,
+                              false, false);
   }
 }

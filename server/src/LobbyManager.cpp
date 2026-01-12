@@ -14,19 +14,20 @@ bool LobbyManager::createLobby(const std::string &code, GameConfig::Difficulty d
     return false;
   }
 
-  std::cout << "[LobbyManager] Creating lobby '" << code << "' with difficulty " << static_cast<int>(difficulty) << '\n';
+  std::cout << "[LobbyManager] Creating lobby '" << code << "' with difficulty " << static_cast<int>(difficulty)
+            << '\n';
 
   // Pass the network manager (if any) to the lobby so it can send direct messages
   m_lobbies[code] = std::make_unique<Lobby>(code, m_networkManager);
-  
+
   // Set the difficulty before the game starts
   m_lobbies[code]->setDifficulty(difficulty);
-  
+
   std::cout << "[LobbyManager] Created lobby: " << code << '\n';
   return true;
 }
 
-bool LobbyManager::joinLobby(const std::string &code, std::uint32_t clientId)
+bool LobbyManager::joinLobby(const std::string &code, std::uint32_t clientId, bool asSpectator)
 {
   auto lobby_it = m_lobbies.find(code);
   if (lobby_it == m_lobbies.end()) {
@@ -36,7 +37,7 @@ bool LobbyManager::joinLobby(const std::string &code, std::uint32_t clientId)
 
   leaveLobby(clientId);
 
-  if (lobby_it->second->addClient(clientId)) {
+  if (lobby_it->second->addClient(clientId, asSpectator)) {
     m_clientToLobby[clientId] = code;
     return true;
   }

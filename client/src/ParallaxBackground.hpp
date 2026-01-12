@@ -6,6 +6,7 @@
 #pragma once
 #include "../interface/Color.hpp"
 #include "../interface/IRenderer.hpp"
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -14,10 +15,10 @@
  * @brief Represents a procedural star in the background
  */
 struct Star {
-  float x = 0.0f;     ///< X position
-  float y = 0.0f;     ///< Y position
+  float x = 0.0f; ///< X position
+  float y = 0.0f; ///< Y position
   float radius = 1.0f; ///< Star radius
-  Color color;        ///< Star color
+  Color color; ///< Star color
 };
 
 /**
@@ -25,15 +26,15 @@ struct Star {
  * @brief Background layer with infinite scrolling
  */
 struct ParallaxLayer {
-  void *texture = nullptr;      ///< Layer texture
-  float scrollSpeed = 0.0f;     ///< Scroll speed in pixels/second
-  float offsetX = 0.0f;         ///< Current horizontal offset
-  int offsetY = 0;              ///< Vertical offset
-  float scale = 1.0f;           ///< Texture scale
-  int textureWidth = 0;         ///< Texture width
-  int textureHeight = 0;        ///< Texture height
-  std::vector<Star> stars;      ///< Procedural stars (if used)
-  bool isProcedural = false;    ///< Whether layer is procedurally generated
+  void *texture = nullptr; ///< Layer texture
+  float scrollSpeed = 0.0f; ///< Scroll speed in pixels/second
+  float offsetX = 0.0f; ///< Current horizontal offset
+  int offsetY = 0; ///< Vertical offset
+  float scale = 1.0f; ///< Texture scale
+  int textureWidth = 0; ///< Texture width
+  int textureHeight = 0; ///< Texture height
+  std::vector<Star> stars; ///< Procedural stars (if used)
+  bool isProcedural = false; ///< Whether layer is procedurally generated
 };
 
 /**
@@ -48,26 +49,26 @@ class ParallaxBackground
 {
 public:
   // R-Type inspired high-speed parallax configuration
-  static constexpr int SLOW_STAR_COUNT = 120;       ///< Slow star layer count
-  static constexpr float SLOW_SPEED = 100.0F;       ///< Slow layer speed
-  static constexpr float SLOW_MIN_RADIUS = 1.5F;    ///< Slow star min radius
-  static constexpr float SLOW_MAX_RADIUS = 2.5F;    ///< Slow star max radius
+  static constexpr int SLOW_STAR_COUNT = 120; ///< Slow star layer count
+  static constexpr float SLOW_SPEED = 100.0F; ///< Slow layer speed
+  static constexpr float SLOW_MIN_RADIUS = 1.5F; ///< Slow star min radius
+  static constexpr float SLOW_MAX_RADIUS = 2.5F; ///< Slow star max radius
 
-  static constexpr int MEDIUM_STAR_COUNT = 80;      ///< Medium star layer count
-  static constexpr float MEDIUM_SPEED = 280.0F;     ///< Medium layer speed
-  static constexpr float MEDIUM_MIN_RADIUS = 2.0F;  ///< Medium star min radius
-  static constexpr float MEDIUM_MAX_RADIUS = 3.5F;  ///< Medium star max radius
+  static constexpr int MEDIUM_STAR_COUNT = 80; ///< Medium star layer count
+  static constexpr float MEDIUM_SPEED = 280.0F; ///< Medium layer speed
+  static constexpr float MEDIUM_MIN_RADIUS = 2.0F; ///< Medium star min radius
+  static constexpr float MEDIUM_MAX_RADIUS = 3.5F; ///< Medium star max radius
 
-  static constexpr int FAST_STAR_COUNT = 50;        ///< Fast star layer count
-  static constexpr float FAST_SPEED = 550.0F;       ///< Fast layer speed
-  static constexpr float FAST_MIN_RADIUS = 2.5F;    ///< Fast star min radius
-  static constexpr float FAST_MAX_RADIUS = 4.5F;    ///< Fast star max radius
+  static constexpr int FAST_STAR_COUNT = 50; ///< Fast star layer count
+  static constexpr float FAST_SPEED = 550.0F; ///< Fast layer speed
+  static constexpr float FAST_MIN_RADIUS = 2.5F; ///< Fast star min radius
+  static constexpr float FAST_MAX_RADIUS = 4.5F; ///< Fast star max radius
 
   /**
    * @brief Construct parallax background
    * @param renderer Renderer interface
    */
-  ParallaxBackground(IRenderer *renderer);
+  ParallaxBackground(std::shared_ptr<IRenderer> renderer);
   ~ParallaxBackground();
 
   /**
@@ -122,7 +123,7 @@ public:
   void addStarLayerWithVariedColors(int starCount, float scrollSpeed, float minRadius, float maxRadius);
 
 private:
-  IRenderer *renderer;
+  std::shared_ptr<IRenderer> renderer;
   std::vector<ParallaxLayer> layers;
   int windowWidth = 0;
   int windowHeight = 0;

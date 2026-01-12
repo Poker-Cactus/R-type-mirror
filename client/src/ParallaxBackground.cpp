@@ -12,7 +12,10 @@
 #include <iostream>
 #include <random>
 
-ParallaxBackground::ParallaxBackground(IRenderer *renderer) : renderer(renderer), windowWidth(0), windowHeight(0) {}
+ParallaxBackground::ParallaxBackground(std::shared_ptr<IRenderer> renderer)
+    : renderer(renderer), windowWidth(0), windowHeight(0)
+{
+}
 
 ParallaxBackground::~ParallaxBackground()
 {

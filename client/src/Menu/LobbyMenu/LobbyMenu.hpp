@@ -20,7 +20,7 @@
  * @brief Window size container to prevent parameter confusion
  */
 struct WindowDimensions {
-  int width;  ///< Window width in pixels
+  int width; ///< Window width in pixels
   int height; ///< Window height in pixels
 };
 
@@ -30,8 +30,8 @@ struct WindowDimensions {
  */
 enum class LobbyMenuOption : std::uint8_t {
   CREATE_LOBBY, ///< Create new lobby
-  JOIN_LOBBY,   ///< Join existing lobby
-  BACK          ///< Return to main menu
+  JOIN_LOBBY, ///< Join existing lobby
+  BACK ///< Return to main menu
 };
 
 /**
@@ -44,7 +44,7 @@ enum class LobbyMenuOption : std::uint8_t {
 class LobbyMenu
 {
 public:
-  LobbyMenu() = default;
+  LobbyMenu(std::shared_ptr<IRenderer> renderer);
   ~LobbyMenu();
 
   /**
@@ -52,21 +52,21 @@ public:
    * @param renderer Renderer interface
    * @param settings Game settings reference
    */
-  void init(IRenderer *renderer, Settings &settings);
+  void init(Settings &settings);
 
   /**
    * @brief Render the lobby menu
    * @param windowDims Window dimensions
    * @param renderer Renderer interface
    */
-  void render(const WindowDimensions &windowDims, IRenderer *renderer);
+  void render(const WindowDimensions &windowDims);
 
   /**
    * @brief Process user input
    * @param renderer Renderer interface
    * @param currentState Pointer to current menu state
    */
-  void process(IRenderer *renderer, MenuState *currentState);
+  void process(MenuState *currentState);
 
   /**
    * @brief Clean up lobby menu resources
@@ -109,14 +109,16 @@ public:
   [[nodiscard]] Difficulty getSelectedDifficulty() const { return m_selectedDifficulty; }
 
 private:
-  void renderBackground(const WindowDimensions &windowDims, IRenderer *renderer);
-  void renderMenuOptions(const WindowDimensions &windowDims, IRenderer *renderer);
-  void renderLobbyCodeInput(const WindowDimensions &windowDims, IRenderer *renderer);
-  void renderDifficultySelection(const WindowDimensions &windowDims, IRenderer *renderer);
-  void renderHighscores(const WindowDimensions &windowDims, IRenderer *renderer);
-  void handleMenuNavigation(IRenderer *renderer);
-  void handleDifficultyNavigation(IRenderer *renderer);
-  void handleTextInput(IRenderer *renderer);
+  std::shared_ptr<IRenderer> m_renderer;
+
+  void renderBackground(const WindowDimensions &windowDims);
+  void renderMenuOptions(const WindowDimensions &windowDims);
+  void renderLobbyCodeInput(const WindowDimensions &windowDims);
+  void renderDifficultySelection(const WindowDimensions &windowDims);
+  void renderHighscores(const WindowDimensions &windowDims);
+  void handleMenuNavigation();
+  void handleDifficultyNavigation();
+  void handleTextInput();
   void selectCurrentOption(MenuState *currentState);
   void selectDifficultyOption();
 
@@ -124,28 +126,28 @@ private:
   Settings *m_settings = nullptr;
 
   // Assets
-  void *m_font = nullptr;
-  void *m_titleFont = nullptr;
-  void *m_moonSky = nullptr;
-  void *m_moonBack = nullptr;
-  void *m_moonMid = nullptr;
-  void *m_moonFront = nullptr;
-  void *m_moonFloor = nullptr;
+  void *m_font;
+  void *m_titleFont;
+  void *m_moonSky;
+  void *m_moonBack;
+  void *m_moonMid;
+  void *m_moonFront;
+  void *m_moonFloor;
 
   // Parallax offsets
-  float m_parallaxOffsetSky = 0.0F;
-  float m_parallaxOffsetBack = 0.0F;
-  float m_parallaxOffsetMid = 0.0F;
-  float m_parallaxOffsetFront = 0.0F;
-  float m_parallaxOffsetFloor = 0.0F;
+  float m_parallaxOffsetSky;
+  float m_parallaxOffsetBack;
+  float m_parallaxOffsetMid;
+  float m_parallaxOffsetFront;
+  float m_parallaxOffsetFloor;
 
   // Menu state
   std::vector<std::string> m_menuItems = {"Create Lobby", "Join Lobby", "Back"};
-  std::size_t m_currentIndex = 0;
-  bool m_isEnteringCode = false;
+  std::size_t m_currentIndex;
+  bool m_isEnteringCode;
   std::string m_lobbyCodeInput;
   static constexpr std::size_t MAX_LOBBY_CODE_LENGTH = 10;
-  
+
   // Difficulty selection
   bool m_isSelectingDifficulty = false;
   std::vector<std::string> m_difficultyItems = {"Easy", "Medium", "Expert"};
@@ -153,8 +155,8 @@ private:
   Difficulty m_selectedDifficulty = Difficulty::MEDIUM;
 
   // Transition flags
-  bool m_shouldEnterLobbyRoom = false;
-  bool m_isCreatingLobby = false;
+  bool m_shouldEnterLobbyRoom;
+  bool m_isCreatingLobby;
 
   // Network
   std::shared_ptr<INetworkManager> m_networkManager;

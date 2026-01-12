@@ -1,3 +1,9 @@
+/*
+** EPITECH PROJECT, 2025
+** R-type-mirror
+** File description:
+** ProfileMenu.hpp
+*/
 /**
  * @file ProfileMenu.hpp
  * @brief Player profile menu screen
@@ -6,6 +12,7 @@
 #pragma once
 #include "../../../interface/IRenderer.hpp"
 #include "../../../include/Settings.hpp"
+#include <memory>
 
 /**
  * @class ProfileMenu
@@ -14,29 +21,27 @@
 class ProfileMenu
 {
 public:
-  ProfileMenu() = default;
-  ~ProfileMenu() {}
+  ProfileMenu();
+  ~ProfileMenu();
 
   /**
    * @brief Initialize profile menu resources
    * @param renderer Renderer interface
    * @param settings Game settings reference
    */
-  void init(IRenderer *renderer, Settings &settings);
+  void init(Settings &settings);
 
   /**
    * @brief Render the profile menu
    * @param winWidth Window width
    * @param winHeight Window height
-   * @param renderer Renderer interface
    */
-  void render(int winWidth, int winHeight, IRenderer *renderer);
+  void render(int winWidth, int winHeight);
 
   /**
    * @brief Process user input
-   * @param renderer Renderer interface
    */
-  void process(IRenderer *renderer);
+  void process();
 
   /**
    * @brief Check if the profile menu is currently in editing mode
@@ -45,10 +50,11 @@ public:
   [[nodiscard]] bool isEditing() const { return isEditingUsername; }
 
 private:
-  Settings *settings = nullptr;
+  Settings *m_settings = nullptr;
   void *font = nullptr;
   void *titleFont = nullptr;
   std::string currentUsername;
   bool isEditingUsername = false;
   int selectedOption = 0; // 0 = username, 1 = save
+  std::shared_ptr<IRenderer> m_renderer;
 };
