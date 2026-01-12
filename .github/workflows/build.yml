@@ -2,7 +2,7 @@ name: Build and Test
 
 on:
   push:
-    branches: [ main, develop, fix/wondowsBuild ]
+    branches: [ main, develop, '*please-give-me-ci', '**/*please-give-me-ci' ]
   pull_request:
     branches: [ main, develop ]
 

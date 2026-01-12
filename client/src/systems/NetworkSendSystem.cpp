@@ -56,7 +56,7 @@ ecs::ComponentSignature NetworkSendSystem::getSignature() const
   return sig;
 }
 
-void NetworkSendSystem::sendInputToServer(ecs::Entity entity, const ecs::Input &input)
+void NetworkSendSystem::sendInputToServer(UNUSED ecs::Entity entity, const ecs::Input &input)
 {
   struct InputState {
     bool up;
@@ -112,9 +112,15 @@ void NetworkSendSystem::sendSetDifficulty(Difficulty diff)
   message["type"] = "set_difficulty";
   std::string diffStr;
   switch (diff) {
-  case Difficulty::EASY: diffStr = "easy"; break;
-  case Difficulty::MEDIUM: diffStr = "medium"; break;
-  case Difficulty::EXPERT: diffStr = "expert"; break;
+  case Difficulty::EASY:
+    diffStr = "easy";
+    break;
+  case Difficulty::MEDIUM:
+    diffStr = "medium";
+    break;
+  case Difficulty::EXPERT:
+    diffStr = "expert";
+    break;
   }
   message["difficulty"] = diffStr;
 

@@ -1,3 +1,9 @@
+/*
+** EPITECH PROJECT, 2025
+** R-type-mirror
+** File description:
+** ProfileMenu.hpp
+*/
 /**
  * @file ProfileMenu.hpp
  * @brief Player profile menu screen
@@ -5,6 +11,7 @@
 
 #pragma once
 #include "../../../interface/IRenderer.hpp"
+#include <memory>
 
 /**
  * @class ProfileMenu
@@ -13,28 +20,27 @@
 class ProfileMenu
 {
 public:
-  ProfileMenu() = default;
-  ~ProfileMenu() {}
+  ProfileMenu(std::shared_ptr<IRenderer> renderer);
+  ~ProfileMenu();
 
   /**
    * @brief Initialize profile menu resources
    * @param renderer Renderer interface
    */
-  void init(IRenderer *renderer);
+  void init();
 
   /**
    * @brief Render the profile menu
    * @param winWidth Window width
    * @param winHeight Window height
-   * @param renderer Renderer interface
    */
-  void render(int winWidth, int winHeight, IRenderer *renderer);
+  void render(int winWidth, int winHeight);
 
   /**
    * @brief Process user input
-   * @param renderer Renderer interface
    */
-  void process(IRenderer *renderer);
+  void process();
 
 private:
+  std::shared_ptr<IRenderer> m_renderer;
 };

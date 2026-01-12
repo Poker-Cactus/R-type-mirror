@@ -19,8 +19,9 @@
 #include "../interface/KeyCodes.hpp"
 #include <iostream>
 
-PlayingState::PlayingState(IRenderer *renderer, const std::shared_ptr<ecs::World> &world, Settings &settings)
-    : renderer(renderer), world(world), background(nullptr), settings(settings)
+PlayingState::PlayingState(std::shared_ptr<IRenderer> renderer, const std::shared_ptr<ecs::World> &world,
+                           Settings &settings)
+    : renderer(std::move(renderer)), world(world), background(nullptr), settings(settings)
 {
 }
 
@@ -38,7 +39,7 @@ bool PlayingState::init()
 
   std::cout << "[PlayingState] Initializing with m_playerHealth = " << m_playerHealth << '\n';
 
-  settingsMenu = new SettingsMenu();
+  settingsMenu = std::make_shared<SettingsMenu>(renderer);
 
   // Initialiser le background parallaxe
   background = std::make_unique<ParallaxBackground>(renderer);
@@ -149,11 +150,31 @@ void PlayingState::render()
         } else if (sprite.spriteId == ecs::SpriteId::PROJECTILE) {
           frameWidth = 18;
           frameHeight = 14;
+        } else if (sprite.spriteId == ecs::SpriteId::ENEMY_YELLOW) {
+          // Yellow Bee: 256x64 with 2 rows x 8 columns = 16 frames
+          frameWidth = 256 / 8; // 32px per frame
+          frameHeight = 64 / 2; // 32px per frame (2 rows)
         }
 
         if (frameWidth > 0 && frameHeight > 0) {
           // Calculate source rectangle based on current frame
-          int srcX = sprite.currentFrame * frameWidth;
+          int srcX = 0;
+          int srcY = 0;
+
+          // For sprites with multiple rows (like Yellow Bee: 2 rows x 8 columns)
+          if (sprite.spriteId == ecs::SpriteId::ENEMY_YELLOW) {
+            // Yellow Bee: 16 frames in 2 rows of 8
+            int framesPerRow = 8;
+            int row = sprite.currentFrame / framesPerRow;
+            int col = sprite.currentFrame % framesPerRow;
+            srcX = col * frameWidth;
+            srcY = row * frameHeight;
+          } else {
+            // Single row spritesheets (ENEMY_SHIP, PLAYER_SHIP, PROJECTILE)
+            srcX = sprite.currentFrame * frameWidth;
+            srcY = 0;
+          }
+
           // Apply transform scale to sprite dimensions
           int scaledWidth = static_cast<int>(sprite.width * transformComponent.scale);
           int scaledHeight = static_cast<int>(sprite.height * transformComponent.scale);
@@ -172,7 +193,8 @@ void PlayingState::render()
           }
 
           renderer->drawTextureRegion(
-            textureIt->second, {.x = srcX, .y = 0, .width = frameWidth, .height = frameHeight}, // Source: current frame
+            textureIt->second,
+            {.x = srcX, .y = srcY, .width = frameWidth, .height = frameHeight}, // Source: current frame
             {.x = static_cast<int>(transformComponent.x),
              .y = static_cast<int>(transformComponent.y),
              .width = scaledWidth,
@@ -209,6 +231,31 @@ void PlayingState::render()
              .y = static_cast<int>(transformComponent.y),
              .width = scaledWidth,
              .height = scaledHeight}); // Destination with scale
+        } else if (sprite.spriteId == ecs::SpriteId::ENEMY_YELLOW) {
+          // Yellow Bee: Use frame 8 (first of bottom row = left-facing)
+          constexpr int YELLOW_BEE_FRAME_WIDTH = 32;
+          constexpr int YELLOW_BEE_FRAME_HEIGHT = 32;
+          constexpr int YELLOW_BEE_FRAME = 8; // Bottom row, first frame
+          int framesPerRow = 8;
+          int row = YELLOW_BEE_FRAME / framesPerRow;
+          int col = YELLOW_BEE_FRAME % framesPerRow;
+          int srcX = col * YELLOW_BEE_FRAME_WIDTH;
+          int srcY = row * YELLOW_BEE_FRAME_HEIGHT;
+
+          int scaledWidth = static_cast<int>(sprite.width * transformComponent.scale);
+          int scaledHeight = static_cast<int>(sprite.height * transformComponent.scale);
+
+          // Calculate rotation angle based on velocity
+          float rotation = transformComponent.rotation;
+
+          renderer->drawTextureRegionEx(
+            textureIt->second,
+            {.x = srcX, .y = srcY, .width = YELLOW_BEE_FRAME_WIDTH, .height = YELLOW_BEE_FRAME_HEIGHT},
+            {.x = static_cast<int>(transformComponent.x),
+             .y = static_cast<int>(transformComponent.y),
+             .width = scaledWidth,
+             .height = scaledHeight},
+            rotation, false, false);
         } else {
           // Other sprites: draw full texture
           int scaledWidth = static_cast<int>(sprite.width * transformComponent.scale);
@@ -222,6 +269,7 @@ void PlayingState::render()
       constexpr Color COLOR_WHITE = {.r = 255, .g = 255, .b = 255, .a = 255};
       constexpr Color COLOR_PLAYER_BLUE = {.r = 100, .g = 150, .b = 255, .a = 255};
       constexpr Color COLOR_ENEMY_RED = {.r = 255, .g = 100, .b = 100, .a = 255};
+      constexpr Color COLOR_ENEMY_YELLOW = {.r = 255, .g = 255, .b = 50, .a = 255};
       constexpr Color COLOR_PROJECTILE_YELLOW = {.r = 255, .g = 255, .b = 100, .a = 255};
       constexpr Color COLOR_POWERUP_GREEN = {.r = 100, .g = 255, .b = 100, .a = 255};
       constexpr Color COLOR_EXPLOSION_ORANGE = {.r = 255, .g = 150, .b = 50, .a = 255};
@@ -235,6 +283,9 @@ void PlayingState::render()
         break;
       case ecs::SpriteId::ENEMY_SHIP:
         color = COLOR_ENEMY_RED;
+        break;
+      case ecs::SpriteId::ENEMY_YELLOW:
+        color = COLOR_ENEMY_YELLOW;
         break;
       case ecs::SpriteId::PROJECTILE:
         color = COLOR_PROJECTILE_YELLOW;
@@ -282,10 +333,10 @@ void PlayingState::renderHUD()
     // Each 100 HP = 1 full heart
     // Use floating point for precise heart calculation
     float heartsValue = static_cast<float>(m_playerHealth) / 100.0f;
-    
+
     // Clamp to valid range (0.0 to 3.0 hearts max)
     heartsValue = std::max(0.0f, std::min(3.0f, heartsValue));
-    
+
     // Convert hearts value to row index (0-6)
     // 3.0 hearts = row 0 (full)
     // 2.5 hearts = row 1
@@ -294,7 +345,7 @@ void PlayingState::renderHUD()
     // 1.0 hearts = row 4
     // 0.5 hearts = row 5
     // 0.0 hearts = row 6 (empty)
-    
+
     int heartRow = 0;
     if (heartsValue >= 2.5f) {
       heartRow = 0; // 2.5-3.0 hearts: full
@@ -311,16 +362,18 @@ void PlayingState::renderHUD()
     } else {
       heartRow = 6; // 0 hearts: empty
     }
-    
+
     // Calculate source Y position with rounding for exact pixel alignment
     int sourceY = static_cast<int>(std::round(heartRow * HEART_ROW_HEIGHT));
-    
+
     // Draw the appropriate heart row
     renderer->drawTextureRegion(
       m_heartsTexture,
       {.x = 0, .y = sourceY, .width = HEARTS_TEXTURE_WIDTH, .height = static_cast<int>(std::round(HEART_ROW_HEIGHT))},
-      {.x = HEARTS_X, .y = HEARTS_Y, .width = HEARTS_TEXTURE_WIDTH * DISPLAY_SCALE, .height = static_cast<int>(std::round(HEART_ROW_HEIGHT)) * DISPLAY_SCALE}
-    );
+      {.x = HEARTS_X,
+       .y = HEARTS_Y,
+       .width = HEARTS_TEXTURE_WIDTH * DISPLAY_SCALE,
+       .height = static_cast<int>(std::round(HEART_ROW_HEIGHT)) * DISPLAY_SCALE});
   }
 
   // Score text (only if font is loaded)
@@ -478,9 +531,6 @@ void PlayingState::processInput()
 {
   if (renderer == nullptr)
     return;
-
-  bool up = renderer->isKeyPressed(settings.up);
-  bool down = renderer->isKeyPressed(settings.down);
 
   if (renderer->isKeyPressed(settings.up)) {
     m_returnUp = true;
@@ -643,7 +693,20 @@ void PlayingState::loadSpriteTextures()
     std::cerr << "[PlayingState] ✗ Failed to load explosion.png: " << e.what() << '\n';
   }
 
-  constexpr int EXPECTED_TEXTURE_COUNT = 5;
+  // ENEMY_YELLOW = 6 (animated spritesheet: 256x64, 2 rows x 8 columns = 16 frames)
+  try {
+    void *enemy_yellow_tex = renderer->loadTexture(resolveAssetPath("client/assets/sprites/enemy_yellow.gif"));
+    if (enemy_yellow_tex != nullptr) {
+      m_spriteTextures[ecs::SpriteId::ENEMY_YELLOW] = enemy_yellow_tex;
+      std::cout << "[PlayingState] ✓ Loaded enemy_yellow.gif" << '\n';
+    } else {
+      std::cerr << "[PlayingState] ✗ Failed to load enemy_yellow.gif (returned null)" << '\n';
+    }
+  } catch (const std::exception &e) {
+    std::cerr << "[PlayingState] ✗ Failed to load enemy_yellow.gif: " << e.what() << '\n';
+  }
+
+  constexpr int EXPECTED_TEXTURE_COUNT = 6;
   std::cout << "[PlayingState] Successfully loaded " << m_spriteTextures.size() << " / " << EXPECTED_TEXTURE_COUNT
             << " sprite textures" << '\n';
   if (m_spriteTextures.size() < EXPECTED_TEXTURE_COUNT) {

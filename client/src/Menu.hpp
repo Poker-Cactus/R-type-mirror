@@ -1,15 +1,22 @@
+/*
+** EPITECH PROJECT, 2025
+** R-type-mirror
+** File description:
+** Menu.hpp
+*/
 /**
  * @file Menu.hpp
  * @brief Main menu system with state management
  */
 
 #pragma once
+#include "../../common/include/Common.hpp"
 #include "Menu/IntroScreen/IntroScreen.hpp"
 #include "Menu/LobbyMenu/LobbyMenu.hpp"
 #include "Menu/MainMenu/MainMenu.hpp"
 #include "Menu/ProfileMenu/ProfileMenu.hpp"
 #include "Menu/SettingsMenu/SettingsMenu.hpp"
-#include "../../common/include/Common.hpp"
+#include <memory>
 #include <string>
 
 class Settings;
@@ -30,7 +37,7 @@ public:
    * @param renderer Pointer to the renderer interface
    * @param settings Reference to game settings
    */
-  Menu(IRenderer *renderer, Settings &settings);
+  Menu(std::shared_ptr<IRenderer> renderer, Settings &settings);
   ~Menu();
 
   /**
@@ -83,7 +90,7 @@ public:
    */
   void resetLobbySelection();
   [[nodiscard]] Difficulty getCurrentDifficulty() const { return currentDifficulty; }
-  [[nodiscard]] LobbyMenu *getLobbyMenu() const { return lobbyMenu; }
+  [[nodiscard]] LobbyMenu *getLobbyMenu() const { return m_lobbyMenu.get(); }
 
   /**
    * @brief Process user input for current menu state
@@ -129,29 +136,29 @@ private:
    * @param winHeight Window height
    * @param renderer Renderer interface
    */
-  void renderMoonParalax(int winWidth, int winHeight, IRenderer *renderer);
+  void renderMoonParalax(int winWidth, int winHeight);
 
-  IRenderer *renderer;       ///< Renderer interface
-  Settings &settings;        ///< Game settings reference
-  IntroScreen *introScreen = nullptr;   ///< Intro screen
-  MainMenu *mainMenu = nullptr;     ///< Main menu screen
-  ProfileMenu *profileMenu = nullptr;   ///< Profile menu screen
-  SettingsMenu *settingsMenu = nullptr; ///< Settings menu screen
-  LobbyMenu *lobbyMenu = nullptr;       ///< Lobby menu screen
+  std::shared_ptr<IRenderer> m_renderer;
+  Settings &settings; ///< Game settings reference
+  std::shared_ptr<MainMenu> m_mainMenu;
+  std::shared_ptr<ProfileMenu> m_profileMenu;
+  std::shared_ptr<SettingsMenu> m_settingsMenu;
+  std::shared_ptr<LobbyMenu> m_lobbyMenu;
+  std::shared_ptr<IntroScreen> introScreen; ///< Intro screen
 
   // Moon Parallax offsets
-  float backgroundOffsetX = 0.0f;   ///< Background horizontal offset
-  float parallaxOffsetSky = 0.0f;   ///< Sky layer offset
-  float parallaxOffsetBack = 0.0f;  ///< Back layer offset
-  float parallaxOffsetMid = 0.0f;   ///< Middle layer offset
+  float backgroundOffsetX = 0.0f; ///< Background horizontal offset
+  float parallaxOffsetSky = 0.0f; ///< Sky layer offset
+  float parallaxOffsetBack = 0.0f; ///< Back layer offset
+  float parallaxOffsetMid = 0.0f; ///< Middle layer offset
   float parallaxOffsetFront = 0.0f; ///< Front layer offset
   float parallaxOffsetFloor = 0.0f; ///< Floor layer offset
 
-  void *moonFloor = nullptr;  ///< Floor texture
-  void *moonSky = nullptr;    ///< Sky texture
-  void *moonMid = nullptr;    ///< Middle layer texture
-  void *moonFront = nullptr;  ///< Front layer texture
-  void *moonBack = nullptr;   ///< Back layer texture
+  void *moonFloor = nullptr; ///< Floor texture
+  void *moonSky = nullptr; ///< Sky texture
+  void *moonMid = nullptr; ///< Middle layer texture
+  void *moonFront = nullptr; ///< Front layer texture
+  void *moonBack = nullptr; ///< Back layer texture
 
   void *menu_font = nullptr;
   Difficulty currentDifficulty = Difficulty::MEDIUM;

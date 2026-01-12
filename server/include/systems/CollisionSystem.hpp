@@ -12,6 +12,7 @@
 #include "../../../engineCore/include/ecs/ISystem.hpp"
 #include "../../../engineCore/include/ecs/World.hpp"
 #include "../../../engineCore/include/ecs/components/Collider.hpp"
+#include "../../../engineCore/include/ecs/components/Sprite.hpp"
 #include "../../../engineCore/include/ecs/components/Transform.hpp"
 #include "../../../engineCore/include/ecs/events/GameEvents.hpp"
 #include "ecs/ComponentSignature.hpp"
@@ -58,6 +59,13 @@ public:
         const auto &colliderA = world.getComponent<ecs::Collider>(entityA);
         const auto &colliderB = world.getComponent<ecs::Collider>(entityB);
 
+        // Skip collision if both entities are enemies
+        bool isEnemyA = isEnemy(world, entityA);
+        bool isEnemyB = isEnemy(world, entityB);
+        if (isEnemyA && isEnemyB) {
+          continue; // Enemies don't collide with each other
+        }
+
         if (checkCollision(transformA, colliderA, transformB, colliderB)) {
           // Emit collision event
           ecs::CollisionEvent event(entityA, entityB);
@@ -76,6 +84,18 @@ public:
   }
 
 private:
+  /**
+   * @brief Check if an entity is an enemy based on its sprite ID
+   */
+  static bool isEnemy(ecs::World &world, ecs::Entity entity)
+  {
+    if (!world.hasComponent<ecs::Sprite>(entity)) {
+      return false;
+    }
+    const auto &sprite = world.getComponent<ecs::Sprite>(entity);
+    return sprite.spriteId == ecs::SpriteId::ENEMY_SHIP || sprite.spriteId == ecs::SpriteId::ENEMY_YELLOW;
+  }
+
   static bool checkCollision(const ecs::Transform &transA, const ecs::Collider &colA, const ecs::Transform &transB,
                              const ecs::Collider &colB)
   {

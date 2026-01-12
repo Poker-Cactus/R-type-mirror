@@ -15,14 +15,14 @@
 #include <span>
 
 Game::Game()
-    : module(nullptr), renderer(nullptr), isRunning(false), currentState(GameState::MENU), m_serverHost("127.0.0.1"),
-      m_serverPort("4242")
+    : module(nullptr), renderer(nullptr), m_serverHost("127.0.0.1"), m_serverPort("4242"), isRunning(false),
+      currentState(GameState::MENU)
 {
 }
 
 Game::Game(const std::string &host, const std::string &port)
-    : module(nullptr), renderer(nullptr), isRunning(false), currentState(GameState::MENU), m_serverHost(host),
-      m_serverPort(port)
+    : module(nullptr), renderer(nullptr), m_serverHost(host), m_serverPort(port), isRunning(false),
+      currentState(GameState::MENU)
 {
 }
 
@@ -63,7 +63,11 @@ bool Game::init()
       return false;
     }
 
-    renderer = module->create();
+    renderer = std::shared_ptr<IRenderer>(module->create(), [this](IRenderer *ptr) {
+      if (module) {
+        module->destroy(ptr);
+      }
+    });
 
     if (renderer == nullptr) {
       std::cerr << "[Game::init] ERROR: Renderer is null" << '\n';
@@ -167,11 +171,6 @@ void Game::shutdown()
   // Notify server that we're leaving before shutting down
   sendLeaveToServer();
 
-  if (menu) {
-    menu->cleanup();
-    menu.reset();
-  }
-
   if (lobbyRoomState) {
     lobbyRoomState->cleanup();
     lobbyRoomState.reset();
@@ -182,15 +181,20 @@ void Game::shutdown()
     playingState.reset();
   }
 
+  if (menu) {
+    menu->cleanup();
+    menu.reset();
+    // Renderer will be automatically destroyed by shared_ptr when all references are gone
+  }
+
   if (m_networkManager) {
     m_networkManager->stop();
     m_networkManager.reset();
   }
   m_world.reset();
-  if (module && renderer != nullptr) {
-    module->destroy(renderer);
-    renderer = nullptr;
-  }
+
+  // Reset renderer - custom deleter will call module->destroy
+  renderer.reset();
   module.reset();
   isRunning = false;
 }
@@ -304,7 +308,6 @@ void Game::handleLobbyRoomTransition()
     return;
   }
 
-
   // Get lobby info from menu
   const bool isCreating = menu->isCreatingLobby();
   const std::string lobbyCode = menu->getLobbyCodeToJoin();
@@ -359,7 +362,7 @@ void Game::handleLobbyRoomTransition()
       }
     });
     // Player-dead: server told us our player is dead and we should return to menu
-    networkReceiveSystem->setPlayerDeadCallback([this](const nlohmann::json &msg) {
+    networkReceiveSystem->setPlayerDeadCallback([this](UNUSED const nlohmann::json &msg) {
       std::cout << "[Game] Received player_dead from server - returning to menu" << std::endl;
 
       // Stop accepting snapshots
@@ -479,12 +482,10 @@ void Game::updatePlayerInput()
   }
 
   auto &input = m_world->getComponent<ecs::Input>(m_inputEntity);
-  input.up = renderer->isKeyPressed(settings.up) || renderer->isKeyPressed(KeyCode::KEY_W) ||
-    renderer->isKeyPressed(KeyCode::KEY_Z);
-  input.down = renderer->isKeyPressed(settings.down) || renderer->isKeyPressed(KeyCode::KEY_S);
-  input.left = renderer->isKeyPressed(settings.left) || renderer->isKeyPressed(KeyCode::KEY_A) ||
-    renderer->isKeyPressed(KeyCode::KEY_Q);
-  input.right = renderer->isKeyPressed(settings.right) || renderer->isKeyPressed(KeyCode::KEY_D);
+  input.up = renderer->isKeyPressed(settings.up);
+  input.down = renderer->isKeyPressed(settings.down);
+  input.left = renderer->isKeyPressed(settings.left);
+  input.right = renderer->isKeyPressed(settings.right);
   input.shoot = renderer->isKeyPressed(settings.shoot);
 }
 

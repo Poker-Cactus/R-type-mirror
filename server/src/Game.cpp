@@ -6,8 +6,10 @@
 */
 
 #include "Game.hpp"
-#include "systems/SpawnSystem.hpp"
 #include "../../engineCore/include/ecs/EngineComponents.hpp"
+#include "../include/config/EnemyConfig.hpp"
+#include "../include/config/LevelConfig.hpp"
+#include "systems/SpawnSystem.hpp"
 #include <chrono>
 #include <cstdint>
 #include <memory>
@@ -40,7 +42,39 @@ Game::Game()
   world->registerSystem<server::EntityLifetimeSystem>();
   world->registerSystem<server::LifetimeSystem>();
 
+  // Initialize systems first
   initializeSystems();
+
+  // Load enemy configurations AFTER initialization
+  m_enemyConfigManager = std::make_shared<server::EnemyConfigManager>();
+  if (m_enemyConfigManager->loadFromFile("server/config/enemies.json")) {
+    spawnSystem->setEnemyConfigManager(m_enemyConfigManager);
+
+    // Pass enemy config manager to lobby manager
+    m_lobbyManager.setEnemyConfigManager(m_enemyConfigManager);
+
+    std::cout << "[Game] Enemy configurations loaded successfully" << std::endl;
+  } else {
+    std::cerr << "[Game] Warning: Failed to load enemy configurations" << std::endl;
+  }
+
+  // Load level configurations
+  m_levelConfigManager = std::make_shared<server::LevelConfigManager>();
+  if (m_levelConfigManager->loadFromFile("server/config/levels.json")) {
+    spawnSystem->setLevelConfigManager(m_levelConfigManager);
+
+    // Pass level config manager to lobby manager
+    m_lobbyManager.setLevelConfigManager(m_levelConfigManager);
+
+    // Start level 1
+    spawnSystem->startLevel("level_1");
+
+    std::cout << "[Game] Level configurations loaded successfully" << std::endl;
+  } else {
+    std::cerr << "[Game] Warning: Failed to load level configurations, using test spawns" << std::endl;
+    // Fallback to multi-type spawning for testing
+    spawnSystem->enableMultipleSpawnTypes({"enemy_blue"});
+  }
 }
 
 Game::~Game() {}
@@ -67,6 +101,7 @@ void Game::initializeSystems()
   }
   if (spawnSystem != nullptr) {
     spawnSystem->initialize(*world);
+    std::cout << "[Game] SpawnSystem initialized" << std::endl;
   }
 }
 
@@ -97,7 +132,7 @@ void Game::spawnPlayer()
 
   ecs::Health health;
   int baseHealth = GameConfig::PLAYER_MAX_HP;
-  
+
   // Adjust player health based on difficulty
   switch (currentDifficulty) {
   case Difficulty::EASY:
@@ -110,14 +145,16 @@ void Game::spawnPlayer()
     baseHealth = static_cast<int>(baseHealth * 0.75f); // 75 HP
     break;
   }
-  
+
   health.hp = baseHealth;
   health.maxHp = baseHealth;
   world->addComponent(player, health);
 
-  std::cout << "[Server] Spawning player with " << baseHealth << " HP (difficulty: " 
-            << (currentDifficulty == Difficulty::EASY ? "easy" : 
-                currentDifficulty == Difficulty::MEDIUM ? "medium" : "expert") << ")" << std::endl;
+  std::cout << "[Server] Spawning player with " << baseHealth << " HP (difficulty: "
+            << (currentDifficulty == Difficulty::EASY       ? "easy"
+                  : currentDifficulty == Difficulty::MEDIUM ? "medium"
+                                                            : "expert")
+            << ")" << std::endl;
 
   ecs::Input input;
   input.up = false;
@@ -172,7 +209,7 @@ void Game::spawnPlayer(std::uint32_t networkId)
 
   ecs::Health health;
   int baseHealth = GameConfig::PLAYER_MAX_HP;
-  
+
   // Adjust player health based on difficulty
   switch (currentDifficulty) {
   case Difficulty::EASY:
@@ -185,14 +222,16 @@ void Game::spawnPlayer(std::uint32_t networkId)
     baseHealth = static_cast<int>(baseHealth * 0.75f); // 75 HP
     break;
   }
-  
+
   health.hp = baseHealth;
   health.maxHp = baseHealth;
   world->addComponent(player, health);
 
-  std::cout << "[Server] Spawning player with networkId " << networkId << " with " << baseHealth << " HP (difficulty: " 
-            << (currentDifficulty == Difficulty::EASY ? "easy" : 
-                currentDifficulty == Difficulty::MEDIUM ? "medium" : "expert") << ")" << std::endl;
+  std::cout << "[Server] Spawning player with networkId " << networkId << " with " << baseHealth << " HP (difficulty: "
+            << (currentDifficulty == Difficulty::EASY       ? "easy"
+                  : currentDifficulty == Difficulty::MEDIUM ? "medium"
+                                                            : "expert")
+            << ")" << std::endl;
 
   ecs::Input input;
   input.up = false;
