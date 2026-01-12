@@ -12,7 +12,7 @@
 #include "../../../interface/KeyCodes.hpp"
 #include <iostream>
 
-ProfileMenu::ProfileMenu() {}
+ProfileMenu::ProfileMenu(std::shared_ptr<IRenderer> renderer) : m_renderer(renderer) {}
 
 ProfileMenu::~ProfileMenu() {}
 

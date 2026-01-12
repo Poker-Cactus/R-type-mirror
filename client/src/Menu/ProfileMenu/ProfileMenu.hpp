@@ -21,7 +21,7 @@
 class ProfileMenu
 {
 public:
-  ProfileMenu();
+  ProfileMenu(std::shared_ptr<IRenderer> renderer);
   ~ProfileMenu();
 
   /**

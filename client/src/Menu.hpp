@@ -89,7 +89,7 @@ public:
    * @brief Reset lobby selection flags
    */
   void resetLobbySelection();
-  [[nodiscard]] Difficulty getCurrentDifficulty() const { return currentDifficulty; }
+  [[nodiscard]] Difficulty getCurrentDifficulty() const;
   [[nodiscard]] LobbyMenu *getLobbyMenu() const { return m_lobbyMenu.get(); }
 
   /**
