@@ -72,14 +72,15 @@ void AsioClient::send(std::span<const std::byte> data, UNUSED const std::uint32_
   m_uploadByteCount += data.size();
   m_packetCount++; // Assuming each send is a packet
 
+  auto self = this;
   m_socket.async_send_to(
     asio::buffer(data.data(), data.size()), m_serverEndpoint,
-    asio::bind_executor(m_strand, [this](const std::error_code &error, UNUSED std::size_t bytesTransferred) {
+    asio::bind_executor(m_strand, [self](const std::error_code &error, UNUSED std::size_t bytesTransferred) {
       if (error) {
         std::cerr << "[Client] Send error: " << error.message() << std::endl;
-        m_connected = false;
+        self->m_connected = false;
       } else {
-        m_connected = true;
+        self->m_connected = true;
         // std::cout << "[Client] Sent " << bytesTransferred << " bytes" << std::endl;
       }
     }));
