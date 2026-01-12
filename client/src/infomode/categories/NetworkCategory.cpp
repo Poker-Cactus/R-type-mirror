@@ -22,6 +22,7 @@
 #include <netdb.h>
 #include <unistd.h>
 #include <sys/ioctl.h>
+#include <cstring>
 #endif
 
 NetworkCategory::NetworkCategory()
@@ -113,9 +114,9 @@ std::string NetworkCategory::getLocalIPAddress() const
   // Windows implementation
   char buffer[256];
   if (gethostname(buffer, sizeof(buffer)) == 0) {
-    struct hostent* host = gethostbyname(buffer);
+    hostent* host = gethostbyname(buffer);
     if (host && host->h_addr_list[0]) {
-      struct in_addr addr;
+      in_addr addr;
       addr.s_addr = *(u_long*)host->h_addr_list[0];
       return inet_ntoa(addr);
     }

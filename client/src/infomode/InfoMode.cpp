@@ -18,8 +18,7 @@ InfoMode::InfoMode(std::shared_ptr<IRenderer> renderer, void *hudFont)
 {
   initializeCategories();
   setupCategoryLayout();
-  // TEMP: Enable info mode by default for testing
-  m_isActive = true;
+  m_isActive = false;
 }
 
 void InfoMode::initializeCategories()

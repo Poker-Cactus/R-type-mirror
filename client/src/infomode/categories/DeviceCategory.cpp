@@ -142,8 +142,14 @@ std::string DeviceCategory::getGraphicsInfo() const
       DXGI_ADAPTER_DESC desc;
       hr = pAdapter->GetDesc(&desc);
       if (SUCCEEDED(hr)) {
+        // Convert WCHAR to std::string
+        int size_needed = WideCharToMultiByte(CP_UTF8, 0, desc.Description, -1, nullptr, 0, nullptr, nullptr);
+        std::string description(size_needed, 0);
+        WideCharToMultiByte(CP_UTF8, 0, desc.Description, -1, &description[0], size_needed, nullptr, nullptr);
+        description.resize(size_needed - 1); // Remove null terminator
+
         std::stringstream ss;
-        ss << std::string(desc.Description) << " (" 
+        ss << description << " (" 
            << (desc.DedicatedVideoMemory / (1024 * 1024)) << " MB VRAM)";
         pAdapter->Release();
         pFactory->Release();
