@@ -15,6 +15,12 @@
 
 #include "../../network/include/INetworkManager.hpp"
 
+namespace server
+{
+class EnemyConfigManager;
+class LevelConfigManager;
+} // namespace server
+
 /**
  * @brief Manages creation and access to game lobbies
  */
@@ -27,6 +33,16 @@ public:
   void setNetworkManager(std::shared_ptr<INetworkManager> networkManager)
   {
     m_networkManager = std::move(networkManager);
+  }
+
+  void setEnemyConfigManager(std::shared_ptr<server::EnemyConfigManager> configManager)
+  {
+    m_enemyConfigManager = configManager;
+  }
+
+  void setLevelConfigManager(std::shared_ptr<server::LevelConfigManager> configManager)
+  {
+    m_levelConfigManager = configManager;
   }
 
   /**
@@ -81,6 +97,8 @@ private:
   std::unordered_map<std::string, std::unique_ptr<Lobby>> m_lobbies;
   std::unordered_map<std::uint32_t, std::string> m_clientToLobby;
   std::shared_ptr<INetworkManager> m_networkManager;
+  std::shared_ptr<server::EnemyConfigManager> m_enemyConfigManager;
+  std::shared_ptr<server::LevelConfigManager> m_levelConfigManager;
 };
 
 #endif /* !LOBBY_MANAGER_HPP_ */

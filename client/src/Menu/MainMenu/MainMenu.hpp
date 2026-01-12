@@ -16,6 +16,8 @@
 #include <memory>
 #include <string>
 
+class Settings;
+
 /**
  * @class MainMenu
  * @brief Main menu with navigation options
@@ -44,8 +46,9 @@ public:
   /**
    * @brief Process user input
    * @param currentState Pointer to current menu state
+   * @param settings Settings reference for key bindings
    */
-  void process(MenuState *currentState);
+  void process(MenuState *currentState, Settings &settings);
 
 private:
   std::shared_ptr<IRenderer> m_renderer;

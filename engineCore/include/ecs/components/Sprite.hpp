@@ -88,6 +88,7 @@ constexpr std::uint32_t ENEMY_SHIP = 2;
 constexpr std::uint32_t PROJECTILE = 3;
 constexpr std::uint32_t EXPLOSION = 4;
 constexpr std::uint32_t POWERUP = 5;
+constexpr std::uint32_t ENEMY_YELLOW = 6;
 } // namespace SpriteId
 
 } // namespace ecs

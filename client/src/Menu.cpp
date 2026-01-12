@@ -101,7 +101,7 @@ void Menu::processInput()
     }
     break;
   case MenuState::MAIN_MENU:
-    m_mainMenu->process(&currentState);
+    m_mainMenu->process(&currentState, settings);
     break;
   case MenuState::PROFILE:
     m_profileMenu->process();
@@ -110,7 +110,7 @@ void Menu::processInput()
     m_settingsMenu->process();
     break;
   case MenuState::LOBBY:
-    m_lobbyMenu->process(&currentState);
+    m_lobbyMenu->process(&currentState, settings);
     break;
   default:
     break;

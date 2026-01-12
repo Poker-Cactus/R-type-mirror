@@ -17,6 +17,12 @@
 #include <memory>
 #include <unordered_set>
 
+namespace server
+{
+class EnemyConfigManager;
+class LevelConfigManager;
+} // namespace server
+
 // Game configuration constants
 namespace GameConfig
 {
@@ -77,6 +83,9 @@ private:
   server::ShootingSystem *shootingSystem = nullptr;
   server::ScoreSystem *scoreSystem = nullptr;
   server::SpawnSystem *spawnSystem = nullptr;
+
+  std::shared_ptr<server::EnemyConfigManager> m_enemyConfigManager;
+  std::shared_ptr<server::LevelConfigManager> m_levelConfigManager;
 
   std::unordered_set<std::uint32_t> m_lobbyClients;
   LobbyManager m_lobbyManager;
