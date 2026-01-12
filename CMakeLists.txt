@@ -12,6 +12,7 @@ if(MSVC)
     # MSVC-specific flags
     add_compile_options(
         /W4                 # Warning level 4
+        /WX-                # Don't treat warnings as errors
         /permissive-        # Strict standard conformance
         /Zc:__cplusplus     # Enable correct __cplusplus macro
     )
