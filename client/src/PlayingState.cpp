@@ -154,6 +154,14 @@ void PlayingState::render()
           // Yellow Bee: 256x64 with 2 rows x 8 columns = 16 frames
           frameWidth = 256 / 8; // 32px per frame
           frameHeight = 64 / 2; // 32px per frame (2 rows)
+        } else if (sprite.spriteId == ecs::SpriteId::ENEMY_WALKER) {
+          // Walker: 200x67 with 2 rows x 6 columns = 12 frames
+          frameWidth = 200 / 6; // 33px per frame
+          frameHeight = 67 / 2; // 33px per frame (2 rows)
+        } else if (sprite.spriteId == ecs::SpriteId::WALKER_PROJECTILE) {
+          // Walker Projectile: 549x72 with 7 frames in single row
+          frameWidth = 549 / 7; // 78px per frame
+          frameHeight = 72;
         }
 
         if (frameWidth > 0 && frameHeight > 0) {
@@ -169,6 +177,19 @@ void PlayingState::render()
             int col = sprite.currentFrame % framesPerRow;
             srcX = col * frameWidth;
             srcY = row * frameHeight;
+          } else if (sprite.spriteId == ecs::SpriteId::ENEMY_WALKER) {
+            // Walker: 12 frames in 2 rows of 6
+            // Row 0: walking animation (frames 0-5)
+            // Row 1: shooting animation (frames 6-11)
+            int framesPerRow = 6;
+            int row = sprite.currentFrame / framesPerRow;
+            int col = sprite.currentFrame % framesPerRow;
+            srcX = col * frameWidth;
+            srcY = row * frameHeight;
+          } else if (sprite.spriteId == ecs::SpriteId::WALKER_PROJECTILE) {
+            // Walker Projectile: single row spritesheet
+            srcX = sprite.currentFrame * frameWidth;
+            srcY = 0;
           } else {
             // Single row spritesheets (ENEMY_SHIP, PLAYER_SHIP, PROJECTILE)
             srcX = sprite.currentFrame * frameWidth;
@@ -286,6 +307,12 @@ void PlayingState::render()
         break;
       case ecs::SpriteId::ENEMY_YELLOW:
         color = COLOR_ENEMY_YELLOW;
+        break;
+      case ecs::SpriteId::ENEMY_WALKER:
+        color = COLOR_ENEMY_RED;
+        break;
+      case ecs::SpriteId::WALKER_PROJECTILE:
+        color = COLOR_PROJECTILE_YELLOW;
         break;
       case ecs::SpriteId::PROJECTILE:
         color = COLOR_PROJECTILE_YELLOW;
@@ -706,7 +733,33 @@ void PlayingState::loadSpriteTextures()
     std::cerr << "[PlayingState] ✗ Failed to load enemy_yellow.gif: " << e.what() << '\n';
   }
 
-  constexpr int EXPECTED_TEXTURE_COUNT = 6;
+  // ENEMY_WALKER = 7 (animated spritesheet: 200x67, 2 rows x 6 columns = 12 frames)
+  try {
+    void *enemy_walker_tex = renderer->loadTexture(resolveAssetPath("client/assets/sprites/walk_enemy.gif"));
+    if (enemy_walker_tex != nullptr) {
+      m_spriteTextures[ecs::SpriteId::ENEMY_WALKER] = enemy_walker_tex;
+      std::cout << "[PlayingState] ✓ Loaded walk_enemy.gif" << '\n';
+    } else {
+      std::cerr << "[PlayingState] ✗ Failed to load walk_enemy.gif (returned null)" << '\n';
+    }
+  } catch (const std::exception &e) {
+    std::cerr << "[PlayingState] ✗ Failed to load walk_enemy.gif: " << e.what() << '\n';
+  }
+
+  // WALKER_PROJECTILE = 8 (animated spritesheet: 549x72, 7 frames)
+  try {
+    void *walker_projectile_tex = renderer->loadTexture(resolveAssetPath("client/assets/sprites/walk_projectile.png"));
+    if (walker_projectile_tex != nullptr) {
+      m_spriteTextures[ecs::SpriteId::WALKER_PROJECTILE] = walker_projectile_tex;
+      std::cout << "[PlayingState] ✓ Loaded walk_projectile.png" << '\n';
+    } else {
+      std::cerr << "[PlayingState] ✗ Failed to load walk_projectile.png (returned null)" << '\n';
+    }
+  } catch (const std::exception &e) {
+    std::cerr << "[PlayingState] ✗ Failed to load walk_projectile.png: " << e.what() << '\n';
+  }
+
+  constexpr int EXPECTED_TEXTURE_COUNT = 8;
   std::cout << "[PlayingState] Successfully loaded " << m_spriteTextures.size() << " / " << EXPECTED_TEXTURE_COUNT
             << " sprite textures" << '\n';
   if (m_spriteTextures.size() < EXPECTED_TEXTURE_COUNT) {
