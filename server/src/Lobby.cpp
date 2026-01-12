@@ -38,6 +38,7 @@ Lobby::~Lobby()
 
   // Clear all client tracking
   m_clients.clear();
+  m_spectators.clear();
   m_playerEntities.clear();
 
   // Clear world systems and entities before shared_ptr destruction
@@ -50,24 +51,33 @@ Lobby::~Lobby()
   unregisterWorldLobbyMapping(m_world.get());
 }
 
-bool Lobby::addClient(std::uint32_t clientId)
+bool Lobby::addClient(std::uint32_t clientId, bool asSpectator)
 {
   auto [_, inserted] = m_clients.insert(clientId);
   if (inserted) {
-    std::cout << "[Lobby:" << m_code << "] Player " << clientId << " joined (" << m_clients.size() << " players)"
-              << '\n';
+    if (asSpectator) {
+      m_spectators.insert(clientId);
+      std::cout << "[Lobby:" << m_code << "] Spectator " << clientId << " joined (" << m_clients.size() << " total, "
+                << m_spectators.size() << " spectators)" << '\n';
+    } else {
+      std::cout << "[Lobby:" << m_code << "] Player " << clientId << " joined (" << m_clients.size() << " total)"
+                << '\n';
+    }
   }
   return inserted;
 }
 
 bool Lobby::removeClient(std::uint32_t clientId)
 {
-  // Destroy the player entity if it exists
+  // Destroy the player entity if it exists (spectators don't have entities)
   destroyPlayerEntity(clientId);
+
+  // Remove from spectators if present
+  m_spectators.erase(clientId);
 
   auto removed = m_clients.erase(clientId) > 0;
   if (removed) {
-    std::cout << "[Lobby:" << m_code << "] Player " << clientId << " left (" << m_clients.size() << " remaining)"
+    std::cout << "[Lobby:" << m_code << "] Client " << clientId << " left (" << m_clients.size() << " remaining)"
               << '\n';
   }
   return removed;
@@ -98,6 +108,11 @@ bool Lobby::hasClient(std::uint32_t clientId) const
   return m_clients.find(clientId) != m_clients.end();
 }
 
+bool Lobby::isSpectator(std::uint32_t clientId) const
+{
+  return m_spectators.find(clientId) != m_spectators.end();
+}
+
 void Lobby::startGame()
 {
   if (m_gameStarted) {
@@ -109,12 +124,17 @@ void Lobby::startGame()
   // Initialize systems for this lobby's world
   initializeSystems();
 
-  // Spawn player entities for all clients in this lobby
+  // Spawn player entities only for non-spectator clients
+  int playerCount = 0;
   for (std::uint32_t clientId : m_clients) {
-    spawnPlayer(clientId);
+    if (!isSpectator(clientId)) {
+      spawnPlayer(clientId);
+      playerCount++;
+    }
   }
 
-  std::cout << "[Lobby:" << m_code << "] Game started with " << m_clients.size() << " players" << '\n';
+  std::cout << "[Lobby:" << m_code << "] Game started with " << playerCount << " players and " << m_spectators.size()
+            << " spectators" << '\n';
 }
 
 void Lobby::stopGame()
@@ -240,6 +260,8 @@ void Lobby::initializeSystems()
       spawnSystem->enableMultipleSpawnTypes({"enemy_blue"});
       std::cout << "[Lobby:" << m_code << "] Enemy config manager set on SpawnSystem" << std::endl;
     }
+
+    spawnSystem->difficulty = static_cast<Difficulty>(m_difficulty);
   }
 
   std::cout << "[Lobby:" << m_code << "] Initialized game systems" << '\n';
@@ -269,10 +291,18 @@ void Lobby::spawnPlayer(std::uint32_t clientId)
   velocity.dy = 0.0F;
   m_world->addComponent(player, velocity);
 
+  // Apply difficulty-based HP
+  int startingHP = GameConfig::getPlayerHPForDifficulty(m_difficulty);
   ecs::Health health;
-  health.hp = GameConfig::PLAYER_MAX_HP;
-  health.maxHp = GameConfig::PLAYER_MAX_HP;
+  health.hp = startingHP;
+  health.maxHp = startingHP;
   m_world->addComponent(player, health);
+
+  std::cout << "[Lobby:" << m_code << "] Player " << clientId << " spawned with " << startingHP << " HP (Difficulty: "
+            << (m_difficulty == GameConfig::Difficulty::EASY
+                  ? "EASY"
+                  : (m_difficulty == GameConfig::Difficulty::MEDIUM ? "MEDIUM" : "EXPERT"))
+            << ")" << '\n';
 
   ecs::Input input;
   input.up = false;
@@ -350,4 +380,23 @@ void Lobby::setLevelConfigManager(std::shared_ptr<server::LevelConfigManager> co
 {
   m_levelConfigManager = configManager;
   std::cout << "[Lobby:" << m_code << "] Level config manager set" << std::endl;
+}
+
+void Lobby::setDifficulty(GameConfig::Difficulty difficulty)
+{
+  if (m_gameStarted) {
+    std::cerr << "[Lobby:" << m_code << "] Cannot change difficulty after game has started" << '\n';
+    return;
+  }
+  m_difficulty = difficulty;
+  std::cout << "[Lobby:" << m_code << "] Difficulty set to "
+            << (difficulty == GameConfig::Difficulty::EASY
+                  ? "EASY (150 HP)"
+                  : (difficulty == GameConfig::Difficulty::MEDIUM ? "MEDIUM (100 HP)" : "EXPERT (75 HP)"))
+            << '\n';
+}
+
+GameConfig::Difficulty Lobby::getDifficulty() const
+{
+  return m_difficulty;
 }

@@ -1,13 +1,20 @@
-/*
-** EPITECH PROJECT, 2025
-** R-type-mirror
-** File description:
-** KeyToLabel.cpp
-*/
+/**
+ * @file KeyToLabel.cpp
+ * @brief Key code to human-readable label conversion implementation
+ */
 
 #include "../../include/KeyToLabel.hpp"
 #include "../../interface/KeyCodes.hpp"
 
+/**
+ * @brief Convert key code to readable string label
+ *
+ * Maps keyboard key codes to their human-readable representations
+ * for display in UI (e.g., settings menu, key binding screens).
+ *
+ * @param key Key code from KeyCodes enum
+ * @return String label for the key (e.g., "Space", "Enter", "A")
+ */
 std::string KeyToLabel(int key)
 {
   switch (key) {

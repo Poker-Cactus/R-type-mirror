@@ -7,7 +7,9 @@
 
 #ifndef GAME_HPP_
 #define GAME_HPP_
+#include "../../common/include/Common.hpp"
 #include "../../engineCore/include/ecs/World.hpp"
+#include "Difficulty.hpp"
 #include "LobbyManager.hpp"
 #include "ServerSystems.hpp"
 #include <chrono>
@@ -60,6 +62,8 @@ public:
   void removeClientFromLobby(std::uint32_t clientId);
   [[nodiscard]] const std::unordered_set<std::uint32_t> &getLobbyClients() const;
   [[nodiscard]] LobbyManager &getLobbyManager();
+
+  Difficulty currentDifficulty = Difficulty::MEDIUM;
 
 private:
   std::shared_ptr<ecs::World> world;

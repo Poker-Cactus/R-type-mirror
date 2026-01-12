@@ -11,26 +11,35 @@
 #include "../../../interface/KeyCodes.hpp"
 #include <iostream>
 
+LobbyMenu::LobbyMenu(std::shared_ptr<IRenderer> renderer)
+    : m_renderer(std::move(renderer)), m_font(nullptr), m_titleFont(nullptr), m_moonSky(nullptr), m_moonBack(nullptr),
+      m_moonMid(nullptr), m_moonFront(nullptr), m_moonFloor(nullptr), m_parallaxOffsetSky(0.0F),
+      m_parallaxOffsetBack(0.0F), m_parallaxOffsetMid(0.0F), m_parallaxOffsetFront(0.0F), m_parallaxOffsetFloor(0.0F),
+      m_currentIndex(0), m_isEnteringCode(false), m_lobbyCodeInput(""), m_shouldEnterLobbyRoom(false),
+      m_isCreatingLobby(false), m_networkManager(nullptr)
+{
+}
+
 LobbyMenu::~LobbyMenu()
 {
   cleanup();
 }
 
-void LobbyMenu::init(IRenderer *renderer)
+void LobbyMenu::init()
 {
   try {
     constexpr int MENU_FONT_SIZE = 24;
     constexpr int TITLE_FONT_SIZE = 36;
 
-    m_font = renderer->loadFont("client/assets/font.opf/r-type.otf", MENU_FONT_SIZE);
-    m_titleFont = renderer->loadFont("client/assets/font.opf/r-type.otf", TITLE_FONT_SIZE);
+    m_font = m_renderer->loadFont("client/assets/font.opf/r-type.otf", MENU_FONT_SIZE);
+    m_titleFont = m_renderer->loadFont("client/assets/font.opf/r-type.otf", TITLE_FONT_SIZE);
 
     // Load parallax background
-    m_moonSky = renderer->loadTexture("client/assets/moon-para/moon_sky.png");
-    m_moonBack = renderer->loadTexture("client/assets/moon-para/moon_back.png");
-    m_moonMid = renderer->loadTexture("client/assets/moon-para/moon_mid.png");
-    m_moonFront = renderer->loadTexture("client/assets/moon-para/moon_front.png");
-    m_moonFloor = renderer->loadTexture("client/assets/moon-para/moon_floor.png");
+    m_moonSky = m_renderer->loadTexture("client/assets/moon-para/moon_sky.png");
+    m_moonBack = m_renderer->loadTexture("client/assets/moon-para/moon_back.png");
+    m_moonMid = m_renderer->loadTexture("client/assets/moon-para/moon_mid.png");
+    m_moonFront = m_renderer->loadTexture("client/assets/moon-para/moon_front.png");
+    m_moonFloor = m_renderer->loadTexture("client/assets/moon-para/moon_floor.png");
 
   } catch (const std::exception &e) {
     std::cerr << "[LobbyMenu] Failed to load assets: " << e.what() << '\n';
@@ -40,6 +49,20 @@ void LobbyMenu::init(IRenderer *renderer)
 void LobbyMenu::cleanup()
 {
   // Textures are managed by the renderer
+  if (m_font != nullptr && m_renderer != nullptr)
+    m_renderer->freeFont(m_font);
+  if (m_titleFont != nullptr && m_renderer != nullptr)
+    m_renderer->freeFont(m_titleFont);
+  if (m_moonSky != nullptr && m_renderer != nullptr)
+    m_renderer->freeTexture(m_moonSky);
+  if (m_moonBack != nullptr && m_renderer != nullptr)
+    m_renderer->freeTexture(m_moonBack);
+  if (m_moonMid != nullptr && m_renderer != nullptr)
+    m_renderer->freeTexture(m_moonMid);
+  if (m_moonFront != nullptr && m_renderer != nullptr)
+    m_renderer->freeTexture(m_moonFront);
+  if (m_moonFloor != nullptr && m_renderer != nullptr)
+    m_renderer->freeTexture(m_moonFloor);
   m_font = nullptr;
   m_titleFont = nullptr;
   m_moonSky = nullptr;
@@ -54,32 +77,34 @@ void LobbyMenu::setNetworkManager(std::shared_ptr<INetworkManager> networkManage
   m_networkManager = std::move(networkManager);
 }
 
-void LobbyMenu::render(const WindowDimensions &windowDims, IRenderer *renderer)
+void LobbyMenu::render(const WindowDimensions &windowDims)
 {
-  renderBackground(windowDims, renderer);
+  renderBackground(windowDims);
 
   // Draw title
   if (m_titleFont != nullptr) {
     const std::string title = "MULTIPLAYER";
     int titleWidth = 0;
     int titleHeight = 0;
-    renderer->getTextSize(m_titleFont, title, titleWidth, titleHeight);
+    m_renderer->getTextSize(m_titleFont, title, titleWidth, titleHeight);
 
     const int titleX = (windowDims.width - titleWidth) / 2;
     constexpr int TITLE_Y_OFFSET = 80;
     const Color titleColor = {.r = 4, .g = 196, .b = 199, .a = 255};
 
-    renderer->drawText(m_titleFont, title, titleX, TITLE_Y_OFFSET, titleColor);
+    m_renderer->drawText(m_titleFont, title, titleX, TITLE_Y_OFFSET, titleColor);
   }
 
   if (m_isEnteringCode) {
-    renderLobbyCodeInput(windowDims, renderer);
+    renderLobbyCodeInput(windowDims);
+  } else if (m_isSelectingDifficulty) {
+    renderDifficultySelection(windowDims);
   } else {
-    renderMenuOptions(windowDims, renderer);
+    renderMenuOptions(windowDims);
   }
 }
 
-void LobbyMenu::renderBackground(const WindowDimensions &windowDims, IRenderer *renderer)
+void LobbyMenu::renderBackground(const WindowDimensions &windowDims)
 {
   constexpr float SKY_SPEED = 5.0F;
   constexpr float BACK_SPEED = 15.0F;
@@ -87,7 +112,7 @@ void LobbyMenu::renderBackground(const WindowDimensions &windowDims, IRenderer *
   constexpr float FRONT_SPEED = 50.0F;
   constexpr float FLOOR_SPEED = 70.0F;
 
-  float deltaTime = renderer->getDeltaTime();
+  float deltaTime = m_renderer->getDeltaTime();
 
   // Update parallax offsets
   m_parallaxOffsetSky += deltaTime * SKY_SPEED;
@@ -115,42 +140,44 @@ void LobbyMenu::renderBackground(const WindowDimensions &windowDims, IRenderer *
 
   // Draw parallax layers
   if (m_moonSky != nullptr) {
-    renderer->drawTextureEx(m_moonSky, static_cast<int>(m_parallaxOffsetSky), 0, windowDims.width, windowDims.height,
-                            0.0F, false, false);
-    renderer->drawTextureEx(m_moonSky, static_cast<int>(m_parallaxOffsetSky - static_cast<float>(windowDims.width)), 0,
-                            windowDims.width, windowDims.height, 0.0F, false, false);
+    m_renderer->drawTextureEx(m_moonSky, static_cast<int>(m_parallaxOffsetSky), 0, windowDims.width, windowDims.height,
+                              0.0F, false, false);
+    m_renderer->drawTextureEx(m_moonSky, static_cast<int>(m_parallaxOffsetSky - static_cast<float>(windowDims.width)),
+                              0, windowDims.width, windowDims.height, 0.0F, false, false);
   }
 
   if (m_moonBack != nullptr) {
-    renderer->drawTextureEx(m_moonBack, static_cast<int>(m_parallaxOffsetBack), 0, windowDims.width, windowDims.height,
-                            0.0F, false, false);
-    renderer->drawTextureEx(m_moonBack, static_cast<int>(m_parallaxOffsetBack - static_cast<float>(windowDims.width)),
-                            0, windowDims.width, windowDims.height, 0.0F, false, false);
+    m_renderer->drawTextureEx(m_moonBack, static_cast<int>(m_parallaxOffsetBack), 0, windowDims.width,
+                              windowDims.height, 0.0F, false, false);
+    m_renderer->drawTextureEx(m_moonBack, static_cast<int>(m_parallaxOffsetBack - static_cast<float>(windowDims.width)),
+                              0, windowDims.width, windowDims.height, 0.0F, false, false);
   }
 
   if (m_moonMid != nullptr) {
-    renderer->drawTextureEx(m_moonMid, static_cast<int>(m_parallaxOffsetMid), 0, windowDims.width, windowDims.height,
-                            0.0F, false, false);
-    renderer->drawTextureEx(m_moonMid, static_cast<int>(m_parallaxOffsetMid - static_cast<float>(windowDims.width)), 0,
-                            windowDims.width, windowDims.height, 0.0F, false, false);
+    m_renderer->drawTextureEx(m_moonMid, static_cast<int>(m_parallaxOffsetMid), 0, windowDims.width, windowDims.height,
+                              0.0F, false, false);
+    m_renderer->drawTextureEx(m_moonMid, static_cast<int>(m_parallaxOffsetMid - static_cast<float>(windowDims.width)),
+                              0, windowDims.width, windowDims.height, 0.0F, false, false);
   }
 
   if (m_moonFront != nullptr) {
-    renderer->drawTextureEx(m_moonFront, static_cast<int>(m_parallaxOffsetFront), 0, windowDims.width,
-                            windowDims.height, 0.0F, false, false);
-    renderer->drawTextureEx(m_moonFront, static_cast<int>(m_parallaxOffsetFront - static_cast<float>(windowDims.width)),
-                            0, windowDims.width, windowDims.height, 0.0F, false, false);
+    m_renderer->drawTextureEx(m_moonFront, static_cast<int>(m_parallaxOffsetFront), 0, windowDims.width,
+                              windowDims.height, 0.0F, false, false);
+    m_renderer->drawTextureEx(m_moonFront,
+                              static_cast<int>(m_parallaxOffsetFront - static_cast<float>(windowDims.width)), 0,
+                              windowDims.width, windowDims.height, 0.0F, false, false);
   }
 
   if (m_moonFloor != nullptr) {
-    renderer->drawTextureEx(m_moonFloor, static_cast<int>(m_parallaxOffsetFloor), 0, windowDims.width,
-                            windowDims.height, 0.0F, false, false);
-    renderer->drawTextureEx(m_moonFloor, static_cast<int>(m_parallaxOffsetFloor - static_cast<float>(windowDims.width)),
-                            0, windowDims.width, windowDims.height, 0.0F, false, false);
+    m_renderer->drawTextureEx(m_moonFloor, static_cast<int>(m_parallaxOffsetFloor), 0, windowDims.width,
+                              windowDims.height, 0.0F, false, false);
+    m_renderer->drawTextureEx(m_moonFloor,
+                              static_cast<int>(m_parallaxOffsetFloor - static_cast<float>(windowDims.width)), 0,
+                              windowDims.width, windowDims.height, 0.0F, false, false);
   }
 }
 
-void LobbyMenu::renderMenuOptions(const WindowDimensions &windowDims, IRenderer *renderer)
+void LobbyMenu::renderMenuOptions(const WindowDimensions &windowDims)
 {
   if (m_font == nullptr) {
     return;
@@ -162,7 +189,7 @@ void LobbyMenu::renderMenuOptions(const WindowDimensions &windowDims, IRenderer 
   for (std::size_t i = 0; i < m_menuItems.size(); ++i) {
     int textWidth = 0;
     int textHeight = 0;
-    renderer->getTextSize(m_font, m_menuItems[i], textWidth, textHeight);
+    m_renderer->getTextSize(m_font, m_menuItems[i], textWidth, textHeight);
 
     const int pos_x = (windowDims.width - textWidth) / 2;
     const int pos_y = startY + (static_cast<int>(i) * ITEM_SPACING);
@@ -171,23 +198,23 @@ void LobbyMenu::renderMenuOptions(const WindowDimensions &windowDims, IRenderer 
     const Color color = (i == m_currentIndex) ? Color{.r = 4, .g = 196, .b = 199, .a = 255}
                                               : Color{.r = 255, .g = 255, .b = 255, .a = 255};
 
-    renderer->drawText(m_font, m_menuItems[i], pos_x, pos_y, color);
+    m_renderer->drawText(m_font, m_menuItems[i], pos_x, pos_y, color);
   }
 
   // Draw instructions at bottom
   const std::string instructions = "Use UP/DOWN to navigate, ENTER to select";
   int instrWidth = 0;
   int instrHeight = 0;
-  renderer->getTextSize(m_font, instructions, instrWidth, instrHeight);
+  m_renderer->getTextSize(m_font, instructions, instrWidth, instrHeight);
 
   const int instrX = (windowDims.width - instrWidth) / 2;
   const int instrY = windowDims.height - 60;
   const Color instrColor = {.r = 150, .g = 150, .b = 150, .a = 255};
 
-  renderer->drawText(m_font, instructions, instrX, instrY, instrColor);
+  m_renderer->drawText(m_font, instructions, instrX, instrY, instrColor);
 }
 
-void LobbyMenu::renderLobbyCodeInput(const WindowDimensions &windowDims, IRenderer *renderer)
+void LobbyMenu::renderLobbyCodeInput(const WindowDimensions &windowDims)
 {
   if (m_font == nullptr) {
     return;
@@ -197,85 +224,157 @@ void LobbyMenu::renderLobbyCodeInput(const WindowDimensions &windowDims, IRender
   const std::string prompt = "Enter Lobby Code:";
   int promptWidth = 0;
   int promptHeight = 0;
-  renderer->getTextSize(m_font, prompt, promptWidth, promptHeight);
+  m_renderer->getTextSize(m_font, prompt, promptWidth, promptHeight);
 
   const int promptX = (windowDims.width - promptWidth) / 2;
   const int promptY = ((windowDims.height - promptHeight) / 2) - 60;
   const Color promptColor = {.r = 255, .g = 255, .b = 255, .a = 255};
 
-  renderer->drawText(m_font, prompt, promptX, promptY, promptColor);
+  m_renderer->drawText(m_font, prompt, promptX, promptY, promptColor);
 
   // Draw input box
   const std::string displayCode = m_lobbyCodeInput + "_";
   int codeWidth = 0;
   int codeHeight = 0;
-  renderer->getTextSize(m_font, displayCode, codeWidth, codeHeight);
+  m_renderer->getTextSize(m_font, displayCode, codeWidth, codeHeight);
 
   const int codeX = (windowDims.width - codeWidth) / 2;
   const int codeY = (windowDims.height - codeHeight) / 2;
   const Color codeColor = {.r = 4, .g = 196, .b = 199, .a = 255};
 
-  renderer->drawText(m_font, displayCode, codeX, codeY, codeColor);
+  m_renderer->drawText(m_font, displayCode, codeX, codeY, codeColor);
 
   // Draw instructions
   const std::string instructions = "Type code and press ENTER, TAB to cancel";
   int instrWidth = 0;
   int instrHeight = 0;
-  renderer->getTextSize(m_font, instructions, instrWidth, instrHeight);
+  m_renderer->getTextSize(m_font, instructions, instrWidth, instrHeight);
 
   const int instrX = (windowDims.width - instrWidth) / 2;
   const int instrY = ((windowDims.height - instrHeight) / 2) + 80;
   const Color instrColor = {.r = 150, .g = 150, .b = 150, .a = 255};
 
-  renderer->drawText(m_font, instructions, instrX, instrY, instrColor);
+  m_renderer->drawText(m_font, instructions, instrX, instrY, instrColor);
 }
 
-void LobbyMenu::process(IRenderer *renderer, MenuState *currentState, Settings &settings)
+void LobbyMenu::renderDifficultySelection(const WindowDimensions &windowDims)
+{
+  if (m_font == nullptr) {
+    return;
+  }
+
+  // Draw prompt
+  const std::string prompt = "Select Difficulty:";
+  int promptWidth = 0;
+  int promptHeight = 0;
+  m_renderer->getTextSize(m_font, prompt, promptWidth, promptHeight);
+
+  const int promptX = (windowDims.width - promptWidth) / 2;
+  const int promptY = ((windowDims.height - promptHeight) / 2) - 100;
+  const Color promptColor = {.r = 255, .g = 255, .b = 255, .a = 255};
+
+  m_renderer->drawText(m_font, prompt, promptX, promptY, promptColor);
+
+  // Render difficulty options
+  constexpr int ITEM_SPACING = 50;
+  const int startY = ((windowDims.height - promptHeight) / 2) - 20;
+
+  for (std::size_t i = 0; i < m_difficultyItems.size(); ++i) {
+    int textWidth = 0;
+    int textHeight = 0;
+    m_renderer->getTextSize(m_font, m_difficultyItems[i], textWidth, textHeight);
+
+    const int pos_x = (windowDims.width - textWidth) / 2;
+    const int pos_y = startY + (static_cast<int>(i) * ITEM_SPACING);
+
+    // Highlight selected item
+    const Color color = (i == m_difficultyIndex) ? Color{.r = 4, .g = 196, .b = 199, .a = 255}
+                                                 : Color{.r = 255, .g = 255, .b = 255, .a = 255};
+
+    m_renderer->drawText(m_font, m_difficultyItems[i], pos_x, pos_y, color);
+
+    // Draw checkmark if this is the currently selected difficulty (persisted)
+    // Actually, we just highlight the current selection in the navigation.
+    // The "selected" one is just the one we create with.
+  }
+
+  // Draw instructions
+  const std::string instructions = "ENTER to Create, BACKSPACE to Cancel";
+  int instrWidth = 0;
+  int instrHeight = 0;
+  m_renderer->getTextSize(m_font, instructions, instrWidth, instrHeight);
+
+  const int instrX = (windowDims.width - instrWidth) / 2;
+  const int instrY = windowDims.height - 80;
+  const Color instrColor = {.r = 150, .g = 150, .b = 150, .a = 255};
+
+  m_renderer->drawText(m_font, instructions, instrX, instrY, instrColor);
+}
+
+void LobbyMenu::process(MenuState *currentState, Settings &settings)
 {
   if (m_isEnteringCode) {
-    handleTextInput(renderer);
+    handleTextInput();
+  } else if (m_isSelectingDifficulty) {
+    handleDifficultyNavigation();
+    if (m_renderer->isKeyJustPressed(KeyCode::KEY_RETURN)) {
+      selectDifficultyOption();
+    }
+    if (m_renderer->isKeyJustPressed(KeyCode::KEY_BACKSPACE)) {
+      m_isSelectingDifficulty = false;
+    }
   } else {
-    handleMenuNavigation(renderer, settings);
+    handleMenuNavigation(settings);
 
-    if (renderer->isKeyJustPressed(KeyCode::KEY_RETURN)) {
+    if (m_renderer->isKeyJustPressed(KeyCode::KEY_RETURN)) {
       selectCurrentOption(currentState);
     }
 
-    if (renderer->isKeyJustPressed(KeyCode::KEY_BACKSPACE)) {
+    if (m_renderer->isKeyJustPressed(KeyCode::KEY_BACKSPACE)) {
       *currentState = MenuState::MAIN_MENU;
     }
   }
 }
 
-void LobbyMenu::handleMenuNavigation(IRenderer *renderer, Settings &settings)
+void LobbyMenu::handleMenuNavigation(Settings &settings)
 {
-  
-  if (renderer->isKeyJustPressed(settings.down)) {
+  if (m_renderer->isKeyJustPressed(settings.down)) {
     m_currentIndex = (m_currentIndex + 1) % m_menuItems.size();
   }
 
-  if (renderer->isKeyJustPressed(settings.up)) {
+  if (m_renderer->isKeyJustPressed(settings.up)) {
     m_currentIndex = (m_currentIndex - 1 + m_menuItems.size()) % m_menuItems.size();
   }
 }
 
-void LobbyMenu::handleTextInput(IRenderer *renderer)
+void LobbyMenu::handleDifficultyNavigation()
+{
+  if (m_renderer->isKeyJustPressed(KeyCode::KEY_DOWN)) {
+    m_difficultyIndex = (m_difficultyIndex + 1) % m_difficultyItems.size();
+  }
+
+  if (m_renderer->isKeyJustPressed(KeyCode::KEY_UP)) {
+    m_difficultyIndex = (m_difficultyIndex - 1 + m_difficultyItems.size()) % m_difficultyItems.size();
+  }
+}
+
+void LobbyMenu::handleTextInput()
 {
   // Cancel with TAB - go back to menu options
-  if (renderer->isKeyJustPressed(KeyCode::KEY_TAB)) {
+  if (m_renderer->isKeyJustPressed(KeyCode::KEY_TAB)) {
     m_isEnteringCode = false;
     m_lobbyCodeInput.clear();
     return;
   }
 
   // Backspace to delete characters
-  if (renderer->isKeyJustPressed(KeyCode::KEY_BACKSPACE) && !m_lobbyCodeInput.empty()) {
+  if (m_renderer->isKeyJustPressed(KeyCode::KEY_BACKSPACE) && !m_lobbyCodeInput.empty()) {
     m_lobbyCodeInput.pop_back();
     return;
   }
 
   // Confirm with ENTER
-  if (renderer->isKeyJustPressed(KeyCode::KEY_RETURN)) {
+  if (m_renderer->isKeyJustPressed(KeyCode::KEY_RETURN)) {
     if (!m_lobbyCodeInput.empty()) {
       std::cout << "[LobbyMenu] Joining lobby with code: " << m_lobbyCodeInput << '\n';
       m_isCreatingLobby = false;
@@ -289,7 +388,7 @@ void LobbyMenu::handleTextInput(IRenderer *renderer)
   if (m_lobbyCodeInput.size() < MAX_LOBBY_CODE_LENGTH) {
     // Check A-Z
     for (int key = KeyCode::KEY_A; key <= KeyCode::KEY_Z; ++key) {
-      if (renderer->isKeyJustPressed(key)) {
+      if (m_renderer->isKeyJustPressed(key)) {
         char chr = static_cast<char>('A' + (key - KeyCode::KEY_A));
         m_lobbyCodeInput += chr;
         return;
@@ -298,7 +397,7 @@ void LobbyMenu::handleTextInput(IRenderer *renderer)
 
     // Check 0-9
     for (int key = KeyCode::KEY_0; key <= KeyCode::KEY_9; ++key) {
-      if (renderer->isKeyJustPressed(key)) {
+      if (m_renderer->isKeyJustPressed(key)) {
         char chr = static_cast<char>('0' + (key - KeyCode::KEY_0));
         m_lobbyCodeInput += chr;
         return;
@@ -311,10 +410,9 @@ void LobbyMenu::selectCurrentOption(MenuState *currentState)
 {
   switch (m_currentIndex) {
   case 0: // Create Lobby
-    std::cout << "[LobbyMenu] Creating new lobby" << '\n';
-    m_isCreatingLobby = true;
-    m_lobbyCodeInput.clear();
-    m_shouldEnterLobbyRoom = true;
+    std::cout << "[LobbyMenu] Select difficulty for new lobby" << '\n';
+    m_isSelectingDifficulty = true;
+    m_difficultyIndex = 1; // Reset to Medium
     break;
 
   case 1: // Join Lobby
@@ -330,4 +428,30 @@ void LobbyMenu::selectCurrentOption(MenuState *currentState)
   default:
     break;
   }
+}
+
+void LobbyMenu::selectDifficultyOption()
+{
+  switch (m_difficultyIndex) {
+  case 0:
+    m_selectedDifficulty = Difficulty::EASY;
+    break;
+  case 1:
+    m_selectedDifficulty = Difficulty::MEDIUM;
+    break;
+  case 2:
+    m_selectedDifficulty = Difficulty::EXPERT;
+    break;
+  }
+
+  std::cout << "[LobbyMenu] Creating new lobby with difficulty: "
+            << (m_selectedDifficulty == Difficulty::EASY
+                  ? "EASY"
+                  : (m_selectedDifficulty == Difficulty::MEDIUM ? "MEDIUM" : "EXPERT"))
+            << " (value: " << static_cast<int>(m_selectedDifficulty) << ")" << '\n';
+
+  m_isCreatingLobby = true;
+  m_lobbyCodeInput.clear();
+  m_shouldEnterLobbyRoom = true;
+  m_isSelectingDifficulty = false;
 }

@@ -9,6 +9,7 @@
 #define LOBBY_HPP_
 
 #include "../../engineCore/include/ecs/World.hpp"
+#include "Difficulty.hpp"
 #include <nlohmann/json.hpp>
 
 // Forward declarations
@@ -41,9 +42,10 @@ public:
   /**
    * @brief Add a client to the lobby
    * @param clientId The client identifier
+   * @param asSpectator Whether to add as spectator (no player entity created)
    * @return true if client was added, false if already present
    */
-  bool addClient(std::uint32_t clientId);
+  bool addClient(std::uint32_t clientId, bool asSpectator = false);
 
   /**
    * @brief Remove a client from the lobby
@@ -51,6 +53,13 @@ public:
    * @return true if client was removed, false if not found
    */
   bool removeClient(std::uint32_t clientId);
+
+  /**
+   * @brief Check if a client is a spectator
+   * @param clientId The client identifier
+   * @return true if client is a spectator
+   */
+  [[nodiscard]] bool isSpectator(std::uint32_t clientId) const;
 
   /**
    * @brief Check if lobby is empty
@@ -135,6 +144,19 @@ public:
    */
   void setLevelConfigManager(std::shared_ptr<server::LevelConfigManager> configManager);
 
+  /**
+   * @brief Set the difficulty for this lobby
+   * @param difficulty The game difficulty
+   * @note Must be called before startGame() to take effect
+   */
+  void setDifficulty(GameConfig::Difficulty difficulty);
+
+  /**
+   * @brief Get the current difficulty setting
+   * @return The game difficulty
+   */
+  [[nodiscard]] GameConfig::Difficulty getDifficulty() const;
+
 private:
   void initializeSystems();
   void spawnPlayer(std::uint32_t clientId);
@@ -142,6 +164,7 @@ private:
 
   std::string m_code;
   std::unordered_set<std::uint32_t> m_clients;
+  std::unordered_set<std::uint32_t> m_spectators;
   bool m_gameStarted = false;
 
   // Isolated game world for this lobby
@@ -158,6 +181,9 @@ private:
   
   // Level configuration manager
   std::shared_ptr<server::LevelConfigManager> m_levelConfigManager;
+
+  // Game difficulty setting
+  GameConfig::Difficulty m_difficulty = GameConfig::Difficulty::MEDIUM;
 };
 
 #endif /* !LOBBY_HPP_ */
