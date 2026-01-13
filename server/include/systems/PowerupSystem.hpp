@@ -92,25 +92,25 @@ private:
     BUBBLE_TRIPLE_SPRITE_WIDTH / BUBBLE_TRIPLE_FRAME_COUNT; // Frame width in pixels
   static constexpr float BUBBLE_TRIPLE_SCALE = 2.5f;
 
-  static constexpr unsigned int BUBBLE_RUBAN1_SPRITE_WIDTH = 128; // bubble.png width (actual)
-  static constexpr unsigned int BUBBLE_RUBAN1_SPRITE_HEIGHT = 34; // bubble.png height
+  // bubble_ruban_back: 32x32 - individual frames (4 separate files)
+  static constexpr unsigned int BUBBLE_RUBAN1_SPRITE_WIDTH = 32;
+  static constexpr unsigned int BUBBLE_RUBAN1_SPRITE_HEIGHT = 32;
   static constexpr unsigned int BUBBLE_RUBAN1_FRAME_COUNT = 4;
-  static constexpr int BUBBLE_RUBAN1_FRAME_WIDTH =
-    BUBBLE_RUBAN1_SPRITE_WIDTH / BUBBLE_RUBAN1_FRAME_COUNT; // Frame width in pixels
+  static constexpr int BUBBLE_RUBAN1_FRAME_WIDTH = 32; // Each file is a single frame
   static constexpr float BUBBLE_RUBAN1_SCALE = 2.5f;
 
-  static constexpr unsigned int BUBBLE_RUBAN2_SPRITE_WIDTH = 137; // bubble.png width (actual)
-  static constexpr unsigned int BUBBLE_RUBAN2_SPRITE_HEIGHT = 30; // bubble.png height
+  // bubble_ruban_middle: 38x29 - individual frames (4 separate files)
+  static constexpr unsigned int BUBBLE_RUBAN2_SPRITE_WIDTH = 38;
+  static constexpr unsigned int BUBBLE_RUBAN2_SPRITE_HEIGHT = 29;
   static constexpr unsigned int BUBBLE_RUBAN2_FRAME_COUNT = 4;
-  static constexpr int BUBBLE_RUBAN2_FRAME_WIDTH =
-    BUBBLE_RUBAN2_SPRITE_WIDTH / BUBBLE_RUBAN2_FRAME_COUNT; // Frame width in pixels
+  static constexpr int BUBBLE_RUBAN2_FRAME_WIDTH = 38; // Each file is a single frame
   static constexpr float BUBBLE_RUBAN2_SCALE = 2.5f;
 
-  static constexpr unsigned int BUBBLE_RUBAN3_SPRITE_WIDTH = 139; // bubble.png width (actual)
-  static constexpr unsigned int BUBBLE_RUBAN3_SPRITE_HEIGHT = 26; // bubble.png height
+  // bubble_ruban_front: 37x31 - individual frames (4 separate files)
+  static constexpr unsigned int BUBBLE_RUBAN3_SPRITE_WIDTH = 37;
+  static constexpr unsigned int BUBBLE_RUBAN3_SPRITE_HEIGHT = 31;
   static constexpr unsigned int BUBBLE_RUBAN3_FRAME_COUNT = 4;
-  static constexpr int BUBBLE_RUBAN3_FRAME_WIDTH =
-    BUBBLE_RUBAN3_SPRITE_WIDTH / BUBBLE_RUBAN3_FRAME_COUNT; // Frame width in pixels
+  static constexpr int BUBBLE_RUBAN3_FRAME_WIDTH = 37; // Each file is a single frame
   static constexpr float BUBBLE_RUBAN3_SCALE = 2.5f;
 
   void handleCollision(ecs::World &world, const ecs::CollisionEvent &event)
@@ -182,13 +182,13 @@ private:
       config.spriteId = ecs::SpriteId::BUBBLE_TRIPLE;
       spawnBubbleFollower(world, playerEntity, powerupX, powerupY, config);
       break;
-    case 2: // BUBBLE_RUBAN2
+    case 2: // BUBBLE_RUBAN - starts with first middle frame
       config.spriteWidth = BUBBLE_RUBAN2_SPRITE_WIDTH;
       config.spriteHeight = BUBBLE_RUBAN2_SPRITE_HEIGHT;
       config.frameCount = BUBBLE_RUBAN2_FRAME_COUNT;
       config.frameWidth = BUBBLE_RUBAN2_FRAME_WIDTH;
       config.scale = BUBBLE_RUBAN2_SCALE;
-      config.spriteId = ecs::SpriteId::BUBBLE_RUBAN2;
+      config.spriteId = ecs::SpriteId::BUBBLE_RUBAN_MIDDLE1; // Start with first middle frame
       spawnBubbleFollower(world, playerEntity, powerupX, powerupY, config);
       break;
     default:
@@ -347,9 +347,13 @@ private:
         const auto &follower = world.getComponent<ecs::Follower>(entity);
         if (follower.parent == player) {
           const auto &sprite = world.getComponent<ecs::Sprite>(entity);
+          // Check for all bubble sprite IDs including all ruban animation frames
+          bool isRubanSprite =
+            (sprite.spriteId >= ecs::SpriteId::BUBBLE_RUBAN1 && sprite.spriteId <= ecs::SpriteId::BUBBLE_RUBAN3) ||
+            (sprite.spriteId >= ecs::SpriteId::BUBBLE_RUBAN_BACK1 &&
+             sprite.spriteId <= ecs::SpriteId::BUBBLE_RUBAN_FRONT4);
           if (sprite.spriteId == ecs::SpriteId::BUBBLE || sprite.spriteId == ecs::SpriteId::BUBBLE_TRIPLE ||
-              sprite.spriteId == ecs::SpriteId::BUBBLE_RUBAN1 || sprite.spriteId == ecs::SpriteId::BUBBLE_RUBAN2 ||
-              sprite.spriteId == ecs::SpriteId::BUBBLE_RUBAN3) {
+              isRubanSprite) {
             std::cout << "[PowerupSystem] Destroying existing bubble follower " << entity
                       << " (spriteId: " << sprite.spriteId << ")\n";
             world.destroyEntity(entity);

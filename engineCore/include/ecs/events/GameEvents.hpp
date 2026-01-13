@@ -64,6 +64,7 @@ struct ShootEvent : public IEvent {
  */
 struct SpawnEntityEvent : public IEvent {
   enum class EntityType {
+    NONE, // No entity to spawn (e.g., simple bubble doesn't shoot)
     ENEMY,
     PROJECTILE,
     POWERUP,

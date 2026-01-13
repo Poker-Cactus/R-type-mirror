@@ -129,8 +129,11 @@ private:
       }
 
       const auto &sprite = world.getComponent<ecs::Sprite>(bubble);
-      if (sprite.spriteId == ecs::SpriteId::BUBBLE_RUBAN1 || sprite.spriteId == ecs::SpriteId::BUBBLE_RUBAN2 ||
-          sprite.spriteId == ecs::SpriteId::BUBBLE_RUBAN3) {
+      // Check for all ruban bubble sprite IDs (legacy + new individual frames)
+      bool isRubanSprite =
+        (sprite.spriteId >= ecs::SpriteId::BUBBLE_RUBAN1 && sprite.spriteId <= ecs::SpriteId::BUBBLE_RUBAN3) ||
+        (sprite.spriteId >= ecs::SpriteId::BUBBLE_RUBAN_BACK1 && sprite.spriteId <= ecs::SpriteId::BUBBLE_RUBAN_FRONT4);
+      if (isRubanSprite) {
         return true;
       }
     }
@@ -160,13 +163,28 @@ private:
   static ecs::SpawnEntityEvent::EntityType whichProjectile(std::uint32_t bubble)
   {
     switch (bubble) {
+    case ecs::SpriteId::BUBBLE:
+      return ecs::SpawnEntityEvent::EntityType::NONE; // Simple bubble doesn't shoot
     case ecs::SpriteId::DRONE:
       return ecs::SpawnEntityEvent::EntityType::PROJECTILE;
     case ecs::SpriteId::BUBBLE_TRIPLE:
       return ecs::SpawnEntityEvent::EntityType::TRIPLE_PROJECTILE;
+    // All ruban bubble sprites fire RUBAN1_PROJECTILE
     case ecs::SpriteId::BUBBLE_RUBAN1:
     case ecs::SpriteId::BUBBLE_RUBAN2:
     case ecs::SpriteId::BUBBLE_RUBAN3:
+    case ecs::SpriteId::BUBBLE_RUBAN_BACK1:
+    case ecs::SpriteId::BUBBLE_RUBAN_BACK2:
+    case ecs::SpriteId::BUBBLE_RUBAN_BACK3:
+    case ecs::SpriteId::BUBBLE_RUBAN_BACK4:
+    case ecs::SpriteId::BUBBLE_RUBAN_MIDDLE1:
+    case ecs::SpriteId::BUBBLE_RUBAN_MIDDLE2:
+    case ecs::SpriteId::BUBBLE_RUBAN_MIDDLE3:
+    case ecs::SpriteId::BUBBLE_RUBAN_MIDDLE4:
+    case ecs::SpriteId::BUBBLE_RUBAN_FRONT1:
+    case ecs::SpriteId::BUBBLE_RUBAN_FRONT2:
+    case ecs::SpriteId::BUBBLE_RUBAN_FRONT3:
+    case ecs::SpriteId::BUBBLE_RUBAN_FRONT4:
       return ecs::SpawnEntityEvent::EntityType::RUBAN1_PROJECTILE;
     default:
       return ecs::SpawnEntityEvent::EntityType::PROJECTILE;
@@ -205,6 +223,11 @@ private:
       if (world.hasComponent<ecs::Sprite>(drone)) {
         const auto &sprite = world.getComponent<ecs::Sprite>(drone);
         projectileType = whichProjectile(sprite.spriteId);
+      }
+
+      // Skip if this bubble type doesn't shoot (simple bubble)
+      if (projectileType == ecs::SpawnEntityEvent::EntityType::NONE) {
+        continue;
       }
 
       // Spawn projectile from drone position

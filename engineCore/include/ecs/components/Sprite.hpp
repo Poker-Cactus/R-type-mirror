@@ -136,6 +136,28 @@ constexpr std::uint32_t RUBAN21_PROJECTILE = 36;
 constexpr std::uint32_t RUBAN22_PROJECTILE = 37;
 constexpr std::uint32_t RUBAN23_PROJECTILE = 38;
 constexpr std::uint32_t RUBAN24_PROJECTILE = 39;
+
+// Bubble Ruban individual frames (4 frames each for back/middle/front)
+// Back (compressed) frames 1-4
+constexpr std::uint32_t BUBBLE_RUBAN_BACK1 = 50;
+constexpr std::uint32_t BUBBLE_RUBAN_BACK2 = 51;
+constexpr std::uint32_t BUBBLE_RUBAN_BACK3 = 52;
+constexpr std::uint32_t BUBBLE_RUBAN_BACK4 = 53;
+// Middle (neutral) frames 1-4
+constexpr std::uint32_t BUBBLE_RUBAN_MIDDLE1 = 54;
+constexpr std::uint32_t BUBBLE_RUBAN_MIDDLE2 = 55;
+constexpr std::uint32_t BUBBLE_RUBAN_MIDDLE3 = 56;
+constexpr std::uint32_t BUBBLE_RUBAN_MIDDLE4 = 57;
+// Front (stretched) frames 1-4
+constexpr std::uint32_t BUBBLE_RUBAN_FRONT1 = 58;
+constexpr std::uint32_t BUBBLE_RUBAN_FRONT2 = 59;
+constexpr std::uint32_t BUBBLE_RUBAN_FRONT3 = 60;
+constexpr std::uint32_t BUBBLE_RUBAN_FRONT4 = 61;
+
+// Triple projectile direction sprites
+constexpr std::uint32_t TRIPLE_PROJECTILE_RIGHT = 62;
+constexpr std::uint32_t TRIPLE_PROJECTILE_UP = 63;
+constexpr std::uint32_t TRIPLE_PROJECTILE_DOWN = 64;
 } // namespace SpriteId
 
 } // namespace ecs

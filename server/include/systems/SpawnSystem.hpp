@@ -31,6 +31,7 @@
 #include "../config/LevelConfig.hpp"
 #include "ecs/ComponentSignature.hpp"
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <iostream>
 #include <random>
@@ -685,6 +686,9 @@ private:
   {
     configRubanProjectile config;
     switch (event.type) {
+    case ecs::SpawnEntityEvent::EntityType::NONE:
+      // NONE type means nothing to spawn (e.g., simple bubble doesn't shoot)
+      break;
     case ecs::SpawnEntityEvent::EntityType::ENEMY:
       std::cerr << "[SpawnSystem] WARNING: SpawnEntityEvent for ENEMY is deprecated, use spawnEnemyFromConfig instead"
                 << std::endl;
@@ -781,50 +785,64 @@ private:
   {
     const float projectileVelocity = PROJECTILE_VELOCITY_MULTIPLIER * 1.0F;
 
-    ecs::Entity projectile = world.createEntity();
-
     // Capability-based offset: use GunOffset if entity has it
     float offsetX = 0.0F;
     if (world.hasComponent<ecs::GunOffset>(owner)) {
       offsetX = world.getComponent<ecs::GunOffset>(owner).x * 1.0F;
     }
 
-    ecs::Transform transform;
-    transform.x = posX + offsetX;
-    transform.y = posY;
-    transform.rotation = 0.0F;
-    transform.scale = 1.0F;
-    world.addComponent(projectile, transform);
+    // Three projectile angles: 0° (forward), -50° (up-forward), 50° (down-forward)
+    // Note: In game coords, negative Y = up, positive Y = down
+    constexpr float PI = 3.14159265358979323846F;
+    const std::array<float, 3> angles = {0.0F, -50.0F * PI / 180.0F, 50.0F * PI / 180.0F};
+    
+    // Corresponding sprite IDs for each direction
+    const std::array<std::uint32_t, 3> spriteIds = {
+      ecs::SpriteId::TRIPLE_PROJECTILE_RIGHT, // Straight forward
+      ecs::SpriteId::TRIPLE_PROJECTILE_UP,    // Up-forward
+      ecs::SpriteId::TRIPLE_PROJECTILE_DOWN   // Down-forward
+    };
 
-    ecs::Velocity velocity;
-    velocity.dx = projectileVelocity;
-    velocity.dy = 0.0F;
-    world.addComponent(projectile, velocity);
+    for (int i = 0; i < 3; i++) {
+      ecs::Entity projectile = world.createEntity();
 
-    world.addComponent(projectile, ecs::Collider{PROJECTILE_COLLIDER_SIZE, PROJECTILE_COLLIDER_SIZE});
+      ecs::Transform transform;
+      transform.x = posX + offsetX;
+      transform.y = posY;
+      transform.rotation = 0.0F; // No rotation needed - sprite already oriented correctly
+      transform.scale = 1.0F;
+      world.addComponent(projectile, transform);
 
-    // Sprite for triple projectile
-    ecs::Sprite sprite;
-    sprite.spriteId = ecs::SpriteId::TRIPLE_PROJECTILE;
-    sprite.width = PROJECTILE_SPRITE_WIDTH;
-    sprite.height = PROJECTILE_SPRITE_HEIGHT;
-    sprite.animated = true;
-    sprite.frameCount = 3;
-    sprite.loop = false;
-    sprite.startFrame = 0;
-    sprite.endFrame = 2;
+      ecs::Velocity velocity;
+      velocity.dx = projectileVelocity * std::cos(angles[i]);
+      velocity.dy = projectileVelocity * std::sin(angles[i]);
+      world.addComponent(projectile, velocity);
 
-    world.addComponent(projectile, sprite);
+      world.addComponent(projectile, ecs::Collider{PROJECTILE_COLLIDER_SIZE, PROJECTILE_COLLIDER_SIZE});
 
-    // Mark as networked
-    ecs::Networked net;
-    net.networkId = projectile;
-    world.addComponent(projectile, net);
+      // Sprite for triple projectile - use direction-specific sprite
+      ecs::Sprite sprite;
+      sprite.spriteId = spriteIds[i];
+      sprite.width = PROJECTILE_SPRITE_WIDTH;
+      sprite.height = PROJECTILE_SPRITE_HEIGHT;
+      sprite.animated = false; // Individual images, no animation
+      sprite.frameCount = 1;
+      sprite.loop = false;
+      sprite.startFrame = 0;
+      sprite.endFrame = 0;
 
-    // Track owner to prevent self-damage
-    ecs::Owner ownerComp;
-    ownerComp.ownerId = owner;
-    world.addComponent(projectile, ownerComp);
+      world.addComponent(projectile, sprite);
+
+      // Mark as networked
+      ecs::Networked net;
+      net.networkId = projectile;
+      world.addComponent(projectile, net);
+
+      // Track owner to prevent self-damage
+      ecs::Owner ownerComp;
+      ownerComp.ownerId = owner;
+      world.addComponent(projectile, ownerComp);
+    }
   }
 
   static void spawnProjectile(ecs::World &world, float posX, float posY, ecs::Entity owner)
