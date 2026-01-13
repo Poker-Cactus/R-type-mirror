@@ -517,6 +517,7 @@ void Game::updatePlayerInput()
   input.left = renderer->isKeyPressed(settings.left);
   input.right = renderer->isKeyPressed(settings.right);
   input.shoot = renderer->isKeyPressed(settings.shoot);
+  input.chargedShoot = renderer->isKeyPressed(settings.chargedShoot);
 }
 
 void Game::delegateInputToCurrentState()

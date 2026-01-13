@@ -18,10 +18,12 @@ struct Input : public IComponent {
   bool left;
   bool right;
   bool shoot;
+  bool chargedShoot;
 
   [[nodiscard]] nlohmann::json toJson() const override
   {
-    return {{"up", up}, {"down", down}, {"left", left}, {"right", right}, {"shoot", shoot}};
+    return {{"up", up},       {"down", down},   {"left", left},
+            {"right", right}, {"shoot", shoot}, {"chargedShoot", chargedShoot}};
   }
 };
 } // namespace ecs
