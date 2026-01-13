@@ -177,6 +177,7 @@ private:
   void *moonBack = nullptr; ///< Back layer texture
 
   void *menu_font = nullptr;
+  void *menuMusic;
   Difficulty currentDifficulty = Difficulty::MEDIUM;
   MenuState currentState = MenuState::INTRO; ///< Current menu state
 };

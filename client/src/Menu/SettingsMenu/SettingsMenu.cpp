@@ -20,7 +20,7 @@ SettingsMenu::SettingsMenu(std::shared_ptr<IRenderer> renderer)
 
 SettingsMenu::~SettingsMenu()
 {
-  // Libération des polices
+  // Free Fonts
   if (font != nullptr && m_renderer != nullptr) {
     m_renderer->freeFont(font);
   }
@@ -29,6 +29,16 @@ SettingsMenu::~SettingsMenu()
   }
   if (helpFont != nullptr && m_renderer != nullptr) {
     m_renderer->freeFont(helpFont);
+  }
+  // Free Sounds
+  if (clickedSound != nullptr && m_renderer != nullptr) {
+    m_renderer->freeSound(clickedSound);
+  }
+  if (hoverSound != nullptr && m_renderer != nullptr) {
+    m_renderer->freeSound(hoverSound);
+  }
+  if (errorSound != nullptr && m_renderer != nullptr) {
+    m_renderer->freeSound(errorSound);
   }
 }
 
@@ -111,7 +121,13 @@ void SettingsMenu::init(Settings &settings)
     selectedIndex = 0;
     isCapturingKey = false;
     isEditing = false;
+    clickedSound = m_renderer->loadSound("client/assets/audios/Retro3.mp3");
+    hoverSound = m_renderer->loadSound("client/assets/Sounds/Hovering3.wav");
+    errorSound = m_renderer->loadSound("client/assets/Sounds/Error1.wav");
   } catch (const std::exception &e) {
+    clickedSound = nullptr;
+    hoverSound = nullptr;
+    errorSound = nullptr;
     (void)e;
   }
 }
@@ -160,20 +176,27 @@ void SettingsMenu::applyDelta(SettingItem &item, int direction)
   if (direction == 0)
     return;
 
+  bool changed = false;
   switch (item.type) {
   case SettingItemType::SLIDER_INT:
     if (item.intTarget != nullptr) {
       const int delta = (direction > 0) ? item.step : -item.step;
       *item.intTarget = clampInt(*item.intTarget + delta, item.minValue, item.maxValue);
+      changed = true;
     }
     break;
   case SettingItemType::TOGGLE_BOOL:
     if (item.boolTarget != nullptr) {
       *item.boolTarget = !*item.boolTarget;
+      changed = true;
     }
     break;
   case SettingItemType::KEYBIND:
     break;
+  }
+
+  if (changed && clickedSound) {
+    m_renderer->playSound(clickedSound);
   }
 }
 
@@ -355,6 +378,7 @@ void SettingsMenu::process()
   if (m_renderer->isKeyJustPressed(KeyCode::KEY_LEFT) && !isEditing) {
     int catIndex = static_cast<int>(currentCategory);
     if (catIndex > 0) {
+      m_renderer->playSound(hoverSound);
       currentCategory = static_cast<SettingsCategory>(catIndex - 1);
       selectedIndex = 0;
     }
@@ -362,6 +386,7 @@ void SettingsMenu::process()
   if (m_renderer->isKeyJustPressed(KeyCode::KEY_RIGHT) && !isEditing) {
     int catIndex = static_cast<int>(currentCategory);
     if (catIndex < 2) {
+      m_renderer->playSound(hoverSound);
       currentCategory = static_cast<SettingsCategory>(catIndex + 1);
       selectedIndex = 0;
     }
@@ -374,12 +399,14 @@ void SettingsMenu::process()
 
   if (m_renderer->isKeyJustPressed(KeyCode::KEY_DOWN)) {
     if (selectedIndex + 1 < items.size()) {
+      m_renderer->playSound(hoverSound);
       selectedIndex++;
       isEditing = false;
     }
   }
   if (m_renderer->isKeyJustPressed(KeyCode::KEY_UP)) {
     if (selectedIndex > 0) {
+      m_renderer->playSound(hoverSound);
       selectedIndex--;
       isEditing = false;
     }

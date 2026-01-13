@@ -65,4 +65,6 @@ private:
   float m_zoomDuration = 0.8f; ///< Zoom animation duration
   float m_backgroundOffsetX = 0.0f; ///< Background scroll offset
   bool m_isComplete = false; ///< Whether intro is complete
+
+  void *m_music; ///< Main music theme for the menu
 };

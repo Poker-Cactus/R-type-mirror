@@ -2,6 +2,7 @@
 sdl/2.28.3
 sdl_ttf/2.20.2
 sdl_image/2.6.3
+sdl_mixer/2.8.0
 asio/1.28.0
 capnproto/1.0.1
 doctest/2.4.11
@@ -13,3 +14,7 @@ CMakeToolchain
 VirtualBuildEnv
 
 [options]
+sdl_mixer/*:shared=True
+sdl_mixer/*:with_mp3=True
+sdl_mixer/*:with_ogg=True
+sdl_mixer/*:with_flac=True

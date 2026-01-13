@@ -55,6 +55,7 @@ void Menu::init()
     moonFront = m_renderer->loadTexture("client/assets/moon-para/moon_front.png");
     moonFloor = m_renderer->loadTexture("client/assets/moon-para/moon_floor.png");
 
+    menuMusic = m_renderer->loadMusic("client/assets/audios/rtypeMenuMusic.mp3");
   } catch (const std::exception &e) {
     std::cerr << "Exception during menu initialization: " << e.what() << '\n';
   }
@@ -142,6 +143,7 @@ void Menu::cleanup()
 
 void Menu::setState(MenuState newState)
 {
+  MenuState previousState = currentState;
   currentState = newState;
 
   // Refresh highscores when entering lobby menu
