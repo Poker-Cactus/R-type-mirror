@@ -44,6 +44,8 @@ void IntroScreen::init()
     m_font = m_renderer->loadFont("client/assets/font.opf/r-type.otf", fontSize);
     m_planet = m_renderer->loadTexture("client/assets/moon-pack/moon1.png");
     m_music = m_renderer->loadMusic("client/assets/audios/loadingMusic.mp3");
+    // Start the music now in order to have it for the whole menu.
+    // It can be stop using the m_renderer->stopMusic() method wherever you are.
     if (m_music) {
       m_renderer->playMusic(m_music);
     }

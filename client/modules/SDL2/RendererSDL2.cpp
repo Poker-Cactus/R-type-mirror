@@ -621,11 +621,11 @@ void RendererSDL2::setMusicVolume(int volume)
 
 void RendererSDL2::freeSound(void *sound)
 {
-  // if (!sound)
-  //   return;
+  if (!sound)
+    return;
 
-  // Mix_Chunk *chunk = static_cast<Mix_Chunk *>(sound);
-  // Mix_FreeChunk(chunk);
+  Mix_Chunk *chunk = static_cast<Mix_Chunk *>(sound);
+  Mix_FreeChunk(chunk);
 }
 
 void RendererSDL2::freeMusic(void *music)

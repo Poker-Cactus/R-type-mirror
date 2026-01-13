@@ -20,7 +20,7 @@ SettingsMenu::SettingsMenu(std::shared_ptr<IRenderer> renderer)
 
 SettingsMenu::~SettingsMenu()
 {
-  // Libération des polices
+  // Free Fonts
   if (font != nullptr && m_renderer != nullptr) {
     m_renderer->freeFont(font);
   }
@@ -29,6 +29,16 @@ SettingsMenu::~SettingsMenu()
   }
   if (helpFont != nullptr && m_renderer != nullptr) {
     m_renderer->freeFont(helpFont);
+  }
+  // Free Sounds
+  if (clickedSound != nullptr && m_renderer != nullptr) {
+    m_renderer->freeSound(clickedSound);
+  }
+  if (hoverSound != nullptr && m_renderer != nullptr) {
+    m_renderer->freeSound(hoverSound);
+  }
+  if (errorSound != nullptr && m_renderer != nullptr) {
+    m_renderer->freeSound(errorSound);
   }
 }
 
@@ -113,7 +123,11 @@ void SettingsMenu::init(Settings &settings)
     isEditing = false;
     clickedSound = m_renderer->loadSound("client/assets/audios/Retro3.mp3");
     hoverSound = m_renderer->loadSound("client/assets/Sounds/Hovering3.wav");
+    errorSound = m_renderer->loadSound("client/assets/Sounds/Error1.wav");
   } catch (const std::exception &e) {
+    clickedSound = nullptr;
+    hoverSound = nullptr;
+    errorSound = nullptr;
     (void)e;
   }
 }

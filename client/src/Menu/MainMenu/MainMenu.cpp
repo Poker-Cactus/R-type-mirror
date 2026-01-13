@@ -25,6 +25,12 @@ MainMenu::~MainMenu()
   if (planet != nullptr && m_renderer != nullptr) {
     m_renderer->freeTexture(planet);
   }
+  if (clickedSound != nullptr && m_renderer != nullptr) {
+    m_renderer->freeSound(clickedSound);
+  }
+  if (hoverSound != nullptr && m_renderer != nullptr) {
+    m_renderer->freeSound(hoverSound);
+  }
 }
 
 void MainMenu::init()
