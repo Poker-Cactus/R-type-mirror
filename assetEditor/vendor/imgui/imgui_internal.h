@@ -1369,7 +1369,7 @@ enum ImGuiItemFlags_ {
     << 5, // false     // Disable MenuItem/Selectable() automatically closing their popup window
   ImGuiItemFlags_MixedValue =
     1 << 6, // false     // [BETA] Represent a mixed/indeterminate value, generally multi-selection where values differ.
-            // Currently only supported by Checkbox() (later should support all sorts of widgets)
+  // Currently only supported by Checkbox() (later should support all sorts of widgets)
   ImGuiItemFlags_ReadOnly =
     1 << 7, // false     // [ALPHA] Allow hovering interactions but underlying value is not changed.
   ImGuiItemFlags_NoWindowHoverableCheck = 1 << 8, // false     // Disable hoverable check in ItemHoverable()
@@ -1500,7 +1500,7 @@ enum ImGuiSelectableFlagsPrivate_ {
     << 23, // Override button behavior to react on Release (default is Click+Release)
   ImGuiSelectableFlags_SpanAvailWidth = 1
     << 24, // Span all avail width even if we declared less for layout purpose. FIXME: We may be able to remove this
-           // (added in 6251d379, 2bcafc86 for menus)
+  // (added in 6251d379, 2bcafc86 for menus)
   ImGuiSelectableFlags_SetNavIdOnHover = 1 << 25, // Set Nav/Focus ID on mouse hover (used by MenuItem)
   ImGuiSelectableFlags_NoPadWithHalfSpacing = 1 << 26, // Disable padding each side with ItemSpacing * 0.5f
   ImGuiSelectableFlags_NoSetKeyOwner = 1 << 27, // Don't set key/input owner on the initial click (note: mouse buttons
@@ -2076,12 +2076,12 @@ enum ImGuiInputFlags_ {
   // so everything is opt-in.
   ImGuiInputFlags_RepeatUntilRelease =
     1 << 4, // Stop repeating when released (default for all functions except Shortcut). This only exists to allow
-            // overriding Shortcut() default behavior.
+  // overriding Shortcut() default behavior.
   ImGuiInputFlags_RepeatUntilKeyModsChange = 1
     << 5, // Stop repeating when released OR if keyboard mods are changed (default for Shortcut)
   ImGuiInputFlags_RepeatUntilKeyModsChangeFromNone = 1
     << 6, // Stop repeating when released OR if keyboard mods are leaving the None state. Allows going from Mod+Key to
-          // Key by releasing Mod.
+  // Key by releasing Mod.
   ImGuiInputFlags_RepeatUntilOtherKeyPress = 1
     << 7, // Stop repeating when released OR if any other keyboard key is pressed during the repeat
 
@@ -2097,8 +2097,8 @@ enum ImGuiInputFlags_ {
                                            // make input-owner-aware code steal keys from non-input-owner-aware code.
   ImGuiInputFlags_LockUntilRelease =
     1 << 11, // Access to key data will require EXPLICIT owner ID (ImGuiKeyOwner_Any/0 will NOT accepted for polling).
-             // Cleared when the key is released or at end of each frame if key is released. This is useful to make
-             // input-owner-aware code steal keys from non-input-owner-aware code.
+  // Cleared when the key is released or at end of each frame if key is released. This is useful to make
+  // input-owner-aware code steal keys from non-input-owner-aware code.
 
   // Routing policies for Shortcut() + low-level SetShortcutRouting()
   // - The general idea is that several callers register interest in a shortcut, and only one owner gets it.
@@ -2113,7 +2113,7 @@ enum ImGuiInputFlags_ {
   // - Can select only 1 policy among all available.
   ImGuiInputFlags_RouteFocused =
     1 << 12, // (Default) Register focused route: Accept inputs if window is in focus stack. Deep-most focused window
-             // takes inputs. ActiveId takes inputs over deep-most focused window.
+  // takes inputs. ActiveId takes inputs over deep-most focused window.
   ImGuiInputFlags_RouteGlobalLow = 1 << 13, // Register route globally (lowest priority: unless a focused window or
                                             // active item registered the route) -> recommended Global priority.
   ImGuiInputFlags_RouteGlobal = 1 << 14, // Register route globally (medium priority: unless an active item registered
@@ -2125,7 +2125,7 @@ enum ImGuiInputFlags_ {
   ImGuiInputFlags_RouteAlways = 1 << 16, // Do not register route, poll keys directly.
   ImGuiInputFlags_RouteUnlessBgFocused = 1
     << 17, // Global routes will not be applied if underlying background/void is focused (== no Dear ImGui windows are
-           // focused). Useful for overlay applications.
+  // focused). Useful for overlay applications.
   ImGuiInputFlags_RouteExtraMask_ = ImGuiInputFlags_RouteAlways | ImGuiInputFlags_RouteUnlessBgFocused,
 
   // [Internal] Mask of which function support which flags
