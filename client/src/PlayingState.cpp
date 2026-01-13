@@ -241,7 +241,9 @@ void PlayingState::render()
           break;
         default:
           break;
-        } else if (sprite.spriteId == ecs::SpriteId::ENEMY_ROBOT) {
+        }
+
+        if (sprite.spriteId == ecs::SpriteId::ENEMY_ROBOT) {
           // Robot: 200x34 with 6 frames in single row (0-2: left, 3-5: right)
           frameWidth = 200 / 6; // 33px per frame
           frameHeight = 34;
@@ -1154,7 +1156,6 @@ void PlayingState::loadSpriteTextures()
     std::cerr << "[PlayingState] ✗ Failed to load walk_projectile.png: " << e.what() << '\n';
   }
 
-  constexpr int EXPECTED_TEXTURE_COUNT = 39;
   // ENEMY_ROBOT = 9 (animated spritesheet: 200x34, 6 frames in single row)
   try {
     void *enemy_robot_tex = renderer->loadTexture(resolveAssetPath("client/assets/sprites/enemy_robot.gif"));
@@ -1179,7 +1180,7 @@ void PlayingState::loadSpriteTextures()
   } catch (const std::exception &e) {
     std::cerr << "[PlayingState] ✗ Failed to load robot_projectile.png: " << e.what() << '\n';
   }
-  constexpr int EXPECTED_TEXTURE_COUNT = 10;
+  constexpr int EXPECTED_TEXTURE_COUNT = 39;
   std::cout << "[PlayingState] Successfully loaded " << m_spriteTextures.size() << " / " << EXPECTED_TEXTURE_COUNT
             << " sprite textures" << '\n';
   if (m_spriteTextures.size() < EXPECTED_TEXTURE_COUNT) {
