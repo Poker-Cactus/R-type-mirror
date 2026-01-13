@@ -190,6 +190,7 @@ void NetworkReceiveSystem::handlePlayerInput([[maybe_unused]] ecs::World &world,
       input.left = inputJson.value("left", false);
       input.right = inputJson.value("right", false);
       input.shoot = inputJson.value("shoot", false);
+      input.chargedShoot = inputJson.value("chargedShoot", false);
       return;
     }
   } catch (const std::exception &) {
