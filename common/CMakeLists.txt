@@ -5,6 +5,7 @@ find_package(nlohmann_json REQUIRED)
 add_library(common STATIC
     src/components/Components.cpp
     src/protocol/Protocol.cpp
+    src/Highscore.cpp
 )
 
 target_include_directories(common PUBLIC include)

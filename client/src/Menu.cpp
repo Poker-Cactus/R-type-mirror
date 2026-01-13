@@ -41,10 +41,11 @@ void Menu::init()
     m_mainMenu->init();
 
     m_lobbyMenu = std::make_shared<LobbyMenu>(m_renderer);
-    m_lobbyMenu->init();
+    m_lobbyMenu->init(settings);
+
 
     m_profileMenu = std::make_shared<ProfileMenu>(m_renderer);
-    m_profileMenu->init();
+    m_profileMenu->init(settings);
 
     m_settingsMenu = std::make_shared<SettingsMenu>(m_renderer);
     m_settingsMenu->init(settings);
@@ -104,7 +105,7 @@ void Menu::processInput()
     m_mainMenu->process(&currentState, settings);
     break;
   case MenuState::PROFILE:
-    m_profileMenu->process();
+    m_profileMenu->process(&currentState, settings);
     break;
   case MenuState::SETTINGS:
     m_settingsMenu->process();
@@ -143,6 +144,11 @@ void Menu::cleanup()
 void Menu::setState(MenuState newState)
 {
   currentState = newState;
+  
+  // Refresh highscores when entering lobby menu
+  if (newState == MenuState::LOBBY && m_lobbyMenu != nullptr) {
+    m_lobbyMenu->refreshHighscores();
+  }
 }
 
 void Menu::drawCenteredText(const std::string &text, int yOffset, const Color &color)
@@ -184,6 +190,13 @@ bool Menu::isCreatingLobby() const
   return m_lobbyMenu != nullptr && m_lobbyMenu->isCreatingLobby();
 }
 
+void Menu::refreshHighscoresIfInLobby()
+{
+  if (currentState == MenuState::LOBBY && m_lobbyMenu != nullptr) {
+    m_lobbyMenu->refreshHighscores();
+  }
+}
+
 std::string Menu::getLobbyCodeToJoin() const
 {
   if (m_lobbyMenu != nullptr) {
@@ -195,8 +208,19 @@ std::string Menu::getLobbyCodeToJoin() const
 void Menu::resetLobbySelection()
 {
   if (m_lobbyMenu != nullptr) {
+    // Cache the current difficulty before resetting
+    currentDifficulty = m_lobbyMenu->getSelectedDifficulty();
     m_lobbyMenu->resetLobbyRoomFlag();
   }
+}
+
+Difficulty Menu::getCurrentDifficulty() const
+{
+  // Return the actual selected difficulty from lobby menu if available
+  if (m_lobbyMenu != nullptr) {
+    return m_lobbyMenu->getSelectedDifficulty();
+  }
+  return currentDifficulty;
 }
 
 void Menu::renderMoonParalax(int winWidth, int winHeight)
