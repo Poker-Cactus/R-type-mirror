@@ -10,7 +10,9 @@
  */
 
 #pragma once
+#include "../../../include/Settings.hpp"
 #include "../../../interface/IRenderer.hpp"
+#include "../MenuState.hpp"
 #include <memory>
 
 /**
@@ -26,8 +28,9 @@ public:
   /**
    * @brief Initialize profile menu resources
    * @param renderer Renderer interface
+   * @param settings Game settings reference
    */
-  void init();
+  void init(Settings &settings);
 
   /**
    * @brief Render the profile menu
@@ -38,9 +41,23 @@ public:
 
   /**
    * @brief Process user input
+   * @param currentState Pointer to current menu state
+   * @param settings Settings reference for key bindings
    */
-  void process();
+  void process(MenuState *currentState, Settings &settings);
 
-  private:
-    std::shared_ptr<IRenderer> m_renderer;
+  /**
+   * @brief Check if the profile menu is currently in editing mode
+   * @return true if editing username
+   */
+  [[nodiscard]] bool isEditing() const { return isEditingUsername; }
+
+private:
+  Settings *m_settings = nullptr;
+  void *font = nullptr;
+  void *titleFont = nullptr;
+  std::string currentUsername;
+  bool isEditingUsername = false;
+  int selectedOption = 0; // 0 = username, 1 = save
+  std::shared_ptr<IRenderer> m_renderer;
 };

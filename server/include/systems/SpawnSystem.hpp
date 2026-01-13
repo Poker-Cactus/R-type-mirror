@@ -27,10 +27,14 @@
 #include "../../../engineCore/include/ecs/components/Viewport.hpp"
 #include "../../../engineCore/include/ecs/events/EventListenerHandle.hpp"
 #include "../../../engineCore/include/ecs/events/GameEvents.hpp"
+#include "../config/EnemyConfig.hpp"
+#include "../config/LevelConfig.hpp"
 #include "ecs/ComponentSignature.hpp"
 #include <algorithm>
 #include <cmath>
+#include <iostream>
 #include <random>
+#include <unordered_map>
 #include <vector>
 
 namespace server
@@ -56,28 +60,109 @@ public:
   SpawnSystem() : m_rng(std::random_device{}()) {}
   Difficulty difficulty = Difficulty::MEDIUM;
 
+  /**
+   * @brief Set the enemy configuration manager
+   * @param configManager Shared pointer to enemy config manager
+   */
+  void setEnemyConfigManager(std::shared_ptr<EnemyConfigManager> configManager)
+  {
+    m_enemyConfigManager = configManager;
+  }
+
+  /**
+   * @brief Set the level configuration manager
+   * @param configManager Shared pointer to level config manager
+   */
+  void setLevelConfigManager(std::shared_ptr<LevelConfigManager> configManager)
+  {
+    m_levelConfigManager = configManager;
+  }
+
+  /**
+   * @brief Start a level by ID
+   * @param levelId Level ID from configuration
+   */
+  void startLevel(const std::string &levelId)
+  {
+    if (!m_levelConfigManager) {
+      std::cerr << "[SpawnSystem] ERROR: No level config manager set!" << std::endl;
+      return;
+    }
+
+    const LevelConfig *config = m_levelConfigManager->getConfig(levelId);
+    if (!config) {
+      std::cerr << "[SpawnSystem] ERROR: Unknown level ID '" << levelId << "'" << std::endl;
+      return;
+    }
+
+    m_currentLevel = config;
+    m_levelTime = 0.0F;
+    m_nextWaveIndex = 0;
+    m_isLevelActive = true;
+
+    // Clear existing spawn modes
+    m_enemyTypeTimers.clear();
+    m_spawnQueue.clear();
+
+    std::cout << "[SpawnSystem] Started level: " << config->name << " (" << config->waves.size() << " waves)"
+              << std::endl;
+  }
+
+  /**
+   * @brief Stop the current level
+   */
+  void stopLevel()
+  {
+    m_isLevelActive = false;
+    m_currentLevel = nullptr;
+    m_levelTime = 0.0F;
+    m_nextWaveIndex = 0;
+    std::cout << "[SpawnSystem] Level stopped" << std::endl;
+  }
+
   void update(ecs::World &world, float deltaTime) override
   {
     (void)world;
     m_spawnTimer += deltaTime;
     m_powerupSpawnTimer += deltaTime;
 
-    // Update spawn queue timer for delayed spawns
-    if (!m_spawnQueue.empty()) {
-      m_spawnQueueTimer += deltaTime;
-
-      while (!m_spawnQueue.empty() && m_spawnQueueTimer >= m_spawnQueue.front().delay) {
-        const auto &queuedSpawn = m_spawnQueue.front();
-        spawnEnemyRed(world, queuedSpawn.x, queuedSpawn.y);
-        m_spawnQueueTimer -= queuedSpawn.delay;
-        m_spawnQueue.erase(m_spawnQueue.begin());
-      }
+    // Priority 0: Level-based spawning (highest priority)
+    if (m_isLevelActive && m_currentLevel) {
+      updateLevelSpawning(world, deltaTime);
+      // Still process spawn queue even in level mode
+      processSpawnQueue(world, deltaTime);
+      return;
     }
 
-    // Spawn enemy groups periodically
-    if (m_spawnTimer >= SPAWN_INTERVAL) {
-      spawnEnemyRedGroup(world);
+    // Update spawn queue timer for delayed spawns
+    processSpawnQueue(world, deltaTime);
+
+    // Mode 1: Multi-type spawning avec timers séparés (prioritaire)
+    if (!m_enemyTypeTimers.empty()) {
+      updateMultiTypeSpawning(world, deltaTime);
+      return; // Skip le mode single-type
+    }
+
+    // Mode 2: Single-type spawning avec cycle automatique
+    m_spawnTimer += deltaTime;
+    if (!m_enemyConfigManager) {
+      std::cerr << "[SpawnSystem] ERROR: No enemy config manager, cannot spawn enemies" << std::endl;
+      return;
+    }
+
+    // Use config-based spawning
+    const EnemyConfig *config = m_enemyConfigManager->getConfig(m_currentEnemyType);
+    if (!config) {
+      std::cerr << "[SpawnSystem] ERROR: Unknown enemy type '" << m_currentEnemyType << "'" << std::endl;
+      return;
+    }
+
+    if (m_spawnTimer >= config->spawn.spawnInterval) {
+      spawnEnemyGroup(world, m_currentEnemyType);
       m_spawnTimer = 0.0F;
+
+      // Alterner automatiquement entre les types d'ennemis
+      cycleEnemyType();
     }
 
     // Spawn powerups periodically
@@ -96,6 +181,197 @@ public:
 
   [[nodiscard]] ecs::ComponentSignature getSignature() const override { return {}; }
 
+  /**
+   * @brief Set the current enemy type to spawn
+   * @param enemyType Enemy type ID from config
+   */
+  void setCurrentEnemyType(const std::string &enemyType) { m_currentEnemyType = enemyType; }
+
+  /**
+   * @brief Get the current enemy type being spawned
+   * @return Current enemy type ID
+   */
+  [[nodiscard]] const std::string &getCurrentEnemyType() const { return m_currentEnemyType; }
+
+  /**
+   * @brief Cycle to the next enemy type (useful for wave progression)
+   */
+  void cycleEnemyType()
+  {
+    if (!m_enemyConfigManager)
+      return;
+
+    auto ids = m_enemyConfigManager->getEnemyIds();
+    if (ids.empty())
+      return;
+
+    auto it = std::find(ids.begin(), ids.end(), m_currentEnemyType);
+    if (it != ids.end()) {
+      ++it;
+      if (it == ids.end()) {
+        it = ids.begin(); // Loop back
+      }
+      m_currentEnemyType = *it;
+    } else {
+      m_currentEnemyType = ids[0];
+    }
+  }
+
+  /**
+   * @brief Spawn multiple enemy types at once
+   * @param world ECS world
+   * @param enemyTypes Vector of enemy type IDs to spawn
+   */
+  void spawnMultipleTypes(ecs::World &world, const std::vector<std::string> &enemyTypes)
+  {
+    for (const auto &enemyType : enemyTypes) {
+      spawnEnemyGroup(world, enemyType);
+    }
+  }
+
+  /**
+   * @brief Enable spawning for specific enemy types with their own timers
+   * @param enemyTypes Vector of enemy type IDs to enable
+   */
+  void enableMultipleSpawnTypes(const std::vector<std::string> &enemyTypes)
+  {
+    m_enemyTypeTimers.clear();
+    for (const auto &type : enemyTypes) {
+      m_enemyTypeTimers[type] = 0.0F;
+      std::cout << "[SpawnSystem] Enabled multi-spawn for enemy type: " << type << std::endl;
+    }
+    std::cout << "[SpawnSystem] Multi-spawn mode activated with " << m_enemyTypeTimers.size() << " enemy types"
+              << std::endl;
+  }
+
+  /**
+   * @brief Update function that handles multiple enemy types spawning independently
+   */
+  void updateMultiTypeSpawning(ecs::World &world, float deltaTime)
+  {
+    if (!m_enemyConfigManager || m_enemyTypeTimers.empty())
+      return;
+
+    for (auto &[enemyType, timer] : m_enemyTypeTimers) {
+      timer += deltaTime;
+
+      const EnemyConfig *config = m_enemyConfigManager->getConfig(enemyType);
+      if (config && timer >= config->spawn.spawnInterval) {
+        std::cout << "[SpawnSystem] Spawning group of " << enemyType << " (timer=" << timer
+                  << ", interval=" << config->spawn.spawnInterval << ")" << std::endl;
+        spawnEnemyGroup(world, enemyType);
+        timer = 0.0F;
+      }
+    }
+  }
+
+  /**
+   * @brief Process the spawn queue for delayed spawns
+   */
+  void processSpawnQueue(ecs::World &world, float deltaTime)
+  {
+    if (m_spawnQueue.empty())
+      return;
+
+    m_spawnQueueTimer += deltaTime;
+
+    while (!m_spawnQueue.empty() && m_spawnQueueTimer >= m_spawnQueue.front().delay) {
+      const auto &queuedSpawn = m_spawnQueue.front();
+      if (!m_enemyConfigManager) {
+        std::cerr << "[SpawnSystem] CRITICAL: No enemy config manager set!" << std::endl;
+        m_spawnQueue.erase(m_spawnQueue.begin());
+        continue;
+      }
+      if (queuedSpawn.enemyType.empty()) {
+        std::cerr << "[SpawnSystem] ERROR: Empty enemy type in spawn queue!" << std::endl;
+        m_spawnQueue.erase(m_spawnQueue.begin());
+        continue;
+      }
+
+      // Spawn single enemy (count should always be 1 now)
+      spawnEnemyFromConfig(world, queuedSpawn.x, queuedSpawn.y, queuedSpawn.enemyType);
+
+      m_spawnQueueTimer -= queuedSpawn.delay;
+      m_spawnQueue.erase(m_spawnQueue.begin());
+    }
+  }
+
+  /**
+   * @brief Update level spawning - processes waves based on level time
+   */
+  void updateLevelSpawning(ecs::World &world, float deltaTime)
+  {
+    if (!m_currentLevel || !m_isLevelActive)
+      return;
+
+    m_levelTime += deltaTime;
+
+    // Check if we need to trigger the next wave
+    while (m_nextWaveIndex < m_currentLevel->waves.size()) {
+      const auto &wave = m_currentLevel->waves[m_nextWaveIndex];
+
+      if (m_levelTime >= wave.startTime) {
+        std::cout << "[SpawnSystem] Triggering wave " << m_nextWaveIndex << ": " << wave.name
+                  << " (time=" << m_levelTime << ")" << std::endl;
+
+        // Get viewport width to spawn just outside screen
+        float worldWidth = DEFAULT_VIEWPORT_WIDTH;
+        ecs::ComponentSignature playerSig;
+        playerSig.set(ecs::getComponentId<ecs::PlayerId>());
+        playerSig.set(ecs::getComponentId<ecs::Viewport>());
+        std::vector<ecs::Entity> players;
+        world.getEntitiesWithSignature(playerSig, players);
+        for (const auto &player : players) {
+          const auto &viewport = world.getComponent<ecs::Viewport>(player);
+          if (viewport.width > 0) {
+            worldWidth = std::max(worldWidth, static_cast<float>(viewport.width));
+          }
+        }
+
+        // Queue all spawns in this wave
+        // If count > 1, create individual spawns with incrementing delays
+        for (const auto &spawn : wave.spawns) {
+          // Get enemy config to calculate proper delay based on velocity
+          const EnemyConfig *enemyConfig =
+            m_enemyConfigManager ? m_enemyConfigManager->getConfig(spawn.enemyType) : nullptr;
+          float enemyVelocity = enemyConfig ? std::abs(enemyConfig->velocity.dx) : 384.0f; // Default velocity
+
+          // Calculate delay to maintain spacing: delay = spacing / velocity
+          float spawnDelayPerEnemy = (enemyVelocity > 0.0f) ? (spawn.spacing / enemyVelocity) : 0.08f;
+
+          std::uniform_real_distribution<float> yVariation(-30.0f, 30.0f);
+          for (int i = 0; i < spawn.count; ++i) {
+            float offsetY = yVariation(m_rng);
+            float individualDelay = spawn.delay + i * spawnDelayPerEnemy;
+
+            // Spawn just outside the right edge of screen (worldWidth + 100px)
+            // Don't add offsetX here - let the delay create natural spacing
+            float spawnX = worldWidth + 100.0f;
+
+            m_spawnQueue.push_back({spawnX, spawn.y + offsetY, individualDelay, spawn.enemyType,
+                                    1, // Spawn only 1 enemy per queue entry
+                                    0.0f});
+          }
+        }
+
+        // Sort spawn queue by delay
+        std::sort(m_spawnQueue.begin(), m_spawnQueue.end(),
+                  [](const QueuedSpawn &a, const QueuedSpawn &b) { return a.delay < b.delay; });
+
+        m_spawnQueueTimer = 0.0F;
+        m_nextWaveIndex++;
+      } else {
+        break; // No more waves to trigger yet
+      }
+    }
+
+    // Check if level is complete
+    if (m_nextWaveIndex >= m_currentLevel->waves.size() && m_spawnQueue.empty()) {
+      std::cout << "[SpawnSystem] Level completed: " << m_currentLevel->name << std::endl;
+      stopLevel();
+    }
+  }
+
 private:
   ecs::EventListenerHandle m_spawnHandle;
   std::mt19937 m_rng;
@@ -103,11 +379,26 @@ private:
   float m_spawnQueueTimer = 0.0F;
   float m_powerupSpawnTimer = 0.0F;
   int m_powerupSpawnCount = 0; // Counter to alternate powerup types: 0=DRONE, 1=BUBBLE
+  std::shared_ptr<EnemyConfigManager> m_enemyConfigManager;
+  std::shared_ptr<LevelConfigManager> m_levelConfigManager;
+  std::string m_currentEnemyType = "enemy_red"; // Default enemy type
+
+  // Level-based spawning state
+  const LevelConfig *m_currentLevel = nullptr;
+  float m_levelTime = 0.0F;
+  size_t m_nextWaveIndex = 0;
+  bool m_isLevelActive = false;
+
+  // Timers individuels pour chaque type d'ennemi
+  std::unordered_map<std::string, float> m_enemyTypeTimers;
 
   struct QueuedSpawn {
     float x;
     float y;
     float delay;
+    std::string enemyType;
+    int count; // Nombre d'ennemis à spawner
+    float spacing; // Espacement entre les ennemis
   };
   std::vector<QueuedSpawn> m_spawnQueue;
 
@@ -149,7 +440,7 @@ private:
   static constexpr float PROJECTILE_COLLIDER_SIZE = 8.0F;
   static constexpr unsigned int PROJECTILE_SPRITE_WIDTH = 84;
   static constexpr unsigned int PROJECTILE_SPRITE_HEIGHT = 37;
-  static constexpr float PROJECTILE_VELOCITY_MULTIPLIER = 400.0F;
+  static constexpr float PROJECTILE_VELOCITY_MULTIPLIER = 2400.0F;
   static constexpr float DIRECTION_THRESHOLD = 0.01F;
 
   // Ruban/Wave beam projectile configuration (R-Type ribbon effect)
@@ -230,10 +521,28 @@ private:
   }
 
   /**
-   * @brief Spawn a group of Enemy Red with random count (1-5)
+   * @brief Spawn a group of enemies from configuration
+   * @param world ECS world
+   * @param enemyType Enemy type ID from config
    */
-  void spawnEnemyRedGroup(ecs::World &world)
+  void spawnEnemyGroup(ecs::World &world, const std::string &enemyType)
   {
+    if (!m_enemyConfigManager) {
+      std::cerr << "[SpawnSystem] CRITICAL: No enemy config manager set!" << std::endl;
+      return;
+    }
+
+    const EnemyConfig *config = m_enemyConfigManager->getConfig(enemyType);
+    if (!config) {
+      std::cerr << "[SpawnSystem] ERROR: Unknown enemy type '" << enemyType << "'" << std::endl;
+      std::cerr << "[SpawnSystem] Available enemy types: ";
+      for (const auto &id : m_enemyConfigManager->getEnemyIds()) {
+        std::cerr << id << " ";
+      }
+      std::cerr << std::endl;
+      return;
+    }
+
     // Get world dimensions
     float worldWidth = DEFAULT_VIEWPORT_WIDTH;
     float worldHeight = DEFAULT_VIEWPORT_HEIGHT;
@@ -254,8 +563,8 @@ private:
       }
     }
 
-    // Random group size: 1 to 5 enemies
-    std::uniform_int_distribution<int> groupSizeDist(1, 5);
+    // Random group size from config
+    std::uniform_int_distribution<int> groupSizeDist(config->spawn.groupSizeMin, config->spawn.groupSizeMax);
     int groupSize = groupSizeDist(m_rng);
 
     // Pick a random height range (1-6)
@@ -266,7 +575,6 @@ private:
     float rangeHeight = (worldHeight - 2 * SPAWN_Y_MARGIN) / 6.0f;
     float baseY = SPAWN_Y_MARGIN + heightRange * rangeHeight;
 
-    // Random Y within this range
     std::uniform_real_distribution<float> yOffsetDist(0.0f, rangeHeight);
 
     // Spawn X position at right edge
@@ -275,60 +583,85 @@ private:
     // Queue all enemies in the group with delays
     for (int i = 0; i < groupSize; ++i) {
       float y = baseY + yOffsetDist(m_rng);
-      float delay = i * ENEMY_RED_SPAWN_DELAY;
-      m_spawnQueue.push_back({spawnX, y, delay});
+      float delay = i * config->spawn.spawnDelay;
+      m_spawnQueue.push_back({spawnX, y, delay, enemyType, 1, 0.0F});
     }
+
+    std::cout << "[SpawnSystem] Queued " << groupSize << " enemies of type '" << enemyType << "' at X=" << spawnX
+              << std::endl;
   }
 
   /**
-   * @brief Spawn a single Enemy Red
+   * @brief Spawn an enemy from configuration
+   * @param world ECS world
+   * @param posX X position
+   * @param posY Y position
+   * @param enemyType Enemy type ID from config
    */
-  static void spawnEnemyRed(ecs::World &world, float posX, float posY)
+  void spawnEnemyFromConfig(ecs::World &world, float posX, float posY, const std::string &enemyType)
   {
+    if (!m_enemyConfigManager) {
+      std::cerr << "[SpawnSystem] CRITICAL: No enemy config manager set!" << std::endl;
+      return;
+    }
+
+    const EnemyConfig *config = m_enemyConfigManager->getConfig(enemyType);
+    if (!config) {
+      std::cerr << "[SpawnSystem] ERROR: Unknown enemy type '" << enemyType << "'" << std::endl;
+      std::cerr << "[SpawnSystem] Available enemy types: ";
+      for (const auto &id : m_enemyConfigManager->getEnemyIds()) {
+        std::cerr << id << " ";
+      }
+      std::cerr << std::endl;
+      return;
+    }
+
     ecs::Entity enemy = world.createEntity();
 
-    // Each enemy has its own oscillation pattern
-    world.addComponent(enemy, ecs::Pattern{"sine_wave", ENEMY_RED_AMPLITUDE, ENEMY_RED_FREQUENCY});
+    // Pattern component
+    world.addComponent(enemy, ecs::Pattern{config->pattern.type, config->pattern.amplitude, config->pattern.frequency});
 
+    // Transform component
     ecs::Transform transform;
     transform.x = posX;
     transform.y = posY;
     transform.rotation = 0.0F;
-    transform.scale = ENEMY_RED_SCALE;
+    transform.scale = config->transform.scale;
     world.addComponent(enemy, transform);
 
+    // Velocity component
     ecs::Velocity velocity;
-    velocity.dx = ENEMY_VELOCITY_X;
-    velocity.dy = 0.0F;
+    velocity.dx = config->velocity.dx;
+    velocity.dy = config->velocity.dy;
     world.addComponent(enemy, velocity);
 
+    // Health component
     ecs::Health health;
-    health.hp = ENEMY_HEALTH;
-    health.maxHp = ENEMY_HEALTH;
+    health.hp = config->health.hp;
+    health.maxHp = config->health.maxHp;
     world.addComponent(enemy, health);
 
-    // Collider scaled to match visual size: frame dimensions * scale
-    // Frame: 33x36, Scale: 3.0 => Collider: 99x108
-    world.addComponent(
-      enemy, ecs::Collider{ENEMY_RED_FRAME_WIDTH * ENEMY_RED_SCALE, ENEMY_RED_SPRITE_HEIGHT * ENEMY_RED_SCALE});
+    // Collider component
+    world.addComponent(enemy, ecs::Collider{config->collider.width, config->collider.height});
 
-    // Sprite for Enemy Red with animation
-    // Spritesheet: 533x36 with 16 frames
-    // Frame size: 533/16 = 33px per frame (integer division)
-    // Animation: frames 7 to 0 (reverse, from 8th frame to 1st)
+    // Sprite component
     ecs::Sprite sprite;
-    sprite.spriteId = ecs::SpriteId::ENEMY_SHIP;
-    sprite.width = ENEMY_RED_FRAME_WIDTH; // Frame width from integer division
-    sprite.height = ENEMY_RED_SPRITE_HEIGHT; // Frame height (scale applied via Transform)
-    sprite.animated = true;
-    sprite.frameCount = ENEMY_RED_FRAME_COUNT;
-    sprite.startFrame = 7; // 8th frame (0-indexed)
-    sprite.endFrame = 0; // 1st frame
-    sprite.currentFrame = 7;
-    sprite.frameTime = 0.1f; // 10 FPS animation
-    sprite.reverseAnimation = true; // Play from frame 7 to 0
+    sprite.spriteId = config->sprite.spriteId;
+    sprite.width = config->sprite.width;
+    sprite.height = config->sprite.height;
+    sprite.animated = config->sprite.animated;
+    sprite.frameCount = config->sprite.frameCount;
+    sprite.startFrame = config->sprite.startFrame;
+    sprite.endFrame = config->sprite.endFrame;
+    sprite.currentFrame = config->sprite.startFrame;
+    sprite.frameTime = config->sprite.frameTime;
+    sprite.reverseAnimation = config->sprite.reverseAnimation;
     world.addComponent(enemy, sprite);
 
+    std::cout << "[SpawnSystem] Spawned enemy '" << enemyType << "' (spriteId=" << config->sprite.spriteId
+              << ", pattern=" << config->pattern.type << ") at (" << posX << ", " << posY << ")" << std::endl;
+
+    // Networked component
     ecs::Networked net;
     net.networkId = enemy;
     world.addComponent(enemy, net);
@@ -339,7 +672,8 @@ private:
     configRubanProjectile config;
     switch (event.type) {
     case ecs::SpawnEntityEvent::EntityType::ENEMY:
-      spawnEnemyRed(world, event.x, event.y);
+      std::cerr << "[SpawnSystem] WARNING: SpawnEntityEvent for ENEMY is deprecated, use spawnEnemyFromConfig instead"
+                << std::endl;
       break;
     case ecs::SpawnEntityEvent::EntityType::PROJECTILE:
       spawnProjectile(world, event.x, event.y, event.spawner);

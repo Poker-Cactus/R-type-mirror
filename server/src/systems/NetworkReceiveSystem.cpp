@@ -59,7 +59,14 @@ ecs::ComponentSignature NetworkReceiveSystem::getSignature() const
 void NetworkReceiveSystem::handleMessage(ecs::World &world, const std::string &message, std::uint32_t clientId)
 {
   // Ignore simple protocol-level keepalive/debug messages that are not JSON
-  if (message == "PING" || message == "PONG") {
+  if (message == "PING") {
+    // Respond with PONG
+    auto pong = m_networkManager->getPacketHandler()->serialize("PONG");
+    m_networkManager->send(std::span<const std::byte>(reinterpret_cast<const std::byte *>(pong.data()), pong.size()),
+                           clientId);
+    return;
+  }
+  if (message == "PONG") {
     return;
   }
 
@@ -239,6 +246,11 @@ void NetworkReceiveSystem::handleRequestLobby(const nlohmann::json &json, std::u
   // Get action from request (default to "create" for backwards compatibility)
   const std::string action = json.value("action", "create");
   const std::string requestedCode = json.value("lobby_code", "");
+  const bool asSpectator = json.value("spectator", false);
+
+  if (asSpectator) {
+    std::cout << "[Server] Client " << clientId << " wants to join as SPECTATOR" << '\n';
+  }
 
   std::string lobbyCode;
   Lobby *targetLobby = nullptr;
@@ -269,17 +281,23 @@ void NetworkReceiveSystem::handleRequestLobby(const nlohmann::json &json, std::u
     if (json.contains("difficulty")) {
       int diffInt = json["difficulty"];
       std::cout << "[Server] >>> DIFFICULTY RECEIVED: " << diffInt;
-      if (diffInt == 0) std::cout << " (EASY)";
-      else if (diffInt == 1) std::cout << " (MEDIUM)";
-      else if (diffInt == 2) std::cout << " (EXPERT)";
-      else std::cout << " (INVALID)";
+      if (diffInt == 0)
+        std::cout << " (EASY)";
+      else if (diffInt == 1)
+        std::cout << " (MEDIUM)";
+      else if (diffInt == 2)
+        std::cout << " (EXPERT)";
+      else
+        std::cout << " (INVALID)";
       std::cout << " <<<" << '\n';
-      
+
       if (diffInt >= 0 && diffInt <= 2) {
         difficulty = static_cast<GameConfig::Difficulty>(diffInt);
-        std::cout << "[Server] Parsed difficulty as: " << static_cast<int>(difficulty) << " (" 
-                  << (difficulty == GameConfig::Difficulty::EASY ? "EASY" : 
-                      difficulty == GameConfig::Difficulty::MEDIUM ? "MEDIUM" : "EXPERT") << ")" << '\n';
+        std::cout << "[Server] Parsed difficulty as: " << static_cast<int>(difficulty) << " ("
+                  << (difficulty == GameConfig::Difficulty::EASY       ? "EASY"
+                        : difficulty == GameConfig::Difficulty::MEDIUM ? "MEDIUM"
+                                                                       : "EXPERT")
+                  << ")" << '\n';
       } else {
         std::cout << "[Server] Invalid difficulty value: " << diffInt << ", using default MEDIUM" << '\n';
       }
@@ -289,15 +307,18 @@ void NetworkReceiveSystem::handleRequestLobby(const nlohmann::json &json, std::u
 
     lobbyManager.createLobby(lobbyCode, difficulty);
     targetLobby = lobbyManager.getLobby(lobbyCode);
-    std::cout << "[Server] Created lobby '" << lobbyCode << "' with final difficulty: " 
-              << static_cast<int>(difficulty) << " (" 
-              << (difficulty == GameConfig::Difficulty::EASY ? "EASY" : 
-                  difficulty == GameConfig::Difficulty::MEDIUM ? "MEDIUM" : "EXPERT") << ")" << '\n';
+    std::cout << "[Server] Created lobby '" << lobbyCode << "' with final difficulty: " << static_cast<int>(difficulty)
+              << " ("
+              << (difficulty == GameConfig::Difficulty::EASY       ? "EASY"
+                    : difficulty == GameConfig::Difficulty::MEDIUM ? "MEDIUM"
+                                                                   : "EXPERT")
+              << ")" << '\n';
   }
 
   // Try to join the lobby
-  if (lobbyManager.joinLobby(lobbyCode, clientId)) {
-    std::cout << "[Server] Client " << clientId << " joined lobby " << lobbyCode << '\n';
+  if (lobbyManager.joinLobby(lobbyCode, clientId, asSpectator)) {
+    std::cout << "[Server] Client " << clientId << " joined lobby " << lobbyCode << (asSpectator ? " as spectator" : "")
+              << '\n';
     sendLobbyResponse(clientId, {"lobby_joined", lobbyCode});
 
     // Notify client about current lobby state

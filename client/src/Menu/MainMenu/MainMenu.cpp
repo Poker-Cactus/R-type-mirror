@@ -6,6 +6,7 @@
 */
 
 #include "MainMenu.hpp"
+#include "../../../include/Settings.hpp"
 #include "../../../interface/Geometry.hpp"
 #include "../../../interface/KeyCodes.hpp"
 #include <iostream>
@@ -24,6 +25,12 @@ MainMenu::~MainMenu()
   if (planet != nullptr && m_renderer != nullptr) {
     m_renderer->freeTexture(planet);
   }
+  if (clickedSound != nullptr && m_renderer != nullptr) {
+    m_renderer->freeSound(clickedSound);
+  }
+  if (hoverSound != nullptr && m_renderer != nullptr) {
+    m_renderer->freeSound(hoverSound);
+  }
 }
 
 void MainMenu::init()
@@ -32,6 +39,8 @@ void MainMenu::init()
     const int menuFontSize = 24;
     planet = m_renderer->loadTexture("client/assets/moon-pack/moon1.png");
     font = m_renderer->loadFont("client/assets/font.opf/r-type.otf", menuFontSize);
+    clickedSound = m_renderer->loadSound("client/assets/audios/Retro3.mp3");
+    hoverSound = m_renderer->loadSound("client/assets/Sounds/Hovering3.wav");
   } catch (const std::exception &e) {
     planet = nullptr;
     font = nullptr;
@@ -56,17 +65,20 @@ void MainMenu::render(int winWidth, int winHeight)
   }
 }
 
-void MainMenu::process(MenuState *currentState)
+void MainMenu::process(MenuState *currentState, Settings &settings)
 {
   // Flèche bas - descendre dans le menu
   if (m_renderer->isKeyJustPressed(KeyCode::KEY_DOWN)) {
+    m_renderer->playSound(hoverSound);
     currentMenuIndex = (currentMenuIndex + 1) % mainMenuItems.size();
   }
   // Flèche haut - monter dans le menu
   if (m_renderer->isKeyJustPressed(KeyCode::KEY_UP)) {
+    m_renderer->playSound(hoverSound);
     currentMenuIndex = (currentMenuIndex - 1 + mainMenuItems.size()) % mainMenuItems.size();
   }
   if (m_renderer->isKeyJustPressed(KeyCode::KEY_RETURN)) {
+    m_renderer->playSound(clickedSound);
     std::string selectedButton = mainMenuItems[currentMenuIndex];
     std::cout << "[MainMenu] Enter pressed on: " << selectedButton << '\n';
     if (selectedButton == "Play") {

@@ -15,14 +15,14 @@
 #include <span>
 
 Game::Game()
-    : module(nullptr), renderer(nullptr), isRunning(false), currentState(GameState::MENU), m_serverHost("127.0.0.1"),
-      m_serverPort("4242")
+    : module(nullptr), renderer(nullptr), m_serverHost("127.0.0.1"), m_serverPort("4242"), isRunning(false),
+      currentState(GameState::MENU)
 {
 }
 
 Game::Game(const std::string &host, const std::string &port)
-    : module(nullptr), renderer(nullptr), isRunning(false), currentState(GameState::MENU), m_serverHost(host),
-      m_serverPort(port)
+    : module(nullptr), renderer(nullptr), m_serverHost(host), m_serverPort(port), isRunning(false),
+      currentState(GameState::MENU)
 {
 }
 
@@ -34,6 +34,9 @@ Game::~Game()
 bool Game::init()
 {
   try {
+    // Load settings from file
+    settings.loadFromFile();
+
     // Try multiple paths for the SDL2 module
     const char *modulePaths[] = {
 #ifdef _WIN32
@@ -119,7 +122,8 @@ bool Game::init()
         std::cout << "[Game] Game started callback triggered - transitioning to PLAYING" << '\n';
         // Ensure the playing state exists and is initialized (recreate after death)
         if (!this->playingState) {
-          this->playingState = std::make_unique<PlayingState>(this->renderer, this->m_world, this->settings);
+          this->playingState =
+            std::make_unique<PlayingState>(this->renderer, this->m_world, this->settings, this->m_networkManager);
           if (!this->playingState->init()) {
             std::cerr << "[Game] Failed to initialize playing state on game_started" << '\n';
             // Fallback to menu if we cannot initialize rendering state
@@ -137,7 +141,7 @@ bool Game::init()
       });
     }
 
-    playingState = std::make_unique<PlayingState>(renderer, m_world, settings);
+    playingState = std::make_unique<PlayingState>(renderer, m_world, settings, m_networkManager);
     if (!playingState->init()) {
       std::cerr << "Failed to initialize playing state" << '\n';
       return false;
@@ -168,6 +172,9 @@ void Game::run()
 
 void Game::shutdown()
 {
+  // Save settings before shutting down
+  settings.saveToFile();
+
   // Notify server that we're leaving before shutting down
   sendLeaveToServer();
 
@@ -256,13 +263,18 @@ void Game::processInput()
     return;
   }
 
+  // Toggle fullscreen with M key (but not when editing profile)
   if (renderer != nullptr && renderer->isKeyJustPressed(KeyCode::KEY_M)) {
-    bool currentFullscreen = renderer->isFullscreen();
-    renderer->setFullscreen(!currentFullscreen);
-    std::cout << "[Game] Toggled fullscreen: " << (!currentFullscreen ? "ON" : "OFF") << '\n';
+    // Don't toggle fullscreen if we're editing a username in the profile menu
+    if (!(currentState == GameState::MENU && menu && menu->getState() == MenuState::PROFILE &&
+          menu->isProfileEditing())) {
+      bool currentFullscreen = renderer->isFullscreen();
+      renderer->setFullscreen(!currentFullscreen);
+      std::cout << "[Game] Toggled fullscreen: " << (!currentFullscreen ? "ON" : "OFF") << '\n';
 
-    // Send updated viewport to server
-    sendViewportToServer();
+      // Send updated viewport to server
+      sendViewportToServer();
+    }
   }
 
   handleMenuStateInput();
@@ -365,6 +377,22 @@ void Game::handleLobbyRoomTransition()
     networkReceiveSystem->setPlayerDeadCallback([this](UNUSED const nlohmann::json &msg) {
       std::cout << "[Game] Received player_dead from server - returning to menu" << std::endl;
 
+      // Save highscore if we have the necessary information
+      if (msg.contains("score") && menu != nullptr) {
+        int finalScore = msg.value("score", 0);
+        Difficulty gameDifficulty = menu->getCurrentDifficulty();
+        std::string playerName = settings.username;
+
+        HighscoreEntry entry{playerName, finalScore, gameDifficulty};
+        if (highscoreManager.addHighscore(entry)) {
+          std::cout << "[Game] New highscore saved: " << playerName << " - " << finalScore << " points ("
+                    << (gameDifficulty == Difficulty::EASY       ? "Easy"
+                          : gameDifficulty == Difficulty::MEDIUM ? "Medium"
+                                                                 : "Expert")
+                    << ")" << std::endl;
+        }
+      }
+
       // Stop accepting snapshots
       if (auto *netRec = m_world->getSystem<ClientNetworkReceiveSystem>()) {
         netRec->setAcceptSnapshots(false);
@@ -399,6 +427,8 @@ void Game::handleLobbyRoomTransition()
       currentState = GameState::MENU;
       if (menu) {
         menu->setState(MenuState::MAIN_MENU);
+        // Refresh highscores for when player returns to lobby menu
+        menu->refreshHighscoresIfInLobby();
       }
     });
 
@@ -482,12 +512,10 @@ void Game::updatePlayerInput()
   }
 
   auto &input = m_world->getComponent<ecs::Input>(m_inputEntity);
-  input.up = renderer->isKeyPressed(settings.up) || renderer->isKeyPressed(KeyCode::KEY_W) ||
-    renderer->isKeyPressed(KeyCode::KEY_Z);
-  input.down = renderer->isKeyPressed(settings.down) || renderer->isKeyPressed(KeyCode::KEY_S);
-  input.left = renderer->isKeyPressed(settings.left) || renderer->isKeyPressed(KeyCode::KEY_A) ||
-    renderer->isKeyPressed(KeyCode::KEY_Q);
-  input.right = renderer->isKeyPressed(settings.right) || renderer->isKeyPressed(KeyCode::KEY_D);
+  input.up = renderer->isKeyPressed(settings.up);
+  input.down = renderer->isKeyPressed(settings.down);
+  input.left = renderer->isKeyPressed(settings.left);
+  input.right = renderer->isKeyPressed(settings.right);
   input.shoot = renderer->isKeyPressed(settings.shoot);
 }
 

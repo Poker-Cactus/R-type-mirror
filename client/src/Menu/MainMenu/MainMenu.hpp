@@ -13,8 +13,10 @@
 #include "../../../interface/IRenderer.hpp"
 #include "../MenuState.hpp"
 #include <array>
-#include <string>
 #include <memory>
+#include <string>
+
+class Settings;
 
 /**
  * @class MainMenu
@@ -44,14 +46,18 @@ public:
   /**
    * @brief Process user input
    * @param currentState Pointer to current menu state
+   * @param settings Settings reference for key bindings
    */
-  void process(MenuState *currentState);
+  void process(MenuState *currentState, Settings &settings);
 
 private:
   std::shared_ptr<IRenderer> m_renderer;
   void *font;
   void *planet;
 
-  std::array<std::string, 4> mainMenuItems;
-  int currentMenuIndex;
+  std::array<std::string, 4> mainMenuItems = {"Play", "Settings", "Profile", "Exit"};
+  int currentMenuIndex = 0;
+
+  void *clickedSound;
+  void *hoverSound;
 };

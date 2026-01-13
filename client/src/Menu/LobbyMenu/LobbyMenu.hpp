@@ -5,7 +5,9 @@
 
 #pragma once
 #include "../../../../common/include/Common.hpp"
+#include "../../../../common/include/Highscore.hpp"
 #include "../../../../network/include/INetworkManager.hpp"
+#include "../../../include/Settings.hpp"
 #include "../../../interface/IRenderer.hpp"
 #include "../MenuState.hpp"
 #include <functional>
@@ -13,12 +15,14 @@
 #include <string>
 #include <vector>
 
+class Settings;
+
 /**
  * @struct WindowDimensions
  * @brief Window size container to prevent parameter confusion
  */
 struct WindowDimensions {
-  int width;  ///< Window width in pixels
+  int width; ///< Window width in pixels
   int height; ///< Window height in pixels
 };
 
@@ -28,8 +32,9 @@ struct WindowDimensions {
  */
 enum class LobbyMenuOption : std::uint8_t {
   CREATE_LOBBY, ///< Create new lobby
-  JOIN_LOBBY,   ///< Join existing lobby
-  BACK          ///< Return to main menu
+  JOIN_LOBBY, ///< Join existing lobby
+  CLEAR_HIGHSCORES, ///< Clear highscores
+  BACK ///< Return to main menu
 };
 
 /**
@@ -42,28 +47,27 @@ enum class LobbyMenuOption : std::uint8_t {
 class LobbyMenu
 {
 public:
-  LobbyMenu(std::shared_ptr <IRenderer> renderer);
+  LobbyMenu(std::shared_ptr<IRenderer> renderer);
   ~LobbyMenu();
 
   /**
    * @brief Initialize lobby menu resources
-   * @param renderer Renderer interface
+   * @param settings Game settings reference
    */
-  void init();
+  void init(Settings &settings);
 
   /**
    * @brief Render the lobby menu
    * @param windowDims Window dimensions
-   * @param renderer Renderer interface
    */
   void render(const WindowDimensions &windowDims);
 
   /**
    * @brief Process user input
-   * @param renderer Renderer interface
    * @param currentState Pointer to current menu state
+   * @param settings Settings reference for key bindings
    */
-  void process(MenuState *currentState);
+  void process(MenuState *currentState, Settings &settings);
 
   /**
    * @brief Clean up lobby menu resources
@@ -94,6 +98,11 @@ public:
   [[nodiscard]] const std::string &getLobbyCodeToJoin() const { return m_lobbyCodeInput; }
 
   /**
+   * @brief Refresh highscores from file
+   */
+  void refreshHighscores();
+
+  /**
    * @brief Check if player is creating a new lobby
    * @return true if creating lobby
    */
@@ -107,11 +116,15 @@ private:
   void renderMenuOptions(const WindowDimensions &windowDims);
   void renderLobbyCodeInput(const WindowDimensions &windowDims);
   void renderDifficultySelection(const WindowDimensions &windowDims);
-  void handleMenuNavigation();
+  void renderHighscores(const WindowDimensions &windowDims);
+  void handleMenuNavigation(Settings &settings);
   void handleDifficultyNavigation();
   void handleTextInput();
   void selectCurrentOption(MenuState *currentState);
   void selectDifficultyOption();
+
+  // Settings
+  Settings *m_settings = nullptr;
 
   // Assets
   void *m_font;
@@ -130,12 +143,12 @@ private:
   float m_parallaxOffsetFloor;
 
   // Menu state
-  std::vector<std::string> m_menuItems = {"Create Lobby", "Join Lobby", "Back"};
+  std::vector<std::string> m_menuItems = {"Create Lobby", "Join Lobby", "Clear Highscores", "Back"};
   std::size_t m_currentIndex;
   bool m_isEnteringCode;
   std::string m_lobbyCodeInput;
   static constexpr std::size_t MAX_LOBBY_CODE_LENGTH = 10;
-  
+
   // Difficulty selection
   bool m_isSelectingDifficulty = false;
   std::vector<std::string> m_difficultyItems = {"Easy", "Medium", "Expert"};
@@ -148,4 +161,9 @@ private:
 
   // Network
   std::shared_ptr<INetworkManager> m_networkManager;
+  HighscoreManager m_highscoreManager;
+
+  // Highscore refresh timer
+  float m_highscoreRefreshTimer = 0.0F;
+  static constexpr float HIGHSCORE_REFRESH_INTERVAL = 3.0F; // Refresh every 3 seconds
 };

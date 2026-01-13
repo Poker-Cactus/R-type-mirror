@@ -14,8 +14,7 @@
 #include "../../../interface/KeyCodes.hpp"
 #include <cmath>
 
-IntroScreen::IntroScreen(std::shared_ptr<IRenderer> renderer) : m_renderer(std::move(renderer))
-{}
+IntroScreen::IntroScreen(std::shared_ptr<IRenderer> renderer) : m_renderer(std::move(renderer)) {}
 
 IntroScreen::~IntroScreen()
 {
@@ -29,6 +28,12 @@ IntroScreen::~IntroScreen()
   if (m_planet != nullptr && m_renderer != nullptr) {
     m_renderer->freeTexture(m_planet);
   }
+  if (m_music != nullptr && m_renderer != nullptr) {
+    if (m_renderer->isMusicPlaying()) {
+      m_renderer->stopMusic();
+    }
+    m_renderer->freeMusic(m_music);
+  }
 }
 
 void IntroScreen::init()
@@ -38,10 +43,17 @@ void IntroScreen::init()
     m_backgroundTexture = m_renderer->loadTexture("client/assets/background/starfield.png");
     m_font = m_renderer->loadFont("client/assets/font.opf/r-type.otf", fontSize);
     m_planet = m_renderer->loadTexture("client/assets/moon-pack/moon1.png");
+    m_music = m_renderer->loadMusic("client/assets/audios/loadingMusic.mp3");
+    // Start the music now in order to have it for the whole menu.
+    // It can be stop using the m_renderer->stopMusic() method wherever you are.
+    if (m_music) {
+      m_renderer->playMusic(m_music);
+    }
   } catch (const std::exception &e) {
     m_backgroundTexture = nullptr;
     m_font = nullptr;
     m_planet = nullptr;
+    m_music = nullptr;
   }
 }
 
@@ -73,9 +85,9 @@ void IntroScreen::render(int winWidth, int winHeight)
   // Render background
   if (m_backgroundTexture != nullptr) {
     m_renderer->drawTextureEx(m_backgroundTexture, static_cast<int>(m_backgroundOffsetX), 0, winWidth, winHeight, 0.0,
-                            false, false);
+                              false, false);
     m_renderer->drawTextureEx(m_backgroundTexture, static_cast<int>(m_backgroundOffsetX - winWidth), 0, winWidth,
-                            winHeight, 0.0, false, false);
+                              winHeight, 0.0, false, false);
   }
 
   // Render planet with zoom effect

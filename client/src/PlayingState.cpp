@@ -9,10 +9,13 @@
 #include "../../engineCore/include/ecs/components/Collider.hpp"
 #include "../../engineCore/include/ecs/components/Health.hpp"
 #include "../../engineCore/include/ecs/components/Networked.hpp"
+#include "../../engineCore/include/ecs/components/Pattern.hpp"
 #include "../../engineCore/include/ecs/components/PlayerId.hpp"
 #include "../../engineCore/include/ecs/components/Score.hpp"
 #include "../../engineCore/include/ecs/components/Sprite.hpp"
 #include "../../engineCore/include/ecs/components/Transform.hpp"
+#include "../../engineCore/include/ecs/components/Velocity.hpp"
+#include "../../network/include/AsioClient.hpp"
 #include "../include/AssetPath.hpp"
 #include "../include/systems/NetworkSendSystem.hpp"
 #include "../interface/Geometry.hpp"
@@ -20,8 +23,9 @@
 #include <iostream>
 
 PlayingState::PlayingState(std::shared_ptr<IRenderer> renderer, const std::shared_ptr<ecs::World> &world,
-                           Settings &settings)
-    : renderer(std::move(renderer)), world(world), background(nullptr), settings(settings)
+                           Settings &settings, std::shared_ptr<INetworkManager> networkManager)
+    : renderer(std::move(renderer)), world(world), background(nullptr), settings(settings),
+      m_networkManager(networkManager)
 {
 }
 
@@ -78,6 +82,9 @@ bool PlayingState::init()
     m_hudFont = nullptr;
   }
 
+  // Initialize info mode
+  m_infoMode = std::make_unique<InfoMode>(renderer, m_hudFont);
+
   std::cout << "PlayingState: Initialized successfully" << '\n';
 
   return true;
@@ -85,6 +92,17 @@ bool PlayingState::init()
 
 void PlayingState::update(float delta_time)
 {
+  // Calculate FPS
+  m_fpsAccumulator += delta_time;
+  m_fpsFrameCount++;
+
+  // Update FPS every second
+  if (m_fpsAccumulator >= 1.0f) {
+    m_currentFps = static_cast<float>(m_fpsFrameCount) / m_fpsAccumulator;
+    m_fpsAccumulator = 0.0f;
+    m_fpsFrameCount = 0;
+  }
+
   // Mettre à jour le background
   if (background) {
     background->update(delta_time);
@@ -95,7 +113,21 @@ void PlayingState::update(float delta_time)
   updateAnimations(delta_time);
 
   // Update HUD data from world state
-  updateHUDFromWorld();
+  updateHUDFromWorld(delta_time);
+
+  // Update info mode
+  if (m_infoMode) {
+    m_infoMode->update(delta_time);
+  }
+
+  // Send ping periodically to measure latency
+  if (m_networkManager) {
+    m_pingTimer += delta_time;
+    if (m_pingTimer >= 2.0f) { // Ping every 2 seconds
+      static_cast<AsioClient *>(m_networkManager.get())->sendPing();
+      m_pingTimer = 0.0f;
+    }
+  }
 }
 
 void PlayingState::render()
@@ -156,6 +188,21 @@ void PlayingState::render()
           frameWidth = 12; // 84 / 7 = 12px per frame
           frameHeight = 12;
           break;
+        case ecs::SpriteId::ENEMY_YELLOW:
+          // Yellow Bee: 256x64 with 2 rows x 8 columns = 16 frames
+          frameWidth = 256 / 8; // 32px per frame
+          frameHeight = 64 / 2; // 32px per frame (2 rows)
+          break;
+        case ecs::SpriteId::ENEMY_WALKER:
+          // Walker: 200x67 with 2 rows x 6 columns = 12 frames
+          frameWidth = 200 / 6; // 33px per frame
+          frameHeight = 67 / 2; // 33px per frame (2 rows)
+          break;
+        case ecs::SpriteId::WALKER_PROJECTILE:
+          // Walker Projectile: 549x72 with 7 frames in single row
+          frameWidth = 549 / 7; // 78px per frame
+          frameHeight = 72;
+          break;
         case ecs::SpriteId::DRONE:
         case ecs::SpriteId::BUBBLE:
         case ecs::SpriteId::BUBBLE_TRIPLE:
@@ -197,9 +244,37 @@ void PlayingState::render()
         }
 
         if (frameWidth > 0 && frameHeight > 0) {
-          // Calculate source rectangle based on current frame, row, and offset
-          int srcX = static_cast<int>(sprite.offsetX) + (sprite.currentFrame * frameWidth);
-          int srcY = static_cast<int>(sprite.offsetY) + (sprite.row * frameHeight);
+          // Calculate source rectangle based on current frame
+          int srcX = 0;
+          int srcY = 0;
+
+          // For sprites with multiple rows (like Yellow Bee: 2 rows x 8 columns)
+          if (sprite.spriteId == ecs::SpriteId::ENEMY_YELLOW) {
+            // Yellow Bee: 16 frames in 2 rows of 8
+            int framesPerRow = 8;
+            int row = sprite.currentFrame / framesPerRow;
+            int col = sprite.currentFrame % framesPerRow;
+            srcX = col * frameWidth;
+            srcY = row * frameHeight;
+          } else if (sprite.spriteId == ecs::SpriteId::ENEMY_WALKER) {
+            // Walker: 12 frames in 2 rows of 6
+            // Row 0: walking animation (frames 0-5)
+            // Row 1: shooting animation (frames 6-11)
+            int framesPerRow = 6;
+            int row = sprite.currentFrame / framesPerRow;
+            int col = sprite.currentFrame % framesPerRow;
+            srcX = col * frameWidth;
+            srcY = row * frameHeight;
+          } else if (sprite.spriteId == ecs::SpriteId::WALKER_PROJECTILE) {
+            // Walker Projectile: single row spritesheet
+            srcX = sprite.currentFrame * frameWidth;
+            srcY = 0;
+          } else {
+            // For Ruban and other sprites: use offsetX/offsetY/row if present
+            srcX = static_cast<int>(sprite.offsetX) + (sprite.currentFrame * frameWidth);
+            srcY = static_cast<int>(sprite.offsetY) + (sprite.row * frameHeight);
+          }
+
           // Apply transform scale to sprite dimensions
           int scaledWidth = static_cast<int>(sprite.width * transformComponent.scale);
           int scaledHeight = static_cast<int>(sprite.height * transformComponent.scale);
@@ -219,7 +294,7 @@ void PlayingState::render()
 
           renderer->drawTextureRegion(
             textureIt->second,
-            {.x = srcX, .y = srcY, .width = frameWidth, .height = frameHeight}, // Source: current frame + row
+            {.x = srcX, .y = srcY, .width = frameWidth, .height = frameHeight}, // Source: current frame
             {.x = static_cast<int>(transformComponent.x),
              .y = static_cast<int>(transformComponent.y),
              .width = scaledWidth,
@@ -269,6 +344,31 @@ void PlayingState::render()
                                        .y = static_cast<int>(transformComponent.y),
                                        .width = scaledWidth,
                                        .height = scaledHeight});
+        } else if (sprite.spriteId == ecs::SpriteId::ENEMY_YELLOW) {
+          // Yellow Bee: Use frame 8 (first of bottom row = left-facing)
+          constexpr int YELLOW_BEE_FRAME_WIDTH = 32;
+          constexpr int YELLOW_BEE_FRAME_HEIGHT = 32;
+          constexpr int YELLOW_BEE_FRAME = 8; // Bottom row, first frame
+          int framesPerRow = 8;
+          int row = YELLOW_BEE_FRAME / framesPerRow;
+          int col = YELLOW_BEE_FRAME % framesPerRow;
+          int srcX = col * YELLOW_BEE_FRAME_WIDTH;
+          int srcY = row * YELLOW_BEE_FRAME_HEIGHT;
+
+          int scaledWidth = static_cast<int>(sprite.width * transformComponent.scale);
+          int scaledHeight = static_cast<int>(sprite.height * transformComponent.scale);
+
+          // Calculate rotation angle based on velocity
+          float rotation = transformComponent.rotation;
+
+          renderer->drawTextureRegionEx(
+            textureIt->second,
+            {.x = srcX, .y = srcY, .width = YELLOW_BEE_FRAME_WIDTH, .height = YELLOW_BEE_FRAME_HEIGHT},
+            {.x = static_cast<int>(transformComponent.x),
+             .y = static_cast<int>(transformComponent.y),
+             .width = scaledWidth,
+             .height = scaledHeight},
+            rotation, false, false);
         } else {
           // Other sprites: draw full texture
           int scaledWidth = static_cast<int>(sprite.width * transformComponent.scale);
@@ -282,6 +382,7 @@ void PlayingState::render()
       constexpr Color COLOR_WHITE = {.r = 255, .g = 255, .b = 255, .a = 255};
       constexpr Color COLOR_PLAYER_BLUE = {.r = 100, .g = 150, .b = 255, .a = 255};
       constexpr Color COLOR_ENEMY_RED = {.r = 255, .g = 100, .b = 100, .a = 255};
+      constexpr Color COLOR_ENEMY_YELLOW = {.r = 255, .g = 255, .b = 50, .a = 255};
       constexpr Color COLOR_PROJECTILE_YELLOW = {.r = 255, .g = 255, .b = 100, .a = 255};
       constexpr Color COLOR_POWERUP_GREEN = {.r = 100, .g = 255, .b = 100, .a = 255};
       constexpr Color COLOR_EXPLOSION_ORANGE = {.r = 255, .g = 150, .b = 50, .a = 255};
@@ -295,6 +396,15 @@ void PlayingState::render()
         break;
       case ecs::SpriteId::ENEMY_SHIP:
         color = COLOR_ENEMY_RED;
+        break;
+      case ecs::SpriteId::ENEMY_YELLOW:
+        color = COLOR_ENEMY_YELLOW;
+        break;
+      case ecs::SpriteId::ENEMY_WALKER:
+        color = COLOR_ENEMY_RED;
+        break;
+      case ecs::SpriteId::WALKER_PROJECTILE:
+        color = COLOR_PROJECTILE_YELLOW;
         break;
       case ecs::SpriteId::PROJECTILE:
         color = COLOR_PROJECTILE_YELLOW;
@@ -398,6 +508,12 @@ void PlayingState::renderHUD()
     std::string scoreText = "Score: " + std::to_string(m_playerScore);
     renderer->drawText(m_hudFont, scoreText, HEARTS_X, HEARTS_Y + HUD_SCORE_OFFSET_Y, HUD_TEXT_WHITE);
   }
+
+  // Render info mode if active
+  if (m_infoMode) {
+    const int infoTextY = HEARTS_Y + HUD_SCORE_OFFSET_Y + 30; // Below score
+    m_infoMode->render(HEARTS_X, infoTextY);
+  }
 }
 
 void PlayingState::updateAnimations(float deltaTime)
@@ -469,7 +585,7 @@ void PlayingState::updateAnimations(float deltaTime)
   }
 }
 
-void PlayingState::updateHUDFromWorld()
+void PlayingState::updateHUDFromWorld(float deltaTime)
 {
   if (world == nullptr) {
     return;
@@ -542,6 +658,84 @@ void PlayingState::updateHUDFromWorld()
       break; // found our player
     }
   }
+
+  // Update info mode with current game data
+  if (m_infoMode) {
+    // Pass real FPS value
+    m_infoMode->setGameData(m_playerHealth, m_playerScore, m_currentFps);
+
+    // Collect real entity statistics
+    int totalEntities = 0;
+    int playerCount = 0;
+    int enemyCount = 0;
+    int projectileCount = 0;
+
+    // Count all entities with Transform component (basic entities)
+    {
+      ecs::ComponentSignature allEntitiesSig;
+      allEntitiesSig.set(ecs::getComponentId<ecs::Transform>());
+      std::vector<ecs::Entity> allEntities;
+      world->getEntitiesWithSignature(allEntitiesSig, allEntities);
+      totalEntities = static_cast<int>(allEntities.size());
+    }
+
+    // Count players (entities with PlayerId component)
+    {
+      ecs::ComponentSignature playerSig;
+      playerSig.set(ecs::getComponentId<ecs::PlayerId>());
+      std::vector<ecs::Entity> players;
+      world->getEntitiesWithSignature(playerSig, players);
+      playerCount = static_cast<int>(players.size());
+    }
+
+    // Count enemies (entities with Pattern component - they have movement patterns)
+    {
+      ecs::ComponentSignature enemySig;
+      enemySig.set(ecs::getComponentId<ecs::Pattern>());
+      enemySig.set(ecs::getComponentId<ecs::Health>()); // Enemies typically have health
+      std::vector<ecs::Entity> enemies;
+      world->getEntitiesWithSignature(enemySig, enemies);
+      enemyCount = static_cast<int>(enemies.size());
+    }
+
+    // Count projectiles (entities with Velocity but no Pattern - projectiles move linearly)
+    {
+      ecs::ComponentSignature projectileSig;
+      projectileSig.set(ecs::getComponentId<ecs::Velocity>());
+      projectileSig.set(ecs::getComponentId<ecs::Transform>());
+      // Exclude entities with Pattern (enemies) or PlayerId (players)
+      std::vector<ecs::Entity> projectiles;
+      world->getEntitiesWithSignature(projectileSig, projectiles);
+
+      // Filter out entities that have Pattern or PlayerId
+      for (auto entity : projectiles) {
+        if (!world->hasComponent<ecs::Pattern>(entity) && !world->hasComponent<ecs::PlayerId>(entity)) {
+          projectileCount++;
+        }
+      }
+    }
+
+    // Calculate game time (using a simple accumulator for now)
+    static float gameTimeAccumulator = 0.0f;
+    gameTimeAccumulator += deltaTime;
+
+    // Update game statistics in info mode
+    m_infoMode->setGameStats(totalEntities, playerCount, enemyCount, projectileCount, gameTimeAccumulator);
+
+    // Set real network data
+    if (m_networkManager) {
+      float latency = m_networkManager->getLatency();
+      bool connected = m_networkManager->isConnected();
+      int packetsPerSec = m_networkManager->getPacketsPerSecond();
+      int uploadBps = m_networkManager->getUploadBytesPerSecond();
+      int downloadBps = m_networkManager->getDownloadBytesPerSecond();
+      m_infoMode->setNetworkData(latency, connected, packetsPerSec);
+      m_infoMode->setNetworkBandwidth(uploadBps, downloadBps);
+    } else {
+      m_infoMode->setNetworkData(-1.0f, false, 0);
+      m_infoMode->setNetworkBandwidth(0, 0);
+    }
+  }
 }
 
 void PlayingState::processInput()
@@ -556,6 +750,11 @@ void PlayingState::processInput()
   } else {
     m_returnUp = false;
     m_returnDown = false;
+  }
+
+  // Handle info mode input
+  if (m_infoMode) {
+    m_infoMode->processInput();
   }
 }
 
@@ -710,7 +909,46 @@ void PlayingState::loadSpriteTextures()
     std::cerr << "[PlayingState] ✗ Failed to load R-Type_Items.png: " << e.what() << '\n';
   }
 
-  // DRONE = 6 (uses powerup texture as fallback)
+  // ENEMY_YELLOW = 6 (animated spritesheet: 256x64, 16 frames in 2 rows)
+  try {
+    void *yellow_tex = renderer->loadTexture(resolveAssetPath("client/assets/sprites/yellow_bee.gif"));
+    if (yellow_tex != nullptr) {
+      m_spriteTextures[ecs::SpriteId::ENEMY_YELLOW] = yellow_tex;
+      std::cout << "[PlayingState] ✓ Loaded yellow_bee.gif" << '\n';
+    } else {
+      std::cerr << "[PlayingState] ✗ Failed to load yellow_bee.gif (returned null)" << '\n';
+    }
+  } catch (const std::exception &e) {
+    std::cerr << "[PlayingState] ✗ Failed to load yellow_bee.gif: " << e.what() << '\n';
+  }
+
+  // ENEMY_WALKER = 7 (animated spritesheet: 200x67, 12 frames in 2 rows)
+  try {
+    void *walker_tex = renderer->loadTexture(resolveAssetPath("client/assets/sprites/walk_enemy.gif"));
+    if (walker_tex != nullptr) {
+      m_spriteTextures[ecs::SpriteId::ENEMY_WALKER] = walker_tex;
+      std::cout << "[PlayingState] ✓ Loaded walk_enemy.gif" << '\n';
+    } else {
+      std::cerr << "[PlayingState] ✗ Failed to load walk_enemy.gif (returned null)" << '\n';
+    }
+  } catch (const std::exception &e) {
+    std::cerr << "[PlayingState] ✗ Failed to load walk_enemy.gif: " << e.what() << '\n';
+  }
+
+  // WALKER_PROJECTILE = 8 (animated spritesheet: 549x72, 7 frames)
+  try {
+    void *walker_projectile_tex = renderer->loadTexture(resolveAssetPath("client/assets/sprites/walk_projectile.png"));
+    if (walker_projectile_tex != nullptr) {
+      m_spriteTextures[ecs::SpriteId::WALKER_PROJECTILE] = walker_projectile_tex;
+      std::cout << "[PlayingState] ✓ Loaded walk_projectile.png" << '\n';
+    } else {
+      std::cerr << "[PlayingState] ✗ Failed to load walk_projectile.png (returned null)" << '\n';
+    }
+  } catch (const std::exception &e) {
+    std::cerr << "[PlayingState] ✗ Failed to load walk_projectile.png: " << e.what() << '\n';
+  }
+
+  // DRONE = 9 (uses powerup texture as fallback)
   try {
     void *drone_tex = renderer->loadTexture("client/assets/r-typesheet3.gif");
     if (drone_tex != nullptr) {
@@ -731,7 +969,7 @@ void PlayingState::loadSpriteTextures()
     }
   }
 
-  // BUBBLE = 7 (uses powerup texture as fallback)
+  // BUBBLE = 10 (uses powerup texture as fallback)
   try {
     void *bubble_tex = renderer->loadTexture("client/assets/sprites/bubble.png");
     if (bubble_tex != nullptr) {
@@ -752,7 +990,7 @@ void PlayingState::loadSpriteTextures()
     }
   }
 
-  // BUBBLE = 8 (uses powerup texture as fallback)
+  // BUBBLE_TRIPLE = 11 (uses powerup texture as fallback)
   try {
     void *buble_triple_tex = renderer->loadTexture("client/assets/sprites/bubble_triple.png");
     if (buble_triple_tex != nullptr) {
@@ -773,7 +1011,7 @@ void PlayingState::loadSpriteTextures()
     }
   }
 
-  // BUBBLE_RUBAN1 = 9 (uses powerup texture as fallback)
+  // BUBBLE_RUBAN1 = 12 (uses powerup texture as fallback)
   try {
     void *buble_triple_tex = renderer->loadTexture("client/assets/sprites/bubble_ruban1.png");
     if (buble_triple_tex != nullptr) {
@@ -895,11 +1133,51 @@ void PlayingState::loadSpriteTextures()
   }
 
   constexpr int EXPECTED_TEXTURE_COUNT = 39;
-  std::cout << "[PlayingState] Successfully loaded " << m_spriteTextures.size() << " / " << EXPECTED_TEXTURE_COUNT
-            << " sprite textures" << '\n';
-  if (m_spriteTextures.size() < EXPECTED_TEXTURE_COUNT) {
-    std::cerr << "[PlayingState] Missing textures will use fallback colored rectangles" << '\n';
+
+  if (enemy_yellow_tex != nullptr) {
+    m_spriteTextures[ecs::SpriteId::ENEMY_YELLOW] = enemy_yellow_tex;
+    std::cout << "[PlayingState] ✓ Loaded enemy_yellow.gif" << '\n';
+  } else {
+    std::cerr << "[PlayingState] ✗ Failed to load enemy_yellow.gif (returned null)" << '\n';
   }
+}
+catch (const std::exception &e)
+{
+  std::cerr << "[PlayingState] ✗ Failed to load enemy_yellow.gif: " << e.what() << '\n';
+}
+
+// ENEMY_WALKER = 7 (animated spritesheet: 200x67, 2 rows x 6 columns = 12 frames)
+try {
+  void *enemy_walker_tex = renderer->loadTexture(resolveAssetPath("client/assets/sprites/walk_enemy.gif"));
+  if (enemy_walker_tex != nullptr) {
+    m_spriteTextures[ecs::SpriteId::ENEMY_WALKER] = enemy_walker_tex;
+    std::cout << "[PlayingState] ✓ Loaded walk_enemy.gif" << '\n';
+  } else {
+    std::cerr << "[PlayingState] ✗ Failed to load walk_enemy.gif (returned null)" << '\n';
+  }
+} catch (const std::exception &e) {
+  std::cerr << "[PlayingState] ✗ Failed to load walk_enemy.gif: " << e.what() << '\n';
+}
+
+// WALKER_PROJECTILE = 8 (animated spritesheet: 549x72, 7 frames)
+try {
+  void *walker_projectile_tex = renderer->loadTexture(resolveAssetPath("client/assets/sprites/walk_projectile.png"));
+  if (walker_projectile_tex != nullptr) {
+    m_spriteTextures[ecs::SpriteId::WALKER_PROJECTILE] = walker_projectile_tex;
+    std::cout << "[PlayingState] ✓ Loaded walk_projectile.png" << '\n';
+  } else {
+    std::cerr << "[PlayingState] ✗ Failed to load walk_projectile.png (returned null)" << '\n';
+  }
+} catch (const std::exception &e) {
+  std::cerr << "[PlayingState] ✗ Failed to load walk_projectile.png: " << e.what() << '\n';
+}
+
+constexpr int EXPECTED_TEXTURE_COUNT = 39;
+std::cout << "[PlayingState] Successfully loaded " << m_spriteTextures.size() << " / " << EXPECTED_TEXTURE_COUNT
+          << " sprite textures" << '\n';
+if (m_spriteTextures.size() < EXPECTED_TEXTURE_COUNT) {
+  std::cerr << "[PlayingState] Missing textures will use fallback colored rectangles" << '\n';
+}
 }
 
 void PlayingState::freeSpriteTextures()

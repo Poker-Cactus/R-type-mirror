@@ -20,9 +20,9 @@
  * @brief RGBA color representation
  */
 struct ColorRGBA {
-  std::uint8_t red;   ///< Red component (0-255)
+  std::uint8_t red; ///< Red component (0-255)
   std::uint8_t green; ///< Green component (0-255)
-  std::uint8_t blue;  ///< Blue component (0-255)
+  std::uint8_t blue; ///< Blue component (0-255)
   std::uint8_t alpha; ///< Alpha transparency (0-255)
 };
 

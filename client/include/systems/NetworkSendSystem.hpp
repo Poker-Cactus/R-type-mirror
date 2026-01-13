@@ -5,11 +5,11 @@
 
 #ifndef NETWORKSENDSYSTEM_HPP_
 #define NETWORKSENDSYSTEM_HPP_
+#include "../../common/include/Common.hpp"
 #include "../../engineCore/include/ecs/Entity.hpp"
 #include "../../engineCore/include/ecs/ISystem.hpp"
 #include "../../engineCore/include/ecs/components/Input.hpp"
 #include "../../network/include/INetworkManager.hpp"
-#include "../../common/include/Common.hpp"
 #include <nlohmann/json.hpp>
 
 /**
