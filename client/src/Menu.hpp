@@ -89,8 +89,24 @@ public:
    * @brief Reset lobby selection flags
    */
   void resetLobbySelection();
-  [[nodiscard]] Difficulty getCurrentDifficulty() const { return currentDifficulty; }
+  [[nodiscard]] Difficulty getCurrentDifficulty() const;
   [[nodiscard]] LobbyMenu *getLobbyMenu() const { return m_lobbyMenu.get(); }
+
+  /**
+   * @brief Reset highscore refresh flag in lobby menu
+   */
+  void resetLobbyHighscoresRefresh();
+
+  /**
+   * @brief Check if profile menu is currently editing
+   * @return true if profile menu is in editing mode
+   */
+  [[nodiscard]] bool isProfileEditing() const { return m_profileMenu != nullptr && m_profileMenu->isEditing(); }
+
+  /**
+   * @brief Refresh highscores when entering lobby menu
+   */
+  void refreshHighscoresIfInLobby();
 
   /**
    * @brief Process user input for current menu state
@@ -161,6 +177,7 @@ private:
   void *moonBack = nullptr; ///< Back layer texture
 
   void *menu_font = nullptr;
+  void *menuMusic;
   Difficulty currentDifficulty = Difficulty::MEDIUM;
   MenuState currentState = MenuState::INTRO; ///< Current menu state
 };

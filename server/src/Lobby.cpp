@@ -292,7 +292,10 @@ void Lobby::spawnPlayer(std::uint32_t clientId)
   m_world->addComponent(player, velocity);
 
   // Apply difficulty-based HP
+  std::cout << "[Lobby:" << m_code << "] >>> SPAWNING PLAYER: m_difficulty = " << static_cast<int>(m_difficulty)
+            << '\n';
   int startingHP = GameConfig::getPlayerHPForDifficulty(m_difficulty);
+  std::cout << "[Lobby:" << m_code << "] >>> getPlayerHPForDifficulty returned: " << startingHP << '\n';
   ecs::Health health;
   health.hp = startingHP;
   health.maxHp = startingHP;
@@ -388,11 +391,14 @@ void Lobby::setDifficulty(GameConfig::Difficulty difficulty)
     std::cerr << "[Lobby:" << m_code << "] Cannot change difficulty after game has started" << '\n';
     return;
   }
+  std::cout << "[Lobby:" << m_code << "] >>> BEFORE SET: m_difficulty = " << static_cast<int>(m_difficulty) << '\n';
+  std::cout << "[Lobby:" << m_code << "] >>> SETTING TO: " << static_cast<int>(difficulty) << '\n';
   m_difficulty = difficulty;
+  std::cout << "[Lobby:" << m_code << "] >>> AFTER SET: m_difficulty = " << static_cast<int>(m_difficulty) << '\n';
   std::cout << "[Lobby:" << m_code << "] Difficulty set to "
             << (difficulty == GameConfig::Difficulty::EASY
-                  ? "EASY (150 HP)"
-                  : (difficulty == GameConfig::Difficulty::MEDIUM ? "MEDIUM (100 HP)" : "EXPERT (75 HP)"))
+                  ? "EASY (300 HP)"
+                  : (difficulty == GameConfig::Difficulty::MEDIUM ? "MEDIUM (150 HP)" : "EXPERT (50 HP)"))
             << '\n';
 }
 

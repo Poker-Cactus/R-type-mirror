@@ -7,6 +7,7 @@
 #define SETTINGS_HPP
 
 #include "../interface/KeyCodes.hpp"
+#include <string>
 
 /**
  * @class Settings
@@ -20,6 +21,18 @@ class Settings
 public:
   Settings() = default;
   ~Settings() = default;
+
+  /**
+   * @brief Save settings to a file
+   * @return true if save was successful
+   */
+  bool saveToFile();
+
+  /**
+   * @brief Load settings from a file
+   * @return true if load was successful
+   */
+  bool loadFromFile();
 
   // AUDIO Settings
   int masterVolume = 100; ///< Master volume level (0-100)
@@ -36,6 +49,9 @@ public:
 
   // GRAPHIC Settings
   bool fullScreen = true; ///< Fullscreen mode toggle
+
+  // PROFILE Settings
+  std::string username = "Player"; ///< Player username
 
 private:
 };
