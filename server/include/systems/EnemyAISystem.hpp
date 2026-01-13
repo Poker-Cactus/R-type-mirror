@@ -22,6 +22,7 @@
 #include "../../../engineCore/include/ecs/events/GameEvents.hpp"
 #include "ecs/ComponentSignature.hpp"
 #include <cmath>
+#include <random>
 #include <vector>
 
 namespace server
@@ -85,6 +86,150 @@ public:
         // Simple straight-line movement
         velocity.dx = ENEMY_MOVE_SPEED;
         velocity.dy = 0.0F;
+      } else if (pattern.patternType == "bounce") {
+        // Bounce pattern: diagonal movement that bounces off screen boundaries
+        // The robot moves diagonally and bounces when hitting top, bottom, or sides
+
+        constexpr float SCREEN_TOP_BOUNDARY = 0.0F;
+        constexpr float SCREEN_BOTTOM_BOUNDARY = 1080.0F;
+        constexpr float SCREEN_LEFT_BOUNDARY = 0.0F;
+        constexpr float SCREEN_RIGHT_BOUNDARY = 1920.0F;
+
+        // Initialize random direction on first frame (use phase to track if initialized)
+        if (pattern.phase == 0.0F) {
+          // Mark as initialized by setting phase to 1.0
+          pattern.phase = 1.0F;
+
+          // Randomize initial vertical direction (50% up, 50% down)
+          // Use entity ID + position as seed for truly varied behavior per individual
+          std::mt19937 rng(static_cast<unsigned int>(entity) + static_cast<unsigned int>(transform.x * 100.0F) +
+                           static_cast<unsigned int>(transform.y * 100.0F));
+          std::uniform_int_distribution<int> dist(0, 1);
+
+          if (dist(rng) == 0) {
+            velocity.dy = std::abs(velocity.dy); // Go up
+          } else {
+            velocity.dy = -std::abs(velocity.dy); // Go down
+          }
+        }
+
+        // Check boundaries and reverse direction if needed
+        // Top boundary
+        if (transform.y <= SCREEN_TOP_BOUNDARY && velocity.dy < 0.0F) {
+          velocity.dy = -velocity.dy; // Bounce down
+        }
+        // Bottom boundary
+        if (transform.y >= SCREEN_BOTTOM_BOUNDARY && velocity.dy > 0.0F) {
+          velocity.dy = -velocity.dy; // Bounce up
+        }
+        // Right boundary (less common but possible)
+        if (transform.x >= SCREEN_RIGHT_BOUNDARY && velocity.dx > 0.0F) {
+          velocity.dx = -velocity.dx; // Bounce left
+        }
+        // Left boundary (will be destroyed before hitting it usually)
+        if (transform.x <= SCREEN_LEFT_BOUNDARY && velocity.dx < 0.0F) {
+          velocity.dx = -velocity.dx; // Bounce right
+        }
+
+        // Update animation frames based on movement direction for robots
+        if (world.hasComponent<ecs::Sprite>(entity)) {
+          auto &sprite = world.getComponent<ecs::Sprite>(entity);
+          if (sprite.spriteId == ecs::SpriteId::ENEMY_ROBOT) {
+            // Frames 0-2: moving left (dx < 0)
+            // Frames 3-5: moving right (dx > 0)
+            if (velocity.dx < 0.0F) {
+              // Moving left
+              sprite.startFrame = 0;
+              sprite.endFrame = 2;
+            } else {
+              // Moving right
+              sprite.startFrame = 3;
+              sprite.endFrame = 5;
+            }
+          }
+        }
+
+        // Shooting behavior: robots shoot periodically toward the player
+        // Use pattern.amplitude to track shooting timer (repurposed since not used for bounce)
+        pattern.amplitude += deltaTime;
+        constexpr float ROBOT_SHOOT_INTERVAL = 2.5F; // Shoot every 2.5 seconds
+
+        if (pattern.amplitude >= ROBOT_SHOOT_INTERVAL) {
+          pattern.amplitude = 0.0F; // Reset timer
+
+          // Find player to shoot at
+          std::vector<ecs::Entity> players;
+          ecs::ComponentSignature playerSig;
+          playerSig.set(ecs::getComponentId<ecs::PlayerId>());
+          world.getEntitiesWithSignature(playerSig, players);
+
+          if (!players.empty()) {
+            auto &robotPos = transform;
+            auto &playerPos = world.getComponent<ecs::Transform>(players[0]);
+
+            // Calculate direction to player
+            float dx = playerPos.x - robotPos.x;
+            float dy = playerPos.y - robotPos.y;
+            float distance = std::sqrt(dx * dx + dy * dy);
+
+            if (distance > 0.0F) {
+              // Create projectile
+              constexpr float ROBOT_PROJECTILE_SPEED = 350.0F;
+              float dirX = (dx / distance) * ROBOT_PROJECTILE_SPEED;
+              float dirY = (dy / distance) * ROBOT_PROJECTILE_SPEED;
+
+              ecs::Entity projectile = world.createEntity();
+
+              // Position projectile at robot location
+              ecs::Transform projTransform;
+              projTransform.x = robotPos.x;
+              projTransform.y = robotPos.y;
+              projTransform.rotation = 0.0F;
+              projTransform.scale = 0.4F; // Smaller projectiles
+              world.addComponent(projectile, projTransform);
+
+              // Set projectile velocity towards player
+              ecs::Velocity projVelocity;
+              projVelocity.dx = dirX;
+              projVelocity.dy = dirY;
+              world.addComponent(projectile, projVelocity);
+
+              // Add sprite component (using robot projectile, single frame)
+              ecs::Sprite projSprite;
+              projSprite.spriteId = ecs::SpriteId::ROBOT_PROJECTILE;
+              projSprite.width = 101;
+              projSprite.height = 114;
+              projSprite.animated = false; // No animation
+              projSprite.frameCount = 1;
+              projSprite.currentFrame = 0;
+              projSprite.startFrame = 0;
+              projSprite.endFrame = 0;
+              projSprite.frameTime = 0.0F;
+              projSprite.animationTimer = 0.0F;
+              projSprite.reverseAnimation = false;
+              projSprite.loop = false;
+              world.addComponent(projectile, projSprite);
+
+              // Add collider
+              ecs::Collider projCollider;
+              projCollider.width = 101.0F * 0.4F; // width * scale
+              projCollider.height = 114.0F * 0.4F; // height * scale
+              projCollider.shape = ecs::Collider::Shape::BOX;
+              world.addComponent(projectile, projCollider);
+
+              // Add owner component to mark this as enemy projectile
+              ecs::Owner projOwner;
+              projOwner.ownerId = entity; // The robot is the owner
+              world.addComponent(projectile, projOwner);
+
+              // Add networked component
+              ecs::Networked net;
+              net.networkId = projectile;
+              world.addComponent(projectile, net);
+            }
+          }
+        }
+
       } else if (pattern.patternType == "ground_walk") {
         // Walker enemy: stays on ground and shoots at player from horizontal range
 
@@ -198,14 +343,14 @@ public:
               projSprite.width = 78; // 549 / 7 frames
               projSprite.height = 72;
               projSprite.animated = true;
-              projSprite.frameCount = 5; // Use frames 0-4
+              projSprite.frameCount = 4; // Use frames 0-3
               projSprite.currentFrame = 0;
               projSprite.startFrame = 0;
-              projSprite.endFrame = 4;
+              projSprite.endFrame = 3;
               projSprite.frameTime = 0.08F; // Fast animation
               projSprite.animationTimer = 0.0F;
               projSprite.reverseAnimation = false;
-              projSprite.loop = false; // Stay on frame 4
+              projSprite.loop = false; // Stay on frame 3
               world.addComponent(projectile, projSprite);
 
               // Add collider (proportional to sprite size with scale)
