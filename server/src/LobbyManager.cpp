@@ -8,19 +8,36 @@
 #include "LobbyManager.hpp"
 #include <iostream>
 
-bool LobbyManager::createLobby(const std::string &code)
+bool LobbyManager::createLobby(const std::string &code, GameConfig::Difficulty difficulty)
 {
   if (m_lobbies.find(code) != m_lobbies.end()) {
     return false;
   }
 
+  std::cout << "[LobbyManager] Creating lobby '" << code << "' with difficulty " << static_cast<int>(difficulty)
+            << '\n';
+
   // Pass the network manager (if any) to the lobby so it can send direct messages
   m_lobbies[code] = std::make_unique<Lobby>(code, m_networkManager);
+
+  // Pass enemy config manager to the lobby
+  if (m_enemyConfigManager) {
+    m_lobbies[code]->setEnemyConfigManager(m_enemyConfigManager);
+  }
+
+  // Pass level config manager to the lobby
+  if (m_levelConfigManager) {
+    m_lobbies[code]->setLevelConfigManager(m_levelConfigManager);
+  }
+
+  // Set the difficulty before the game starts
+  m_lobbies[code]->setDifficulty(difficulty);
+
   std::cout << "[LobbyManager] Created lobby: " << code << '\n';
   return true;
 }
 
-bool LobbyManager::joinLobby(const std::string &code, std::uint32_t clientId)
+bool LobbyManager::joinLobby(const std::string &code, std::uint32_t clientId, bool asSpectator)
 {
   auto lobby_it = m_lobbies.find(code);
   if (lobby_it == m_lobbies.end()) {
@@ -30,7 +47,7 @@ bool LobbyManager::joinLobby(const std::string &code, std::uint32_t clientId)
 
   leaveLobby(clientId);
 
-  if (lobby_it->second->addClient(clientId)) {
+  if (lobby_it->second->addClient(clientId, asSpectator)) {
     m_clientToLobby[clientId] = code;
     return true;
   }

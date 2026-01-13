@@ -6,13 +6,14 @@
 */
 
 #include "Overlay.hpp"
+#include <memory>
 
-Overlay::Overlay(IRenderer *renderer, std::uint8_t alpha)
+Overlay::Overlay(std::shared_ptr<IRenderer> renderer, std::uint8_t alpha)
     : m_renderer(renderer), m_red(0), m_green(0), m_blue(0), m_alpha(alpha)
 {
 }
 
-Overlay::Overlay(IRenderer *renderer, const ColorRGBA &color)
+Overlay::Overlay(std::shared_ptr<IRenderer> renderer, const ColorRGBA &color)
     : m_renderer(renderer), m_red(color.red), m_green(color.green), m_blue(color.blue), m_alpha(color.alpha)
 {
 }

@@ -7,13 +7,21 @@
 
 #ifndef GAME_HPP_
 #define GAME_HPP_
+#include "../../common/include/Common.hpp"
 #include "../../engineCore/include/ecs/World.hpp"
+#include "Difficulty.hpp"
 #include "LobbyManager.hpp"
 #include "ServerSystems.hpp"
 #include <chrono>
 #include <cstdint>
 #include <memory>
 #include <unordered_set>
+
+namespace server
+{
+class EnemyConfigManager;
+class LevelConfigManager;
+} // namespace server
 
 // Game configuration constants
 namespace GameConfig
@@ -55,6 +63,8 @@ public:
   [[nodiscard]] const std::unordered_set<std::uint32_t> &getLobbyClients() const;
   [[nodiscard]] LobbyManager &getLobbyManager();
 
+  Difficulty currentDifficulty = Difficulty::MEDIUM;
+
 private:
   std::shared_ptr<ecs::World> world;
 
@@ -73,6 +83,9 @@ private:
   server::ShootingSystem *shootingSystem = nullptr;
   server::ScoreSystem *scoreSystem = nullptr;
   server::SpawnSystem *spawnSystem = nullptr;
+
+  std::shared_ptr<server::EnemyConfigManager> m_enemyConfigManager;
+  std::shared_ptr<server::LevelConfigManager> m_levelConfigManager;
 
   std::unordered_set<std::uint32_t> m_lobbyClients;
   LobbyManager m_lobbyManager;

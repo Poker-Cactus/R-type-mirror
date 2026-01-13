@@ -36,6 +36,7 @@ struct Sprite : public IComponent {
   std::uint32_t currentFrame = 0;
   std::uint32_t startFrame = 0; // First frame of animation sequence
   std::uint32_t endFrame = 0; // Last frame of animation sequence
+  bool loop = true; // Should the animation loop
   float frameTime = 0.1f; // Time per frame in seconds
   float animationTimer = 0.0f; // Internal timer for animation
   bool reverseAnimation = false; // Play animation in reverse order
@@ -51,6 +52,7 @@ struct Sprite : public IComponent {
     // currentFrame is NOT serialized - it's client-side animation state
     json["startFrame"] = startFrame;
     json["endFrame"] = endFrame;
+    json["loop"] = loop;
     json["frameTime"] = frameTime;
     json["reverseAnimation"] = reverseAnimation;
     return json;
@@ -69,6 +71,7 @@ struct Sprite : public IComponent {
     sprite.startFrame = json.value("startFrame", 0u);
     sprite.endFrame = json.value("endFrame", 0u);
     sprite.currentFrame = json.value("startFrame", 0u); // Initialize to startFrame
+    sprite.loop = json.value("loop", true);
     sprite.frameTime = json.value("frameTime", 0.1f);
     sprite.reverseAnimation = json.value("reverseAnimation", false);
     return sprite;
@@ -85,6 +88,9 @@ constexpr std::uint32_t ENEMY_SHIP = 2;
 constexpr std::uint32_t PROJECTILE = 3;
 constexpr std::uint32_t EXPLOSION = 4;
 constexpr std::uint32_t POWERUP = 5;
+constexpr std::uint32_t ENEMY_YELLOW = 6;
+constexpr std::uint32_t ENEMY_WALKER = 7;
+constexpr std::uint32_t WALKER_PROJECTILE = 8;
 } // namespace SpriteId
 
 } // namespace ecs

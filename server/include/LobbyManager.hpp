@@ -15,6 +15,12 @@
 
 #include "../../network/include/INetworkManager.hpp"
 
+namespace server
+{
+class EnemyConfigManager;
+class LevelConfigManager;
+} // namespace server
+
 /**
  * @brief Manages creation and access to game lobbies
  */
@@ -29,20 +35,32 @@ public:
     m_networkManager = std::move(networkManager);
   }
 
+  void setEnemyConfigManager(std::shared_ptr<server::EnemyConfigManager> configManager)
+  {
+    m_enemyConfigManager = configManager;
+  }
+
+  void setLevelConfigManager(std::shared_ptr<server::LevelConfigManager> configManager)
+  {
+    m_levelConfigManager = configManager;
+  }
+
   /**
-   * @brief Create a new lobby with a unique code
+   * @brief Create a new lobby with a unique code and specified difficulty
    * @param code The lobby code
+   * @param difficulty The game difficulty
    * @return true if lobby was created, false if code already exists
    */
-  bool createLobby(const std::string &code);
+  bool createLobby(const std::string &code, GameConfig::Difficulty difficulty = GameConfig::Difficulty::MEDIUM);
 
   /**
    * @brief Add a client to a lobby
    * @param code The lobby code
    * @param clientId The client identifier
+   * @param asSpectator Whether to join as spectator
    * @return true if client was added successfully
    */
-  bool joinLobby(const std::string &code, std::uint32_t clientId);
+  bool joinLobby(const std::string &code, std::uint32_t clientId, bool asSpectator = false);
 
   /**
    * @brief Remove a client from their current lobby
@@ -79,6 +97,8 @@ private:
   std::unordered_map<std::string, std::unique_ptr<Lobby>> m_lobbies;
   std::unordered_map<std::uint32_t, std::string> m_clientToLobby;
   std::shared_ptr<INetworkManager> m_networkManager;
+  std::shared_ptr<server::EnemyConfigManager> m_enemyConfigManager;
+  std::shared_ptr<server::LevelConfigManager> m_levelConfigManager;
 };
 
 #endif /* !LOBBY_MANAGER_HPP_ */

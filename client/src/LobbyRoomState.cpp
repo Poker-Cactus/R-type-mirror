@@ -15,7 +15,7 @@
 #include <nlohmann/json.hpp>
 #include <utility>
 
-LobbyRoomState::LobbyRoomState(IRenderer *renderer, const std::shared_ptr<ecs::World> &world,
+LobbyRoomState::LobbyRoomState(std::shared_ptr<IRenderer> renderer, const std::shared_ptr<ecs::World> &world,
                                std::shared_ptr<INetworkManager> networkManager)
     : renderer(renderer), world(world), m_networkManager(std::move(networkManager)), background(nullptr),
       overlay(nullptr)
@@ -69,12 +69,16 @@ void LobbyRoomState::update([[maybe_unused]] float deltaTime)
     background->update(deltaTime);
   }
 
-  if (!m_lobbyRequested) {
-    requestLobby();
-    m_lobbyRequested = true;
-    m_timeSinceLobbyRequest = 0.0F;
-  } else if (m_lobbyRequested) {
+  // Only start connection timeout tracking after the request has been sent
+  if (m_lobbyRequested && m_connectionState == LobbyConnectionState::CONNECTING) {
     m_timeSinceLobbyRequest += deltaTime;
+
+    // Check for connection timeout
+    if (m_timeSinceLobbyRequest >= CONNECTION_TIMEOUT) {
+      std::cerr << "[LobbyRoomState] Connection timeout - unable to reach server" << '\n';
+      m_connectionState = LobbyConnectionState::ERROR_STATE;
+      m_errorMessage = "Unable to connect to server";
+    }
   }
 }
 
@@ -106,10 +110,19 @@ void LobbyRoomState::renderLobbyText()
   std::string line2;
 
   switch (m_connectionState) {
-  case LobbyConnectionState::CONNECTING:
-    line1 = "Connecting to lobby...";
-    line2 = "";
+  case LobbyConnectionState::CONNECTING: {
+    if (m_lobbyRequested) {
+      int elapsedSeconds = static_cast<int>(m_timeSinceLobbyRequest);
+      int remainingSeconds = static_cast<int>(CONNECTION_TIMEOUT - m_timeSinceLobbyRequest);
+      line1 = "Connecting to lobby" + std::string(m_joinAsSpectator ? " (Spectator)" : "") + "... (" +
+        std::to_string(elapsedSeconds) + "s)";
+      line2 = "Timeout in " + std::to_string(std::max(0, remainingSeconds)) + "s";
+    } else {
+      line1 = "Spectator mode: " + std::string(m_joinAsSpectator ? "ON" : "OFF") + " (Press R to toggle)";
+      line2 = "Press ENTER to join lobby";
+    }
     break;
+  }
   case LobbyConnectionState::JOINED:
     line1 = "Lobby: " + m_lobbyCode + " (" + std::to_string(m_playerCount) + " player" +
       (m_playerCount != 1 ? "s" : "") + ")";
@@ -166,6 +179,23 @@ void LobbyRoomState::processInput()
     return;
   }
 
+  // R to toggle spectator mode before joining
+  if (m_connectionState == LobbyConnectionState::CONNECTING && !m_lobbyRequested &&
+      renderer->isKeyJustPressed(KeyCode::KEY_R)) {
+    m_joinAsSpectator = !m_joinAsSpectator;
+    std::cout << "[LobbyRoomState] Spectator mode: " << (m_joinAsSpectator ? "ON" : "OFF") << '\n';
+  }
+
+  // ENTER to confirm and send lobby request
+  if (m_connectionState == LobbyConnectionState::CONNECTING && !m_lobbyRequested &&
+      renderer->isKeyJustPressed(KeyCode::KEY_RETURN)) {
+    std::cout << "[LobbyRoomState] Sending lobby request (Spectator: " << (m_joinAsSpectator ? "YES" : "NO") << ")"
+              << '\n';
+    requestLobby();
+    m_lobbyRequested = true;
+    m_timeSinceLobbyRequest = 0.0F;
+  }
+
   // Only allow starting game if we're in a lobby
   if (m_connectionState == LobbyConnectionState::JOINED && renderer->isKeyJustPressed(KeyCode::KEY_X)) {
     std::cout << "[LobbyRoomState] Sending start game request to server" << '\n';
@@ -187,10 +217,11 @@ void LobbyRoomState::processInput()
   }
 }
 
-void LobbyRoomState::setLobbyMode(bool isCreating, const std::string &lobbyCode)
+void LobbyRoomState::setLobbyMode(bool isCreating, const std::string &lobbyCode, Difficulty difficulty)
 {
   m_isCreatingLobby = isCreating;
   m_targetLobbyCode = lobbyCode;
+  m_creationDifficulty = difficulty;
   m_lobbyRequested = false; // Reset so we can request again
   m_connectionState = LobbyConnectionState::CONNECTING;
   m_returnToMenuRequested = false;
@@ -225,10 +256,13 @@ void LobbyRoomState::requestLobby()
   if (m_isCreatingLobby) {
     message["type"] = "request_lobby";
     message["action"] = "create";
+    message["difficulty"] = static_cast<int>(m_creationDifficulty);
+    message["spectator"] = m_joinAsSpectator;
   } else {
     message["type"] = "request_lobby";
     message["action"] = "join";
     message["lobby_code"] = m_targetLobbyCode;
+    message["spectator"] = m_joinAsSpectator;
   }
 
   std::string serialized = message.dump();
@@ -245,6 +279,8 @@ void LobbyRoomState::requestLobby()
 void LobbyRoomState::cleanup()
 {
   freeSpriteTextures();
+  if (renderer != nullptr && m_lobbyFont != nullptr)
+    renderer->freeFont(m_lobbyFont);
   m_lobbyFont = nullptr;
 }
 

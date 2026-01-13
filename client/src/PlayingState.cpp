@@ -9,18 +9,23 @@
 #include "../../engineCore/include/ecs/components/Collider.hpp"
 #include "../../engineCore/include/ecs/components/Health.hpp"
 #include "../../engineCore/include/ecs/components/Networked.hpp"
+#include "../../engineCore/include/ecs/components/Pattern.hpp"
 #include "../../engineCore/include/ecs/components/PlayerId.hpp"
 #include "../../engineCore/include/ecs/components/Score.hpp"
 #include "../../engineCore/include/ecs/components/Sprite.hpp"
 #include "../../engineCore/include/ecs/components/Transform.hpp"
+#include "../../engineCore/include/ecs/components/Velocity.hpp"
+#include "../../network/include/AsioClient.hpp"
 #include "../include/AssetPath.hpp"
 #include "../include/systems/NetworkSendSystem.hpp"
 #include "../interface/Geometry.hpp"
 #include "../interface/KeyCodes.hpp"
 #include <iostream>
 
-PlayingState::PlayingState(IRenderer *renderer, const std::shared_ptr<ecs::World> &world)
-    : renderer(renderer), world(world), background(nullptr)
+PlayingState::PlayingState(std::shared_ptr<IRenderer> renderer, const std::shared_ptr<ecs::World> &world,
+                           Settings &settings, std::shared_ptr<INetworkManager> networkManager)
+    : renderer(std::move(renderer)), world(world), background(nullptr), settings(settings),
+      m_networkManager(networkManager)
 {
 }
 
@@ -38,6 +43,8 @@ bool PlayingState::init()
 
   std::cout << "[PlayingState] Initializing with m_playerHealth = " << m_playerHealth << '\n';
 
+  settingsMenu = std::make_shared<SettingsMenu>(renderer);
+
   // Initialiser le background parallaxe
   background = std::make_unique<ParallaxBackground>(renderer);
   if (!background->init()) {
@@ -47,6 +54,18 @@ bool PlayingState::init()
 
   // Load sprite textures
   loadSpriteTextures();
+
+  // Load hearts texture for health display
+  try {
+    m_heartsTexture = renderer->loadTexture("client/assets/life-bar/hearts.png");
+    if (m_heartsTexture != nullptr) {
+      std::cout << "[PlayingState] ✓ Loaded hearts.png for HP display" << '\n';
+    } else {
+      std::cerr << "[PlayingState] ✗ Failed to load hearts.png" << '\n';
+    }
+  } catch (const std::exception &e) {
+    std::cerr << "[PlayingState] ✗ Failed to load hearts.png: " << e.what() << '\n';
+  }
 
   // Load HUD font with fallback
   try {
@@ -63,6 +82,9 @@ bool PlayingState::init()
     m_hudFont = nullptr;
   }
 
+  // Initialize info mode
+  m_infoMode = std::make_unique<InfoMode>(renderer, m_hudFont);
+
   std::cout << "PlayingState: Initialized successfully" << '\n';
 
   return true;
@@ -70,6 +92,17 @@ bool PlayingState::init()
 
 void PlayingState::update(float delta_time)
 {
+  // Calculate FPS
+  m_fpsAccumulator += delta_time;
+  m_fpsFrameCount++;
+
+  // Update FPS every second
+  if (m_fpsAccumulator >= 1.0f) {
+    m_currentFps = static_cast<float>(m_fpsFrameCount) / m_fpsAccumulator;
+    m_fpsAccumulator = 0.0f;
+    m_fpsFrameCount = 0;
+  }
+
   // Mettre à jour le background
   if (background) {
     background->update(delta_time);
@@ -80,7 +113,21 @@ void PlayingState::update(float delta_time)
   updateAnimations(delta_time);
 
   // Update HUD data from world state
-  updateHUDFromWorld();
+  updateHUDFromWorld(delta_time);
+
+  // Update info mode
+  if (m_infoMode) {
+    m_infoMode->update(delta_time);
+  }
+
+  // Send ping periodically to measure latency
+  if (m_networkManager) {
+    m_pingTimer += delta_time;
+    if (m_pingTimer >= 2.0f) { // Ping every 2 seconds
+      static_cast<AsioClient *>(m_networkManager.get())->sendPing();
+      m_pingTimer = 0.0f;
+    }
+  }
 }
 
 void PlayingState::render()
@@ -133,13 +180,54 @@ void PlayingState::render()
           frameWidth = PLAYER_FRAME_WIDTH;
           frameHeight = PLAYER_FRAME_HEIGHT;
         } else if (sprite.spriteId == ecs::SpriteId::PROJECTILE) {
-          frameWidth = 211;
-          frameHeight = 92;
+          frameWidth = 18;
+          frameHeight = 14;
+        } else if (sprite.spriteId == ecs::SpriteId::ENEMY_YELLOW) {
+          // Yellow Bee: 256x64 with 2 rows x 8 columns = 16 frames
+          frameWidth = 256 / 8; // 32px per frame
+          frameHeight = 64 / 2; // 32px per frame (2 rows)
+        } else if (sprite.spriteId == ecs::SpriteId::ENEMY_WALKER) {
+          // Walker: 200x67 with 2 rows x 6 columns = 12 frames
+          frameWidth = 200 / 6; // 33px per frame
+          frameHeight = 67 / 2; // 33px per frame (2 rows)
+        } else if (sprite.spriteId == ecs::SpriteId::WALKER_PROJECTILE) {
+          // Walker Projectile: 549x72 with 7 frames in single row
+          frameWidth = 549 / 7; // 78px per frame
+          frameHeight = 72;
         }
 
         if (frameWidth > 0 && frameHeight > 0) {
           // Calculate source rectangle based on current frame
-          int srcX = sprite.currentFrame * frameWidth;
+          int srcX = 0;
+          int srcY = 0;
+
+          // For sprites with multiple rows (like Yellow Bee: 2 rows x 8 columns)
+          if (sprite.spriteId == ecs::SpriteId::ENEMY_YELLOW) {
+            // Yellow Bee: 16 frames in 2 rows of 8
+            int framesPerRow = 8;
+            int row = sprite.currentFrame / framesPerRow;
+            int col = sprite.currentFrame % framesPerRow;
+            srcX = col * frameWidth;
+            srcY = row * frameHeight;
+          } else if (sprite.spriteId == ecs::SpriteId::ENEMY_WALKER) {
+            // Walker: 12 frames in 2 rows of 6
+            // Row 0: walking animation (frames 0-5)
+            // Row 1: shooting animation (frames 6-11)
+            int framesPerRow = 6;
+            int row = sprite.currentFrame / framesPerRow;
+            int col = sprite.currentFrame % framesPerRow;
+            srcX = col * frameWidth;
+            srcY = row * frameHeight;
+          } else if (sprite.spriteId == ecs::SpriteId::WALKER_PROJECTILE) {
+            // Walker Projectile: single row spritesheet
+            srcX = sprite.currentFrame * frameWidth;
+            srcY = 0;
+          } else {
+            // Single row spritesheets (ENEMY_SHIP, PLAYER_SHIP, PROJECTILE)
+            srcX = sprite.currentFrame * frameWidth;
+            srcY = 0;
+          }
+
           // Apply transform scale to sprite dimensions
           int scaledWidth = static_cast<int>(sprite.width * transformComponent.scale);
           int scaledHeight = static_cast<int>(sprite.height * transformComponent.scale);
@@ -158,7 +246,8 @@ void PlayingState::render()
           }
 
           renderer->drawTextureRegion(
-            textureIt->second, {.x = srcX, .y = 0, .width = frameWidth, .height = frameHeight}, // Source: current frame
+            textureIt->second,
+            {.x = srcX, .y = srcY, .width = frameWidth, .height = frameHeight}, // Source: current frame
             {.x = static_cast<int>(transformComponent.x),
              .y = static_cast<int>(transformComponent.y),
              .width = scaledWidth,
@@ -184,10 +273,8 @@ void PlayingState::render()
              .height = scaledHeight}); // Destination with scale
         } else if (sprite.spriteId == ecs::SpriteId::PROJECTILE) {
           // Projectile is a spritesheet: 422x92 with 2 frames
-          // Each frame is 211x92 (422/2 = 211)
-          // Extract only the first frame (x=0, y=0, w=211, h=92)
-          constexpr int PROJECTILE_FRAME_WIDTH = 211;
-          constexpr int PROJECTILE_FRAME_HEIGHT = 92;
+          constexpr int PROJECTILE_FRAME_WIDTH = 18;
+          constexpr int PROJECTILE_FRAME_HEIGHT = 14;
           int scaledWidth = static_cast<int>(sprite.width * transformComponent.scale);
           int scaledHeight = static_cast<int>(sprite.height * transformComponent.scale);
           renderer->drawTextureRegion(
@@ -197,6 +284,31 @@ void PlayingState::render()
              .y = static_cast<int>(transformComponent.y),
              .width = scaledWidth,
              .height = scaledHeight}); // Destination with scale
+        } else if (sprite.spriteId == ecs::SpriteId::ENEMY_YELLOW) {
+          // Yellow Bee: Use frame 8 (first of bottom row = left-facing)
+          constexpr int YELLOW_BEE_FRAME_WIDTH = 32;
+          constexpr int YELLOW_BEE_FRAME_HEIGHT = 32;
+          constexpr int YELLOW_BEE_FRAME = 8; // Bottom row, first frame
+          int framesPerRow = 8;
+          int row = YELLOW_BEE_FRAME / framesPerRow;
+          int col = YELLOW_BEE_FRAME % framesPerRow;
+          int srcX = col * YELLOW_BEE_FRAME_WIDTH;
+          int srcY = row * YELLOW_BEE_FRAME_HEIGHT;
+
+          int scaledWidth = static_cast<int>(sprite.width * transformComponent.scale);
+          int scaledHeight = static_cast<int>(sprite.height * transformComponent.scale);
+
+          // Calculate rotation angle based on velocity
+          float rotation = transformComponent.rotation;
+
+          renderer->drawTextureRegionEx(
+            textureIt->second,
+            {.x = srcX, .y = srcY, .width = YELLOW_BEE_FRAME_WIDTH, .height = YELLOW_BEE_FRAME_HEIGHT},
+            {.x = static_cast<int>(transformComponent.x),
+             .y = static_cast<int>(transformComponent.y),
+             .width = scaledWidth,
+             .height = scaledHeight},
+            rotation, false, false);
         } else {
           // Other sprites: draw full texture
           int scaledWidth = static_cast<int>(sprite.width * transformComponent.scale);
@@ -210,6 +322,7 @@ void PlayingState::render()
       constexpr Color COLOR_WHITE = {.r = 255, .g = 255, .b = 255, .a = 255};
       constexpr Color COLOR_PLAYER_BLUE = {.r = 100, .g = 150, .b = 255, .a = 255};
       constexpr Color COLOR_ENEMY_RED = {.r = 255, .g = 100, .b = 100, .a = 255};
+      constexpr Color COLOR_ENEMY_YELLOW = {.r = 255, .g = 255, .b = 50, .a = 255};
       constexpr Color COLOR_PROJECTILE_YELLOW = {.r = 255, .g = 255, .b = 100, .a = 255};
       constexpr Color COLOR_POWERUP_GREEN = {.r = 100, .g = 255, .b = 100, .a = 255};
       constexpr Color COLOR_EXPLOSION_ORANGE = {.r = 255, .g = 150, .b = 50, .a = 255};
@@ -223,6 +336,15 @@ void PlayingState::render()
         break;
       case ecs::SpriteId::ENEMY_SHIP:
         color = COLOR_ENEMY_RED;
+        break;
+      case ecs::SpriteId::ENEMY_YELLOW:
+        color = COLOR_ENEMY_YELLOW;
+        break;
+      case ecs::SpriteId::ENEMY_WALKER:
+        color = COLOR_ENEMY_RED;
+        break;
+      case ecs::SpriteId::WALKER_PROJECTILE:
+        color = COLOR_PROJECTILE_YELLOW;
         break;
       case ecs::SpriteId::PROJECTILE:
         color = COLOR_PROJECTILE_YELLOW;
@@ -251,55 +373,79 @@ void PlayingState::render()
 
 void PlayingState::renderHUD()
 {
-  if (renderer == nullptr || m_hudFont == nullptr) {
+  if (renderer == nullptr) {
     return;
   }
 
-  // Draw health bar
-  constexpr int HEALTH_BAR_X = 20;
-  constexpr int HEALTH_BAR_Y = 20;
-  constexpr int HEALTH_BAR_WIDTH = 200;
-  constexpr int HEALTH_BAR_HEIGHT = 20;
-  constexpr int HUD_BACKGROUND_COLOR_R = 50;
-  constexpr int HUD_BACKGROUND_COLOR_G = 50;
-  constexpr int HUD_BACKGROUND_COLOR_B = 50;
-  constexpr int HUD_BACKGROUND_ALPHA = 200;
-  constexpr Color HUD_BACKGROUND_COLOR = {
-    .r = HUD_BACKGROUND_COLOR_R, .g = HUD_BACKGROUND_COLOR_G, .b = HUD_BACKGROUND_COLOR_B, .a = HUD_BACKGROUND_ALPHA};
-  constexpr Color HUD_HEALTH_GREEN = {.r = 100, .g = 255, .b = 100, .a = 255};
-  constexpr Color HUD_HEALTH_YELLOW = {.r = 255, .g = 255, .b = 100, .a = 255};
-  constexpr Color HUD_HEALTH_RED = {.r = 255, .g = 100, .b = 100, .a = 255};
+  // Hearts texture properties
+  constexpr int HEARTS_TEXTURE_WIDTH = 33;
+  constexpr float HEART_ROW_HEIGHT = 76.0f / 7.0f; // 11.0 pixels per row, using float for precision
+  constexpr int HEARTS_X = 20;
+  constexpr int HEARTS_Y = 20;
+  constexpr int DISPLAY_SCALE = 2; // Scale up for better visibility
   constexpr Color HUD_TEXT_WHITE = {.r = 255, .g = 255, .b = 255, .a = 255};
-  constexpr int HEALTH_THRESHOLD_HIGH = 60;
-  constexpr int HEALTH_THRESHOLD_MID = 30;
-  constexpr int MAX_HEALTH = 100;
-  constexpr int HUD_TEXT_OFFSET_X = 5;
-  constexpr int HUD_TEXT_OFFSET_Y = 2;
-  constexpr int HUD_SCORE_OFFSET_Y = 30;
+  constexpr int HUD_SCORE_OFFSET_Y = 50;
 
-  // Background (dark gray)
-  renderer->drawRect(HEALTH_BAR_X, HEALTH_BAR_Y, HEALTH_BAR_WIDTH, HEALTH_BAR_HEIGHT, HUD_BACKGROUND_COLOR);
+  // Draw hearts if texture is loaded
+  if (m_heartsTexture != nullptr) {
+    // Calculate heart display based on actual HP value
+    // Each 100 HP = 1 full heart
+    // Use floating point for precise heart calculation
+    float heartsValue = static_cast<float>(m_playerHealth) / 100.0f;
 
-  // Health fill (green to red based on health)
-  int healthWidth = (m_playerHealth * HEALTH_BAR_WIDTH) / MAX_HEALTH;
-  Color healthColor;
-  if (m_playerHealth > HEALTH_THRESHOLD_HIGH) {
-    healthColor = HUD_HEALTH_GREEN;
-  } else if (m_playerHealth > HEALTH_THRESHOLD_MID) {
-    healthColor = HUD_HEALTH_YELLOW;
-  } else {
-    healthColor = HUD_HEALTH_RED;
+    // Clamp to valid range (0.0 to 3.0 hearts max)
+    heartsValue = std::max(0.0f, std::min(3.0f, heartsValue));
+
+    // Convert hearts value to row index (0-6)
+    // 3.0 hearts = row 0 (full)
+    // 2.5 hearts = row 1
+    // 2.0 hearts = row 2
+    // 1.5 hearts = row 3
+    // 1.0 hearts = row 4
+    // 0.5 hearts = row 5
+    // 0.0 hearts = row 6 (empty)
+
+    int heartRow = 0;
+    if (heartsValue >= 2.5f) {
+      heartRow = 0; // 2.5-3.0 hearts: full
+    } else if (heartsValue >= 2.0f) {
+      heartRow = 1; // 2.0-2.4 hearts
+    } else if (heartsValue >= 1.5f) {
+      heartRow = 2; // 1.5-1.9 hearts
+    } else if (heartsValue >= 1.0f) {
+      heartRow = 3; // 1.0-1.4 hearts
+    } else if (heartsValue >= 0.5f) {
+      heartRow = 4; // 0.5-0.9 hearts
+    } else if (heartsValue > 0.0f) {
+      heartRow = 5; // 0.1-0.4 hearts
+    } else {
+      heartRow = 6; // 0 hearts: empty
+    }
+
+    // Calculate source Y position with rounding for exact pixel alignment
+    int sourceY = static_cast<int>(std::round(heartRow * HEART_ROW_HEIGHT));
+
+    // Draw the appropriate heart row
+    renderer->drawTextureRegion(
+      m_heartsTexture,
+      {.x = 0, .y = sourceY, .width = HEARTS_TEXTURE_WIDTH, .height = static_cast<int>(std::round(HEART_ROW_HEIGHT))},
+      {.x = HEARTS_X,
+       .y = HEARTS_Y,
+       .width = HEARTS_TEXTURE_WIDTH * DISPLAY_SCALE,
+       .height = static_cast<int>(std::round(HEART_ROW_HEIGHT)) * DISPLAY_SCALE});
   }
-  renderer->drawRect(HEALTH_BAR_X, HEALTH_BAR_Y, healthWidth, HEALTH_BAR_HEIGHT, healthColor);
 
-  // Health text
-  std::string healthText = "HP: " + std::to_string(m_playerHealth) + "/" + std::to_string(MAX_HEALTH);
-  renderer->drawText(m_hudFont, healthText, HEALTH_BAR_X + HUD_TEXT_OFFSET_X, HEALTH_BAR_Y + HUD_TEXT_OFFSET_Y,
-                     HUD_TEXT_WHITE);
+  // Score text (only if font is loaded)
+  if (m_hudFont != nullptr) {
+    std::string scoreText = "Score: " + std::to_string(m_playerScore);
+    renderer->drawText(m_hudFont, scoreText, HEARTS_X, HEARTS_Y + HUD_SCORE_OFFSET_Y, HUD_TEXT_WHITE);
+  }
 
-  // Score text
-  std::string scoreText = "Score: " + std::to_string(m_playerScore);
-  renderer->drawText(m_hudFont, scoreText, HEALTH_BAR_X, HEALTH_BAR_Y + HUD_SCORE_OFFSET_Y, HUD_TEXT_WHITE);
+  // Render info mode if active
+  if (m_infoMode) {
+    const int infoTextY = HEARTS_Y + HUD_SCORE_OFFSET_Y + 30; // Below score
+    m_infoMode->render(HEARTS_X, infoTextY);
+  }
 }
 
 void PlayingState::updateAnimations(float deltaTime)
@@ -323,6 +469,16 @@ void PlayingState::updateAnimations(float deltaTime)
       continue;
     }
 
+    // If the animation is non-looping and already finished, keep final frame
+    if (!sprite.loop) {
+      if (!sprite.reverseAnimation && sprite.currentFrame >= sprite.endFrame) {
+        continue;
+      }
+      if (sprite.reverseAnimation && sprite.currentFrame <= sprite.endFrame) {
+        continue;
+      }
+    }
+
     animatedCount++;
 
     // Update animation timer
@@ -336,14 +492,14 @@ void PlayingState::updateAnimations(float deltaTime)
         // Play animation in reverse (e.g., from frame 7 to 0)
         if (sprite.currentFrame > sprite.endFrame) {
           sprite.currentFrame--;
-        } else {
+        } else if (sprite.loop) {
           sprite.currentFrame = sprite.startFrame; // Loop back
         }
       } else {
         // Play animation forward
         if (sprite.currentFrame < sprite.endFrame) {
           sprite.currentFrame++;
-        } else {
+        } else if (sprite.loop) {
           sprite.currentFrame = sprite.startFrame; // Loop back
         }
       }
@@ -361,7 +517,7 @@ void PlayingState::updateAnimations(float deltaTime)
   }
 }
 
-void PlayingState::updateHUDFromWorld()
+void PlayingState::updateHUDFromWorld(float deltaTime)
 {
   if (world == nullptr) {
     return;
@@ -401,6 +557,7 @@ void PlayingState::updateHUDFromWorld()
         if (world->hasComponent<ecs::Health>(entity)) {
           const auto &health = world->getComponent<ecs::Health>(entity);
           m_playerHealth = health.hp;
+          m_playerMaxHealth = health.maxHp;
         }
         if (world->hasComponent<ecs::Score>(entity)) {
           const auto &score = world->getComponent<ecs::Score>(entity);
@@ -433,6 +590,84 @@ void PlayingState::updateHUDFromWorld()
       break; // found our player
     }
   }
+
+  // Update info mode with current game data
+  if (m_infoMode) {
+    // Pass real FPS value
+    m_infoMode->setGameData(m_playerHealth, m_playerScore, m_currentFps);
+
+    // Collect real entity statistics
+    int totalEntities = 0;
+    int playerCount = 0;
+    int enemyCount = 0;
+    int projectileCount = 0;
+
+    // Count all entities with Transform component (basic entities)
+    {
+      ecs::ComponentSignature allEntitiesSig;
+      allEntitiesSig.set(ecs::getComponentId<ecs::Transform>());
+      std::vector<ecs::Entity> allEntities;
+      world->getEntitiesWithSignature(allEntitiesSig, allEntities);
+      totalEntities = static_cast<int>(allEntities.size());
+    }
+
+    // Count players (entities with PlayerId component)
+    {
+      ecs::ComponentSignature playerSig;
+      playerSig.set(ecs::getComponentId<ecs::PlayerId>());
+      std::vector<ecs::Entity> players;
+      world->getEntitiesWithSignature(playerSig, players);
+      playerCount = static_cast<int>(players.size());
+    }
+
+    // Count enemies (entities with Pattern component - they have movement patterns)
+    {
+      ecs::ComponentSignature enemySig;
+      enemySig.set(ecs::getComponentId<ecs::Pattern>());
+      enemySig.set(ecs::getComponentId<ecs::Health>()); // Enemies typically have health
+      std::vector<ecs::Entity> enemies;
+      world->getEntitiesWithSignature(enemySig, enemies);
+      enemyCount = static_cast<int>(enemies.size());
+    }
+
+    // Count projectiles (entities with Velocity but no Pattern - projectiles move linearly)
+    {
+      ecs::ComponentSignature projectileSig;
+      projectileSig.set(ecs::getComponentId<ecs::Velocity>());
+      projectileSig.set(ecs::getComponentId<ecs::Transform>());
+      // Exclude entities with Pattern (enemies) or PlayerId (players)
+      std::vector<ecs::Entity> projectiles;
+      world->getEntitiesWithSignature(projectileSig, projectiles);
+
+      // Filter out entities that have Pattern or PlayerId
+      for (auto entity : projectiles) {
+        if (!world->hasComponent<ecs::Pattern>(entity) && !world->hasComponent<ecs::PlayerId>(entity)) {
+          projectileCount++;
+        }
+      }
+    }
+
+    // Calculate game time (using a simple accumulator for now)
+    static float gameTimeAccumulator = 0.0f;
+    gameTimeAccumulator += deltaTime;
+
+    // Update game statistics in info mode
+    m_infoMode->setGameStats(totalEntities, playerCount, enemyCount, projectileCount, gameTimeAccumulator);
+
+    // Set real network data
+    if (m_networkManager) {
+      float latency = m_networkManager->getLatency();
+      bool connected = m_networkManager->isConnected();
+      int packetsPerSec = m_networkManager->getPacketsPerSecond();
+      int uploadBps = m_networkManager->getUploadBytesPerSecond();
+      int downloadBps = m_networkManager->getDownloadBytesPerSecond();
+      m_infoMode->setNetworkData(latency, connected, packetsPerSec);
+      m_infoMode->setNetworkBandwidth(uploadBps, downloadBps);
+    } else {
+      m_infoMode->setNetworkData(-1.0f, false, 0);
+      m_infoMode->setNetworkBandwidth(0, 0);
+    }
+  }
 }
 
 void PlayingState::processInput()
@@ -440,37 +675,69 @@ void PlayingState::processInput()
   if (renderer == nullptr)
     return;
 
-  bool up = renderer->isKeyPressed(KeyCode::KEY_UP);
-  bool down = renderer->isKeyPressed(KeyCode::KEY_DOWN);
-
-  if (renderer->isKeyPressed(KeyCode::KEY_UP)) {
+  if (renderer->isKeyPressed(settings.up)) {
     m_returnUp = true;
-  } else if (renderer->isKeyPressed(KeyCode::KEY_DOWN)) {
+  } else if (renderer->isKeyPressed(settings.down)) {
     m_returnDown = true;
   } else {
     m_returnUp = false;
     m_returnDown = false;
   }
+
+  // Handle info mode input
+  if (m_infoMode) {
+    m_infoMode->processInput();
+  }
 }
 
 void PlayingState::changeAnimationPlayers(float delta_time)
 {
+  // No input: reset to idle and clear any queued single-shot animation
   if (!m_returnUp && !m_returnDown) {
     m_playerAnimTimer = 0.f;
-    m_playerFrameIndex = 3;
+    m_playerFrameIndex = 2;
+    m_playerAnimDirection = PlayerAnimDirection::None;
+    m_playerAnimPlayingOnce = false;
+    m_playerAnimPhase = 0;
     return;
   }
 
+  // Determine desired direction based on current input
+  const PlayerAnimDirection desiredDirection = m_returnUp ? PlayerAnimDirection::Up : PlayerAnimDirection::Down;
+
+  // Start a new single-shot animation only on a fresh key press or direction change
+  if (desiredDirection != m_playerAnimDirection) {
+    m_playerAnimDirection = desiredDirection;
+    m_playerAnimPlayingOnce = true;
+    m_playerAnimPhase = 0;
+    m_playerAnimTimer = 0.f;
+    m_playerFrameIndex = 2; // start from neutral frame before stepping
+  }
+
+  if (!m_playerAnimPlayingOnce) {
+    return; // already played for this press
+  }
+
   m_playerAnimTimer += delta_time;
-  constexpr float ANIM_FRAME_DURATION = 0.15f;
+  constexpr float ANIM_FRAME_DURATION = 0.12f; // slightly faster for snappier feel
   if (m_playerAnimTimer >= ANIM_FRAME_DURATION) {
     m_playerAnimTimer = 0.f;
-    m_playerAnimToggle = (m_playerAnimToggle + 1) % 2;
+    m_playerAnimPhase++;
 
-    if (m_returnUp) {
-      m_playerFrameIndex = (m_playerAnimToggle == 0) ? 3 : 4;
-    } else if (m_returnDown) {
-      m_playerFrameIndex = (m_playerAnimToggle == 0) ? 1 : 2;
+    if (m_playerAnimDirection == PlayerAnimDirection::Up) {
+      if (m_playerAnimPhase == 1) {
+        m_playerFrameIndex = 3; // mid frame
+      } else {
+        m_playerFrameIndex = 4; // end frame
+        m_playerAnimPlayingOnce = false; // done for this press
+      }
+    } else if (m_playerAnimDirection == PlayerAnimDirection::Down) {
+      if (m_playerAnimPhase == 1) {
+        m_playerFrameIndex = 1; // mid frame
+      } else {
+        m_playerFrameIndex = 0; // end frame
+        m_playerAnimPlayingOnce = false; // done for this press
+      }
     }
   }
 }
@@ -484,6 +751,12 @@ void PlayingState::cleanup()
 
   // Free all loaded sprite textures
   freeSpriteTextures();
+
+  // Free hearts texture
+  if (m_heartsTexture != nullptr && renderer != nullptr) {
+    renderer->freeTexture(m_heartsTexture);
+    m_heartsTexture = nullptr;
+  }
 
   // Free HUD font
   if (m_hudFont != nullptr && renderer != nullptr) {
@@ -531,7 +804,7 @@ void PlayingState::loadSpriteTextures()
 
   // PROJECTILE = 3 (spritesheet: 422x92, 2 frames, using first frame only)
   try {
-    void *projectile_tex = renderer->loadTexture("client/assets/sprites/projectile.png");
+    void *projectile_tex = renderer->loadTexture("client/assets/sprites/r-typesheet1.png");
     if (projectile_tex != nullptr) {
       m_spriteTextures[ecs::SpriteId::PROJECTILE] = projectile_tex;
       std::cout << "[PlayingState] ✓ Loaded projectile.png" << '\n';
@@ -568,7 +841,46 @@ void PlayingState::loadSpriteTextures()
     std::cerr << "[PlayingState] ✗ Failed to load explosion.png: " << e.what() << '\n';
   }
 
-  constexpr int EXPECTED_TEXTURE_COUNT = 5;
+  // ENEMY_YELLOW = 6 (animated spritesheet: 256x64, 2 rows x 8 columns = 16 frames)
+  try {
+    void *enemy_yellow_tex = renderer->loadTexture(resolveAssetPath("client/assets/sprites/enemy_yellow.gif"));
+    if (enemy_yellow_tex != nullptr) {
+      m_spriteTextures[ecs::SpriteId::ENEMY_YELLOW] = enemy_yellow_tex;
+      std::cout << "[PlayingState] ✓ Loaded enemy_yellow.gif" << '\n';
+    } else {
+      std::cerr << "[PlayingState] ✗ Failed to load enemy_yellow.gif (returned null)" << '\n';
+    }
+  } catch (const std::exception &e) {
+    std::cerr << "[PlayingState] ✗ Failed to load enemy_yellow.gif: " << e.what() << '\n';
+  }
+
+  // ENEMY_WALKER = 7 (animated spritesheet: 200x67, 2 rows x 6 columns = 12 frames)
+  try {
+    void *enemy_walker_tex = renderer->loadTexture(resolveAssetPath("client/assets/sprites/walk_enemy.gif"));
+    if (enemy_walker_tex != nullptr) {
+      m_spriteTextures[ecs::SpriteId::ENEMY_WALKER] = enemy_walker_tex;
+      std::cout << "[PlayingState] ✓ Loaded walk_enemy.gif" << '\n';
+    } else {
+      std::cerr << "[PlayingState] ✗ Failed to load walk_enemy.gif (returned null)" << '\n';
+    }
+  } catch (const std::exception &e) {
+    std::cerr << "[PlayingState] ✗ Failed to load walk_enemy.gif: " << e.what() << '\n';
+  }
+
+  // WALKER_PROJECTILE = 8 (animated spritesheet: 549x72, 7 frames)
+  try {
+    void *walker_projectile_tex = renderer->loadTexture(resolveAssetPath("client/assets/sprites/walk_projectile.png"));
+    if (walker_projectile_tex != nullptr) {
+      m_spriteTextures[ecs::SpriteId::WALKER_PROJECTILE] = walker_projectile_tex;
+      std::cout << "[PlayingState] ✓ Loaded walk_projectile.png" << '\n';
+    } else {
+      std::cerr << "[PlayingState] ✗ Failed to load walk_projectile.png (returned null)" << '\n';
+    }
+  } catch (const std::exception &e) {
+    std::cerr << "[PlayingState] ✗ Failed to load walk_projectile.png: " << e.what() << '\n';
+  }
+
+  constexpr int EXPECTED_TEXTURE_COUNT = 8;
   std::cout << "[PlayingState] Successfully loaded " << m_spriteTextures.size() << " / " << EXPECTED_TEXTURE_COUNT
             << " sprite textures" << '\n';
   if (m_spriteTextures.size() < EXPECTED_TEXTURE_COUNT) {

@@ -1,9 +1,7 @@
-/*
-** EPITECH PROJECT, 2025
-** R-type-mirror
-** File description:
-** NetworkReceiveSystem (Client)
-*/
+/**
+ * @file NetworkReceiveSystem.hpp
+ * @brief Client-side network message reception system
+ */
 
 #ifndef CLIENT_NETWORKRECEIVESYSTEM_HPP_
 #define CLIENT_NETWORKRECEIVESYSTEM_HPP_
@@ -14,27 +12,79 @@
 #include <nlohmann/json.hpp>
 #include <string>
 
+/**
+ * @class ClientNetworkReceiveSystem
+ * @brief Handles incoming network messages from the server
+ *
+ * This system processes messages including:
+ * - Entity creation/updates
+ * - Game state snapshots
+ * - Lobby events
+ * - Game lifecycle events
+ */
 class ClientNetworkReceiveSystem : public ecs::ISystem
 {
 public:
+  /**
+   * @brief Construct the network receive system
+   * @param networkManager Shared pointer to network manager
+   */
   ClientNetworkReceiveSystem(std::shared_ptr<INetworkManager> networkManager);
   ~ClientNetworkReceiveSystem() override;
 
+  /**
+   * @brief Update system - process incoming network messages
+   * @param world ECS world reference
+   * @param deltaTime Time elapsed since last update
+   */
   void update(ecs::World &world, float deltaTime) override;
+
+  /**
+   * @brief Get component signature for this system
+   * @return Component signature
+   */
   [[nodiscard]] ecs::ComponentSignature getSignature() const override;
 
-  // Callbacks for game state
+  /**
+   * @brief Set callback for game start event
+   * @param callback Function to call when game starts
+   */
   void setGameStartedCallback(std::function<void()> callback);
 
-  // Callbacks for lobby state
+  /**
+   * @brief Set callback for lobby join event
+   * @param callback Function to call when joining lobby
+   */
   void setLobbyJoinedCallback(std::function<void(const std::string &)> callback);
+
+  /**
+   * @brief Set callback for lobby state updates
+   * @param callback Function to call on lobby state change
+   */
   void setLobbyStateCallback(std::function<void(const std::string &, int)> callback);
+
+  /**
+   * @brief Set callback for error events
+   * @param callback Function to call on error
+   */
   void setErrorCallback(std::function<void(const std::string &)> callback);
-  // Allow toggling whether snapshots are accepted (useful when leaving a game)
+
+  /**
+   * @brief Enable or disable snapshot processing
+   * @param accept Whether to accept game snapshots
+   */
   void setAcceptSnapshots(bool accept);
-  // Callback when server acknowledges leaving the lobby
+
+  /**
+   * @brief Set callback for lobby leave event
+   * @param callback Function to call when leaving lobby
+   */
   void setLobbyLeftCallback(std::function<void()> callback);
-  // Callback when server notifies that this player died
+
+  /**
+   * @brief Set callback for player death event
+   * @param callback Function to call when player dies
+   */
   void setPlayerDeadCallback(std::function<void(const nlohmann::json &)> callback);
 
 private:

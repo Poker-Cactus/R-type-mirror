@@ -129,11 +129,19 @@ public:
       }
 
       const float left = -w;
-      const float right = worldW + w;
+      const float right = worldW + w * 2.0F; // Give extra space on the right for enemy spawns
       const float top = -h;
       const float bottom = worldH + h;
 
-      if (transform.x < left || transform.x > right || transform.y < top || transform.y > bottom) {
+      // Only destroy if entity goes off LEFT side or top/bottom (not right side for enemies)
+      // This allows enemies to spawn off-screen on the right and come in
+      bool offLeft = transform.x < left;
+      bool offTopOrBottom = transform.y < top || transform.y > bottom;
+
+      // Only destroy projectiles/enemies that go too far right (prevent infinite accumulation)
+      bool tooFarRight = transform.x > right;
+
+      if (offLeft || offTopOrBottom || tooFarRight) {
         toDestroy.push_back(entity);
       }
     }
