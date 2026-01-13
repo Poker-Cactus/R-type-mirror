@@ -44,7 +44,22 @@ foreach(module_dir ${MODULE_DIRS})
                     message(FATAL_ERROR "No SDL2_ttf target found (expected SDL2_ttf::SDL2_ttf, SDL2_ttf::SDL2_ttf-static or sdl_ttf::sdl_ttf)")
                 endif()
 
-                target_link_libraries(${LIB_NAME} PRIVATE SDL2::SDL2 ${_ttf_target} SDL2_image::SDL2_image)
+                # Conan's sdl_mixer may export different target names depending on version/options.
+                set(_mixer_target "")
+                if(TARGET SDL2_mixer::SDL2_mixer)
+                    set(_mixer_target SDL2_mixer::SDL2_mixer)
+                elseif(TARGET SDL2_mixer::SDL2_mixer-static)
+                    set(_mixer_target SDL2_mixer::SDL2_mixer-static)
+                elseif(TARGET sdl_mixer::sdl_mixer)
+                    set(_mixer_target sdl_mixer::sdl_mixer)
+                endif()
+
+                if(_mixer_target STREQUAL "")
+                    message(WARNING "No SDL2_mixer target found - audio features will be disabled")
+                    target_link_libraries(${LIB_NAME} PRIVATE SDL2::SDL2 ${_ttf_target} SDL2_image::SDL2_image)
+                else()
+                    target_link_libraries(${LIB_NAME} PRIVATE SDL2::SDL2 ${_ttf_target} SDL2_image::SDL2_image ${_mixer_target})
+                endif()
             endif()
             
             # Place les .so/.dll dans build/

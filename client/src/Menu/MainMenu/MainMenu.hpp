@@ -55,6 +55,9 @@ private:
   void *font;
   void *planet;
 
-  std::array<std::string, 4> mainMenuItems;
-  int currentMenuIndex;
+  std::array<std::string, 4> mainMenuItems = {"Play", "Settings", "Profile", "Exit"};
+  int currentMenuIndex = 0;
+
+  void *clickedSound;
+  void *hoverSound;
 };
