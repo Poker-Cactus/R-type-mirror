@@ -117,7 +117,7 @@ void PlayingState::update(float delta_time)
 
   // Update info mode
   if (m_infoMode) {
-    m_infoMode->update(delta_time);
+    m_infoMode->update();
   }
 
   // Send ping periodically to measure latency
