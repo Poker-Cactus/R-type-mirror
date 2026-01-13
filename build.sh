@@ -181,7 +181,7 @@ compile_project() {
     print_step "Compiling project..."
     echo ""
     
-    cmake --build "$BUILD_DIR" --config "$BUILD_TYPE" 2>&1 | format_build_output
+    cmake --build "$BUILD_DIR" --config "$BUILD_TYPE" -j8 2>&1 | format_build_output
     return ${PIPESTATUS[0]}
 }
 
@@ -203,7 +203,7 @@ compile_editor() {
     }
     
     # Build just the editor
-    cmake --build "$BUILD_DIR" --target assetEditor 2>&1 | format_build_output
+    cmake --build "$BUILD_DIR" --target assetEditor -j8 2>&1 | format_build_output
     return ${PIPESTATUS[0]}
 }
 
@@ -321,7 +321,7 @@ cmd_test() {
     ) || { print_error "CMake configuration failed!"; exit 1; }
     
     print_step "Building tests..."
-    cmake --build "$BUILD_DIR" --target component_signature_tests component_manager_tests entity_tests entity_manager_tests component_storage_tests system_manager_tests world_tests 2>&1 | tail -5
+    cmake --build "$BUILD_DIR" --target component_signature_tests component_manager_tests entity_tests entity_manager_tests component_storage_tests system_manager_tests world_tests -j8 2>&1 | tail -5
     
     print_step "Executing tests..."
     echo ""
@@ -388,7 +388,7 @@ cmd_launch() {
     fi
     
     print_step "Recompiling..."
-    cmake --build "$BUILD_DIR" --config "$BUILD_TYPE" > /dev/null 2>&1
+    cmake --build "$BUILD_DIR" --config "$BUILD_TYPE" -j8 > /dev/null 2>&1
     
     if [ $? -ne 0 ]; then
         print_error "Compilation failed!"

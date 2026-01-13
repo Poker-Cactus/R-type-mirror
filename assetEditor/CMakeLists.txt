@@ -29,11 +29,18 @@ target_link_libraries(imgui_asseteditor PUBLIC SDL2::SDL2)
 # ─────────────────────────────────────────────────────────────────────────────
 # Asset Editor executable
 # ─────────────────────────────────────────────────────────────────────────────
-add_executable(assetEditor
+set(ASSETEDITOR_SOURCES
     src/main.cpp
+    src/EditorState.cpp
+    src/JsonEditor.cpp
+    src/MainMenu.cpp
+    src/Style.cpp
 )
 
+add_executable(assetEditor ${ASSETEDITOR_SOURCES})
+
 target_include_directories(assetEditor PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/include
     ${IMGUI_DIR}
     ${IMGUI_DIR}/backends
 )
