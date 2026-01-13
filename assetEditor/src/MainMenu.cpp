@@ -7,6 +7,7 @@
 
 #include "MainMenu.h"
 #include "EditorState.h"
+#include "SpriteEditor.h"
 #include <imgui.h>
 #include <SDL.h>
 
@@ -15,6 +16,7 @@ namespace AssetEditor {
 // macOS System Colors (Dark Mode)
 namespace {
     const ImVec4 MacBlue   = ImVec4(0.00f, 0.57f, 1.00f, 1.00f);  // RGB(0, 145, 255)
+    const ImVec4 MacGreen  = ImVec4(0.19f, 0.82f, 0.35f, 1.00f);  // RGB(48, 209, 88)
     const ImVec4 MacRed    = ImVec4(1.00f, 0.26f, 0.27f, 1.00f);  // RGB(255, 66, 69)
     const ImVec4 MacGray4  = ImVec4(0.23f, 0.23f, 0.24f, 1.00f);  // RGB(58, 58, 60)
     const ImVec4 MacGray3  = ImVec4(0.28f, 0.28f, 0.29f, 1.00f);  // RGB(72, 72, 74)
@@ -92,16 +94,18 @@ void RenderMainMenu() {
         ImGui::Spacing();
         ImGui::SetCursorPosX(offsetX);
         
-        // Sprite Editor Button (disabled - gray)
-        ImGui::PushStyleColor(ImGuiCol_Button, MacGray4);
-        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, MacGray3);
-        ImGui::PushStyleColor(ImGuiCol_ButtonActive, MacGray3);
-        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.92f, 0.92f, 0.96f, 0.30f));
-        ImGui::Button("Sprite Editor", ImVec2(buttonWidth, buttonHeight));
-        if (ImGui::IsItemHovered()) {
-            ImGui::SetTooltip("Coming soon...");
+        // Sprite Editor Button - Secondary action (Green accent)
+        ImGui::PushStyleColor(ImGuiCol_Button, MacGreen);
+        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.25f, 0.88f, 0.42f, 1.00f));
+        ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.15f, 0.75f, 0.30f, 1.00f));
+        if (ImGui::Button("Sprite Editor", ImVec2(buttonWidth, buttonHeight))) {
+            g_state.mode = EditorMode::SpriteEditor;
+            RefreshSpriteList();
         }
-        ImGui::PopStyleColor(4);
+        ImGui::PopStyleColor(3);
+        if (ImGui::IsItemHovered()) {
+            ImGui::SetTooltip("Browse and manage game sprites");
+        }
         
         ImGui::Spacing();
         ImGui::Spacing();

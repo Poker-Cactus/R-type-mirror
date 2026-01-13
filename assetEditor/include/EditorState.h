@@ -34,6 +34,12 @@ struct EditorState {
     json currentJson;
     bool modified = false;
     
+    // Sprite Editor state
+    std::vector<std::string> spriteFiles;
+    std::string selectedSprite;
+    std::string spritePath = SPRITE_PATH;
+    bool pixelEditorMode = false;  // Toggle between preview and pixel editor
+    
     // Config path
     std::string configPath = CONFIG_PATH;
 };

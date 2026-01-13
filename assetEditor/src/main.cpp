@@ -2,13 +2,14 @@
  * @file main.cpp
  * @brief R-Type Asset Editor - Main entry point
  * 
- * Standalone ImGui-based editor for game configuration files.
- * Features JSON editing, macOS-styled UI, and bundled Inter font.
+ * Standalone ImGui-based editor for game configuration files and sprites.
+ * Features JSON editing, sprite management, macOS-styled UI, and bundled Inter font.
  */
 
 #include "EditorState.h"
 #include "JsonEditor.h"
 #include "MainMenu.h"
+#include "SpriteEditor.h"
 #include "Style.h"
 
 #include <SDL.h>
@@ -17,6 +18,7 @@
 #include <imgui_impl_sdlrenderer2.h>
 
 #include <iostream>
+#include <filesystem>
 
 using namespace AssetEditor;
 
@@ -32,7 +34,7 @@ static void RenderUI() {
             RenderJsonEditorUI();
             break;
         case EditorMode::SpriteEditor:
-            RenderMainMenu();
+            RenderSpriteEditorUI();
             break;
     }
 }
@@ -95,6 +97,9 @@ int main(int argc, char* argv[]) {
     
     io.DisplaySize = ImVec2(static_cast<float>(windowW), static_cast<float>(windowH));
     
+    // Setup sprite renderer
+    SetSpriteRenderer(renderer);
+    
     // Initial setup
     RefreshFileList();
     
@@ -115,6 +120,23 @@ int main(int argc, char* argv[]) {
                 int newW = event.window.data1;
                 int newH = event.window.data2;
                 SDL_RenderSetLogicalSize(renderer, newW, newH);
+            }
+            
+            // Drag and drop file
+            if (event.type == SDL_DROPFILE) {
+                char* droppedFile = event.drop.file;
+                if (droppedFile) {
+                    // Check if we're in sprite editor mode
+                    if (g_state.mode == EditorMode::SpriteEditor) {
+                        // First check if import overlay is active
+                        if (IsImportOverlayActive()) {
+                            HandleImportDroppedFile(droppedFile);
+                        } else if (IsSupportedSpriteExtension(std::filesystem::path(droppedFile).extension().string())) {
+                            ImportSpriteFile(droppedFile);
+                        }
+                    }
+                    SDL_free(droppedFile);
+                }
             }
             
             // Keyboard shortcuts (Cmd+S / Ctrl+S to save)
@@ -143,6 +165,8 @@ int main(int argc, char* argv[]) {
     }
     
     // Cleanup
+    CleanupSpriteTextures();
+    
     ImGui_ImplSDLRenderer2_Shutdown();
     ImGui_ImplSDL2_Shutdown();
     ImGui::DestroyContext();
