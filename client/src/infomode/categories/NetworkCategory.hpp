@@ -65,7 +65,8 @@ public:
    * @param uploadBytes Upload bytes per second
    * @param downloadBytes Download bytes per second
    */
-  void setBandwidth(int uploadBytes, int downloadBytes) {
+  void setBandwidth(int uploadBytes, int downloadBytes)
+  {
     m_uploadBytesPerSecond = uploadBytes;
     m_downloadBytesPerSecond = downloadBytes;
   }

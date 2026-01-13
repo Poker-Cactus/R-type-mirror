@@ -4,12 +4,10 @@
  */
 
 #include "GameCategory.hpp"
-#include <sstream>
 #include <iomanip>
+#include <sstream>
 
-GameCategory::GameCategory()
-{
-}
+GameCategory::GameCategory() {}
 
 std::vector<std::string> GameCategory::getInfoLines() const
 {

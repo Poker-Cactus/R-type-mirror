@@ -15,16 +15,17 @@
 #include "../../engineCore/include/ecs/components/Sprite.hpp"
 #include "../../engineCore/include/ecs/components/Transform.hpp"
 #include "../../engineCore/include/ecs/components/Velocity.hpp"
+#include "../../network/include/AsioClient.hpp"
 #include "../include/AssetPath.hpp"
 #include "../include/systems/NetworkSendSystem.hpp"
 #include "../interface/Geometry.hpp"
 #include "../interface/KeyCodes.hpp"
-#include "../../network/include/AsioClient.hpp"
 #include <iostream>
 
 PlayingState::PlayingState(std::shared_ptr<IRenderer> renderer, const std::shared_ptr<ecs::World> &world,
                            Settings &settings, std::shared_ptr<INetworkManager> networkManager)
-    : renderer(std::move(renderer)), world(world), background(nullptr), settings(settings), m_networkManager(networkManager)
+    : renderer(std::move(renderer)), world(world), background(nullptr), settings(settings),
+      m_networkManager(networkManager)
 {
 }
 
@@ -123,7 +124,7 @@ void PlayingState::update(float delta_time)
   if (m_networkManager) {
     m_pingTimer += delta_time;
     if (m_pingTimer >= 2.0f) { // Ping every 2 seconds
-      static_cast<AsioClient*>(m_networkManager.get())->sendPing();
+      static_cast<AsioClient *>(m_networkManager.get())->sendPing();
       m_pingTimer = 0.0f;
     }
   }
@@ -442,7 +443,7 @@ void PlayingState::renderHUD()
 
   // Render info mode if active
   if (m_infoMode) {
-    const int infoTextY = HEARTS_Y + HUD_SCORE_OFFSET_Y + 30;  // Below score
+    const int infoTextY = HEARTS_Y + HUD_SCORE_OFFSET_Y + 30; // Below score
     m_infoMode->render(HEARTS_X, infoTextY);
   }
 }

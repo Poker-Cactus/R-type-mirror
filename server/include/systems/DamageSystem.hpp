@@ -102,7 +102,7 @@ private:
     } else if (aHasHealth && !bHasHealth) {
       // Only A has health - projectile B hitting entity A
       applyDamage(world, entityA, entityB, damageFromProjectile);
-      
+
       // Check if projectile should be destroyed: don't destroy enemy projectiles hitting enemies
       bool shouldDestroyProjectile = true;
       if (world.hasComponent<ecs::Owner>(entityB)) {
@@ -121,7 +121,7 @@ private:
     } else if (!aHasHealth && bHasHealth) {
       // Only B has health - projectile A hitting entity B
       applyDamage(world, entityB, entityA, damageFromProjectile);
-      
+
       // Check if projectile should be destroyed: don't destroy enemy projectiles hitting enemies
       bool shouldDestroyProjectile = true;
       if (world.hasComponent<ecs::Owner>(entityA)) {
@@ -161,10 +161,10 @@ private:
     }
 
     // Prevent enemy friendly fire: if source is an enemy (no Input) and target is also an enemy (no Input), skip
-    bool sourceIsEnemy = realSource != 0 && world.isAlive(realSource) && 
-                         world.hasComponent<ecs::Health>(realSource) && !world.hasComponent<ecs::Input>(realSource);
+    bool sourceIsEnemy = realSource != 0 && world.isAlive(realSource) && world.hasComponent<ecs::Health>(realSource) &&
+      !world.hasComponent<ecs::Input>(realSource);
     bool targetIsEnemy = !world.hasComponent<ecs::Input>(target);
-    
+
     if (sourceIsEnemy && targetIsEnemy) {
       return;
     }

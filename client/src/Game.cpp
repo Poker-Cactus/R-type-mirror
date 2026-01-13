@@ -122,7 +122,8 @@ bool Game::init()
         std::cout << "[Game] Game started callback triggered - transitioning to PLAYING" << '\n';
         // Ensure the playing state exists and is initialized (recreate after death)
         if (!this->playingState) {
-          this->playingState = std::make_unique<PlayingState>(this->renderer, this->m_world, this->settings, this->m_networkManager);
+          this->playingState =
+            std::make_unique<PlayingState>(this->renderer, this->m_world, this->settings, this->m_networkManager);
           if (!this->playingState->init()) {
             std::cerr << "[Game] Failed to initialize playing state on game_started" << '\n';
             // Fallback to menu if we cannot initialize rendering state
@@ -265,7 +266,8 @@ void Game::processInput()
   // Toggle fullscreen with M key (but not when editing profile)
   if (renderer != nullptr && renderer->isKeyJustPressed(KeyCode::KEY_M)) {
     // Don't toggle fullscreen if we're editing a username in the profile menu
-    if (!(currentState == GameState::MENU && menu && menu->getState() == MenuState::PROFILE && menu->isProfileEditing())) {
+    if (!(currentState == GameState::MENU && menu && menu->getState() == MenuState::PROFILE &&
+          menu->isProfileEditing())) {
       bool currentFullscreen = renderer->isFullscreen();
       renderer->setFullscreen(!currentFullscreen);
       std::cout << "[Game] Toggled fullscreen: " << (!currentFullscreen ? "ON" : "OFF") << '\n';
@@ -383,9 +385,11 @@ void Game::handleLobbyRoomTransition()
 
         HighscoreEntry entry{playerName, finalScore, gameDifficulty};
         if (highscoreManager.addHighscore(entry)) {
-          std::cout << "[Game] New highscore saved: " << playerName << " - " << finalScore 
-                    << " points (" << (gameDifficulty == Difficulty::EASY ? "Easy" : 
-                                     gameDifficulty == Difficulty::MEDIUM ? "Medium" : "Expert") << ")" << std::endl;
+          std::cout << "[Game] New highscore saved: " << playerName << " - " << finalScore << " points ("
+                    << (gameDifficulty == Difficulty::EASY       ? "Easy"
+                          : gameDifficulty == Difficulty::MEDIUM ? "Medium"
+                                                                 : "Expert")
+                    << ")" << std::endl;
         }
       }
 

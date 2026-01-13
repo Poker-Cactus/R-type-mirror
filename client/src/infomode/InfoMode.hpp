@@ -9,17 +9,17 @@
 #include "../interface/KeyCodes.hpp"
 #include "InfoCategory.hpp"
 #include <memory>
-#include <vector>
 #include <string>
+#include <vector>
 
 /**
  * @struct CategoryPosition
  * @brief Defines the position and layout for a category
  */
 struct CategoryPosition {
-  size_t categoryIndex;  ///< Index of the category in m_categories
-  int offsetX;          ///< X offset from base position
-  int offsetY;          ///< Y offset from base position
+  size_t categoryIndex; ///< Index of the category in m_categories
+  int offsetX; ///< X offset from base position
+  int offsetY; ///< Y offset from base position
 };
 
 /**

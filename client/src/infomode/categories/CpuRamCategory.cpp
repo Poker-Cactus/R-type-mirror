@@ -4,10 +4,10 @@
  */
 
 #include "CpuRamCategory.hpp"
-#include <iostream>
-#include <iomanip>
-#include <thread>
 #include <chrono>
+#include <iomanip>
+#include <iostream>
+#include <thread>
 
 #ifdef _WIN32
 #include <pdh.h>
@@ -15,9 +15,7 @@
 #pragma comment(lib, "pdh.lib")
 #endif
 
-CpuRamCategory::CpuRamCategory()
-{
-}
+CpuRamCategory::CpuRamCategory() {}
 
 std::vector<std::string> CpuRamCategory::getInfoLines() const
 {
@@ -120,8 +118,10 @@ float CpuRamCategory::getCpuUsage()
       if (cores > 0) {
         // Load average fallback
         float load_percent = (load_avg.ldavg[0] / (float)cores) * 100.0f;
-        if (load_percent > 100.0f) load_percent = 100.0f;
-        if (load_percent < 0.0f) load_percent = 0.0f;
+        if (load_percent > 100.0f)
+          load_percent = 100.0f;
+        if (load_percent < 0.0f)
+          load_percent = 0.0f;
 
         return load_percent;
       }

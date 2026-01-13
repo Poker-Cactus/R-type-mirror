@@ -292,7 +292,8 @@ void Lobby::spawnPlayer(std::uint32_t clientId)
   m_world->addComponent(player, velocity);
 
   // Apply difficulty-based HP
-  std::cout << "[Lobby:" << m_code << "] >>> SPAWNING PLAYER: m_difficulty = " << static_cast<int>(m_difficulty) << '\n';
+  std::cout << "[Lobby:" << m_code << "] >>> SPAWNING PLAYER: m_difficulty = " << static_cast<int>(m_difficulty)
+            << '\n';
   int startingHP = GameConfig::getPlayerHPForDifficulty(m_difficulty);
   std::cout << "[Lobby:" << m_code << "] >>> getPlayerHPForDifficulty returned: " << startingHP << '\n';
   ecs::Health health;
