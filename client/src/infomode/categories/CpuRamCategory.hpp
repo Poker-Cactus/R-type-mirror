@@ -59,15 +59,14 @@ public:
 
   /**
    * @brief Update CPU and RAM information
-   * @param deltaTime Time elapsed since last update
    */
-  void update(float deltaTime) override;
+  void update() override;
 
   /**
-   * @brief This category needs frequent updates for accurate CPU readings
-   * @return true
+   * @brief Get the update interval for this category in frames (at 60 FPS)
+   * @return 15 frames (every 0.25 seconds at 60 FPS)
    */
-  bool needsFrequentUpdates() const override { return true; }
+  int getUpdateIntervalFrames() const override { return 15; }
 
 private:
   /**
@@ -90,6 +89,8 @@ private:
 
   // CPU monitoring state
   float m_lastCpuUsage = 0.0f;
-  int m_sampleCount = 0;
-  static constexpr int SAMPLES_PER_UPDATE = 60; // Update every ~1 second at 60 FPS
+
+  // RAM monitoring state
+  uint64_t m_lastRamUsed = 0;
+  uint64_t m_lastRamTotal = 0;
 };

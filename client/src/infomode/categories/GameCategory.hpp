@@ -38,9 +38,14 @@ public:
 
   /**
    * @brief Update game information
-   * @param deltaTime Time elapsed since last update
    */
-  void update(float deltaTime) override;
+  void update() override;
+
+  /**
+   * @brief Get the update interval for this category in frames (at 60 FPS)
+   * @return 30 frames (every 0.5 seconds at 60 FPS)
+   */
+  int getUpdateIntervalFrames() const override { return 30; }
 
   /**
    * @brief Set player health for display
