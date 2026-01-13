@@ -37,8 +37,11 @@ Game::Game()
   shootingSystem = &world->registerSystem<server::ShootingSystem>();
   world->registerSystem<server::ChargeSystem>();
   scoreSystem = &world->registerSystem<server::ScoreSystem>();
+  powerupSystem = &world->registerSystem<server::PowerupSystem>();
 
   world->registerSystem<server::EnemyAISystem>();
+  world->registerSystem<server::FollowerSystem>();
+  world->registerSystem<server::RubanAnimationSystem>();
 
   spawnSystem = &world->registerSystem<server::SpawnSystem>();
   world->registerSystem<server::EntityLifetimeSystem>();
@@ -100,6 +103,9 @@ void Game::initializeSystems()
   }
   if (scoreSystem != nullptr) {
     scoreSystem->initialize(*world);
+  }
+  if (powerupSystem != nullptr) {
+    powerupSystem->initialize(*world);
   }
   if (spawnSystem != nullptr) {
     spawnSystem->initialize(*world);

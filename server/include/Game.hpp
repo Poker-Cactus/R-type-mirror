@@ -82,6 +82,7 @@ private:
   server::DeathSystem *deathSystem = nullptr;
   server::ShootingSystem *shootingSystem = nullptr;
   server::ScoreSystem *scoreSystem = nullptr;
+  server::PowerupSystem *powerupSystem = nullptr;
   server::SpawnSystem *spawnSystem = nullptr;
 
   std::shared_ptr<server::EnemyConfigManager> m_enemyConfigManager;

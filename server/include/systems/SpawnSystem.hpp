@@ -14,6 +14,7 @@
 #include "../../../engineCore/include/ecs/ISystem.hpp"
 #include "../../../engineCore/include/ecs/World.hpp"
 #include "../../../engineCore/include/ecs/components/Collider.hpp"
+#include "../../../engineCore/include/ecs/components/Follower.hpp"
 #include "../../../engineCore/include/ecs/components/GunOffset.hpp"
 #include "../../../engineCore/include/ecs/components/Health.hpp"
 #include "../../../engineCore/include/ecs/components/Immortal.hpp"
@@ -39,6 +40,17 @@
 
 namespace server
 {
+
+// Local enum for powerup types (not an ECS component)
+enum class PowerupType { DRONE = 0, BUBBLE = 1, BUBBLE_TRIPLE = 2, BUBBLE_RUBAN = 3 };
+
+typedef struct SpawnedProjectileConfig {
+  float velocityX;
+  float velocityY;
+  float posX;
+  float posY;
+  ecs::Entity owner;
+} SpawnedProjectileConfig;
 
 /**
  * @brief System that handles entity spawning via events
@@ -112,12 +124,21 @@ public:
   void update(ecs::World &world, float deltaTime) override
   {
     (void)world;
+    m_spawnTimer += deltaTime;
+    m_powerupSpawnTimer += deltaTime;
 
     // Priority 0: Level-based spawning (highest priority)
     if (m_isLevelActive && m_currentLevel) {
       updateLevelSpawning(world, deltaTime);
       // Still process spawn queue even in level mode
       processSpawnQueue(world, deltaTime);
+
+      // Spawn powerups periodically even in level mode
+      if (m_powerupSpawnTimer >= POWERUP_SPAWN_INTERVAL) {
+        spawnPowerupRandom(world);
+        m_powerupSpawnTimer = 0.0F;
+      }
+
       return;
     }
 
@@ -127,6 +148,13 @@ public:
     // Mode 1: Multi-type spawning avec timers séparés (prioritaire)
     if (!m_enemyTypeTimers.empty()) {
       updateMultiTypeSpawning(world, deltaTime);
+
+      // Spawn powerups periodically in multi-type mode
+      if (m_powerupSpawnTimer >= POWERUP_SPAWN_INTERVAL) {
+        spawnPowerupRandom(world);
+        m_powerupSpawnTimer = 0.0F;
+      }
+
       return; // Skip le mode single-type
     }
 
@@ -150,6 +178,12 @@ public:
 
       // Alterner automatiquement entre les types d'ennemis
       cycleEnemyType();
+    }
+
+    // Spawn powerups periodically
+    if (m_powerupSpawnTimer >= POWERUP_SPAWN_INTERVAL) {
+      spawnPowerupRandom(world);
+      m_powerupSpawnTimer = 0.0F;
     }
   }
 
@@ -358,6 +392,8 @@ private:
   std::mt19937 m_rng;
   float m_spawnTimer = 0.0F;
   float m_spawnQueueTimer = 0.0F;
+  float m_powerupSpawnTimer = 0.0F;
+  int m_powerupSpawnCount = 0; // Counter to alternate powerup types: 0=DRONE, 1=BUBBLE
   std::shared_ptr<EnemyConfigManager> m_enemyConfigManager;
   std::shared_ptr<LevelConfigManager> m_levelConfigManager;
   std::string m_currentEnemyType = "enemy_red"; // Default enemy type
@@ -383,6 +419,7 @@ private:
 
   // Spawn configuration constants
   static constexpr float SPAWN_INTERVAL = 6.0F;
+  static constexpr float POWERUP_SPAWN_INTERVAL = 15.0F; // Spawn powerup every 15 seconds
   static constexpr float DEFAULT_VIEWPORT_WIDTH = 800.0F;
   static constexpr float DEFAULT_VIEWPORT_HEIGHT = 600.0F;
   static constexpr float SPAWN_Y_MARGIN = 50.0F;
@@ -404,6 +441,17 @@ private:
   static constexpr int ENEMY_RED_FRAME_WIDTH =
     ENEMY_RED_SPRITE_SHEET_WIDTH / ENEMY_RED_FRAME_COUNT; // 33px (integer division)
 
+  // R-Type_Items.png: 84x12 total with 7 frames, but we only use first 4
+  // Frame 0=BUBBLE, Frame 1=BUBBLE_TRIPLE, Frame 2=BUBBLE_RUBAN, Frame 3=DRONE
+  static constexpr int POWERUP_SPRITE_SHEET_WIDTH = 84;
+  static constexpr int POWERUP_SPRITE_HEIGHT = 12;
+  static constexpr int POWERUP_TOTAL_FRAMES = 7; // Total frames in texture
+  static constexpr int POWERUP_FRAME_COUNT = 4; // Frames we actually use
+  static constexpr int POWERUP_FRAME_WIDTH = POWERUP_SPRITE_SHEET_WIDTH / POWERUP_TOTAL_FRAMES; // 12px per frame
+  static constexpr float POWERUP_VELOCITY_X = -100.0F; // Slow drift left
+  static constexpr float POWERUP_COLLIDER_SIZE = 32.0F;
+  static constexpr float POWERUP_SCALE = 4.0F;
+
   static constexpr float PROJECTILE_COLLIDER_SIZE = 8.0F;
   static constexpr unsigned int PROJECTILE_SPRITE_WIDTH = 84;
   static constexpr unsigned int PROJECTILE_SPRITE_HEIGHT = 37;
@@ -424,6 +472,83 @@ private:
   static constexpr float LOADING_SHOT_VELOCITY = 0.0F;
   static constexpr float LOADING_SHOT_SCALE = 2.5F;
   static constexpr float LOADING_SHOT_FRAME_TIME = 0.12F; // plus rapide (≈1s pour 8 frames)
+
+  // Ruban/Wave beam projectile configuration (R-Type ribbon effect)
+  // Uses xruban_projectile.png format (x = phase 1-14)
+  // Phase 1 initial dimensions: 21x49, 1 frame
+  static constexpr float RUBAN_WAVE_AMPLITUDE = 50.0F;
+  static constexpr float RUBAN_WAVE_FREQUENCY = 12.0F;
+  static constexpr float RUBAN_SCALE = 3.0F;
+  static constexpr unsigned int RUBAN_INITIAL_WIDTH = 21;
+  static constexpr unsigned int RUBAN_INITIAL_HEIGHT = 49;
+
+  typedef struct configRubanProjectile {
+    unsigned int spriteWidth;
+    unsigned int spriteHeight;
+    unsigned int totalFrames;
+    float frameWidth;
+    float scale;
+    std::uint32_t spriteId;
+  } configRubanProjectile;
+
+  void spawnFollower(ecs::World &world, ecs::Entity parent, ecs::Entity child, float offsetX, float offsetY)
+  {
+    ecs::Follower follower;
+    follower.parent = parent;
+    follower.offsetX = offsetX;
+    follower.offsetY = offsetY;
+    world.addComponent(child, follower);
+  }
+
+  /**
+   * @brief Spawn a powerup at a random position on the right side of the screen
+   */
+  void spawnPowerupRandom(ecs::World &world)
+  {
+    // Get world dimensions
+    float worldWidth = DEFAULT_VIEWPORT_WIDTH;
+    float worldHeight = DEFAULT_VIEWPORT_HEIGHT;
+
+    ecs::ComponentSignature playerSig;
+    playerSig.set(ecs::getComponentId<ecs::PlayerId>());
+    playerSig.set(ecs::getComponentId<ecs::Viewport>());
+    std::vector<ecs::Entity> players;
+    world.getEntitiesWithSignature(playerSig, players);
+
+    for (const auto &player : players) {
+      if (world.hasComponent<ecs::Viewport>(player)) {
+        const auto &viewport = world.getComponent<ecs::Viewport>(player);
+        if (viewport.width > 0) {
+          worldWidth = std::max(worldWidth, static_cast<float>(viewport.width));
+        }
+        if (viewport.height > 0) {
+          worldHeight = std::max(worldHeight, static_cast<float>(viewport.height));
+        }
+      }
+    }
+
+    // Random Y position
+    std::uniform_real_distribution<float> yDist(SPAWN_Y_MARGIN, worldHeight - SPAWN_Y_MARGIN);
+    float spawnX = worldWidth - SPAWN_X_OFFSET;
+    float spawnY = yDist(m_rng);
+
+    // Alternate powerup types: DRONE first, then BUBBLE
+    PowerupType powerupType;
+    int cycle = m_powerupSpawnCount % 4;
+    if (cycle == 0) {
+      powerupType = PowerupType::BUBBLE_RUBAN;
+
+      // powerupType = PowerupType::DRONE;
+    } else if (cycle == 1) {
+      powerupType = PowerupType::BUBBLE;
+    } else if (cycle == 2) {
+      powerupType = PowerupType::BUBBLE_TRIPLE;
+    } else {
+      powerupType = PowerupType::BUBBLE_RUBAN;
+    }
+    m_powerupSpawnCount++;
+    spawnPowerup(world, spawnX, spawnY, powerupType);
+  }
 
   /**
    * @brief Spawn a group of enemies from configuration
@@ -574,6 +699,7 @@ private:
 
   static void handleSpawnEvent(ecs::World &world, const ecs::SpawnEntityEvent &event)
   {
+    configRubanProjectile config;
     switch (event.type) {
     case ecs::SpawnEntityEvent::EntityType::ENEMY:
       std::cerr << "[SpawnSystem] WARNING: SpawnEntityEvent for ENEMY is deprecated, use spawnEnemyFromConfig instead"
@@ -588,6 +714,17 @@ private:
     case ecs::SpawnEntityEvent::EntityType::LOADING_SHOT:
       spawnLoadingShot(world, event.x, event.y, event.spawner);
       break;
+    case ecs::SpawnEntityEvent::EntityType::TRIPLE_PROJECTILE:
+      spawnTripleProjectile(world, event.x, event.y, event.spawner);
+      break;
+    case ecs::SpawnEntityEvent::EntityType::RUBAN1_PROJECTILE:
+    case ecs::SpawnEntityEvent::EntityType::RUBAN2_PROJECTILE:
+    case ecs::SpawnEntityEvent::EntityType::RUBAN3_PROJECTILE:
+    case ecs::SpawnEntityEvent::EntityType::RUBAN4_PROJECTILE:
+    case ecs::SpawnEntityEvent::EntityType::RUBAN5_PROJECTILE:
+      // All ruban projectiles start at phase 1 and animate through 14 phases
+      spawnRubanProjectile(world, event.x, event.y, event.spawner, config);
+      break;
     case ecs::SpawnEntityEvent::EntityType::POWERUP:
       spawnPowerup(world, event.x, event.y);
       break;
@@ -595,6 +732,121 @@ private:
       spawnExplosion(world, event.x, event.y);
       break;
     }
+  }
+
+  static void spawnRubanProjectile(ecs::World &world, float posX, float posY, ecs::Entity owner,
+                                   configRubanProjectile config)
+  {
+    // Ignore passed config - always start at phase 1
+    (void)config;
+
+    const float projectileVelocity = PROJECTILE_VELOCITY_MULTIPLIER * 1.0F;
+
+    ecs::Entity projectile = world.createEntity();
+
+    // Capability-based offset: use GunOffset if entity has it
+    float offsetX = 0.0F;
+    if (world.hasComponent<ecs::GunOffset>(owner)) {
+      offsetX = world.getComponent<ecs::GunOffset>(owner).x * 1.0F;
+    }
+
+    ecs::Transform transform;
+    transform.x = posX + offsetX;
+    // Adjust Y position to align ruban projectile with regular projectile
+    // Regular projectile: 84x37 at scale 1.0 = 84x37 effective size
+    // Ruban projectile starts at: 21x49 at scale 3.0 = 63x147 effective size
+    // Center vertically: (147 - 37) / 2 = 55 pixels up
+    transform.y = posY - 55.0f;
+    transform.rotation = 0.0F;
+    transform.scale = RUBAN_SCALE;
+    world.addComponent(projectile, transform);
+
+    ecs::Velocity velocity;
+    velocity.dx = projectileVelocity;
+    velocity.dy = 0.0F;
+    world.addComponent(projectile, velocity);
+
+    // Add wave beam pattern for R-Type ribbon effect (oscillating vertically)
+    world.addComponent(projectile, ecs::Pattern{"wave_beam", RUBAN_WAVE_AMPLITUDE, RUBAN_WAVE_FREQUENCY});
+
+    // Collider based on initial phase dimensions
+    world.addComponent(projectile,
+                       ecs::Collider{static_cast<float>(RUBAN_INITIAL_WIDTH) * RUBAN_SCALE,
+                                     static_cast<float>(RUBAN_INITIAL_HEIGHT) * RUBAN_SCALE});
+
+    // Start with phase 1 sprite (1ruban_projectile.png: 21x49, 1 frame)
+    ecs::Sprite sprite;
+    sprite.spriteId = ecs::SpriteId::RUBAN1_PROJECTILE;
+    sprite.width = RUBAN_INITIAL_WIDTH;
+    sprite.height = RUBAN_INITIAL_HEIGHT;
+    sprite.animated = false;
+    sprite.frameCount = 1;
+    sprite.loop = false;
+    sprite.startFrame = 0;
+    sprite.endFrame = 0;
+    sprite.currentFrame = 0;
+
+    world.addComponent(projectile, sprite);
+
+    // Mark as networked so the snapshot system replicates it to clients.
+    ecs::Networked net;
+    net.networkId = projectile;
+    world.addComponent(projectile, net);
+
+    // Track owner to prevent self-damage
+    ecs::Owner ownerComp;
+    ownerComp.ownerId = owner;
+    world.addComponent(projectile, ownerComp);
+  }
+
+  static void spawnTripleProjectile(ecs::World &world, float posX, float posY, ecs::Entity owner)
+  {
+    const float projectileVelocity = PROJECTILE_VELOCITY_MULTIPLIER * 1.0F;
+
+    ecs::Entity projectile = world.createEntity();
+
+    // Capability-based offset: use GunOffset if entity has it
+    float offsetX = 0.0F;
+    if (world.hasComponent<ecs::GunOffset>(owner)) {
+      offsetX = world.getComponent<ecs::GunOffset>(owner).x * 1.0F;
+    }
+
+    ecs::Transform transform;
+    transform.x = posX + offsetX;
+    transform.y = posY;
+    transform.rotation = 0.0F;
+    transform.scale = 1.0F;
+    world.addComponent(projectile, transform);
+
+    ecs::Velocity velocity;
+    velocity.dx = projectileVelocity;
+    velocity.dy = 0.0F;
+    world.addComponent(projectile, velocity);
+
+    world.addComponent(projectile, ecs::Collider{PROJECTILE_COLLIDER_SIZE, PROJECTILE_COLLIDER_SIZE});
+
+    // Sprite for triple projectile
+    ecs::Sprite sprite;
+    sprite.spriteId = ecs::SpriteId::TRIPLE_PROJECTILE;
+    sprite.width = PROJECTILE_SPRITE_WIDTH;
+    sprite.height = PROJECTILE_SPRITE_HEIGHT;
+    sprite.animated = true;
+    sprite.frameCount = 3;
+    sprite.loop = false;
+    sprite.startFrame = 0;
+    sprite.endFrame = 2;
+
+    world.addComponent(projectile, sprite);
+
+    // Mark as networked
+    ecs::Networked net;
+    net.networkId = projectile;
+    world.addComponent(projectile, net);
+
+    // Track owner to prevent self-damage
+    ecs::Owner ownerComp;
+    ownerComp.ownerId = owner;
+    world.addComponent(projectile, ownerComp);
   }
 
   static void spawnProjectile(ecs::World &world, float posX, float posY, ecs::Entity owner)
@@ -759,12 +1011,75 @@ private:
     std::cout << "[SpawnSystem] Spawned loading shot " << loadingShot << " for entity " << owner << std::endl;
   }
 
-  static void spawnPowerup(ecs::World &world, float posX, float posY)
+  static void spawnPowerup(ecs::World &world, float posX, float posY, PowerupType powerupType = PowerupType::DRONE)
   {
-    (void)world;
-    (void)posX;
-    (void)posY;
-    // TODO: Implement powerup spawning
+    ecs::Entity powerup = world.createEntity();
+
+    // Transform
+    ecs::Transform transform;
+    transform.x = posX;
+    transform.y = posY;
+    transform.rotation = 0.0F;
+    transform.scale = POWERUP_SCALE;
+    world.addComponent(powerup, transform);
+
+    // Velocity - slow drift to the left
+    ecs::Velocity velocity;
+    velocity.dx = POWERUP_VELOCITY_X;
+    velocity.dy = 0.0F;
+    world.addComponent(powerup, velocity);
+
+    // Collider for pickup detection
+    world.addComponent(powerup, ecs::Collider{POWERUP_COLLIDER_SIZE, POWERUP_COLLIDER_SIZE});
+
+    // Sprite - all powerups use POWERUP spriteId with different currentFrame
+    // Frame 0=BUBBLE, Frame 1=BUBBLE_TRIPLE, Frame 2=BUBBLE_RUBAN, Frame 3=DRONE
+    // R-Type_Items.png: Frame 0=BUBBLE, Frame 1=BUBBLE_TRIPLE, Frame 2=BUBBLE_RUBAN, Frame 3=DRONE
+    ecs::Sprite sprite;
+    sprite.spriteId = ecs::SpriteId::POWERUP;
+    sprite.width = POWERUP_FRAME_WIDTH;
+    sprite.height = POWERUP_SPRITE_HEIGHT;
+    sprite.animated = true; // Enable animation for cycling
+    sprite.frameCount = POWERUP_FRAME_COUNT; // 4 frames total
+    sprite.frameTime = 0.03f; // Animation speed
+    sprite.loop = true;
+
+    // Select starting frame and animation range based on powerup type
+    switch (powerupType) {
+    case PowerupType::BUBBLE:
+      sprite.startFrame = 0;
+      sprite.endFrame = 0;
+      sprite.currentFrame = 0;
+      break;
+    case PowerupType::BUBBLE_TRIPLE:
+      sprite.startFrame = 1;
+      sprite.endFrame = 1;
+      sprite.currentFrame = 1;
+      break;
+    case PowerupType::BUBBLE_RUBAN:
+      sprite.startFrame = 2;
+      sprite.endFrame = 2;
+      sprite.currentFrame = 2;
+      break;
+    case PowerupType::DRONE:
+    default:
+      sprite.startFrame = 3;
+      sprite.endFrame = 3;
+      sprite.currentFrame = 3;
+      break;
+    }
+    sprite.frameTime = 0.1f;
+    sprite.loop = true;
+    world.addComponent(powerup, sprite);
+
+    // Networked for client replication
+    ecs::Networked net;
+    net.networkId = powerup;
+    world.addComponent(powerup, net);
+
+    const char *typeNames[] = {"DRONE", "BUBBLE", "BUBBLE_TRIPLE", "BUBBLE_RUBAN"};
+    std::cout << "[SpawnSystem] Spawned " << typeNames[static_cast<int>(powerupType)] << " powerup at (" << posX << ", "
+              << posY << ")\n";
   }
 
   static void spawnExplosion(ecs::World &world, float posX, float posY)
