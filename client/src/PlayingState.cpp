@@ -909,46 +909,7 @@ void PlayingState::loadSpriteTextures()
     std::cerr << "[PlayingState] ✗ Failed to load R-Type_Items.png: " << e.what() << '\n';
   }
 
-  // ENEMY_YELLOW = 6 (animated spritesheet: 256x64, 16 frames in 2 rows)
-  try {
-    void *yellow_tex = renderer->loadTexture(resolveAssetPath("client/assets/sprites/yellow_bee.gif"));
-    if (yellow_tex != nullptr) {
-      m_spriteTextures[ecs::SpriteId::ENEMY_YELLOW] = yellow_tex;
-      std::cout << "[PlayingState] ✓ Loaded yellow_bee.gif" << '\n';
-    } else {
-      std::cerr << "[PlayingState] ✗ Failed to load yellow_bee.gif (returned null)" << '\n';
-    }
-  } catch (const std::exception &e) {
-    std::cerr << "[PlayingState] ✗ Failed to load yellow_bee.gif: " << e.what() << '\n';
-  }
-
-  // ENEMY_WALKER = 7 (animated spritesheet: 200x67, 12 frames in 2 rows)
-  try {
-    void *walker_tex = renderer->loadTexture(resolveAssetPath("client/assets/sprites/walk_enemy.gif"));
-    if (walker_tex != nullptr) {
-      m_spriteTextures[ecs::SpriteId::ENEMY_WALKER] = walker_tex;
-      std::cout << "[PlayingState] ✓ Loaded walk_enemy.gif" << '\n';
-    } else {
-      std::cerr << "[PlayingState] ✗ Failed to load walk_enemy.gif (returned null)" << '\n';
-    }
-  } catch (const std::exception &e) {
-    std::cerr << "[PlayingState] ✗ Failed to load walk_enemy.gif: " << e.what() << '\n';
-  }
-
-  // WALKER_PROJECTILE = 8 (animated spritesheet: 549x72, 7 frames)
-  try {
-    void *walker_projectile_tex = renderer->loadTexture(resolveAssetPath("client/assets/sprites/walk_projectile.png"));
-    if (walker_projectile_tex != nullptr) {
-      m_spriteTextures[ecs::SpriteId::WALKER_PROJECTILE] = walker_projectile_tex;
-      std::cout << "[PlayingState] ✓ Loaded walk_projectile.png" << '\n';
-    } else {
-      std::cerr << "[PlayingState] ✗ Failed to load walk_projectile.png (returned null)" << '\n';
-    }
-  } catch (const std::exception &e) {
-    std::cerr << "[PlayingState] ✗ Failed to load walk_projectile.png: " << e.what() << '\n';
-  }
-
-  // DRONE = 9 (uses powerup texture as fallback)
+  // DRONE = 6 (uses powerup texture as fallback)
   try {
     void *drone_tex = renderer->loadTexture("client/assets/r-typesheet3.gif");
     if (drone_tex != nullptr) {
@@ -969,7 +930,7 @@ void PlayingState::loadSpriteTextures()
     }
   }
 
-  // BUBBLE = 10 (uses powerup texture as fallback)
+  // BUBBLE = 7 (uses powerup texture as fallback)
   try {
     void *bubble_tex = renderer->loadTexture("client/assets/sprites/bubble.png");
     if (bubble_tex != nullptr) {
@@ -990,7 +951,7 @@ void PlayingState::loadSpriteTextures()
     }
   }
 
-  // BUBBLE_TRIPLE = 11 (uses powerup texture as fallback)
+  // BUBBLE = 8 (uses powerup texture as fallback)
   try {
     void *buble_triple_tex = renderer->loadTexture("client/assets/sprites/bubble_triple.png");
     if (buble_triple_tex != nullptr) {
@@ -1011,7 +972,7 @@ void PlayingState::loadSpriteTextures()
     }
   }
 
-  // BUBBLE_RUBAN1 = 12 (uses powerup texture as fallback)
+  // BUBBLE_RUBAN1 = 9 (uses powerup texture as fallback)
   try {
     void *buble_triple_tex = renderer->loadTexture("client/assets/sprites/bubble_ruban1.png");
     if (buble_triple_tex != nullptr) {
@@ -1132,52 +1093,51 @@ void PlayingState::loadSpriteTextures()
     }
   }
 
+  // ENEMY_YELLOW = 6 (animated spritesheet: 256x64, 2 rows x 8 columns = 16 frames)
+  try {
+    void *enemy_yellow_tex = renderer->loadTexture(resolveAssetPath("client/assets/sprites/enemy_yellow.gif"));
+    if (enemy_yellow_tex != nullptr) {
+      m_spriteTextures[ecs::SpriteId::ENEMY_YELLOW] = enemy_yellow_tex;
+      std::cout << "[PlayingState] ✓ Loaded enemy_yellow.gif" << '\n';
+    } else {
+      std::cerr << "[PlayingState] ✗ Failed to load enemy_yellow.gif (returned null)" << '\n';
+    }
+  } catch (const std::exception &e) {
+    std::cerr << "[PlayingState] ✗ Failed to load enemy_yellow.gif: " << e.what() << '\n';
+  }
+
+  // ENEMY_WALKER = 7 (animated spritesheet: 200x67, 2 rows x 6 columns = 12 frames)
+  try {
+    void *enemy_walker_tex = renderer->loadTexture(resolveAssetPath("client/assets/sprites/walk_enemy.gif"));
+    if (enemy_walker_tex != nullptr) {
+      m_spriteTextures[ecs::SpriteId::ENEMY_WALKER] = enemy_walker_tex;
+      std::cout << "[PlayingState] ✓ Loaded walk_enemy.gif" << '\n';
+    } else {
+      std::cerr << "[PlayingState] ✗ Failed to load walk_enemy.gif (returned null)" << '\n';
+    }
+  } catch (const std::exception &e) {
+    std::cerr << "[PlayingState] ✗ Failed to load walk_enemy.gif: " << e.what() << '\n';
+  }
+
+  // WALKER_PROJECTILE = 8 (animated spritesheet: 549x72, 7 frames)
+  try {
+    void *walker_projectile_tex = renderer->loadTexture(resolveAssetPath("client/assets/sprites/walk_projectile.png"));
+    if (walker_projectile_tex != nullptr) {
+      m_spriteTextures[ecs::SpriteId::WALKER_PROJECTILE] = walker_projectile_tex;
+      std::cout << "[PlayingState] ✓ Loaded walk_projectile.png" << '\n';
+    } else {
+      std::cerr << "[PlayingState] ✗ Failed to load walk_projectile.png (returned null)" << '\n';
+    }
+  } catch (const std::exception &e) {
+    std::cerr << "[PlayingState] ✗ Failed to load walk_projectile.png: " << e.what() << '\n';
+  }
+
   constexpr int EXPECTED_TEXTURE_COUNT = 39;
-
-  if (enemy_yellow_tex != nullptr) {
-    m_spriteTextures[ecs::SpriteId::ENEMY_YELLOW] = enemy_yellow_tex;
-    std::cout << "[PlayingState] ✓ Loaded enemy_yellow.gif" << '\n';
-  } else {
-    std::cerr << "[PlayingState] ✗ Failed to load enemy_yellow.gif (returned null)" << '\n';
+  std::cout << "[PlayingState] Successfully loaded " << m_spriteTextures.size() << " / " << EXPECTED_TEXTURE_COUNT
+            << " sprite textures" << '\n';
+  if (m_spriteTextures.size() < EXPECTED_TEXTURE_COUNT) {
+    std::cerr << "[PlayingState] Missing textures will use fallback colored rectangles" << '\n';
   }
-}
-catch (const std::exception &e)
-{
-  std::cerr << "[PlayingState] ✗ Failed to load enemy_yellow.gif: " << e.what() << '\n';
-}
-
-// ENEMY_WALKER = 7 (animated spritesheet: 200x67, 2 rows x 6 columns = 12 frames)
-try {
-  void *enemy_walker_tex = renderer->loadTexture(resolveAssetPath("client/assets/sprites/walk_enemy.gif"));
-  if (enemy_walker_tex != nullptr) {
-    m_spriteTextures[ecs::SpriteId::ENEMY_WALKER] = enemy_walker_tex;
-    std::cout << "[PlayingState] ✓ Loaded walk_enemy.gif" << '\n';
-  } else {
-    std::cerr << "[PlayingState] ✗ Failed to load walk_enemy.gif (returned null)" << '\n';
-  }
-} catch (const std::exception &e) {
-  std::cerr << "[PlayingState] ✗ Failed to load walk_enemy.gif: " << e.what() << '\n';
-}
-
-// WALKER_PROJECTILE = 8 (animated spritesheet: 549x72, 7 frames)
-try {
-  void *walker_projectile_tex = renderer->loadTexture(resolveAssetPath("client/assets/sprites/walk_projectile.png"));
-  if (walker_projectile_tex != nullptr) {
-    m_spriteTextures[ecs::SpriteId::WALKER_PROJECTILE] = walker_projectile_tex;
-    std::cout << "[PlayingState] ✓ Loaded walk_projectile.png" << '\n';
-  } else {
-    std::cerr << "[PlayingState] ✗ Failed to load walk_projectile.png (returned null)" << '\n';
-  }
-} catch (const std::exception &e) {
-  std::cerr << "[PlayingState] ✗ Failed to load walk_projectile.png: " << e.what() << '\n';
-}
-
-constexpr int EXPECTED_TEXTURE_COUNT = 39;
-std::cout << "[PlayingState] Successfully loaded " << m_spriteTextures.size() << " / " << EXPECTED_TEXTURE_COUNT
-          << " sprite textures" << '\n';
-if (m_spriteTextures.size() < EXPECTED_TEXTURE_COUNT) {
-  std::cerr << "[PlayingState] Missing textures will use fallback colored rectangles" << '\n';
-}
 }
 
 void PlayingState::freeSpriteTextures()

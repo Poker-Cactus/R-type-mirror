@@ -131,6 +131,13 @@ public:
       updateLevelSpawning(world, deltaTime);
       // Still process spawn queue even in level mode
       processSpawnQueue(world, deltaTime);
+
+      // Spawn powerups periodically even in level mode
+      if (m_powerupSpawnTimer >= POWERUP_SPAWN_INTERVAL) {
+        spawnPowerupRandom(world);
+        m_powerupSpawnTimer = 0.0F;
+      }
+
       return;
     }
 
@@ -140,6 +147,13 @@ public:
     // Mode 1: Multi-type spawning avec timers séparés (prioritaire)
     if (!m_enemyTypeTimers.empty()) {
       updateMultiTypeSpawning(world, deltaTime);
+
+      // Spawn powerups periodically in multi-type mode
+      if (m_powerupSpawnTimer >= POWERUP_SPAWN_INTERVAL) {
+        spawnPowerupRandom(world);
+        m_powerupSpawnTimer = 0.0F;
+      }
+
       return; // Skip le mode single-type
     }
 

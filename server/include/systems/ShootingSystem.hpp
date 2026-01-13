@@ -13,6 +13,7 @@
 #include "../../../engineCore/include/ecs/World.hpp"
 #include "../../../engineCore/include/ecs/components/Follower.hpp"
 #include "../../../engineCore/include/ecs/components/Input.hpp"
+#include "../../../engineCore/include/ecs/components/Sprite.hpp"
 #include "../../../engineCore/include/ecs/components/Transform.hpp"
 #include "../../../engineCore/include/ecs/events/EventListenerHandle.hpp"
 #include "../../../engineCore/include/ecs/events/GameEvents.hpp"
@@ -45,7 +46,7 @@ public:
       const bool wasShooting = m_prevShootState.contains(entity) ? m_prevShootState[entity] : false;
       const bool justPressed = input.shoot && !wasShooting;
 
-      if (justPressed && canShoot(entity)) {
+      if (justPressed && canShoot(entity, world)) {
         // Emit shoot event
         ecs::ShootEvent shootEvent(entity, 1.0F, 0.0F);
         world.emitEvent(shootEvent);
@@ -79,7 +80,8 @@ private:
   std::unordered_map<ecs::Entity, float> m_lastShootTime;
   std::unordered_map<ecs::Entity, bool> m_prevShootState;
   float m_currentTime = 0.0F;
-  const float SHOOT_COOLDOWN = 0.05F; // 5 shots per second
+  const float SHOOT_COOLDOWN = 0.05F; // 5 shots per second (default)
+  const float RUBAN_SHOOT_COOLDOWN = 0.02F; // 50 shots per second for ruban (faster)
 
   bool canShoot(ecs::Entity entity)
   {
@@ -88,6 +90,51 @@ private:
       return true;
     }
     return (m_currentTime - iter->second) >= SHOOT_COOLDOWN;
+  }
+
+  bool canShoot(ecs::Entity entity, ecs::World &world)
+  {
+    auto iter = m_lastShootTime.find(entity);
+    float cooldown = SHOOT_COOLDOWN;
+
+    // Check if player has ruban bubble for faster shooting
+    if (hasRubanBubble(world, entity)) {
+      cooldown = RUBAN_SHOOT_COOLDOWN;
+    }
+
+    if (iter == m_lastShootTime.end()) {
+      return true;
+    }
+    return (m_currentTime - iter->second) >= cooldown;
+  }
+
+  static bool hasRubanBubble(ecs::World &world, ecs::Entity player)
+  {
+    // Find all drones/bubbles that follow this player
+    ecs::ComponentSignature bubbleSig;
+    bubbleSig.set(ecs::getComponentId<ecs::Follower>());
+    bubbleSig.set(ecs::getComponentId<ecs::Sprite>());
+
+    std::vector<ecs::Entity> bubbles;
+    world.getEntitiesWithSignature(bubbleSig, bubbles);
+
+    for (const auto &bubble : bubbles) {
+      if (!world.isAlive(bubble)) {
+        continue;
+      }
+
+      const auto &follower = world.getComponent<ecs::Follower>(bubble);
+      if (follower.parent != player) {
+        continue;
+      }
+
+      const auto &sprite = world.getComponent<ecs::Sprite>(bubble);
+      if (sprite.spriteId == ecs::SpriteId::BUBBLE_RUBAN1 || sprite.spriteId == ecs::SpriteId::BUBBLE_RUBAN2 ||
+          sprite.spriteId == ecs::SpriteId::BUBBLE_RUBAN3) {
+        return true;
+      }
+    }
+    return false;
   }
 
   static void spawnProjectile(ecs::World &world, const ecs::ShootEvent &event)
