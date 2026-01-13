@@ -4,30 +4,28 @@
  */
 
 #include "NetworkCategory.hpp"
-#include <sstream>
 #include <iomanip>
+#include <sstream>
 
 #ifdef _WIN32
+#include <iphlpapi.h>
 #include <winsock2.h>
 #include <ws2tcpip.h>
-#include <iphlpapi.h>
 #pragma comment(lib, "ws2_32.lib")
 #pragma comment(lib, "iphlpapi.lib")
 #else
-#include <sys/socket.h>
-#include <netinet/in.h>
 #include <arpa/inet.h>
-#include <net/if.h>
-#include <ifaddrs.h>
-#include <netdb.h>
-#include <unistd.h>
-#include <sys/ioctl.h>
 #include <cstring>
+#include <ifaddrs.h>
+#include <net/if.h>
+#include <netdb.h>
+#include <netinet/in.h>
+#include <sys/ioctl.h>
+#include <sys/socket.h>
+#include <unistd.h>
 #endif
 
-NetworkCategory::NetworkCategory()
-{
-}
+NetworkCategory::NetworkCategory() {}
 
 std::vector<std::string> NetworkCategory::getInfoLines() const
 {
@@ -114,10 +112,10 @@ std::string NetworkCategory::getLocalIPAddress() const
   // Windows implementation
   char buffer[256];
   if (gethostname(buffer, sizeof(buffer)) == 0) {
-    hostent* host = gethostbyname(buffer);
+    hostent *host = gethostbyname(buffer);
     if (host && host->h_addr_list[0]) {
       in_addr addr;
-      addr.s_addr = *(u_long*)host->h_addr_list[0];
+      addr.s_addr = *(u_long *)host->h_addr_list[0];
       return inet_ntoa(addr);
     }
   }
@@ -125,7 +123,7 @@ std::string NetworkCategory::getLocalIPAddress() const
 
 #else
   // Unix-like systems
-  ifaddrs* ifaddr, *ifa;
+  ifaddrs *ifaddr, *ifa;
   char host[NI_MAXHOST];
 
   if (getifaddrs(&ifaddr) == -1) {
@@ -133,7 +131,8 @@ std::string NetworkCategory::getLocalIPAddress() const
   }
 
   for (ifa = ifaddr; ifa != nullptr; ifa = ifa->ifa_next) {
-    if (ifa->ifa_addr == nullptr) continue;
+    if (ifa->ifa_addr == nullptr)
+      continue;
 
     int family = ifa->ifa_addr->sa_family;
 
@@ -156,7 +155,7 @@ std::string NetworkCategory::formatBytesPerSecond(int bytes) const
     return "-- B/s";
   }
 
-  const char* units[] = {"B/s", "KB/s", "MB/s", "GB/s"};
+  const char *units[] = {"B/s", "KB/s", "MB/s", "GB/s"};
   int unitIndex = 0;
   double value = static_cast<double>(bytes);
 
@@ -196,8 +195,7 @@ std::string NetworkCategory::getNetworkInterface() const
     adapter = adapterInfo;
     while (adapter) {
       if (adapter->Type == MIB_IF_TYPE_ETHERNET || adapter->Type == IF_TYPE_IEEE80211) {
-        std::string result = std::string(adapter->Description) + " (" +
-                           std::string(adapter->AdapterName) + ")";
+        std::string result = std::string(adapter->Description) + " (" + std::string(adapter->AdapterName) + ")";
         free(adapterInfo);
         return result;
       }
@@ -212,7 +210,7 @@ std::string NetworkCategory::getNetworkInterface() const
 
 #else
   // Unix-like systems - get active network interface
-  ifaddrs* ifaddr, *ifa;
+  ifaddrs *ifaddr, *ifa;
 
   if (getifaddrs(&ifaddr) == -1) {
     return "Unknown";
@@ -221,7 +219,8 @@ std::string NetworkCategory::getNetworkInterface() const
   std::string activeInterface = "Unknown";
 
   for (ifa = ifaddr; ifa != nullptr; ifa = ifa->ifa_next) {
-    if (ifa->ifa_addr == nullptr) continue;
+    if (ifa->ifa_addr == nullptr)
+      continue;
 
     int family = ifa->ifa_addr->sa_family;
 

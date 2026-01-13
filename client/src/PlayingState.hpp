@@ -5,11 +5,11 @@
 
 #pragma once
 #include "../../engineCore/include/ecs/World.hpp"
+#include "../../network/include/INetworkManager.hpp"
 #include "../interface/IRenderer.hpp"
 #include "Menu/SettingsMenu/SettingsMenu.hpp"
 #include "ParallaxBackground.hpp"
 #include "infomode/InfoMode.hpp"
-#include "../../network/include/INetworkManager.hpp"
 #include <memory>
 #include <unordered_map>
 
@@ -34,7 +34,8 @@ public:
    * @param settings Game settings reference
    * @param networkManager Network manager for stats
    */
-  PlayingState(std::shared_ptr<IRenderer> renderer, const std::shared_ptr<ecs::World> &world, Settings &settings, std::shared_ptr<INetworkManager> networkManager);
+  PlayingState(std::shared_ptr<IRenderer> renderer, const std::shared_ptr<ecs::World> &world, Settings &settings,
+               std::shared_ptr<INetworkManager> networkManager);
   ~PlayingState();
 
   /**

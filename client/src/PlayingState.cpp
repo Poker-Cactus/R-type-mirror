@@ -15,16 +15,17 @@
 #include "../../engineCore/include/ecs/components/Sprite.hpp"
 #include "../../engineCore/include/ecs/components/Transform.hpp"
 #include "../../engineCore/include/ecs/components/Velocity.hpp"
+#include "../../network/include/AsioClient.hpp"
 #include "../include/AssetPath.hpp"
 #include "../include/systems/NetworkSendSystem.hpp"
 #include "../interface/Geometry.hpp"
 #include "../interface/KeyCodes.hpp"
-#include "../../network/include/AsioClient.hpp"
 #include <iostream>
 
 PlayingState::PlayingState(std::shared_ptr<IRenderer> renderer, const std::shared_ptr<ecs::World> &world,
                            Settings &settings, std::shared_ptr<INetworkManager> networkManager)
-    : renderer(std::move(renderer)), world(world), background(nullptr), settings(settings), m_networkManager(networkManager)
+    : renderer(std::move(renderer)), world(world), background(nullptr), settings(settings),
+      m_networkManager(networkManager)
 {
 }
 
@@ -123,7 +124,7 @@ void PlayingState::update(float delta_time)
   if (m_networkManager) {
     m_pingTimer += delta_time;
     if (m_pingTimer >= 2.0f) { // Ping every 2 seconds
-      static_cast<AsioClient*>(m_networkManager.get())->sendPing();
+      static_cast<AsioClient *>(m_networkManager.get())->sendPing();
       m_pingTimer = 0.0f;
     }
   }
@@ -185,6 +186,14 @@ void PlayingState::render()
           // Yellow Bee: 256x64 with 2 rows x 8 columns = 16 frames
           frameWidth = 256 / 8; // 32px per frame
           frameHeight = 64 / 2; // 32px per frame (2 rows)
+        } else if (sprite.spriteId == ecs::SpriteId::ENEMY_WALKER) {
+          // Walker: 200x67 with 2 rows x 6 columns = 12 frames
+          frameWidth = 200 / 6; // 33px per frame
+          frameHeight = 67 / 2; // 33px per frame (2 rows)
+        } else if (sprite.spriteId == ecs::SpriteId::WALKER_PROJECTILE) {
+          // Walker Projectile: 549x72 with 7 frames in single row
+          frameWidth = 549 / 7; // 78px per frame
+          frameHeight = 72;
         }
 
         if (frameWidth > 0 && frameHeight > 0) {
@@ -200,6 +209,19 @@ void PlayingState::render()
             int col = sprite.currentFrame % framesPerRow;
             srcX = col * frameWidth;
             srcY = row * frameHeight;
+          } else if (sprite.spriteId == ecs::SpriteId::ENEMY_WALKER) {
+            // Walker: 12 frames in 2 rows of 6
+            // Row 0: walking animation (frames 0-5)
+            // Row 1: shooting animation (frames 6-11)
+            int framesPerRow = 6;
+            int row = sprite.currentFrame / framesPerRow;
+            int col = sprite.currentFrame % framesPerRow;
+            srcX = col * frameWidth;
+            srcY = row * frameHeight;
+          } else if (sprite.spriteId == ecs::SpriteId::WALKER_PROJECTILE) {
+            // Walker Projectile: single row spritesheet
+            srcX = sprite.currentFrame * frameWidth;
+            srcY = 0;
           } else {
             // Single row spritesheets (ENEMY_SHIP, PLAYER_SHIP, PROJECTILE)
             srcX = sprite.currentFrame * frameWidth;
@@ -318,6 +340,12 @@ void PlayingState::render()
       case ecs::SpriteId::ENEMY_YELLOW:
         color = COLOR_ENEMY_YELLOW;
         break;
+      case ecs::SpriteId::ENEMY_WALKER:
+        color = COLOR_ENEMY_RED;
+        break;
+      case ecs::SpriteId::WALKER_PROJECTILE:
+        color = COLOR_PROJECTILE_YELLOW;
+        break;
       case ecs::SpriteId::PROJECTILE:
         color = COLOR_PROJECTILE_YELLOW;
         break;
@@ -415,7 +443,7 @@ void PlayingState::renderHUD()
 
   // Render info mode if active
   if (m_infoMode) {
-    const int infoTextY = HEARTS_Y + HUD_SCORE_OFFSET_Y + 30;  // Below score
+    const int infoTextY = HEARTS_Y + HUD_SCORE_OFFSET_Y + 30; // Below score
     m_infoMode->render(HEARTS_X, infoTextY);
   }
 }
@@ -826,7 +854,33 @@ void PlayingState::loadSpriteTextures()
     std::cerr << "[PlayingState] ✗ Failed to load enemy_yellow.gif: " << e.what() << '\n';
   }
 
-  constexpr int EXPECTED_TEXTURE_COUNT = 6;
+  // ENEMY_WALKER = 7 (animated spritesheet: 200x67, 2 rows x 6 columns = 12 frames)
+  try {
+    void *enemy_walker_tex = renderer->loadTexture(resolveAssetPath("client/assets/sprites/walk_enemy.gif"));
+    if (enemy_walker_tex != nullptr) {
+      m_spriteTextures[ecs::SpriteId::ENEMY_WALKER] = enemy_walker_tex;
+      std::cout << "[PlayingState] ✓ Loaded walk_enemy.gif" << '\n';
+    } else {
+      std::cerr << "[PlayingState] ✗ Failed to load walk_enemy.gif (returned null)" << '\n';
+    }
+  } catch (const std::exception &e) {
+    std::cerr << "[PlayingState] ✗ Failed to load walk_enemy.gif: " << e.what() << '\n';
+  }
+
+  // WALKER_PROJECTILE = 8 (animated spritesheet: 549x72, 7 frames)
+  try {
+    void *walker_projectile_tex = renderer->loadTexture(resolveAssetPath("client/assets/sprites/walk_projectile.png"));
+    if (walker_projectile_tex != nullptr) {
+      m_spriteTextures[ecs::SpriteId::WALKER_PROJECTILE] = walker_projectile_tex;
+      std::cout << "[PlayingState] ✓ Loaded walk_projectile.png" << '\n';
+    } else {
+      std::cerr << "[PlayingState] ✗ Failed to load walk_projectile.png (returned null)" << '\n';
+    }
+  } catch (const std::exception &e) {
+    std::cerr << "[PlayingState] ✗ Failed to load walk_projectile.png: " << e.what() << '\n';
+  }
+
+  constexpr int EXPECTED_TEXTURE_COUNT = 8;
   std::cout << "[PlayingState] Successfully loaded " << m_spriteTextures.size() << " / " << EXPECTED_TEXTURE_COUNT
             << " sprite textures" << '\n';
   if (m_spriteTextures.size() < EXPECTED_TEXTURE_COUNT) {

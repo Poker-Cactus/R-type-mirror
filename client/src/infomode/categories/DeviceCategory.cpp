@@ -7,13 +7,13 @@
 #include <sstream>
 
 #ifdef _WIN32
-#include <windows.h>
-#include <dxgi.h>
-#include <d3d11.h>
 #include <VersionHelpers.h>
-#include <wbemidl.h>
 #include <comdef.h>
 #include <comutil.h>
+#include <d3d11.h>
+#include <dxgi.h>
+#include <wbemidl.h>
+#include <windows.h>
 #pragma comment(lib, "dxgi.lib")
 #pragma comment(lib, "d3d11.lib")
 #pragma comment(lib, "wbemuuid.lib")
@@ -21,19 +21,17 @@
 #pragma comment(lib, "ole32.lib")
 #pragma comment(lib, "oleaut32.lib")
 #elif __APPLE__
+#include <ApplicationServices/ApplicationServices.h>
 #include <CoreFoundation/CoreFoundation.h>
 #include <IOKit/IOKitLib.h>
 #include <sys/sysctl.h>
-#include <ApplicationServices/ApplicationServices.h>
 #else
 #include <fstream>
 #include <sstream>
 #include <sys/utsname.h>
 #endif
 
-DeviceCategory::DeviceCategory()
-{
-}
+DeviceCategory::DeviceCategory() {}
 
 std::vector<std::string> DeviceCategory::getInfoLines() const
 {
@@ -78,16 +76,17 @@ std::string DeviceCategory::getOperatingSystem() const
 {
 #ifdef _WIN32
   // Windows version detection
-  typedef NTSTATUS(WINAPI *RtlGetVersionPtr)(PRTL_OSVERSIONINFOW);
+  typedef NTSTATUS(WINAPI * RtlGetVersionPtr)(PRTL_OSVERSIONINFOW);
   HMODULE hMod = GetModuleHandleW(L"ntdll.dll");
   if (hMod) {
     RtlGetVersionPtr fxPtr = (RtlGetVersionPtr)GetProcAddress(hMod, "RtlGetVersion");
     if (fxPtr != nullptr) {
-      RTL_OSVERSIONINFOW rovi = { 0 };
+      RTL_OSVERSIONINFOW rovi = {0};
       rovi.dwOSVersionInfoSize = sizeof(rovi);
       if (fxPtr(&rovi) == 0) {
         std::stringstream ss;
-        ss << "Windows " << rovi.dwMajorVersion << "." << rovi.dwMinorVersion << " (Build " << rovi.dwBuildNumber << ")";
+        ss << "Windows " << rovi.dwMajorVersion << "." << rovi.dwMinorVersion << " (Build " << rovi.dwBuildNumber
+           << ")";
         return ss.str();
       }
     }
@@ -117,13 +116,13 @@ std::string DeviceCategory::getOperatingSystem() const
       break;
     }
   }
-  
+
   // Add kernel version
   struct utsname unameData;
   if (uname(&unameData) == 0) {
     distro += " (" + std::string(unameData.release) + ")";
   }
-  
+
   return distro;
 #endif
 }
@@ -132,10 +131,10 @@ std::string DeviceCategory::getGraphicsInfo() const
 {
 #ifdef _WIN32
   // Windows graphics detection using DXGI
-  IDXGIFactory* pFactory = nullptr;
-  IDXGIAdapter* pAdapter = nullptr;
-  HRESULT hr = CreateDXGIFactory(__uuidof(IDXGIFactory), (void**)&pFactory);
-  
+  IDXGIFactory *pFactory = nullptr;
+  IDXGIAdapter *pAdapter = nullptr;
+  HRESULT hr = CreateDXGIFactory(__uuidof(IDXGIFactory), (void **)&pFactory);
+
   if (SUCCEEDED(hr) && pFactory) {
     hr = pFactory->EnumAdapters(0, &pAdapter);
     if (SUCCEEDED(hr) && pAdapter) {
@@ -149,8 +148,7 @@ std::string DeviceCategory::getGraphicsInfo() const
         description.resize(size_needed - 1); // Remove null terminator
 
         std::stringstream ss;
-        ss << description << " (" 
-           << (desc.DedicatedVideoMemory / (1024 * 1024)) << " MB VRAM)";
+        ss << description << " (" << (desc.DedicatedVideoMemory / (1024 * 1024)) << " MB VRAM)";
         pAdapter->Release();
         pFactory->Release();
         return ss.str();
@@ -164,15 +162,14 @@ std::string DeviceCategory::getGraphicsInfo() const
 #elif __APPLE__
   // macOS graphics detection using IOKit
   io_iterator_t iterator;
-  kern_return_t result = IOServiceGetMatchingServices(kIOMainPortDefault,
-                                                      IOServiceMatching("IOPCIDevice"), &iterator);
-  
+  kern_return_t result = IOServiceGetMatchingServices(kIOMainPortDefault, IOServiceMatching("IOPCIDevice"), &iterator);
+
   if (result == KERN_SUCCESS) {
     io_service_t device;
     while ((device = IOIteratorNext(iterator))) {
       CFMutableDictionaryRef properties = nullptr;
       result = IORegistryEntryCreateCFProperties(device, &properties, kCFAllocatorDefault, kNilOptions);
-      
+
       if (result == KERN_SUCCESS && properties) {
         CFStringRef classCode = (CFStringRef)CFDictionaryGetValue(properties, CFSTR("class-code"));
         if (classCode && CFEqual(classCode, CFSTR("0x030000"))) { // Display controller
@@ -197,7 +194,7 @@ std::string DeviceCategory::getGraphicsInfo() const
 
 #else
   // Linux graphics detection using lspci
-  FILE* pipe = popen("lspci | grep VGA", "r");
+  FILE *pipe = popen("lspci | grep VGA", "r");
   if (pipe) {
     char buffer[256];
     if (fgets(buffer, sizeof(buffer), pipe)) {
@@ -225,7 +222,7 @@ std::string DeviceCategory::getDisplayResolution() const
   DEVMODE dm;
   ZeroMemory(&dm, sizeof(dm));
   dm.dmSize = sizeof(dm);
-  
+
   if (EnumDisplaySettings(nullptr, ENUM_CURRENT_SETTINGS, &dm)) {
     std::stringstream ss;
     ss << dm.dmPelsWidth << "x" << dm.dmPelsHeight << " @ " << dm.dmDisplayFrequency << "Hz";
@@ -238,10 +235,10 @@ std::string DeviceCategory::getDisplayResolution() const
   CGDirectDisplayID display = CGMainDisplayID();
   size_t width = CGDisplayPixelsWide(display);
   size_t height = CGDisplayPixelsHigh(display);
-  
+
   std::stringstream ss;
   ss << width << "x" << height;
-  
+
   // Try to get refresh rate
   CGDisplayModeRef mode = CGDisplayCopyDisplayMode(display);
   if (mode) {
@@ -251,12 +248,12 @@ std::string DeviceCategory::getDisplayResolution() const
     }
     CGDisplayModeRelease(mode);
   }
-  
+
   return ss.str();
 
 #else
   // Linux display resolution using xrandr
-  FILE* pipe = popen("xrandr | grep '*' | head -1", "r");
+  FILE *pipe = popen("xrandr | grep '*' | head -1", "r");
   if (pipe) {
     char buffer[256];
     if (fgets(buffer, sizeof(buffer), pipe)) {
@@ -276,14 +273,14 @@ std::string DeviceCategory::getDisplayResolution() const
     }
     pclose(pipe);
   }
-  
+
   // Fallback: try reading from /sys/class/drm
   std::ifstream drmFile("/sys/class/drm/card0/modes");
   std::string mode;
   if (std::getline(drmFile, mode)) {
     return mode;
   }
-  
+
   return "Resolution: Unknown";
 #endif
 }
@@ -293,13 +290,18 @@ std::string DeviceCategory::getArchitecture() const
 #ifdef _WIN32
   SYSTEM_INFO si;
   GetSystemInfo(&si);
-  
+
   switch (si.wProcessorArchitecture) {
-    case PROCESSOR_ARCHITECTURE_AMD64: return "x64";
-    case PROCESSOR_ARCHITECTURE_INTEL: return "x86";
-    case PROCESSOR_ARCHITECTURE_ARM: return "ARM";
-    case PROCESSOR_ARCHITECTURE_ARM64: return "ARM64";
-    default: return "Unknown";
+  case PROCESSOR_ARCHITECTURE_AMD64:
+    return "x64";
+  case PROCESSOR_ARCHITECTURE_INTEL:
+    return "x86";
+  case PROCESSOR_ARCHITECTURE_ARM:
+    return "ARM";
+  case PROCESSOR_ARCHITECTURE_ARM64:
+    return "ARM64";
+  default:
+    return "Unknown";
   }
 
 #elif __APPLE__
@@ -308,10 +310,14 @@ std::string DeviceCategory::getArchitecture() const
   size_t size = sizeof(cpuType);
   if (sysctlbyname("hw.cputype", &cpuType, &size, NULL, 0) == 0) {
     switch (cpuType) {
-      case CPU_TYPE_X86_64: return "x64";
-      case CPU_TYPE_ARM64: return "ARM64";
-      case CPU_TYPE_X86: return "x86";
-      default: return "Unknown";
+    case CPU_TYPE_X86_64:
+      return "x64";
+    case CPU_TYPE_ARM64:
+      return "ARM64";
+    case CPU_TYPE_X86:
+      return "x86";
+    default:
+      return "Unknown";
     }
   }
   return "Unknown";
@@ -321,10 +327,14 @@ std::string DeviceCategory::getArchitecture() const
   struct utsname unameData;
   if (uname(&unameData) == 0) {
     std::string machine = unameData.machine;
-    if (machine == "x86_64") return "x64";
-    if (machine == "i686" || machine == "i386") return "x86";
-    if (machine == "aarch64") return "ARM64";
-    if (machine.find("arm") == 0) return "ARM";
+    if (machine == "x86_64")
+      return "x64";
+    if (machine == "i686" || machine == "i386")
+      return "x86";
+    if (machine == "aarch64")
+      return "ARM64";
+    if (machine.find("arm") == 0)
+      return "ARM";
     return machine;
   }
   return "Unknown";
@@ -386,7 +396,7 @@ std::string DeviceCategory::getStorageInfo() const
 
 #elif __APPLE__
   // macOS storage detection using df
-  FILE* pipe = popen("df -h / | tail -1", "r");
+  FILE *pipe = popen("df -h / | tail -1", "r");
   if (pipe) {
     char buffer[256];
     if (fgets(buffer, sizeof(buffer), pipe)) {
@@ -404,7 +414,7 @@ std::string DeviceCategory::getStorageInfo() const
 
 #else
   // Linux storage detection using df
-  FILE* pipe = popen("df -h / | tail -1", "r");
+  FILE *pipe = popen("df -h / | tail -1", "r");
   if (pipe) {
     char buffer[256];
     if (fgets(buffer, sizeof(buffer), pipe)) {

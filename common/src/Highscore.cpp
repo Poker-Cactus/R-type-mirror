@@ -38,7 +38,7 @@ bool HighscoreManager::loadFromFile()
     file >> json;
 
     m_highscores = json.get<std::vector<HighscoreEntry>>();
-    sortHighscores();  // Ensure they're sorted
+    sortHighscores(); // Ensure they're sorted
 
     return true;
   } catch (const std::exception &e) {
@@ -63,7 +63,7 @@ bool HighscoreManager::saveToFile() const
     }
 
     nlohmann::json json = m_highscores;
-    file << json.dump(2);  // Pretty print with 2-space indentation
+    file << json.dump(2); // Pretty print with 2-space indentation
 
     return true;
   } catch (const std::exception &e) {
@@ -110,21 +110,20 @@ void HighscoreManager::clearHighscores()
 
 void HighscoreManager::sortHighscores()
 {
-  std::sort(m_highscores.begin(), m_highscores.end(),
-            [](const HighscoreEntry &a, const HighscoreEntry &b) {
-              return a.score > b.score;  // Descending order
-            });
+  std::sort(m_highscores.begin(), m_highscores.end(), [](const HighscoreEntry &a, const HighscoreEntry &b) {
+    return a.score > b.score; // Descending order
+  });
 }
 
 fs::path HighscoreManager::getHighscoreFilePath() const
 {
   // Store highscores in the user's home directory for persistence
   // This ensures it works regardless of where the executable is run from
-  const char* homeDir = std::getenv("HOME");
+  const char *homeDir = std::getenv("HOME");
   if (homeDir != nullptr) {
     return fs::path(homeDir) / ".r-type" / HIGHSCORE_FILE;
   }
-  
+
   // Fallback to current directory
   return fs::current_path() / HIGHSCORE_FILE;
 }

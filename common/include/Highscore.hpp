@@ -9,10 +9,10 @@
 #define HIGHSCORE_HPP_
 
 #include "Common.hpp"
+#include <filesystem>
 #include <nlohmann/json.hpp>
 #include <string>
 #include <vector>
-#include <filesystem>
 
 namespace fs = std::filesystem;
 
@@ -21,9 +21,9 @@ namespace fs = std::filesystem;
  * @brief Represents a single highscore entry
  */
 struct HighscoreEntry {
-  std::string username;    ///< Player username
-  int score = 0;           ///< Final score achieved
-  Difficulty difficulty;   ///< Game difficulty level
+  std::string username; ///< Player username
+  int score = 0; ///< Final score achieved
+  Difficulty difficulty; ///< Game difficulty level
 
   // For JSON serialization
   NLOHMANN_DEFINE_TYPE_INTRUSIVE(HighscoreEntry, username, score, difficulty)
@@ -33,7 +33,8 @@ struct HighscoreEntry {
  * @class HighscoreManager
  * @brief Manages loading, saving, and updating highscores
  */
-class HighscoreManager {
+class HighscoreManager
+{
 public:
   HighscoreManager();
   ~HighscoreManager() = default;
@@ -82,10 +83,10 @@ public:
   void clearHighscores();
 
 private:
-  static constexpr std::size_t MAX_HIGHSCORES = 5;  ///< Maximum number of highscores to keep
-  static constexpr const char *HIGHSCORE_FILE = "highscores.json";  ///< Filename for highscore storage
+  static constexpr std::size_t MAX_HIGHSCORES = 5; ///< Maximum number of highscores to keep
+  static constexpr const char *HIGHSCORE_FILE = "highscores.json"; ///< Filename for highscore storage
 
-  std::vector<HighscoreEntry> m_highscores;  ///< Current highscore list
+  std::vector<HighscoreEntry> m_highscores; ///< Current highscore list
 
   /**
    * @brief Sort highscores by score in descending order

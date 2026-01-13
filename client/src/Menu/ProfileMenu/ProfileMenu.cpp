@@ -7,9 +7,9 @@
 
 #include "ProfileMenu.hpp"
 #include "../../../../common/include/Common.hpp"
-#include <cmath>
 #include "../../../interface/Color.hpp"
 #include "../../../interface/KeyCodes.hpp"
+#include <cmath>
 #include <iostream>
 
 ProfileMenu::ProfileMenu(std::shared_ptr<IRenderer> renderer) : m_renderer(renderer) {}
@@ -92,7 +92,8 @@ void ProfileMenu::render(UNUSED int winWidth, UNUSED int winHeight)
 
   // Help text
   int helpY = winHeight - 60;
-  m_renderer->drawText(font, "Use arrow keys to navigate, Enter to select/edit", (winWidth - 400) / 2, helpY, Color{255, 255, 255, 200});
+  m_renderer->drawText(font, "Use arrow keys to navigate, Enter to select/edit", (winWidth - 400) / 2, helpY,
+                       Color{255, 255, 255, 200});
 }
 
 void ProfileMenu::process(MenuState *currentState, Settings &settings)

@@ -10,8 +10,8 @@
  */
 
 #pragma once
-#include "../../../interface/IRenderer.hpp"
 #include "../../../include/Settings.hpp"
+#include "../../../interface/IRenderer.hpp"
 #include "../MenuState.hpp"
 #include <memory>
 

@@ -43,7 +43,6 @@ void Menu::init()
     m_lobbyMenu = std::make_shared<LobbyMenu>(m_renderer);
     m_lobbyMenu->init(settings);
 
-
     m_profileMenu = std::make_shared<ProfileMenu>(m_renderer);
     m_profileMenu->init(settings);
 
@@ -144,7 +143,7 @@ void Menu::cleanup()
 void Menu::setState(MenuState newState)
 {
   currentState = newState;
-  
+
   // Refresh highscores when entering lobby menu
   if (newState == MenuState::LOBBY && m_lobbyMenu != nullptr) {
     m_lobbyMenu->refreshHighscores();

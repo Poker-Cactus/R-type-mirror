@@ -6,26 +6,26 @@
 #pragma once
 
 #include "../InfoCategory.hpp"
-#include <memory>
 #include <cstdint>
+#include <memory>
 
 #ifdef _WIN32
-#include <windows.h>
 #include <psapi.h>
+#include <windows.h>
 #elif __APPLE__
-#include <sys/sysctl.h>
-#include <sys/types.h>
+#include <mach/host_priv.h>
+#include <mach/kern_return.h>
 #include <mach/mach.h>
-#include <mach/vm_statistics.h>
 #include <mach/mach_types.h>
 #include <mach/message.h>
-#include <mach/kern_return.h>
-#include <mach/host_priv.h>
 #include <mach/processor_info.h>
+#include <mach/vm_statistics.h>
+#include <sys/sysctl.h>
+#include <sys/types.h>
 #else
-#include <unistd.h>
 #include <fstream>
 #include <sstream>
+#include <unistd.h>
 #endif
 
 /**

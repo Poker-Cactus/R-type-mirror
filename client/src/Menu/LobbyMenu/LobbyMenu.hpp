@@ -7,8 +7,8 @@
 #include "../../../../common/include/Common.hpp"
 #include "../../../../common/include/Highscore.hpp"
 #include "../../../../network/include/INetworkManager.hpp"
-#include "../../../interface/IRenderer.hpp"
 #include "../../../include/Settings.hpp"
+#include "../../../interface/IRenderer.hpp"
 #include "../MenuState.hpp"
 #include <functional>
 #include <memory>
@@ -52,7 +52,6 @@ public:
 
   /**
    * @brief Initialize lobby menu resources
-   * @param renderer Renderer interface
    * @param settings Game settings reference
    */
   void init(Settings &settings);
