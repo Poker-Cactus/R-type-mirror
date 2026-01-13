@@ -192,15 +192,12 @@ void PlayingState::render()
           // Yellow Bee: 256x64 with 2 rows x 8 columns = 16 frames
           frameWidth = 256 / 8; // 32px per frame
           frameHeight = 64 / 2; // 32px per frame (2 rows)
-          break;
         case ecs::SpriteId::CHARGED_PROJECTILE:
           frameWidth = 165 / 2; // 82px per frame
           frameHeight = 16;
-          break;
         case ecs::SpriteId::LOADING_SHOT:
           frameWidth = 255 / 8; // 31-32px per frame
           frameHeight = 29;
-          break;
         case ecs::SpriteId::ENEMY_WALKER:
           // Walker: 200x67 with 2 rows x 6 columns = 12 frames
           frameWidth = 200 / 6; // 33px per frame

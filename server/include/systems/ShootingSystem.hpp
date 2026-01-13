@@ -96,6 +96,16 @@ public:
           }
         }
 
+        // Add Follower component to make LOADING_SHOT follow the player
+        if (loadingShotEntity != 0 && world.isAlive(loadingShotEntity)) {
+          ecs::Follower follower;
+          follower.parent = entity;
+          follower.offsetX = LOADING_OFFSET_X;
+          follower.offsetY = LOADING_OFFSET_Y;
+          follower.smoothing = 100.0F; // High smoothing for instant positioning
+          world.addComponent(loadingShotEntity, follower);
+        }
+
         // Store charging state in component
         charging.isCharging = true;
         charging.chargeTime = 0.0F;
