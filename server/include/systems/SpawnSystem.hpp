@@ -39,6 +39,14 @@ namespace server
 // Local enum for powerup types (not an ECS component)
 enum class PowerupType { DRONE = 0, BUBBLE = 1, BUBBLE_TRIPLE = 2, BUBBLE_RUBAN = 3 };
 
+typedef struct SpawnedProjectileConfig {
+  float velocityX;
+  float velocityY;
+  float posX;
+  float posY;
+  ecs::Entity owner;
+} SpawnedProjectileConfig;
+
 /**
  * @brief System that handles entity spawning via events
  */
@@ -144,6 +152,24 @@ private:
   static constexpr float PROJECTILE_VELOCITY_MULTIPLIER = 400.0F;
   static constexpr float DIRECTION_THRESHOLD = 0.01F;
 
+  // Ruban/Wave beam projectile configuration (R-Type ribbon effect)
+  // Uses xruban_projectile.png format (x = phase 1-14)
+  // Phase 1 initial dimensions: 21x49, 1 frame
+  static constexpr float RUBAN_WAVE_AMPLITUDE = 50.0F;
+  static constexpr float RUBAN_WAVE_FREQUENCY = 12.0F;
+  static constexpr float RUBAN_SCALE = 3.0F;
+  static constexpr unsigned int RUBAN_INITIAL_WIDTH = 21;
+  static constexpr unsigned int RUBAN_INITIAL_HEIGHT = 49;
+
+  typedef struct configRubanProjectile {
+    unsigned int spriteWidth;
+    unsigned int spriteHeight;
+    unsigned int totalFrames;
+    float frameWidth;
+    float scale;
+    std::uint32_t spriteId;
+  } configRubanProjectile;
+
   void spawnFollower(ecs::World &world, ecs::Entity parent, ecs::Entity child, float offsetX, float offsetY)
   {
     ecs::Follower follower;
@@ -189,7 +215,9 @@ private:
     PowerupType powerupType;
     int cycle = m_powerupSpawnCount % 4;
     if (cycle == 0) {
-      powerupType = PowerupType::DRONE;
+      powerupType = PowerupType::BUBBLE_RUBAN;
+
+      // powerupType = PowerupType::DRONE;
     } else if (cycle == 1) {
       powerupType = PowerupType::BUBBLE;
     } else if (cycle == 2) {
@@ -198,7 +226,6 @@ private:
       powerupType = PowerupType::BUBBLE_RUBAN;
     }
     m_powerupSpawnCount++;
-
     spawnPowerup(world, spawnX, spawnY, powerupType);
   }
 
@@ -309,12 +336,24 @@ private:
 
   static void handleSpawnEvent(ecs::World &world, const ecs::SpawnEntityEvent &event)
   {
+    configRubanProjectile config;
     switch (event.type) {
     case ecs::SpawnEntityEvent::EntityType::ENEMY:
       spawnEnemyRed(world, event.x, event.y);
       break;
     case ecs::SpawnEntityEvent::EntityType::PROJECTILE:
       spawnProjectile(world, event.x, event.y, event.spawner);
+      break;
+    case ecs::SpawnEntityEvent::EntityType::TRIPLE_PROJECTILE:
+      spawnTripleProjectile(world, event.x, event.y, event.spawner);
+      break;
+    case ecs::SpawnEntityEvent::EntityType::RUBAN1_PROJECTILE:
+    case ecs::SpawnEntityEvent::EntityType::RUBAN2_PROJECTILE:
+    case ecs::SpawnEntityEvent::EntityType::RUBAN3_PROJECTILE:
+    case ecs::SpawnEntityEvent::EntityType::RUBAN4_PROJECTILE:
+    case ecs::SpawnEntityEvent::EntityType::RUBAN5_PROJECTILE:
+      // All ruban projectiles start at phase 1 and animate through 14 phases
+      spawnRubanProjectile(world, event.x, event.y, event.spawner, config);
       break;
     case ecs::SpawnEntityEvent::EntityType::POWERUP:
       spawnPowerup(world, event.x, event.y);
@@ -323,6 +362,121 @@ private:
       spawnExplosion(world, event.x, event.y);
       break;
     }
+  }
+
+  static void spawnRubanProjectile(ecs::World &world, float posX, float posY, ecs::Entity owner,
+                                   configRubanProjectile config)
+  {
+    // Ignore passed config - always start at phase 1
+    (void)config;
+
+    const float projectileVelocity = PROJECTILE_VELOCITY_MULTIPLIER * 1.0F;
+
+    ecs::Entity projectile = world.createEntity();
+
+    // Capability-based offset: use GunOffset if entity has it
+    float offsetX = 0.0F;
+    if (world.hasComponent<ecs::GunOffset>(owner)) {
+      offsetX = world.getComponent<ecs::GunOffset>(owner).x * 1.0F;
+    }
+
+    ecs::Transform transform;
+    transform.x = posX + offsetX;
+    // Adjust Y position to align ruban projectile with regular projectile
+    // Regular projectile: 84x37 at scale 1.0 = 84x37 effective size
+    // Ruban projectile starts at: 21x49 at scale 3.0 = 63x147 effective size
+    // Center vertically: (147 - 37) / 2 = 55 pixels up
+    transform.y = posY - 55.0f;
+    transform.rotation = 0.0F;
+    transform.scale = RUBAN_SCALE;
+    world.addComponent(projectile, transform);
+
+    ecs::Velocity velocity;
+    velocity.dx = projectileVelocity;
+    velocity.dy = 0.0F;
+    world.addComponent(projectile, velocity);
+
+    // Add wave beam pattern for R-Type ribbon effect (oscillating vertically)
+    world.addComponent(projectile, ecs::Pattern{"wave_beam", RUBAN_WAVE_AMPLITUDE, RUBAN_WAVE_FREQUENCY});
+
+    // Collider based on initial phase dimensions
+    world.addComponent(projectile,
+                       ecs::Collider{static_cast<float>(RUBAN_INITIAL_WIDTH) * RUBAN_SCALE,
+                                     static_cast<float>(RUBAN_INITIAL_HEIGHT) * RUBAN_SCALE});
+
+    // Start with phase 1 sprite (1ruban_projectile.png: 21x49, 1 frame)
+    ecs::Sprite sprite;
+    sprite.spriteId = ecs::SpriteId::RUBAN1_PROJECTILE;
+    sprite.width = RUBAN_INITIAL_WIDTH;
+    sprite.height = RUBAN_INITIAL_HEIGHT;
+    sprite.animated = false;
+    sprite.frameCount = 1;
+    sprite.loop = false;
+    sprite.startFrame = 0;
+    sprite.endFrame = 0;
+    sprite.currentFrame = 0;
+
+    world.addComponent(projectile, sprite);
+
+    // Mark as networked so the snapshot system replicates it to clients.
+    ecs::Networked net;
+    net.networkId = projectile;
+    world.addComponent(projectile, net);
+
+    // Track owner to prevent self-damage
+    ecs::Owner ownerComp;
+    ownerComp.ownerId = owner;
+    world.addComponent(projectile, ownerComp);
+  }
+
+  static void spawnTripleProjectile(ecs::World &world, float posX, float posY, ecs::Entity owner)
+  {
+    const float projectileVelocity = PROJECTILE_VELOCITY_MULTIPLIER * 1.0F;
+
+    ecs::Entity projectile = world.createEntity();
+
+    // Capability-based offset: use GunOffset if entity has it
+    float offsetX = 0.0F;
+    if (world.hasComponent<ecs::GunOffset>(owner)) {
+      offsetX = world.getComponent<ecs::GunOffset>(owner).x * 1.0F;
+    }
+
+    ecs::Transform transform;
+    transform.x = posX + offsetX;
+    transform.y = posY;
+    transform.rotation = 0.0F;
+    transform.scale = 1.0F;
+    world.addComponent(projectile, transform);
+
+    ecs::Velocity velocity;
+    velocity.dx = projectileVelocity;
+    velocity.dy = 0.0F;
+    world.addComponent(projectile, velocity);
+
+    world.addComponent(projectile, ecs::Collider{PROJECTILE_COLLIDER_SIZE, PROJECTILE_COLLIDER_SIZE});
+
+    // Sprite for triple projectile
+    ecs::Sprite sprite;
+    sprite.spriteId = ecs::SpriteId::TRIPLE_PROJECTILE;
+    sprite.width = PROJECTILE_SPRITE_WIDTH;
+    sprite.height = PROJECTILE_SPRITE_HEIGHT;
+    sprite.animated = true;
+    sprite.frameCount = 3;
+    sprite.loop = false;
+    sprite.startFrame = 0;
+    sprite.endFrame = 2;
+
+    world.addComponent(projectile, sprite);
+
+    // Mark as networked
+    ecs::Networked net;
+    net.networkId = projectile;
+    world.addComponent(projectile, net);
+
+    // Track owner to prevent self-damage
+    ecs::Owner ownerComp;
+    ownerComp.ownerId = owner;
+    world.addComponent(projectile, ownerComp);
   }
 
   static void spawnProjectile(ecs::World &world, float posX, float posY, ecs::Entity owner)
@@ -418,7 +572,7 @@ private:
     sprite.height = POWERUP_SPRITE_HEIGHT;
     sprite.animated = true; // Enable animation for cycling
     sprite.frameCount = POWERUP_FRAME_COUNT; // 4 frames total
-    sprite.frameTime = 0.1f; // Animation speed
+    sprite.frameTime = 0.03f; // Animation speed
     sprite.loop = true;
 
     // Select starting frame and animation range based on powerup type

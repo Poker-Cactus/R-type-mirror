@@ -37,6 +37,7 @@ Game::Game()
 
   world->registerSystem<server::EnemyAISystem>();
   world->registerSystem<server::FollowerSystem>();
+  world->registerSystem<server::RubanAnimationSystem>();
 
   spawnSystem = &world->registerSystem<server::SpawnSystem>();
   world->registerSystem<server::EntityLifetimeSystem>();

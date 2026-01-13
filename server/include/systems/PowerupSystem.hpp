@@ -146,7 +146,6 @@ private:
     }
 
     // Determine powerup type from sprite currentFrame
-    // Frame 0=BUBBLE, 1=BUBBLE_TRIPLE, 2=BUBBLE_RUBAN, 3=DRONE
     const auto &powerupSprite = world.getComponent<ecs::Sprite>(powerupEntity);
     std::cout << "[PowerupSystem] Player " << playerEntity << " collected powerup frame " << powerupSprite.currentFrame
               << '\n';
@@ -225,6 +224,7 @@ private:
     follower.parent = player;
     follower.offsetX = 120.0f; // A bit to the right
     follower.offsetY = 10.0f; // A bit lower
+    follower.type = bubbleConfig.spriteId;
     world.addComponent(bubble, follower);
 
     // Sprite
@@ -281,6 +281,7 @@ private:
     follower.offsetX = DRONE_OFFSET_X;
     follower.offsetY = yOffset;
     follower.smoothing = DRONE_SMOOTHING;
+    follower.type = ecs::SpriteId::DRONE; // Drone type
     world.addComponent(drone, follower);
 
     // No collider for drones - they should not interact with physics
@@ -346,7 +347,6 @@ private:
         const auto &follower = world.getComponent<ecs::Follower>(entity);
         if (follower.parent == player) {
           const auto &sprite = world.getComponent<ecs::Sprite>(entity);
-          // Check if it's a bubble (spriteId 7, 8, 9, 10, or 11)
           if (sprite.spriteId == ecs::SpriteId::BUBBLE || sprite.spriteId == ecs::SpriteId::BUBBLE_TRIPLE ||
               sprite.spriteId == ecs::SpriteId::BUBBLE_RUBAN1 || sprite.spriteId == ecs::SpriteId::BUBBLE_RUBAN2 ||
               sprite.spriteId == ecs::SpriteId::BUBBLE_RUBAN3) {

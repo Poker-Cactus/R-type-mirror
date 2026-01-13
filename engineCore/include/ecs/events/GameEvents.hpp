@@ -63,7 +63,7 @@ struct ShootEvent : public IEvent {
  * @brief Event triggered to spawn a new entity
  */
 struct SpawnEntityEvent : public IEvent {
-  enum class EntityType { ENEMY, PROJECTILE, POWERUP, EXPLOSION, TRIPLE_PROJECTILE, RUBAN_PROJECTILE };
+  enum class EntityType { ENEMY, PROJECTILE, POWERUP, EXPLOSION, TRIPLE_PROJECTILE, RUBAN1_PROJECTILE, RUBAN2_PROJECTILE, RUBAN3_PROJECTILE, RUBAN4_PROJECTILE, RUBAN5_PROJECTILE };
 
   EntityType type;
   float x;

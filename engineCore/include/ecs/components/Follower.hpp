@@ -24,6 +24,7 @@ struct Follower : public ecs::IComponent {
   float offsetX = 50.0f; // X offset from parent position
   float offsetY = 0.0f; // Y offset from parent position
   float smoothing = 5.0f; // Smoothing factor for movement (higher = faster catch up)
+  std::uint32_t type = 0;
 
   [[nodiscard]] nlohmann::json toJson() const override
   {

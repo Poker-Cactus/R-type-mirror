@@ -110,6 +110,22 @@ private:
     spawnDroneProjectiles(world, event.shooter);
   }
 
+  static ecs::SpawnEntityEvent::EntityType whichProjectile(std::uint32_t bubble)
+  {
+    switch (bubble) {
+    case ecs::SpriteId::DRONE:
+      return ecs::SpawnEntityEvent::EntityType::PROJECTILE;
+    case ecs::SpriteId::BUBBLE_TRIPLE:
+      return ecs::SpawnEntityEvent::EntityType::TRIPLE_PROJECTILE;
+    case ecs::SpriteId::BUBBLE_RUBAN1:
+    case ecs::SpriteId::BUBBLE_RUBAN2:
+    case ecs::SpriteId::BUBBLE_RUBAN3:
+      return ecs::SpawnEntityEvent::EntityType::RUBAN1_PROJECTILE;
+    default:
+      return ecs::SpawnEntityEvent::EntityType::PROJECTILE;
+    }
+  }
+
   static void spawnDroneProjectiles(ecs::World &world, ecs::Entity player)
   {
     // Find all drones that follow this player
@@ -137,9 +153,16 @@ private:
 
       const auto &droneTransform = world.getComponent<ecs::Transform>(drone);
 
+      // Determine projectile type based on follower sprite
+      ecs::SpawnEntityEvent::EntityType projectileType = ecs::SpawnEntityEvent::EntityType::PROJECTILE;
+      if (world.hasComponent<ecs::Sprite>(drone)) {
+        const auto &sprite = world.getComponent<ecs::Sprite>(drone);
+        projectileType = whichProjectile(sprite.spriteId);
+      }
+
       // Spawn projectile from drone position
-      ecs::SpawnEntityEvent droneSpawnEvent(ecs::SpawnEntityEvent::EntityType::PROJECTILE,
-                                            droneTransform.x + droneOffsetX, droneTransform.y + droneOffsetY,
+      ecs::SpawnEntityEvent droneSpawnEvent(projectileType, droneTransform.x + droneOffsetX,
+                                            droneTransform.y + droneOffsetY,
                                             player); // Owner is still the player for scoring
       world.emitEvent(droneSpawnEvent);
     }

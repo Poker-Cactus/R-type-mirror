@@ -205,6 +205,7 @@ void Lobby::initializeSystems()
 
   m_world->registerSystem<server::EnemyAISystem>();
   m_world->registerSystem<server::FollowerSystem>();
+  m_world->registerSystem<server::RubanAnimationSystem>();
 
   auto *spawnSystem = &m_world->registerSystem<server::SpawnSystem>();
   m_world->registerSystem<server::EntityLifetimeSystem>();

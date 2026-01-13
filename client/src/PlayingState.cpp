@@ -162,9 +162,35 @@ void PlayingState::render()
         case ecs::SpriteId::BUBBLE_RUBAN1:
         case ecs::SpriteId::BUBBLE_RUBAN2:
         case ecs::SpriteId::BUBBLE_RUBAN3:
-          // Legacy drone/bubble: use sprite dimensions from server
+        case ecs::SpriteId::TRIPLE_PROJECTILE:
+        case ecs::SpriteId::RUBAN1_PROJECTILE:
+        case ecs::SpriteId::RUBAN2_PROJECTILE:
+        case ecs::SpriteId::RUBAN3_PROJECTILE:
+        case ecs::SpriteId::RUBAN4_PROJECTILE:
+        case ecs::SpriteId::RUBAN5_PROJECTILE:
+        case ecs::SpriteId::RUBAN6_PROJECTILE:
+        case ecs::SpriteId::RUBAN7_PROJECTILE:
+        case ecs::SpriteId::RUBAN8_PROJECTILE:
+        case ecs::SpriteId::RUBAN9_PROJECTILE:
+        case ecs::SpriteId::RUBAN10_PROJECTILE:
+        case ecs::SpriteId::RUBAN11_PROJECTILE:
+        case ecs::SpriteId::RUBAN12_PROJECTILE:
+        case ecs::SpriteId::RUBAN13_PROJECTILE:
+        case ecs::SpriteId::RUBAN14_PROJECTILE:
+          // Use sprite dimensions from server
           frameWidth = static_cast<int>(sprite.width);
           frameHeight = static_cast<int>(sprite.height);
+
+          // Debug ruban projectiles
+          if (sprite.spriteId >= ecs::SpriteId::RUBAN1_PROJECTILE &&
+              sprite.spriteId <= ecs::SpriteId::RUBAN5_PROJECTILE) {
+            static bool logged = false;
+            if (!logged) {
+              std::cout << "[Render] Ruban projectile - spriteId: " << sprite.spriteId << ", width: " << sprite.width
+                        << ", height: " << sprite.height << ", frameCount: " << sprite.frameCount << std::endl;
+              logged = true;
+            }
+          }
           break;
         default:
           break;
@@ -810,7 +836,65 @@ void PlayingState::loadSpriteTextures()
     }
   }
 
-  constexpr int EXPECTED_TEXTURE_COUNT = 11;
+  // triple_projectile = 15 (uses bubble_shoot.png)
+  try {
+    void *triple_projectile_tex = renderer->loadTexture("client/assets/bubble_shoot.png");
+    if (triple_projectile_tex != nullptr) {
+      m_spriteTextures[ecs::SpriteId::TRIPLE_PROJECTILE] = triple_projectile_tex;
+      std::cout << "[PlayingState] ✓ Loaded bubble_shoot.png for TRIPLE_PROJECTILE" << '\n';
+    } else {
+      // Fallback to projectile texture
+      if (m_spriteTextures.find(ecs::SpriteId::PROJECTILE) != m_spriteTextures.end()) {
+        m_spriteTextures[ecs::SpriteId::TRIPLE_PROJECTILE] = m_spriteTextures[ecs::SpriteId::PROJECTILE];
+        std::cout << "[PlayingState] ✓ Using projectile texture for TRIPLE_PROJECTILE (fallback)" << '\n';
+      }
+    }
+  } catch (const std::exception &e) {
+    // Fallback to projectile texture for TRIPLE_PROJECTILE
+    if (m_spriteTextures.find(ecs::SpriteId::PROJECTILE) != m_spriteTextures.end()) {
+      m_spriteTextures[ecs::SpriteId::TRIPLE_PROJECTILE] = m_spriteTextures[ecs::SpriteId::PROJECTILE];
+      std::cout << "[PlayingState] ✓ Using projectile texture for TRIPLE_PROJECTILE (fallback after error)" << '\n';
+    }
+  }
+
+  // Ruban projectile sprites (24 phases): Xruban_projectile.png where X = 1-24
+  // Sprite IDs: RUBAN1_PROJECTILE (16) through RUBAN24_PROJECTILE (39)
+  constexpr std::uint32_t RUBAN_SPRITE_IDS[] = {
+    ecs::SpriteId::RUBAN1_PROJECTILE,  ecs::SpriteId::RUBAN2_PROJECTILE,  ecs::SpriteId::RUBAN3_PROJECTILE,
+    ecs::SpriteId::RUBAN4_PROJECTILE,  ecs::SpriteId::RUBAN5_PROJECTILE,  ecs::SpriteId::RUBAN6_PROJECTILE,
+    ecs::SpriteId::RUBAN7_PROJECTILE,  ecs::SpriteId::RUBAN8_PROJECTILE,  ecs::SpriteId::RUBAN9_PROJECTILE,
+    ecs::SpriteId::RUBAN10_PROJECTILE, ecs::SpriteId::RUBAN11_PROJECTILE, ecs::SpriteId::RUBAN12_PROJECTILE,
+    ecs::SpriteId::RUBAN13_PROJECTILE, ecs::SpriteId::RUBAN14_PROJECTILE, ecs::SpriteId::RUBAN15_PROJECTILE,
+    ecs::SpriteId::RUBAN16_PROJECTILE, ecs::SpriteId::RUBAN17_PROJECTILE, ecs::SpriteId::RUBAN18_PROJECTILE,
+    ecs::SpriteId::RUBAN19_PROJECTILE, ecs::SpriteId::RUBAN20_PROJECTILE, ecs::SpriteId::RUBAN21_PROJECTILE,
+    ecs::SpriteId::RUBAN22_PROJECTILE, ecs::SpriteId::RUBAN23_PROJECTILE, ecs::SpriteId::RUBAN24_PROJECTILE};
+
+  for (int i = 1; i <= 24; i++) {
+    std::string texturePath =
+      "client/assets/sprites/ruban_projectile_sprite/" + std::to_string(i) + "ruban_projectile.png";
+    std::uint32_t spriteId = RUBAN_SPRITE_IDS[i - 1];
+    try {
+      void *ruban_tex = renderer->loadTexture(texturePath.c_str());
+      if (ruban_tex != nullptr) {
+        m_spriteTextures[spriteId] = ruban_tex;
+        std::cout << "[PlayingState] ✓ Loaded " << i << "ruban_projectile.png" << '\n';
+      } else {
+        // Fallback to powerup texture
+        if (m_spriteTextures.find(ecs::SpriteId::POWERUP) != m_spriteTextures.end()) {
+          m_spriteTextures[spriteId] = m_spriteTextures[ecs::SpriteId::POWERUP];
+          std::cout << "[PlayingState] ✓ Using powerup.png for ruban" << i << " (fallback)" << '\n';
+        }
+      }
+    } catch (const std::exception &e) {
+      // Fallback to powerup texture
+      if (m_spriteTextures.find(ecs::SpriteId::POWERUP) != m_spriteTextures.end()) {
+        m_spriteTextures[spriteId] = m_spriteTextures[ecs::SpriteId::POWERUP];
+        std::cout << "[PlayingState] ✓ Using powerup.png for ruban" << i << " (fallback after error)" << '\n';
+      }
+    }
+  }
+
+  constexpr int EXPECTED_TEXTURE_COUNT = 39;
   std::cout << "[PlayingState] Successfully loaded " << m_spriteTextures.size() << " / " << EXPECTED_TEXTURE_COUNT
             << " sprite textures" << '\n';
   if (m_spriteTextures.size() < EXPECTED_TEXTURE_COUNT) {

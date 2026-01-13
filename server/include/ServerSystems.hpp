@@ -20,6 +20,7 @@
 #include "systems/NetworkReceiveSystem.hpp"
 #include "systems/NetworkSendSystem.hpp"
 #include "systems/PowerupSystem.hpp"
+#include "systems/RubanAnimationSystem.hpp"
 #include "systems/ScoreSystem.hpp"
 #include "systems/ShootingSystem.hpp"
 #include "systems/SpawnSystem.hpp"

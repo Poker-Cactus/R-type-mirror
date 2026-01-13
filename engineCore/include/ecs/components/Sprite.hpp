@@ -98,13 +98,40 @@ constexpr std::uint32_t PLAYER_SHIP = 1;
 constexpr std::uint32_t ENEMY_SHIP = 2;
 constexpr std::uint32_t PROJECTILE = 3;
 constexpr std::uint32_t EXPLOSION = 4;
-constexpr std::uint32_t POWERUP = 5;
-constexpr std::uint32_t DRONE = 6;
-constexpr std::uint32_t BUBBLE = 7;
-constexpr std::uint32_t BUBBLE_TRIPLE = 8;
-constexpr std::uint32_t BUBBLE_RUBAN1 = 9;
-constexpr std::uint32_t BUBBLE_RUBAN2 = 10;
-constexpr std::uint32_t BUBBLE_RUBAN3 = 11;
+constexpr std::uint32_t POWERUP = 8;
+constexpr std::uint32_t DRONE = 9;
+constexpr std::uint32_t BUBBLE = 10;
+constexpr std::uint32_t BUBBLE_TRIPLE = 11;
+constexpr std::uint32_t BUBBLE_RUBAN1 = 12;
+constexpr std::uint32_t BUBBLE_RUBAN2 = 13;
+constexpr std::uint32_t BUBBLE_RUBAN3 = 14;
+constexpr std::uint32_t TRIPLE_PROJECTILE = 15;
+// Ruban projectile phases 1-24 (xruban_projectile.png format)
+constexpr std::uint32_t RUBAN1_PROJECTILE = 16;
+constexpr std::uint32_t RUBAN2_PROJECTILE = 17;
+constexpr std::uint32_t RUBAN3_PROJECTILE = 18;
+constexpr std::uint32_t RUBAN4_PROJECTILE = 19;
+constexpr std::uint32_t RUBAN5_PROJECTILE = 20;
+constexpr std::uint32_t RUBAN6_PROJECTILE = 21;
+constexpr std::uint32_t RUBAN7_PROJECTILE = 22;
+constexpr std::uint32_t RUBAN8_PROJECTILE = 23;
+constexpr std::uint32_t RUBAN9_PROJECTILE = 24;
+constexpr std::uint32_t RUBAN10_PROJECTILE = 25;
+constexpr std::uint32_t RUBAN11_PROJECTILE = 26;
+constexpr std::uint32_t RUBAN12_PROJECTILE = 27;
+constexpr std::uint32_t RUBAN13_PROJECTILE = 28;
+constexpr std::uint32_t RUBAN14_PROJECTILE = 29;
+constexpr std::uint32_t RUBAN15_PROJECTILE = 30;
+constexpr std::uint32_t RUBAN16_PROJECTILE = 31;
+constexpr std::uint32_t RUBAN17_PROJECTILE = 32;
+constexpr std::uint32_t RUBAN18_PROJECTILE = 33;
+constexpr std::uint32_t RUBAN19_PROJECTILE = 34;
+constexpr std::uint32_t RUBAN20_PROJECTILE = 35;
+constexpr std::uint32_t RUBAN21_PROJECTILE = 36;
+constexpr std::uint32_t RUBAN22_PROJECTILE = 37;
+constexpr std::uint32_t RUBAN23_PROJECTILE = 38;
+constexpr std::uint32_t RUBAN24_PROJECTILE = 39;
+
 } // namespace SpriteId
 
 } // namespace ecs
