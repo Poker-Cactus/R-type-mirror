@@ -91,8 +91,10 @@ constexpr std::uint32_t POWERUP = 5;
 constexpr std::uint32_t ENEMY_YELLOW = 6;
 constexpr std::uint32_t ENEMY_WALKER = 7;
 constexpr std::uint32_t WALKER_PROJECTILE = 8;
-constexpr std::uint32_t CHARGED_PROJECTILE = 9;
-constexpr std::uint32_t LOADING_SHOT = 10;
+constexpr std::uint32_t ENEMY_ROBOT = 9;
+constexpr std::uint32_t ROBOT_PROJECTILE = 10;
+constexpr std::uint32_t CHARGED_PROJECTILE = 11;
+constexpr std::uint32_t LOADING_SHOT = 12;
 } // namespace SpriteId
 
 } // namespace ecs

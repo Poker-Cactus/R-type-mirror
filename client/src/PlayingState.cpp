@@ -200,6 +200,14 @@ void PlayingState::render()
           // Walker Projectile: 549x72 with 7 frames in single row
           frameWidth = 549 / 7; // 78px per frame
           frameHeight = 72;
+        } else if (sprite.spriteId == ecs::SpriteId::ENEMY_ROBOT) {
+          // Robot: 200x34 with 6 frames in single row (0-2: left, 3-5: right)
+          frameWidth = 200 / 6; // 33px per frame
+          frameHeight = 34;
+        } else if (sprite.spriteId == ecs::SpriteId::ROBOT_PROJECTILE) {
+          // Robot Projectile: 101x114 single frame
+          frameWidth = 101;
+          frameHeight = 114;
         }
 
         if (frameWidth > 0 && frameHeight > 0) {
@@ -227,6 +235,14 @@ void PlayingState::render()
           } else if (sprite.spriteId == ecs::SpriteId::WALKER_PROJECTILE) {
             // Walker Projectile: single row spritesheet
             srcX = sprite.currentFrame * frameWidth;
+            srcY = 0;
+          } else if (sprite.spriteId == ecs::SpriteId::ENEMY_ROBOT) {
+            // Robot: single row spritesheet with 6 frames
+            srcX = sprite.currentFrame * frameWidth;
+            srcY = 0;
+          } else if (sprite.spriteId == ecs::SpriteId::ROBOT_PROJECTILE) {
+            // Robot Projectile: single frame
+            srcX = 0;
             srcY = 0;
           } else {
             // Single row spritesheets (ENEMY_SHIP, PLAYER_SHIP, PROJECTILE)
@@ -350,6 +366,12 @@ void PlayingState::render()
         color = COLOR_ENEMY_RED;
         break;
       case ecs::SpriteId::WALKER_PROJECTILE:
+        color = COLOR_PROJECTILE_YELLOW;
+        break;
+      case ecs::SpriteId::ENEMY_ROBOT:
+        color = COLOR_ENEMY_YELLOW;
+        break;
+      case ecs::SpriteId::ROBOT_PROJECTILE:
         color = COLOR_PROJECTILE_YELLOW;
         break;
       case ecs::SpriteId::PROJECTILE:
@@ -886,7 +908,31 @@ void PlayingState::loadSpriteTextures()
     std::cerr << "[PlayingState] ✗ Failed to load walk_projectile.png: " << e.what() << '\n';
   }
 
-  constexpr int EXPECTED_TEXTURE_COUNT = 8;
+  // ENEMY_ROBOT = 9 (animated spritesheet: 200x34, 6 frames in single row)
+  try {
+    void *enemy_robot_tex = renderer->loadTexture(resolveAssetPath("client/assets/sprites/enemy_robot.gif"));
+    if (enemy_robot_tex != nullptr) {
+      m_spriteTextures[ecs::SpriteId::ENEMY_ROBOT] = enemy_robot_tex;
+      std::cout << "[PlayingState] ✓ Loaded enemy_robot.gif" << '\n';
+    } else {
+      std::cerr << "[PlayingState] ✗ Failed to load enemy_robot.gif (returned null)" << '\n';
+    }
+  } catch (const std::exception &e) {
+    std::cerr << "[PlayingState] ✗ Failed to load enemy_robot.gif: " << e.what() << '\n';
+  }
+  // ROBOT_PROJECTILE = 10 (single frame: 101x114)
+  try {
+    void *robot_projectile_tex = renderer->loadTexture(resolveAssetPath("client/assets/sprites/robot_projectile.png"));
+    if (robot_projectile_tex != nullptr) {
+      m_spriteTextures[ecs::SpriteId::ROBOT_PROJECTILE] = robot_projectile_tex;
+      std::cout << "[PlayingState] ✓ Loaded robot_projectile.png" << '\n';
+    } else {
+      std::cerr << "[PlayingState] ✗ Failed to load robot_projectile.png (returned null)" << '\n';
+    }
+  } catch (const std::exception &e) {
+    std::cerr << "[PlayingState] ✗ Failed to load robot_projectile.png: " << e.what() << '\n';
+  }
+  constexpr int EXPECTED_TEXTURE_COUNT = 10;
   std::cout << "[PlayingState] Successfully loaded " << m_spriteTextures.size() << " / " << EXPECTED_TEXTURE_COUNT
             << " sprite textures" << '\n';
   if (m_spriteTextures.size() < EXPECTED_TEXTURE_COUNT) {
