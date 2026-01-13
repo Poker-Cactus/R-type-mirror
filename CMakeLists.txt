@@ -46,6 +46,12 @@ add_subdirectory(network)
 add_subdirectory(server)
 add_subdirectory(client)
 
+# Asset Editor (optional tool)
+option(BUILD_ASSET_EDITOR "Build the Asset Editor tool" OFF)
+if(BUILD_ASSET_EDITOR)
+    add_subdirectory(assetEditor)
+endif()
+
 
 
 find_program(CLANG_TIDY_EXE NAMES clang-tidy)
