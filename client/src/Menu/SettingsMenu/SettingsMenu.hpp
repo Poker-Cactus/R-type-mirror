@@ -34,7 +34,7 @@ class SettingsMenu
 {
 public:
   SettingsMenu() = default;
-  ~SettingsMenu() {};
+  ~SettingsMenu(){};
   void init(IRenderer *renderer, Settings &settings);
   void render(int winWidth, int winHeight, IRenderer *renderer);
   void process(IRenderer *renderer);
