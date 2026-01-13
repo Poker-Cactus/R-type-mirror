@@ -1,0 +1,21 @@
+{
+  "audio": {
+    "masterVolume": 100,
+    "musicVolume": 100,
+    "sfxVolume": 100
+  },
+  "controls": {
+    "chargedShoot": 24,
+    "down": 11,
+    "left": 12,
+    "right": 13,
+    "shoot": 5,
+    "up": 10
+  },
+  "graphics": {
+    "fullScreen": true
+  },
+  "profile": {
+    "username": "Player"
+  }
+}

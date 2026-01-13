@@ -104,9 +104,9 @@ private:
       // Only A has health - projectile B hitting entity A
       applyDamage(world, entityA, entityB, damageFromProjectile);
 
-      // Check if projectile B is immortal before destroying
-      if (!world.hasComponent<ecs::Immortal>(entityB) || !world.getComponent<ecs::Immortal>(entityB).isImmortal) {
-        world.destroyEntity(entityB); // Destroy projectile only if not immortal
+      // Check if projectile B is immortal - if so, don't destroy it
+      if (world.hasComponent<ecs::Immortal>(entityB) && world.getComponent<ecs::Immortal>(entityB).isImmortal) {
+        return; // Don't destroy immortal projectiles
       }
 
       // Check if projectile should be destroyed: don't destroy enemy projectiles hitting enemies
@@ -128,9 +128,9 @@ private:
       // Only B has health - projectile A hitting entity B
       applyDamage(world, entityB, entityA, damageFromProjectile);
 
-      // Check if projectile A is immortal before destroying
-      if (!world.hasComponent<ecs::Immortal>(entityA) || !world.getComponent<ecs::Immortal>(entityA).isImmortal) {
-        world.destroyEntity(entityA); // Destroy projectile only if not immortal
+      // Check if projectile A is immortal - if so, don't destroy it
+      if (world.hasComponent<ecs::Immortal>(entityA) && world.getComponent<ecs::Immortal>(entityA).isImmortal) {
+        return; // Don't destroy immortal projectiles
       }
 
       // Check if projectile should be destroyed: don't destroy enemy projectiles hitting enemies
