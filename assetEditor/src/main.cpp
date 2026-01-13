@@ -19,6 +19,174 @@ using json = nlohmann::json;
 namespace fs = std::filesystem;
 
 // ─────────────────────────────────────────────────────────────────────────────
+// macOS Style Theme
+// ─────────────────────────────────────────────────────────────────────────────
+void ApplyMacOSStyle() {
+    ImGuiStyle& style = ImGui::GetStyle();
+    
+    // macOS-like rounded corners
+    style.WindowRounding = 10.0f;
+    style.ChildRounding = 8.0f;
+    style.FrameRounding = 6.0f;
+    style.PopupRounding = 8.0f;
+    style.ScrollbarRounding = 6.0f;
+    style.GrabRounding = 6.0f;
+    style.TabRounding = 6.0f;
+    
+    // Padding and spacing
+    style.WindowPadding = ImVec2(12, 12);
+    style.FramePadding = ImVec2(8, 5);
+    style.ItemSpacing = ImVec2(8, 6);
+    style.ItemInnerSpacing = ImVec2(6, 4);
+    style.IndentSpacing = 20.0f;
+    style.ScrollbarSize = 12.0f;
+    style.GrabMinSize = 10.0f;
+    
+    // Borders
+    style.WindowBorderSize = 1.0f;
+    style.ChildBorderSize = 1.0f;
+    style.FrameBorderSize = 1.0f;
+    style.PopupBorderSize = 1.0f;
+    
+    // ─────────────────────────────────────────────────────────────────────────
+    // macOS Dark Theme Colors
+    // ─────────────────────────────────────────────────────────────────────────
+    ImVec4* colors = style.Colors;
+    
+    // macOS system colors (dark mode)
+    // Blue:   #0A84FF (10, 132, 255)
+    // Green:  #30D158 (48, 209, 88)
+    // Orange: #FF9F0A (255, 159, 10)
+    // Red:    #FF453A (255, 69, 58)
+    // Yellow: #FFD60A (255, 214, 10)
+    
+    const ImVec4 macBlue      = ImVec4(0.04f, 0.52f, 1.00f, 1.00f);
+    const ImVec4 macGreen     = ImVec4(0.19f, 0.82f, 0.35f, 1.00f);
+    const ImVec4 macOrange    = ImVec4(1.00f, 0.62f, 0.04f, 1.00f);
+    const ImVec4 macRed       = ImVec4(1.00f, 0.27f, 0.23f, 1.00f);
+    const ImVec4 macYellow    = ImVec4(1.00f, 0.84f, 0.04f, 1.00f);
+    
+    // Window backgrounds - macOS dark gray tones
+    colors[ImGuiCol_WindowBg] = ImVec4(0.16f, 0.16f, 0.18f, 1.00f);       // #292930
+    colors[ImGuiCol_ChildBg] = ImVec4(0.13f, 0.13f, 0.15f, 1.00f);        // #212126
+    colors[ImGuiCol_PopupBg] = ImVec4(0.18f, 0.18f, 0.20f, 0.98f);        // #2E2E33
+    
+    // Borders - subtle dark borders
+    colors[ImGuiCol_Border] = ImVec4(0.28f, 0.28f, 0.30f, 1.00f);
+    colors[ImGuiCol_BorderShadow] = ImVec4(0.00f, 0.00f, 0.00f, 0.00f);
+    
+    // Frame (inputs, checkboxes) - slightly lighter than background
+    colors[ImGuiCol_FrameBg] = ImVec4(0.20f, 0.20f, 0.22f, 1.00f);
+    colors[ImGuiCol_FrameBgHovered] = ImVec4(0.24f, 0.24f, 0.26f, 1.00f);
+    colors[ImGuiCol_FrameBgActive] = ImVec4(0.28f, 0.28f, 0.30f, 1.00f);
+    
+    // Title bar
+    colors[ImGuiCol_TitleBg] = ImVec4(0.12f, 0.12f, 0.14f, 1.00f);
+    colors[ImGuiCol_TitleBgActive] = ImVec4(0.14f, 0.14f, 0.16f, 1.00f);
+    colors[ImGuiCol_TitleBgCollapsed] = ImVec4(0.12f, 0.12f, 0.14f, 1.00f);
+    
+    // Menu bar
+    colors[ImGuiCol_MenuBarBg] = ImVec4(0.14f, 0.14f, 0.16f, 1.00f);
+    
+    // Scrollbar
+    colors[ImGuiCol_ScrollbarBg] = ImVec4(0.12f, 0.12f, 0.14f, 1.00f);
+    colors[ImGuiCol_ScrollbarGrab] = ImVec4(0.35f, 0.35f, 0.38f, 1.00f);
+    colors[ImGuiCol_ScrollbarGrabHovered] = ImVec4(0.45f, 0.45f, 0.48f, 1.00f);
+    colors[ImGuiCol_ScrollbarGrabActive] = ImVec4(0.55f, 0.55f, 0.58f, 1.00f);
+    
+    // Checkmark - macOS Green
+    colors[ImGuiCol_CheckMark] = macGreen;
+    
+    // Slider - macOS Blue
+    colors[ImGuiCol_SliderGrab] = macBlue;
+    colors[ImGuiCol_SliderGrabActive] = ImVec4(0.08f, 0.58f, 1.00f, 1.00f);
+    
+    // Button - macOS Blue accent
+    colors[ImGuiCol_Button] = ImVec4(0.04f, 0.52f, 1.00f, 0.80f);
+    colors[ImGuiCol_ButtonHovered] = macBlue;
+    colors[ImGuiCol_ButtonActive] = ImVec4(0.02f, 0.42f, 0.90f, 1.00f);
+    
+    // Header (collapsing headers) - subtle blue tint
+    colors[ImGuiCol_Header] = ImVec4(0.22f, 0.22f, 0.26f, 1.00f);
+    colors[ImGuiCol_HeaderHovered] = ImVec4(0.04f, 0.52f, 1.00f, 0.40f);
+    colors[ImGuiCol_HeaderActive] = ImVec4(0.04f, 0.52f, 1.00f, 0.60f);
+    
+    // Separator
+    colors[ImGuiCol_Separator] = ImVec4(0.28f, 0.28f, 0.30f, 1.00f);
+    colors[ImGuiCol_SeparatorHovered] = macOrange;
+    colors[ImGuiCol_SeparatorActive] = macOrange;
+    
+    // Resize grip - macOS Orange
+    colors[ImGuiCol_ResizeGrip] = ImVec4(0.35f, 0.35f, 0.38f, 0.50f);
+    colors[ImGuiCol_ResizeGripHovered] = macOrange;
+    colors[ImGuiCol_ResizeGripActive] = macOrange;
+    
+    // Tab
+    colors[ImGuiCol_Tab] = ImVec4(0.18f, 0.18f, 0.20f, 1.00f);
+    colors[ImGuiCol_TabHovered] = macBlue;
+    colors[ImGuiCol_TabActive] = ImVec4(0.24f, 0.24f, 0.28f, 1.00f);
+    colors[ImGuiCol_TabUnfocused] = ImVec4(0.14f, 0.14f, 0.16f, 1.00f);
+    colors[ImGuiCol_TabUnfocusedActive] = ImVec4(0.20f, 0.20f, 0.22f, 1.00f);
+    
+    // Text - light gray for readability
+    colors[ImGuiCol_Text] = ImVec4(0.95f, 0.95f, 0.97f, 1.00f);
+    colors[ImGuiCol_TextDisabled] = ImVec4(0.50f, 0.50f, 0.52f, 1.00f);
+    colors[ImGuiCol_TextSelectedBg] = ImVec4(0.04f, 0.52f, 1.00f, 0.40f);
+    
+    // Nav
+    colors[ImGuiCol_NavHighlight] = macBlue;
+    
+    // Plot - use macOS colors
+    colors[ImGuiCol_PlotLines] = macGreen;
+    colors[ImGuiCol_PlotLinesHovered] = macOrange;
+    colors[ImGuiCol_PlotHistogram] = macOrange;
+    colors[ImGuiCol_PlotHistogramHovered] = macYellow;
+    
+    // Table
+    colors[ImGuiCol_TableHeaderBg] = ImVec4(0.18f, 0.18f, 0.20f, 1.00f);
+    colors[ImGuiCol_TableBorderStrong] = ImVec4(0.28f, 0.28f, 0.30f, 1.00f);
+    colors[ImGuiCol_TableBorderLight] = ImVec4(0.22f, 0.22f, 0.24f, 1.00f);
+    colors[ImGuiCol_TableRowBg] = ImVec4(0.00f, 0.00f, 0.00f, 0.00f);
+    colors[ImGuiCol_TableRowBgAlt] = ImVec4(0.14f, 0.14f, 0.16f, 1.00f);
+    
+    // Drag/Drop target - macOS Yellow highlight
+    colors[ImGuiCol_DragDropTarget] = macYellow;
+}
+
+void LoadMacOSFont(ImGuiIO& io) {
+    // Try to load San Francisco (macOS system font)
+    // Paths to try in order of preference
+    const std::vector<std::string> fontPaths = {
+        "/System/Library/Fonts/SFNS.ttf",                           // San Francisco NS
+        "/System/Library/Fonts/SFNSText.ttf",                       // San Francisco Text
+        "/Library/Fonts/SF-Pro-Text-Regular.otf",                   // SF Pro (if installed)
+        "/System/Library/Fonts/Helvetica.ttc",                      // Helvetica (fallback)
+        "/System/Library/Fonts/HelveticaNeue.ttc",                  // Helvetica Neue
+        "/System/Library/Fonts/Supplemental/Arial.ttf",             // Arial (universal fallback)
+    };
+    
+    bool fontLoaded = false;
+    for (const auto& path : fontPaths) {
+        if (fs::exists(path)) {
+            ImFont* font = io.Fonts->AddFontFromFileTTF(path.c_str(), 15.0f);
+            if (font) {
+                fontLoaded = true;
+                std::cout << "Loaded font: " << path << std::endl;
+                break;
+            }
+        }
+    }
+    
+    if (!fontLoaded) {
+        // Use default font with better size
+        ImFontConfig config;
+        config.SizePixels = 15.0f;
+        io.Fonts->AddFontDefault(&config);
+        std::cout << "Using default ImGui font" << std::endl;
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Global State
 // ─────────────────────────────────────────────────────────────────────────────
 struct EditorState {
@@ -429,8 +597,11 @@ int main(int argc, char* argv[]) {
     ImGuiIO& io = ImGui::GetIO();
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
     
-    // Standard ImGui style (no fancy theming)
-    ImGui::StyleColorsDark();
+    // Load macOS font (San Francisco or fallback)
+    LoadMacOSFont(io);
+    
+    // Apply macOS-like visual style
+    ApplyMacOSStyle();
     
     // Setup Platform/Renderer backends
     ImGui_ImplSDL2_InitForSDLRenderer(window, renderer);
@@ -492,7 +663,8 @@ int main(int argc, char* argv[]) {
         
         // Render
         ImGui::Render();
-        SDL_SetRenderDrawColor(renderer, 30, 30, 30, 255);
+        // macOS dark mode background (#292930)
+        SDL_SetRenderDrawColor(renderer, 41, 41, 48, 255);
         SDL_RenderClear(renderer);
         ImGui_ImplSDLRenderer2_RenderDrawData(ImGui::GetDrawData());
         SDL_RenderPresent(renderer);
