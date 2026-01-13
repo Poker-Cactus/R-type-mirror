@@ -11,7 +11,7 @@ namespace ecs
 {
 
 struct Immortal {
-    bool isImmortal = true;
+  bool isImmortal = true;
 };
 
 } // namespace ecs

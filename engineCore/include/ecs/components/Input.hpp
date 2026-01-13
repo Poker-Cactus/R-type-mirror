@@ -22,7 +22,8 @@ struct Input : public IComponent {
 
   [[nodiscard]] nlohmann::json toJson() const override
   {
-    return {{"up", up}, {"down", down}, {"left", left}, {"right", right}, {"shoot", shoot}, {"chargedShoot", chargedShoot}};
+    return {{"up", up},       {"down", down},   {"left", left},
+            {"right", right}, {"shoot", shoot}, {"chargedShoot", chargedShoot}};
   }
 };
 } // namespace ecs
