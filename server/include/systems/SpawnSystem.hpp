@@ -16,6 +16,7 @@
 #include "../../../engineCore/include/ecs/components/Collider.hpp"
 #include "../../../engineCore/include/ecs/components/GunOffset.hpp"
 #include "../../../engineCore/include/ecs/components/Health.hpp"
+#include "../../../engineCore/include/ecs/components/Immortal.hpp"
 #include "../../../engineCore/include/ecs/components/Networked.hpp"
 #include "../../../engineCore/include/ecs/components/Owner.hpp"
 #include "../../../engineCore/include/ecs/components/Pattern.hpp"
@@ -409,11 +410,20 @@ private:
   static constexpr float PROJECTILE_VELOCITY_MULTIPLIER = 2400.0F;
   static constexpr float DIRECTION_THRESHOLD = 0.01F;
 
-  static constexpr float CHARGED_PROJECTILE_COLLIDER_SIZE = 16.0F;
+  // Charged projectile configuration
+  static constexpr float CHARGED_PROJECTILE_COLLIDER_SIZE = 20.0F;
   static constexpr unsigned int CHARGED_PROJECTILE_SPRITE_WIDTH = 165;
   static constexpr unsigned int CHARGED_PROJECTILE_SPRITE_HEIGHT = 16;
   static constexpr float CHARGED_PROJECTILE_VELOCITY = 2400.0F;
   static constexpr float CHARGED_PROJECTILE_SCALE = 3.0F;
+
+  // loading shot configuration
+  static constexpr float LOADING_SHOT_COLLIDER_SIZE = 12.0F;
+  static constexpr unsigned int LOADING_SHOT_SPRITE_WIDTH = 255 / 8;
+  static constexpr unsigned int LOADING_SHOT_SPRITE_HEIGHT = 29;
+  static constexpr float LOADING_SHOT_VELOCITY = 0.0F;
+  static constexpr float LOADING_SHOT_SCALE = 2.5F;
+  static constexpr float LOADING_SHOT_FRAME_TIME = 0.12F; // plus rapide (≈1s pour 8 frames)
 
   /**
    * @brief Spawn a group of enemies from configuration
@@ -575,6 +585,9 @@ private:
     case ecs::SpawnEntityEvent::EntityType::CHARGED_PROJECTILE:
       spawnChargedProjectile(world, event.x, event.y, event.spawner);
       break;
+    case ecs::SpawnEntityEvent::EntityType::LOADING_SHOT:
+      spawnLoadingShot(world, event.x, event.y, event.spawner);
+      break;
     case ecs::SpawnEntityEvent::EntityType::POWERUP:
       spawnPowerup(world, event.x, event.y);
       break;
@@ -696,6 +709,54 @@ private:
     ecs::Owner ownerComp;
     ownerComp.ownerId = owner;
     world.addComponent(projectile, ownerComp);
+
+    ecs::Immortal immortalComponent;
+    immortalComponent.isImmortal = true;
+    world.addComponent(projectile, immortalComponent);
+  }
+
+  static void spawnLoadingShot(ecs::World &world, float posX, float posY, ecs::Entity owner)
+  {
+    ecs::Entity loadingShot = world.createEntity();
+
+    // Transform component
+    ecs::Transform transform;
+    transform.x = posX;
+    transform.y = posY;
+    transform.rotation = 0.0F;
+    transform.scale = LOADING_SHOT_SCALE;
+    world.addComponent(loadingShot, transform);
+
+    // Velocity = 0 (l'animation suivra le joueur)
+    ecs::Velocity velocity;
+    velocity.dx = 0.0F;
+    velocity.dy = 0.0F;
+    world.addComponent(loadingShot, velocity);
+
+    // Sprite avec animation de chargement
+    ecs::Sprite sprite;
+    sprite.spriteId = ecs::SpriteId::LOADING_SHOT;
+    sprite.width = LOADING_SHOT_SPRITE_WIDTH;
+    sprite.height = LOADING_SHOT_SPRITE_HEIGHT;
+    sprite.animated = true;
+    sprite.frameCount = 8;
+    sprite.loop = true;
+    sprite.startFrame = 0;
+    sprite.endFrame = 7;
+    sprite.frameTime = LOADING_SHOT_FRAME_TIME; // Animation rapide
+    world.addComponent(loadingShot, sprite);
+
+    // Networked component pour la réplication
+    ecs::Networked net;
+    net.networkId = loadingShot;
+    world.addComponent(loadingShot, net);
+
+    // Owner component pour lier au joueur
+    ecs::Owner ownerComp;
+    ownerComp.ownerId = owner;
+    world.addComponent(loadingShot, ownerComp);
+
+    std::cout << "[SpawnSystem] Spawned loading shot " << loadingShot << " for entity " << owner << std::endl;
   }
 
   static void spawnPowerup(ecs::World &world, float posX, float posY)

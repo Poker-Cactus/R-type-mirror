@@ -11,11 +11,15 @@
 #include "../../../engineCore/include/ecs/Entity.hpp"
 #include "../../../engineCore/include/ecs/ISystem.hpp"
 #include "../../../engineCore/include/ecs/World.hpp"
+#include "../../../engineCore/include/ecs/components/Charging.hpp"
 #include "../../../engineCore/include/ecs/components/Input.hpp"
+#include "../../../engineCore/include/ecs/components/Owner.hpp"
+#include "../../../engineCore/include/ecs/components/Sprite.hpp"
 #include "../../../engineCore/include/ecs/components/Transform.hpp"
 #include "../../../engineCore/include/ecs/events/EventListenerHandle.hpp"
 #include "../../../engineCore/include/ecs/events/GameEvents.hpp"
 #include "ecs/ComponentSignature.hpp"
+#include <iostream>
 #include <unordered_map>
 #include <vector>
 
@@ -50,20 +54,81 @@ public:
         m_lastShootTime[entity] = m_currentTime;
       }
 
-      // Tir chargé - utiliser le même système d'événements
+      // Gestion du tir chargé avec animation automatique
       const bool wasChargedShooting =
         m_prevChargedShootState.contains(entity) ? m_prevChargedShootState[entity] : false;
       const bool justChargedPressed = input.chargedShoot && !wasChargedShooting;
 
-      if (justChargedPressed && canChargedShoot(entity)) { // Utiliser canChargedShoot au lieu de canShoot
-        const auto &transform = world.getComponent<ecs::Transform>(entity);
+      // Add Charging component if entity doesn't have one
+      if (!world.hasComponent<ecs::Charging>(entity)) {
+        world.addComponent(entity, ecs::Charging{});
+      }
+      auto &charging = world.getComponent<ecs::Charging>(entity);
 
-        // Émettre un événement de spawn pour un projectile chargé
-        ecs::SpawnEntityEvent spawnEvent(ecs::SpawnEntityEvent::EntityType::CHARGED_PROJECTILE, // Nouveau type
-                                         transform.x + 105.0F, transform.y + 25.0F, entity);
-        world.emitEvent(spawnEvent);
+      // Start charging when key is pressed (one-shot trigger)
+      if (justChargedPressed && canChargedShoot(entity) && !charging.isCharging) {
+        constexpr float LOADING_OFFSET_X = 130.0F;
+        constexpr float LOADING_OFFSET_Y = 0.0F;
+        float transformX = world.getComponent<ecs::Transform>(entity).x + LOADING_OFFSET_X;
+        float transformY = world.getComponent<ecs::Transform>(entity).y + LOADING_OFFSET_Y;
 
-        m_lastChargedShootTime[entity] = m_currentTime;
+        // Spawn loading shot animation
+        ecs::SpawnEntityEvent loadingEvent(ecs::SpawnEntityEvent::EntityType::LOADING_SHOT, transformX, transformY,
+                                           entity);
+        world.emitEvent(loadingEvent);
+
+        // Find the loading shot entity
+        ecs::Entity loadingShotEntity = 0;
+        ecs::ComponentSignature ownerSig;
+        ownerSig.set(ecs::getComponentId<ecs::Owner>());
+        ownerSig.set(ecs::getComponentId<ecs::Sprite>());
+        std::vector<ecs::Entity> ownedEntities;
+        world.getEntitiesWithSignature(ownerSig, ownedEntities);
+
+        for (auto owned : ownedEntities) {
+          const auto &owner = world.getComponent<ecs::Owner>(owned);
+          const auto &sprite = world.getComponent<ecs::Sprite>(owned);
+          if (owner.ownerId == entity && sprite.spriteId == ecs::SpriteId::LOADING_SHOT) {
+            loadingShotEntity = owned;
+            break;
+          }
+        }
+
+        // Store charging state in component
+        charging.isCharging = true;
+        charging.chargeTime = 0.0F;
+        charging.maxChargeTime = 1.2F;
+        charging.loadingShotEntity = loadingShotEntity;
+
+        std::cout << "[ShootingSystem] Started charging for entity " << entity
+                  << " (loading shot: " << loadingShotEntity << ")" << std::endl;
+      }
+
+      // Update charge time automatically (no need to hold the key)
+      if (charging.isCharging) {
+        charging.chargeTime += deltaTime;
+
+        // Auto-fire when charge is complete
+        if (charging.chargeTime >= charging.maxChargeTime) {
+          constexpr float CHARGED_OFFSET_X = 105.0F;
+          constexpr float CHARGED_OFFSET_Y = 25.0F;
+
+          // Ne plus réutiliser la position du LOADING_SHOT
+          float spawnX = world.getComponent<ecs::Transform>(entity).x + CHARGED_OFFSET_X;
+          float spawnY = world.getComponent<ecs::Transform>(entity).y + CHARGED_OFFSET_Y;
+
+          ecs::SpawnEntityEvent spawnEvent(ecs::SpawnEntityEvent::EntityType::CHARGED_PROJECTILE, spawnX, spawnY,
+                                           entity);
+          world.emitEvent(spawnEvent);
+
+          if (charging.loadingShotEntity != 0 && world.isAlive(charging.loadingShotEntity)) {
+            world.destroyEntity(charging.loadingShotEntity);
+          }
+          m_lastChargedShootTime[entity] = m_currentTime;
+          charging.isCharging = false;
+          charging.chargeTime = 0.0F;
+          charging.loadingShotEntity = 0;
+        }
       }
 
       m_prevShootState[entity] = input.shoot;
@@ -94,9 +159,10 @@ private:
   std::unordered_map<ecs::Entity, float> m_lastChargedShootTime;
   std::unordered_map<ecs::Entity, bool> m_prevShootState;
   std::unordered_map<ecs::Entity, bool> m_prevChargedShootState;
+
   float m_currentTime = 0.0F;
   const float SHOOT_COOLDOWN = 0.05F; // 5 shots per second
-  const float CHARGED_SHOOT_COOLDOWN = 2.0F; // 3 charged shot per second
+  const float CHARGED_SHOOT_COOLDOWN = 2.0F; // Cooldown between charged shots
 
   bool canShoot(ecs::Entity entity)
   {
@@ -131,50 +197,6 @@ private:
     ecs::SpawnEntityEvent spawnEvent(ecs::SpawnEntityEvent::EntityType::PROJECTILE, transform.x + offsetX,
                                      transform.y + offsetY, event.shooter);
     world.emitEvent(spawnEvent);
-  }
-
-  static void spawnChargedProjectile(ecs::World &world, ecs::Entity shooter)
-  {
-    if (!world.isAlive(shooter)) {
-      return;
-    }
-
-    const auto &transform = world.getComponent<ecs::Transform>(shooter);
-
-    const float offsetX = 105.0F;
-    const float offsetY = 25.0F;
-
-    ecs::Entity projectile = world.createEntity();
-
-    ecs::Transform projTransform;
-    projTransform.x = transform.x + offsetX;
-    projTransform.y = transform.y + offsetY;
-    projTransform.scale = 2.0F;
-    world.addComponent(projectile, projTransform);
-
-    ecs::Velocity velocity;
-    velocity.dx = 800.0F;
-    velocity.dy = 0.0F;
-    world.addComponent(projectile, velocity);
-
-    // Collider plus grand
-    world.addComponent(projectile, ecs::Collider{16.0F, 16.0F});
-
-    // Sprite du projectile chargé
-    // ecs::Sprite sprite;
-    // sprite.spriteId = ecs::SpriteId::CHARGED_PROJECTILE; // Utiliser le nouveau sprite
-    // sprite.width = 100;
-    // sprite.height = 50;
-    // sprite.animated = false;
-    // world.addComponent(projectile, sprite);
-
-    // ecs::Networked net;
-    // net.networkId = projectile;
-    // world.addComponent(projectile, net);
-
-    // ecs::Owner ownerComp;
-    // ownerComp.ownerId = shooter;
-    // world.addComponent(projectile, ownerComp);
   }
 };
 

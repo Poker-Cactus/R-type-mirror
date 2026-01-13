@@ -157,6 +157,9 @@ void PlayingState::render()
         } else if (sprite.spriteId == ecs::SpriteId::CHARGED_PROJECTILE) {
           frameWidth = 165 / 2; // 82px per frame
           frameHeight = 16;
+        } else if (sprite.spriteId == ecs::SpriteId::LOADING_SHOT) {
+          frameWidth = 255 / 8; // 85px per frame
+          frameHeight = 29;
         }
 
         if (frameWidth > 0 && frameHeight > 0) {
@@ -727,6 +730,19 @@ void PlayingState::loadSpriteTextures()
     }
   } catch (const std::exception &e) {
     std::cerr << "[PlayingState] ✗ Failed to load charged_projectile.png: " << e.what() << '\n';
+  }
+
+  // LOAD_CHARGED_SHOT = 8
+  try {
+    void *charged_projectile_tex = renderer->loadTexture("client/assets/sprites/loadChargedShot.png");
+    if (charged_projectile_tex != nullptr) {
+      m_spriteTextures[ecs::SpriteId::LOADING_SHOT] = charged_projectile_tex;
+      std::cout << "[PlayingState] ✓ Loaded loadChargedShot.png" << '\n';
+    } else {
+      std::cerr << "[PlayingState] ✗ Failed to load loadChargedShot.png (returned null)" << '\n';
+    }
+  } catch (const std::exception &e) {
+    std::cerr << "[PlayingState] ✗ Failed to load loadChargedShot.png: " << e.what() << '\n';
   }
 }
 

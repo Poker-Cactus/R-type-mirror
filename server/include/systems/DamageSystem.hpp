@@ -17,6 +17,7 @@
 #include "../../../engineCore/include/ecs/components/Velocity.hpp"
 #include "../../../engineCore/include/ecs/events/EventListenerHandle.hpp"
 #include "../../../engineCore/include/ecs/events/GameEvents.hpp"
+#include "../../../engineCore/include/ecs/components/Immortal.hpp"
 #include "ecs/ComponentSignature.hpp"
 
 namespace server
@@ -97,16 +98,26 @@ private:
       }
 
       // Otherwise apply mutual damage (e.g., enemy vs player)
-      applyDamage(world, entityA, entityB, 10);
-      applyDamage(world, entityB, entityA, 10);
+      applyDamage(world, entityA, entityB, damageFromEntityCollision);
+      applyDamage(world, entityB, entityA, damageFromEntityCollision);
     } else if (aHasHealth && !bHasHealth) {
       // Only A has health - projectile B hitting entity A
       applyDamage(world, entityA, entityB, damageFromProjectile);
-      world.destroyEntity(entityB); // Destroy projectile
+      
+      // Check if projectile B is immortal before destroying
+      if (!world.hasComponent<ecs::Immortal>(entityB) || 
+          !world.getComponent<ecs::Immortal>(entityB).isImmortal) {
+        world.destroyEntity(entityB); // Destroy projectile only if not immortal
+      }
     } else if (!aHasHealth && bHasHealth) {
       // Only B has health - projectile A hitting entity B
       applyDamage(world, entityB, entityA, damageFromProjectile);
-      world.destroyEntity(entityA); // Destroy projectile
+      
+      // Check if projectile A is immortal before destroying
+      if (!world.hasComponent<ecs::Immortal>(entityA) || 
+          !world.getComponent<ecs::Immortal>(entityA).isImmortal) {
+        world.destroyEntity(entityA); // Destroy projectile only if not immortal
+      }
     }
   }
 
@@ -128,6 +139,13 @@ private:
     // Prevent friendly fire: if source is a player and target is also a player, skip
     if (realSource != 0 && world.hasComponent<ecs::Input>(realSource) && world.hasComponent<ecs::Input>(target)) {
       return;
+    }
+
+    if (world.hasComponent<ecs::Immortal>(target)) {
+      const auto &immortal = world.getComponent<ecs::Immortal>(target);
+      if (immortal.isImmortal) {
+        return; // Do not apply damage to immortal entities
+      }
     }
 
     // Emit damage event
