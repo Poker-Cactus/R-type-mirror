@@ -222,8 +222,11 @@ void Lobby::initializeSystems()
   auto *deathSystem = &m_world->registerSystem<server::DeathSystem>();
   auto *shootingSystem = &m_world->registerSystem<server::ShootingSystem>();
   auto *scoreSystem = &m_world->registerSystem<server::ScoreSystem>();
+  auto *powerupSystem = &m_world->registerSystem<server::PowerupSystem>();
 
   m_world->registerSystem<server::EnemyAISystem>();
+  m_world->registerSystem<server::FollowerSystem>();
+  m_world->registerSystem<server::RubanAnimationSystem>();
 
   auto *spawnSystem = &m_world->registerSystem<server::SpawnSystem>();
   m_world->registerSystem<server::EntityLifetimeSystem>();
@@ -241,6 +244,9 @@ void Lobby::initializeSystems()
   }
   if (scoreSystem != nullptr) {
     scoreSystem->initialize(*m_world);
+  }
+  if (powerupSystem != nullptr) {
+    powerupSystem->initialize(*m_world);
   }
   if (spawnSystem != nullptr) {
     spawnSystem->initialize(*m_world);
