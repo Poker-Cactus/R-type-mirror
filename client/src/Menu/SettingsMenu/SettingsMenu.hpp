@@ -124,4 +124,7 @@ private:
   void renderRow(const Component &rowRect, const SettingItem &item, bool selected);
   void renderCategoryTab(const Component &tab, bool isActive);
   bool keyAlreadyInUse(int key);
+  void *clickedSound;
+  void *hoverSound;
+  void *errorSound;
 };

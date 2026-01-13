@@ -75,6 +75,36 @@ public:
   virtual std::shared_ptr<IPacketHandler> getPacketHandler() const = 0;
 
   virtual std::unordered_map<std::uint32_t, asio::ip::udp::endpoint> getClients() const = 0;
+
+  /**
+   * @brief Get current network latency in milliseconds
+   * @return Latency in ms, or -1 if not available
+   */
+  virtual float getLatency() const = 0;
+
+  /**
+   * @brief Check if client is connected to server
+   * @return true if connected
+   */
+  virtual bool isConnected() const = 0;
+
+  /**
+   * @brief Get packets per second (received)
+   * @return Packets per second
+   */
+  virtual int getPacketsPerSecond() const = 0;
+
+  /**
+   * @brief Get upload bandwidth in bytes per second
+   * @return Upload bytes per second
+   */
+  virtual int getUploadBytesPerSecond() const = 0;
+
+  /**
+   * @brief Get download bandwidth in bytes per second
+   * @return Download bytes per second
+   */
+  virtual int getDownloadBytesPerSecond() const = 0;
 };
 
 #endif // I_NETWORK_MANAGER_HPP_

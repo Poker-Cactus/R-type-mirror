@@ -12,12 +12,12 @@
 #include "../../../engineCore/include/ecs/ISystem.hpp"
 #include "../../../engineCore/include/ecs/World.hpp"
 #include "../../../engineCore/include/ecs/components/Health.hpp"
+#include "../../../engineCore/include/ecs/components/Immortal.hpp"
 #include "../../../engineCore/include/ecs/components/Input.hpp"
 #include "../../../engineCore/include/ecs/components/Owner.hpp"
 #include "../../../engineCore/include/ecs/components/Velocity.hpp"
 #include "../../../engineCore/include/ecs/events/EventListenerHandle.hpp"
 #include "../../../engineCore/include/ecs/events/GameEvents.hpp"
-#include "../../../engineCore/include/ecs/components/Immortal.hpp"
 #include "ecs/ComponentSignature.hpp"
 
 namespace server
@@ -103,20 +103,50 @@ private:
     } else if (aHasHealth && !bHasHealth) {
       // Only A has health - projectile B hitting entity A
       applyDamage(world, entityA, entityB, damageFromProjectile);
-      
+
       // Check if projectile B is immortal before destroying
-      if (!world.hasComponent<ecs::Immortal>(entityB) || 
-          !world.getComponent<ecs::Immortal>(entityB).isImmortal) {
+      if (!world.hasComponent<ecs::Immortal>(entityB) || !world.getComponent<ecs::Immortal>(entityB).isImmortal) {
         world.destroyEntity(entityB); // Destroy projectile only if not immortal
+      }
+
+      // Check if projectile should be destroyed: don't destroy enemy projectiles hitting enemies
+      bool shouldDestroyProjectile = true;
+      if (world.hasComponent<ecs::Owner>(entityB)) {
+        const auto &owner = world.getComponent<ecs::Owner>(entityB);
+        if (world.isAlive(owner.ownerId)) {
+          bool projectileOwnerIsEnemy = !world.hasComponent<ecs::Input>(owner.ownerId);
+          bool targetIsEnemy = !world.hasComponent<ecs::Input>(entityA);
+          if (projectileOwnerIsEnemy && targetIsEnemy) {
+            shouldDestroyProjectile = false; // Enemy projectile passes through enemies
+          }
+        }
+      }
+      if (shouldDestroyProjectile) {
+        world.destroyEntity(entityB); // Destroy projectile
       }
     } else if (!aHasHealth && bHasHealth) {
       // Only B has health - projectile A hitting entity B
       applyDamage(world, entityB, entityA, damageFromProjectile);
-      
+
       // Check if projectile A is immortal before destroying
-      if (!world.hasComponent<ecs::Immortal>(entityA) || 
-          !world.getComponent<ecs::Immortal>(entityA).isImmortal) {
+      if (!world.hasComponent<ecs::Immortal>(entityA) || !world.getComponent<ecs::Immortal>(entityA).isImmortal) {
         world.destroyEntity(entityA); // Destroy projectile only if not immortal
+      }
+
+      // Check if projectile should be destroyed: don't destroy enemy projectiles hitting enemies
+      bool shouldDestroyProjectile = true;
+      if (world.hasComponent<ecs::Owner>(entityA)) {
+        const auto &owner = world.getComponent<ecs::Owner>(entityA);
+        if (world.isAlive(owner.ownerId)) {
+          bool projectileOwnerIsEnemy = !world.hasComponent<ecs::Input>(owner.ownerId);
+          bool targetIsEnemy = !world.hasComponent<ecs::Input>(entityB);
+          if (projectileOwnerIsEnemy && targetIsEnemy) {
+            shouldDestroyProjectile = false; // Enemy projectile passes through enemies
+          }
+        }
+      }
+      if (shouldDestroyProjectile) {
+        world.destroyEntity(entityA); // Destroy projectile
       }
     }
   }
@@ -141,11 +171,21 @@ private:
       return;
     }
 
+    // Check immortality first
     if (world.hasComponent<ecs::Immortal>(target)) {
       const auto &immortal = world.getComponent<ecs::Immortal>(target);
       if (immortal.isImmortal) {
         return; // Do not apply damage to immortal entities
       }
+    }
+
+    // Prevent enemy friendly fire: if source is an enemy (no Input) and target is also an enemy (no Input), skip
+    bool sourceIsEnemy = realSource != 0 && world.isAlive(realSource) && world.hasComponent<ecs::Health>(realSource) &&
+      !world.hasComponent<ecs::Input>(realSource);
+    bool targetIsEnemy = !world.hasComponent<ecs::Input>(target);
+
+    if (sourceIsEnemy && targetIsEnemy) {
+      return;
     }
 
     // Emit damage event

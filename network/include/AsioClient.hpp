@@ -47,6 +47,17 @@ public:
   bool poll(NetworkPacket &msg) override;
   std::unordered_map<std::uint32_t, asio::ip::udp::endpoint> getClients() const override;
 
+  float getLatency() const override;
+  bool isConnected() const override;
+  int getPacketsPerSecond() const override;
+  int getUploadBytesPerSecond() const override;
+  int getDownloadBytesPerSecond() const override;
+
+  /**
+   * @brief Send a ping to measure latency
+   */
+  void sendPing();
+
   // Client always talks to a single server endpoint.
   [[nodiscard]] asio::ip::udp::endpoint getServerEndpoint() const { return m_serverEndpoint; }
 
@@ -60,6 +71,20 @@ private:
   asio::ip::udp::endpoint m_serverEndpoint;
   asio::executor_work_guard<asio::io_context::executor_type> m_workGuard;
   std::thread m_recvThread;
+
+  // Network stats
+  mutable float m_latency = -1.0f;
+  mutable bool m_connected = false;
+  mutable int m_packetsPerSecond = 0;
+  mutable int m_uploadBytesPerSecond = 0;
+  mutable int m_downloadBytesPerSecond = 0;
+  mutable std::chrono::steady_clock::time_point m_lastPingTime;
+  mutable std::chrono::steady_clock::time_point m_pingStartTime;
+  mutable bool m_pingPending = false;
+  mutable int m_packetCount = 0;
+  mutable int m_uploadByteCount = 0;
+  mutable int m_downloadByteCount = 0;
+  mutable std::chrono::steady_clock::time_point m_statsResetTime;
 };
 
 #endif // ASIO_CLIENT_HPP_

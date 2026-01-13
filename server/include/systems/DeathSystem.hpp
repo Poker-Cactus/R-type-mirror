@@ -115,6 +115,8 @@ private:
         } else {
           msg["score"] = 0;
         }
+        // Include game difficulty
+        msg["difficulty"] = static_cast<int>(lobby->getDifficulty());
 
         lobby->sendJsonToClient(pid.clientId, msg);
       }

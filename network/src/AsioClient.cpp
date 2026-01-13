@@ -31,7 +31,8 @@
 
 AsioClient::AsioClient(const std::string &host, const std::string &port)
     : ANetworkManager(std::make_shared<CapnpHandler>()), m_strand(asio::make_strand(m_ioContext)),
-      m_socket(m_ioContext), m_workGuard(asio::make_work_guard(m_ioContext))
+      m_socket(m_ioContext), m_workGuard(asio::make_work_guard(m_ioContext)),
+      m_statsResetTime(std::chrono::steady_clock::now())
 {
   try {
     asio::ip::udp::resolver resolver(m_ioContext);
@@ -39,8 +40,10 @@ AsioClient::AsioClient(const std::string &host, const std::string &port)
 
     m_socket.open(asio::ip::udp::v4());
     m_serverEndpoint = serverEndpoint;
+    m_connected = true; // Assume connected initially
   } catch (const std::exception &e) {
     std::cerr << "[Client] Init error: " << e.what() << std::endl;
+    m_connected = false;
   }
 }
 
@@ -66,9 +69,11 @@ void AsioClient::stop()
 
 void AsioClient::send(std::span<const std::byte> data, UNUSED const std::uint32_t &targetEndpointId)
 {
+  m_uploadByteCount += data.size();
+  m_packetCount++;
   m_socket.async_send_to(
     asio::buffer(data.data(), data.size()), m_serverEndpoint,
-    asio::bind_executor(m_strand, [this](const std::error_code &error, UNUSED std::size_t bytesTransferred) {
+    asio::bind_executor(m_strand, [](const std::error_code &error, UNUSED std::size_t bytesTransferred) {
       if (error) {
         std::cerr << "[Client] Send error: " << error.message() << std::endl;
       } else {
@@ -84,22 +89,35 @@ void AsioClient::receive()
 
   m_socket.async_receive_from(
     asio::buffer(*buffer), *senderEndpoint,
-    asio::bind_executor(m_strand,
-                        [this, buffer, senderEndpoint](const std::error_code &error, std::size_t bytesTransferred) {
-                          if (!error || error != asio::error::operation_aborted) {
-                            receive();
-                          }
-                          if (!error && bytesTransferred > 0) {
-                            try {
-                              NetworkPacket message(*buffer, 0, bytesTransferred);
-                              m_incomingMessages.push(message);
-                            } catch (const std::exception &e) {
-                              std::cerr << "[Server] Deserialization error: " << e.what() << std::endl;
-                            }
-                          } else if (error) {
-                            std::cerr << "[Server] Receive error: " << error.message() << std::endl;
-                          }
-                        }));
+    asio::bind_executor(
+      m_strand, [this, buffer, senderEndpoint](const std::error_code &error, std::size_t bytesTransferred) {
+        if (!error || error != asio::error::operation_aborted) {
+          receive();
+        }
+        if (!error && bytesTransferred > 0) {
+          // Track download stats
+          m_downloadByteCount += bytesTransferred;
+          m_packetCount++; // Assuming each receive is a packet
+
+          try {
+            NetworkPacket message(*buffer, 0, bytesTransferred);
+            m_incomingMessages.push(message);
+
+            // Check for pong response
+            auto deserialized = getPacketHandler()->deserialize(*buffer, bytesTransferred);
+            if (deserialized && *deserialized == "PONG" && m_pingPending) {
+              auto now = std::chrono::steady_clock::now();
+              m_latency = std::chrono::duration_cast<std::chrono::milliseconds>(now - m_pingStartTime).count();
+              m_pingPending = false;
+            }
+          } catch (const std::exception &e) {
+            std::cerr << "[Client] Deserialization error: " << e.what() << std::endl;
+          }
+        } else if (error) {
+          std::cerr << "[Client] Receive error: " << error.message() << std::endl;
+          m_connected = false;
+        }
+      }));
 }
 
 bool AsioClient::poll(NetworkPacket &msg)
@@ -110,4 +128,54 @@ bool AsioClient::poll(NetworkPacket &msg)
 std::unordered_map<std::uint32_t, asio::ip::udp::endpoint> AsioClient::getClients() const
 {
   return {};
+}
+
+float AsioClient::getLatency() const
+{
+  return m_latency;
+}
+
+bool AsioClient::isConnected() const
+{
+  return m_connected;
+}
+
+int AsioClient::getPacketsPerSecond() const
+{
+  auto now = std::chrono::steady_clock::now();
+  auto elapsed = std::chrono::duration_cast<std::chrono::seconds>(now - m_statsResetTime).count();
+  if (elapsed >= 1) {
+    m_packetsPerSecond = m_packetCount / elapsed;
+    m_uploadBytesPerSecond = m_uploadByteCount / elapsed;
+    m_downloadBytesPerSecond = m_downloadByteCount / elapsed;
+    m_packetCount = 0;
+    m_uploadByteCount = 0;
+    m_downloadByteCount = 0;
+    m_statsResetTime = now;
+  }
+  return m_packetsPerSecond;
+}
+
+int AsioClient::getUploadBytesPerSecond() const
+{
+  // Already updated in getPacketsPerSecond
+  getPacketsPerSecond();
+  return m_uploadBytesPerSecond;
+}
+
+int AsioClient::getDownloadBytesPerSecond() const
+{
+  // Already updated in getPacketsPerSecond
+  getPacketsPerSecond();
+  return m_downloadBytesPerSecond;
+}
+
+void AsioClient::sendPing()
+{
+  if (!m_pingPending) {
+    m_pingStartTime = std::chrono::steady_clock::now();
+    m_pingPending = true;
+    auto serialized = getPacketHandler()->serialize("PING");
+    send(std::span<const std::byte>(reinterpret_cast<const std::byte *>(serialized.data()), serialized.size()), 0);
+  }
 }

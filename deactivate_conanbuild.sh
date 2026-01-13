@@ -1,0 +1,1 @@
+. "/home/seila/R-type-mirror/deactivate_conanbuildenv-release-x86_64.sh"

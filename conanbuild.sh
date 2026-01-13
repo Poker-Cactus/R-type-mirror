@@ -1,0 +1,1 @@
+. "/home/seila/R-type-mirror/conanbuildenv-release-x86_64.sh"

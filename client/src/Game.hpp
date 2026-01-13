@@ -4,8 +4,7 @@
  */
 
 #pragma once
-#include "../../engineCore/include/ecs/Entity.hpp"
-#include "../../engineCore/include/ecs/World.hpp"
+#include "../../common/include/Highscore.hpp"
 #include "../../engineCore/include/ecs/components/Input.hpp"
 #include "../../network/include/AsioClient.hpp"
 #include "../ModuleLoader.hpp"
@@ -114,4 +113,5 @@ private:
   float m_lobbyStateTime = 0.0F;
   Settings settings;
   bool fullScreen = true;
+  HighscoreManager highscoreManager;
 };

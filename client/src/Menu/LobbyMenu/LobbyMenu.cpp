@@ -25,8 +25,9 @@ LobbyMenu::~LobbyMenu()
   cleanup();
 }
 
-void LobbyMenu::init()
+void LobbyMenu::init(Settings &settings)
 {
+  m_settings = &settings;
   try {
     constexpr int MENU_FONT_SIZE = 24;
     constexpr int TITLE_FONT_SIZE = 36;
@@ -79,6 +80,14 @@ void LobbyMenu::setNetworkManager(std::shared_ptr<INetworkManager> networkManage
 
 void LobbyMenu::render(const WindowDimensions &windowDims)
 {
+  // Update highscore refresh timer
+  float deltaTime = m_renderer->getDeltaTime();
+  m_highscoreRefreshTimer += deltaTime;
+  if (m_highscoreRefreshTimer >= HIGHSCORE_REFRESH_INTERVAL) {
+    m_highscoreRefreshTimer = 0.0F;
+    m_highscoreManager.refreshHighscores();
+  }
+
   renderBackground(windowDims);
 
   // Draw title
@@ -94,6 +103,23 @@ void LobbyMenu::render(const WindowDimensions &windowDims)
 
     m_renderer->drawText(m_titleFont, title, titleX, TITLE_Y_OFFSET, titleColor);
   }
+
+  // Draw player name
+  if (m_font != nullptr && m_settings != nullptr && !m_settings->username.empty()) {
+    const std::string playerText = "Playing as " + m_settings->username;
+    int playerWidth = 0;
+    int playerHeight = 0;
+    m_renderer->getTextSize(m_font, playerText, playerWidth, playerHeight);
+
+    const int playerX = (windowDims.width - playerWidth) / 2;
+    constexpr int PLAYER_Y_OFFSET = 130;
+    const Color playerColor = {.r = 255, .g = 255, .b = 255, .a = 255};
+
+    m_renderer->drawText(m_font, playerText, playerX, PLAYER_Y_OFFSET, playerColor);
+  }
+
+  // Draw highscores
+  renderHighscores(windowDims);
 
   if (m_isEnteringCode) {
     renderLobbyCodeInput(windowDims);
@@ -406,6 +432,68 @@ void LobbyMenu::handleTextInput()
   }
 }
 
+void LobbyMenu::renderHighscores(const WindowDimensions &windowDims)
+{
+  if (m_font == nullptr) {
+    return;
+  }
+
+  const auto &highscores = m_highscoreManager.getHighscores();
+  if (highscores.empty()) {
+    return;
+  }
+
+  // Draw "Highscores" title
+  const std::string title = "HIGHSCORES";
+  int titleWidth = 0;
+  int titleHeight = 0;
+  m_renderer->getTextSize(m_font, title, titleWidth, titleHeight);
+
+  const int titleX = (windowDims.width - titleWidth) / 2;
+  constexpr int HIGHSCORE_TITLE_Y = 170;
+  const Color titleColor = {.r = 4, .g = 196, .b = 199, .a = 255};
+  m_renderer->drawText(m_font, title, titleX, HIGHSCORE_TITLE_Y, titleColor);
+
+  // Draw top 5 highscores
+  constexpr int HIGHSCORE_START_Y = 200;
+  constexpr int HIGHSCORE_SPACING = 25;
+  const Color scoreColor = {.r = 255, .g = 255, .b = 255, .a = 255};
+
+  for (std::size_t i = 0; i < highscores.size() && i < 5; ++i) {
+    const auto &entry = highscores[i];
+    std::string difficultyStr;
+    switch (entry.difficulty) {
+    case Difficulty::EASY:
+      difficultyStr = "Easy";
+      break;
+    case Difficulty::MEDIUM:
+      difficultyStr = "Medium";
+      break;
+    case Difficulty::EXPERT:
+      difficultyStr = "Expert";
+      break;
+    }
+
+    const std::string scoreText =
+      std::to_string(i + 1) + ". " + entry.username + "  " + std::to_string(entry.score) + "  " + difficultyStr;
+
+    int scoreWidth = 0;
+    int scoreHeight = 0;
+    m_renderer->getTextSize(m_font, scoreText, scoreWidth, scoreHeight);
+
+    const int scoreX = (windowDims.width - scoreWidth) / 2;
+    const int scoreY = HIGHSCORE_START_Y + (static_cast<int>(i) * HIGHSCORE_SPACING);
+
+    m_renderer->drawText(m_font, scoreText, scoreX, scoreY, scoreColor);
+  }
+}
+
+void LobbyMenu::refreshHighscores()
+{
+  m_highscoreManager.refreshHighscores();
+  m_highscoreRefreshTimer = 0.0F; // Reset timer after manual refresh
+}
+
 void LobbyMenu::selectCurrentOption(MenuState *currentState)
 {
   switch (m_currentIndex) {
@@ -421,7 +509,12 @@ void LobbyMenu::selectCurrentOption(MenuState *currentState)
     m_lobbyCodeInput.clear();
     break;
 
-  case 2: // Back
+  case 2: // Clear Highscores
+    std::cout << "[LobbyMenu] Clearing highscores" << '\n';
+    m_highscoreManager.clearHighscores();
+    break;
+
+  case 3: // Back
     *currentState = MenuState::MAIN_MENU;
     break;
 

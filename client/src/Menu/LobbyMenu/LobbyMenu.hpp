@@ -5,7 +5,9 @@
 
 #pragma once
 #include "../../../../common/include/Common.hpp"
+#include "../../../../common/include/Highscore.hpp"
 #include "../../../../network/include/INetworkManager.hpp"
+#include "../../../include/Settings.hpp"
 #include "../../../interface/IRenderer.hpp"
 #include "../MenuState.hpp"
 #include <functional>
@@ -31,6 +33,7 @@ struct WindowDimensions {
 enum class LobbyMenuOption : std::uint8_t {
   CREATE_LOBBY, ///< Create new lobby
   JOIN_LOBBY, ///< Join existing lobby
+  CLEAR_HIGHSCORES, ///< Clear highscores
   BACK ///< Return to main menu
 };
 
@@ -49,8 +52,9 @@ public:
 
   /**
    * @brief Initialize lobby menu resources
+   * @param settings Game settings reference
    */
-  void init();
+  void init(Settings &settings);
 
   /**
    * @brief Render the lobby menu
@@ -94,6 +98,11 @@ public:
   [[nodiscard]] const std::string &getLobbyCodeToJoin() const { return m_lobbyCodeInput; }
 
   /**
+   * @brief Refresh highscores from file
+   */
+  void refreshHighscores();
+
+  /**
    * @brief Check if player is creating a new lobby
    * @return true if creating lobby
    */
@@ -107,11 +116,15 @@ private:
   void renderMenuOptions(const WindowDimensions &windowDims);
   void renderLobbyCodeInput(const WindowDimensions &windowDims);
   void renderDifficultySelection(const WindowDimensions &windowDims);
+  void renderHighscores(const WindowDimensions &windowDims);
   void handleMenuNavigation(Settings &settings);
   void handleDifficultyNavigation();
   void handleTextInput();
   void selectCurrentOption(MenuState *currentState);
   void selectDifficultyOption();
+
+  // Settings
+  Settings *m_settings = nullptr;
 
   // Assets
   void *m_font;
@@ -130,7 +143,7 @@ private:
   float m_parallaxOffsetFloor;
 
   // Menu state
-  std::vector<std::string> m_menuItems = {"Create Lobby", "Join Lobby", "Back"};
+  std::vector<std::string> m_menuItems = {"Create Lobby", "Join Lobby", "Clear Highscores", "Back"};
   std::size_t m_currentIndex;
   bool m_isEnteringCode;
   std::string m_lobbyCodeInput;
@@ -148,4 +161,9 @@ private:
 
   // Network
   std::shared_ptr<INetworkManager> m_networkManager;
+  HighscoreManager m_highscoreManager;
+
+  // Highscore refresh timer
+  float m_highscoreRefreshTimer = 0.0F;
+  static constexpr float HIGHSCORE_REFRESH_INTERVAL = 3.0F; // Refresh every 3 seconds
 };
