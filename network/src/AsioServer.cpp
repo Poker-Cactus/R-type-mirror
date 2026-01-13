@@ -90,7 +90,7 @@ void AsioServer::send(std::span<const std::byte> data, const std::uint32_t &targ
   m_socket.async_send_to(
     asio::buffer(data.data(), data.size()), targetEndpointIt->second,
     asio::bind_executor(m_strand,
-                        [this, targetEndpointId](const std::error_code &error, UNUSED std::size_t bytesTransferred) {
+                        [](const std::error_code &error, UNUSED std::size_t bytesTransferred) {
                           if (error) {
                             std::cerr << "[Server] Send error: " << error.message() << '\n';
                           } else {

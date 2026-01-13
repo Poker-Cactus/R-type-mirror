@@ -59,7 +59,13 @@ ecs::ComponentSignature NetworkReceiveSystem::getSignature() const
 void NetworkReceiveSystem::handleMessage(ecs::World &world, const std::string &message, std::uint32_t clientId)
 {
   // Ignore simple protocol-level keepalive/debug messages that are not JSON
-  if (message == "PING" || message == "PONG") {
+  if (message == "PING") {
+    // Respond with PONG
+    auto pong = m_networkManager->getPacketHandler()->serialize("PONG");
+    m_networkManager->send(std::span<const std::byte>(reinterpret_cast<const std::byte *>(pong.data()), pong.size()), clientId);
+    return;
+  }
+  if (message == "PONG") {
     return;
   }
 

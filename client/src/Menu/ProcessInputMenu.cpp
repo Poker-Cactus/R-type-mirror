@@ -11,7 +11,8 @@
 void Menu::processBack()
 {
   if (m_renderer->isKeyJustPressed(KeyCode::KEY_BACKSPACE)) {
-    if (currentState == MenuState::INTRO || currentState == MenuState::MAIN_MENU) {
+    if (currentState == MenuState::INTRO || currentState == MenuState::MAIN_MENU ||
+        (currentState == MenuState::PROFILE && isProfileEditing())) {
       return;
     }
     currentState = MenuState::MAIN_MENU;

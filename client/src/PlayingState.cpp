@@ -9,19 +9,22 @@
 #include "../../engineCore/include/ecs/components/Collider.hpp"
 #include "../../engineCore/include/ecs/components/Health.hpp"
 #include "../../engineCore/include/ecs/components/Networked.hpp"
+#include "../../engineCore/include/ecs/components/Pattern.hpp"
 #include "../../engineCore/include/ecs/components/PlayerId.hpp"
 #include "../../engineCore/include/ecs/components/Score.hpp"
 #include "../../engineCore/include/ecs/components/Sprite.hpp"
 #include "../../engineCore/include/ecs/components/Transform.hpp"
+#include "../../engineCore/include/ecs/components/Velocity.hpp"
 #include "../include/AssetPath.hpp"
 #include "../include/systems/NetworkSendSystem.hpp"
 #include "../interface/Geometry.hpp"
 #include "../interface/KeyCodes.hpp"
+#include "../../network/include/AsioClient.hpp"
 #include <iostream>
 
 PlayingState::PlayingState(std::shared_ptr<IRenderer> renderer, const std::shared_ptr<ecs::World> &world,
-                           Settings &settings)
-    : renderer(std::move(renderer)), world(world), background(nullptr), settings(settings)
+                           Settings &settings, std::shared_ptr<INetworkManager> networkManager)
+    : renderer(std::move(renderer)), world(world), background(nullptr), settings(settings), m_networkManager(networkManager)
 {
 }
 
@@ -78,6 +81,9 @@ bool PlayingState::init()
     m_hudFont = nullptr;
   }
 
+  // Initialize info mode
+  m_infoMode = std::make_unique<InfoMode>(renderer, m_hudFont);
+
   std::cout << "PlayingState: Initialized successfully" << '\n';
 
   return true;
@@ -85,6 +91,17 @@ bool PlayingState::init()
 
 void PlayingState::update(float delta_time)
 {
+  // Calculate FPS
+  m_fpsAccumulator += delta_time;
+  m_fpsFrameCount++;
+
+  // Update FPS every second
+  if (m_fpsAccumulator >= 1.0f) {
+    m_currentFps = static_cast<float>(m_fpsFrameCount) / m_fpsAccumulator;
+    m_fpsAccumulator = 0.0f;
+    m_fpsFrameCount = 0;
+  }
+
   // Mettre à jour le background
   if (background) {
     background->update(delta_time);
@@ -95,7 +112,21 @@ void PlayingState::update(float delta_time)
   updateAnimations(delta_time);
 
   // Update HUD data from world state
-  updateHUDFromWorld();
+  updateHUDFromWorld(delta_time);
+
+  // Update info mode
+  if (m_infoMode) {
+    m_infoMode->update(delta_time);
+  }
+
+  // Send ping periodically to measure latency
+  if (m_networkManager) {
+    m_pingTimer += delta_time;
+    if (m_pingTimer >= 2.0f) { // Ping every 2 seconds
+      static_cast<AsioClient*>(m_networkManager.get())->sendPing();
+      m_pingTimer = 0.0f;
+    }
+  }
 }
 
 void PlayingState::render()
@@ -408,6 +439,12 @@ void PlayingState::renderHUD()
     std::string scoreText = "Score: " + std::to_string(m_playerScore);
     renderer->drawText(m_hudFont, scoreText, HEARTS_X, HEARTS_Y + HUD_SCORE_OFFSET_Y, HUD_TEXT_WHITE);
   }
+
+  // Render info mode if active
+  if (m_infoMode) {
+    const int infoTextY = HEARTS_Y + HUD_SCORE_OFFSET_Y + 30;  // Below score
+    m_infoMode->render(HEARTS_X, infoTextY);
+  }
 }
 
 void PlayingState::updateAnimations(float deltaTime)
@@ -479,7 +516,7 @@ void PlayingState::updateAnimations(float deltaTime)
   }
 }
 
-void PlayingState::updateHUDFromWorld()
+void PlayingState::updateHUDFromWorld(float deltaTime)
 {
   if (world == nullptr) {
     return;
@@ -552,6 +589,84 @@ void PlayingState::updateHUDFromWorld()
       break; // found our player
     }
   }
+
+  // Update info mode with current game data
+  if (m_infoMode) {
+    // Pass real FPS value
+    m_infoMode->setGameData(m_playerHealth, m_playerScore, m_currentFps);
+
+    // Collect real entity statistics
+    int totalEntities = 0;
+    int playerCount = 0;
+    int enemyCount = 0;
+    int projectileCount = 0;
+
+    // Count all entities with Transform component (basic entities)
+    {
+      ecs::ComponentSignature allEntitiesSig;
+      allEntitiesSig.set(ecs::getComponentId<ecs::Transform>());
+      std::vector<ecs::Entity> allEntities;
+      world->getEntitiesWithSignature(allEntitiesSig, allEntities);
+      totalEntities = static_cast<int>(allEntities.size());
+    }
+
+    // Count players (entities with PlayerId component)
+    {
+      ecs::ComponentSignature playerSig;
+      playerSig.set(ecs::getComponentId<ecs::PlayerId>());
+      std::vector<ecs::Entity> players;
+      world->getEntitiesWithSignature(playerSig, players);
+      playerCount = static_cast<int>(players.size());
+    }
+
+    // Count enemies (entities with Pattern component - they have movement patterns)
+    {
+      ecs::ComponentSignature enemySig;
+      enemySig.set(ecs::getComponentId<ecs::Pattern>());
+      enemySig.set(ecs::getComponentId<ecs::Health>()); // Enemies typically have health
+      std::vector<ecs::Entity> enemies;
+      world->getEntitiesWithSignature(enemySig, enemies);
+      enemyCount = static_cast<int>(enemies.size());
+    }
+
+    // Count projectiles (entities with Velocity but no Pattern - projectiles move linearly)
+    {
+      ecs::ComponentSignature projectileSig;
+      projectileSig.set(ecs::getComponentId<ecs::Velocity>());
+      projectileSig.set(ecs::getComponentId<ecs::Transform>());
+      // Exclude entities with Pattern (enemies) or PlayerId (players)
+      std::vector<ecs::Entity> projectiles;
+      world->getEntitiesWithSignature(projectileSig, projectiles);
+
+      // Filter out entities that have Pattern or PlayerId
+      for (auto entity : projectiles) {
+        if (!world->hasComponent<ecs::Pattern>(entity) && !world->hasComponent<ecs::PlayerId>(entity)) {
+          projectileCount++;
+        }
+      }
+    }
+
+    // Calculate game time (using a simple accumulator for now)
+    static float gameTimeAccumulator = 0.0f;
+    gameTimeAccumulator += deltaTime;
+
+    // Update game statistics in info mode
+    m_infoMode->setGameStats(totalEntities, playerCount, enemyCount, projectileCount, gameTimeAccumulator);
+
+    // Set real network data
+    if (m_networkManager) {
+      float latency = m_networkManager->getLatency();
+      bool connected = m_networkManager->isConnected();
+      int packetsPerSec = m_networkManager->getPacketsPerSecond();
+      int uploadBps = m_networkManager->getUploadBytesPerSecond();
+      int downloadBps = m_networkManager->getDownloadBytesPerSecond();
+      m_infoMode->setNetworkData(latency, connected, packetsPerSec);
+      m_infoMode->setNetworkBandwidth(uploadBps, downloadBps);
+    } else {
+      m_infoMode->setNetworkData(-1.0f, false, 0);
+      m_infoMode->setNetworkBandwidth(0, 0);
+    }
+  }
 }
 
 void PlayingState::processInput()
@@ -566,6 +681,11 @@ void PlayingState::processInput()
   } else {
     m_returnUp = false;
     m_returnDown = false;
+  }
+
+  // Handle info mode input
+  if (m_infoMode) {
+    m_infoMode->processInput();
   }
 }
 
