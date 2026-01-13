@@ -2566,31 +2566,31 @@ enum ImGuiTableFlags_ {
                                              // appear in Headers). -> May move to style
   ImGuiTableFlags_NoBordersInBodyUntilResize = 1
     << 12, // [ALPHA] Disable vertical borders in columns Body until hovered for resize (borders will always appear in
-           // Headers). -> May move to style Sizing Policy (read above for defaults)
+  // Headers). -> May move to style Sizing Policy (read above for defaults)
   ImGuiTableFlags_SizingFixedFit =
     1 << 13, // Columns default to _WidthFixed or _WidthAuto (if resizable or not resizable), matching contents width.
   ImGuiTableFlags_SizingFixedSame =
     2 << 13, // Columns default to _WidthFixed or _WidthAuto (if resizable or not resizable), matching the maximum
-             // contents width of all columns. Implicitly enable ImGuiTableFlags_NoKeepColumnsVisible.
+  // contents width of all columns. Implicitly enable ImGuiTableFlags_NoKeepColumnsVisible.
   ImGuiTableFlags_SizingStretchProp =
     3 << 13, // Columns default to _WidthStretch with default weights proportional to each columns contents widths.
   ImGuiTableFlags_SizingStretchSame = 4 << 13, // Columns default to _WidthStretch with default weights all equal,
                                                // unless overridden by TableSetupColumn(). Sizing Extra Options
   ImGuiTableFlags_NoHostExtendX =
     1 << 16, // Make outer width auto-fit to columns, overriding outer_size.x value. Only available when ScrollX/ScrollY
-             // are disabled and Stretch columns are not used.
+  // are disabled and Stretch columns are not used.
   ImGuiTableFlags_NoHostExtendY =
     1 << 17, // Make outer height stop exactly at outer_size.y (prevent auto-extending table past the limit). Only
-             // available when ScrollX/ScrollY are disabled. Data below the limit will be clipped and not visible.
+  // available when ScrollX/ScrollY are disabled. Data below the limit will be clipped and not visible.
   ImGuiTableFlags_NoKeepColumnsVisible = 1 << 18, // Disable keeping column always minimally visible when ScrollX is off
                                                   // and table gets too small. Not recommended if columns are resizable.
   ImGuiTableFlags_PreciseWidths =
     1 << 19, // Disable distributing remainder width to stretched columns (width allocation on a 100-wide table with 3
-             // columns: Without this flag: 33,33,34. With this flag: 33,33,33). With larger number of columns, resizing
-             // will appear to be less smooth. Clipping
+  // columns: Without this flag: 33,33,34. With this flag: 33,33,33). With larger number of columns, resizing
+  // will appear to be less smooth. Clipping
   ImGuiTableFlags_NoClip =
     1 << 20, // Disable clipping rectangle for every individual columns (reduce draw command count, items will be able
-             // to overflow into other columns). Generally incompatible with TableSetupScrollFreeze(). Padding
+  // to overflow into other columns). Generally incompatible with TableSetupScrollFreeze(). Padding
   ImGuiTableFlags_PadOuterX =
     1 << 21, // Default if BordersOuterV is on. Enable outermost padding. Generally desirable if you have headers.
   ImGuiTableFlags_NoPadOuterX = 1 << 22, // Default if BordersOuterV is off. Disable outermost padding.
@@ -2619,15 +2619,15 @@ enum ImGuiTableColumnFlags_ {
   ImGuiTableColumnFlags_None = 0,
   ImGuiTableColumnFlags_Disabled =
     1 << 0, // Overriding/master disable flag: hide column, won't show in context menu (unlike calling
-            // TableSetColumnEnabled() which manipulates the user accessible state)
+  // TableSetColumnEnabled() which manipulates the user accessible state)
   ImGuiTableColumnFlags_DefaultHide = 1 << 1, // Default as a hidden/disabled column.
   ImGuiTableColumnFlags_DefaultSort = 1 << 2, // Default as a sorting column.
   ImGuiTableColumnFlags_WidthStretch =
     1 << 3, // Column will stretch. Preferable with horizontal scrolling disabled (default if table sizing policy is
-            // _SizingStretchSame or _SizingStretchProp).
+  // _SizingStretchSame or _SizingStretchProp).
   ImGuiTableColumnFlags_WidthFixed =
     1 << 4, // Column will not stretch. Preferable with horizontal scrolling enabled (default if table sizing policy is
-            // _SizingFixedFit and table is resizable).
+  // _SizingFixedFit and table is resizable).
   ImGuiTableColumnFlags_NoResize = 1 << 5, // Disable manual resizing.
   ImGuiTableColumnFlags_NoReorder = 1
     << 6, // Disable manual reordering this column, this will also prevent other columns from crossing over this column.
@@ -2640,7 +2640,7 @@ enum ImGuiTableColumnFlags_ {
   ImGuiTableColumnFlags_NoSortDescending = 1 << 11, // Disable ability to sort in the descending direction.
   ImGuiTableColumnFlags_NoHeaderLabel = 1
     << 12, // TableHeadersRow() will not submit horizontal label for this column. Convenient for some small columns.
-           // Name will still appear in context menu or in angled headers.
+  // Name will still appear in context menu or in angled headers.
   ImGuiTableColumnFlags_NoHeaderWidth = 1 << 13, // Disable header text width contribution to automatic column width.
   ImGuiTableColumnFlags_PreferSortAscending = 1
     << 14, // Make the initial sort direction Ascending when first sorting on this column (default).
@@ -4891,7 +4891,7 @@ static inline void CaptureMouseFromApp(bool want_capture_mouse = true)
 // OpenPopupOnItemClick(str_id, mb); } // Bool return value removed. Use IsWindowAppearing() in BeginPopup() instead.
 // Renamed in 1.77, renamed back in 1.79. Sorry!
 //-- OBSOLETED in 1.78 (from June 2020): Old drag/sliders functions that took a 'float power > 1.0f' argument instead of
-//ImGuiSliderFlags_Logarithmic. See github.com/ocornut/imgui/issues/3361 for details. IMGUI_API bool DragScalar(const
+// ImGuiSliderFlags_Logarithmic. See github.com/ocornut/imgui/issues/3361 for details. IMGUI_API bool DragScalar(const
 // char* label, ImGuiDataType data_type, void* p_data, float v_speed, const void* p_min, const void* p_max, const char*
 // format, float power = 1.0f)                                                            // OBSOLETED in 1.78 (from
 // June 2020) IMGUI_API bool      DragScalarN(const char* label, ImGuiDataType data_type, void* p_data, int components,
