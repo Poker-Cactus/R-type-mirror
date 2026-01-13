@@ -17,6 +17,10 @@ void LoadingMenu::init(IRenderer *renderer)
     backgroundTexture = renderer->loadTexture("client/assets/background/starfield.png");
     font = renderer->loadFont("client/assets/font.opf/r-type.otf", fontSize);
     planet = renderer->loadTexture("client/assets/moon-pack/moon1.png");
+    music = renderer->loadMusic("client/assets/audios/loadingMusic.mp3");
+    if (music) {
+      renderer->playMusic(music);
+    }
   } catch (const std::exception &e) {
     backgroundTexture = nullptr;
     font = nullptr;

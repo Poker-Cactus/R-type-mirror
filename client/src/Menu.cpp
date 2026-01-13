@@ -53,6 +53,7 @@ void Menu::init()
 
     // Initialiser le LoadingScreen
     loadingScreen = new LoadingScreen(renderer, menu_font);
+    menuMusic = renderer->loadMusic("client/assets/audios/rtypeMenuMusic.mp3");
   } catch (const std::exception &e) {
     std::cerr << "Exception during menu initialization: " << e.what() << '\n';
   }
@@ -112,11 +113,24 @@ void Menu::processInput()
   processBack();
 }
 
-void Menu::cleanup() {}
+void Menu::cleanup()
+{
+  // renderer->stopMusic();
+  // renderer->freeMusic(menuMusic);
+}
 
 void Menu::setState(MenuState newState)
 {
+  MenuState previousState = currentState;
   currentState = newState;
+
+  // Gérer la musique lors des transitions de MenuState
+  if (previousState == MenuState::LOADING && newState == MenuState::MAIN_MENU) {
+    // Revenir du loading: relancer la musique du menu
+    if (menuMusic && !renderer->isMusicPlaying()) {
+      renderer->playMusic(menuMusic, -1);
+    }
+  }
 }
 
 void Menu::drawCenteredText(const std::string &text, int yOffset, const Color &color)

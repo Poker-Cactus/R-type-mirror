@@ -17,4 +17,5 @@ public:
   virtual void setMusicVolume(int volume) = 0;
   virtual void freeSound(void *sound) = 0;
   virtual void freeMusic(void *music) = 0;
+  virtual bool isMusicPlaying() = 0;
 };

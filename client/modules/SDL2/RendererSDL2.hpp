@@ -67,6 +67,7 @@ public:
   void setMusicVolume(int volume) override;
   void freeSound(void *sound) override;
   void freeMusic(void *music) override;
+  bool isMusicPlaying() override;
 
   // === IShape ===
   void drawRect(int posX, int posY, int width, int height, const Color &color) override;

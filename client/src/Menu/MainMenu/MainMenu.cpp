@@ -16,6 +16,8 @@ void MainMenu::init(IRenderer *renderer)
     const int menuFontSize = 24;
     planet = renderer->loadTexture("client/assets/moon-pack/moon1.png");
     font = renderer->loadFont("client/assets/font.opf/r-type.otf", menuFontSize);
+    clickedSound = renderer->loadSound("client/assets/audios/Retro3.mp3");
+    hoverSound = renderer->loadSound("client/assets/Sounds/Hovering3.wav");
 
   } catch (const std::exception &e) {
     planet = nullptr;
@@ -45,13 +47,16 @@ void MainMenu::process(MenuState *currentState, IRenderer *renderer)
 {
   // Flèche bas - descendre dans le menu
   if (renderer->isKeyJustPressed(KeyCode::KEY_DOWN)) {
+    renderer->playSound(hoverSound);
     currentMenuIndex = (currentMenuIndex + 1) % mainMenuItems.size();
   }
   // Flèche haut - monter dans le menu
   if (renderer->isKeyJustPressed(KeyCode::KEY_UP)) {
+    renderer->playSound(hoverSound);
     currentMenuIndex = (currentMenuIndex - 1 + mainMenuItems.size()) % mainMenuItems.size();
   }
   if (renderer->isKeyJustPressed(KeyCode::KEY_RETURN)) {
+    renderer->playSound(clickedSound);
     std::string selectedButton = mainMenuItems[currentMenuIndex];
     std::cout << "[MainMenu] Enter pressed on: " << selectedButton << '\n';
     if (selectedButton == "Play") {

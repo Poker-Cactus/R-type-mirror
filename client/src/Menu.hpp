@@ -62,4 +62,6 @@ private:
   void *menu_font = nullptr;
   LoadingScreen *loadingScreen = nullptr;
   MenuState currentState = MenuState::LOADING;
+
+  void *menuMusic;
 };

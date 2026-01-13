@@ -59,10 +59,13 @@ private:
 
   std::vector<SettingItem> &activeItems();
   std::string itemValueText(const SettingItem &item) const;
-  void applyDelta(SettingItem &item, int direction);
+  void applyDelta(SettingItem &item, int direction, IRenderer *renderer);
   int captureKeyJustPressed(IRenderer *renderer) const;
 
   void renderRow(IRenderer *renderer, const Component &rowRect, const SettingItem &item, bool selected);
   void renderCategoryTab(IRenderer *renderer, const Component &tab, bool isActive);
   bool keyAlreadyInUse(int key);
+  void *clickedSound;
+  void *hoverSound;
+  void *errorSound;
 };

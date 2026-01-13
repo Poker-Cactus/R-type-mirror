@@ -24,4 +24,6 @@ private:
   float zoomDuration = 0.8f;
   float backgroundOffsetX = 0.0f;
   float parallaxOffsetSky = 0.0f;
+
+  void *music;
 };

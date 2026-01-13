@@ -11,6 +11,7 @@
 #include "../interface/Color.hpp"
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
+#include <SDL2/SDL_mixer.h>
 #include <SDL2/SDL_ttf.h>
 #include <SDL_blendmode.h>
 #include <SDL_error.h>
@@ -145,7 +146,7 @@ static int mapSDLKeyToGeneric(int sdlKey)
 
 RendererSDL2::RendererSDL2(int width, int height) : windowWidth(width), windowHeight(height)
 {
-  if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_GAMECONTROLLER) != 0) {
+  if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_GAMECONTROLLER | SDL_INIT_AUDIO) != 0) {
     throw std::runtime_error(SDL_GetError());
   }
 
@@ -159,6 +160,13 @@ RendererSDL2::RendererSDL2(int width, int height) : windowWidth(width), windowHe
     TTF_Quit();
     SDL_Quit();
     throw std::runtime_error(IMG_GetError());
+  }
+
+  if (Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 2048) < 0) {
+    IMG_Quit();
+    TTF_Quit();
+    SDL_Quit();
+    throw std::runtime_error(Mix_GetError());
   }
 
   window = SDL_CreateWindow("SDL Backend Window", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, width, height,
@@ -212,6 +220,8 @@ RendererSDL2::~RendererSDL2()
   if (window != nullptr) {
     SDL_DestroyWindow(window);
   }
+  Mix_CloseAudio();
+  Mix_Quit();
   IMG_Quit();
   TTF_Quit();
   SDL_Quit();
@@ -516,59 +526,94 @@ void RendererSDL2::getTextSize(void *font, const std::string &text, int &width, 
 }
 
 // === IAudio === (Stubs - requires SDL_mixer)
-void *RendererSDL2::loadSound(const std::string & /*filepath*/)
+void *RendererSDL2::loadSound(const std::string &filepath)
 {
-  return nullptr;
+  Mix_Chunk *chunk = Mix_LoadWAV(filepath.c_str());
+  if (!chunk) {
+    std::cerr << "Failed to load sound: " << filepath << " | " << Mix_GetError() << std::endl;
+  }
+  return static_cast<void *>(chunk);
 }
 
-void *RendererSDL2::loadMusic(const std::string & /*filepath*/)
+void *RendererSDL2::loadMusic(const std::string &filepath)
 {
-  return nullptr;
+  Mix_Music *music = Mix_LoadMUS(filepath.c_str());
+  if (!music) {
+    std::cerr << "Failed to load music: " << filepath << " | " << Mix_GetError() << std::endl;
+  }
+  return static_cast<void *>(music);
 }
 
-void RendererSDL2::playSound(void * /*sound*/, int /*loops*/)
+void RendererSDL2::playSound(void *sound, int loops)
 {
-  // TODO: Implement with SDL_mixer
+  if (!sound)
+    return;
+
+  Mix_Chunk *chunk = static_cast<Mix_Chunk *>(sound);
+  Mix_PlayChannel(-1, chunk, loops);
 }
 
-void RendererSDL2::playMusic(void * /*music*/, int /*loops*/)
+void RendererSDL2::playMusic(void *music, int loops)
 {
-  // TODO: Implement with SDL_mixer
+  if (!music) {
+    return;
+  }
+
+  Mix_Music *mus = static_cast<Mix_Music *>(music);
+  Mix_PlayMusic(mus, loops);
+}
+
+bool RendererSDL2::isMusicPlaying()
+{
+  return Mix_PlayingMusic() != 0;
 }
 
 void RendererSDL2::pauseMusic()
 {
-  // TODO: Implement with SDL_mixer
+  if (Mix_PlayingMusic() == 1) {
+    Mix_PauseMusic();
+  }
 }
 
 void RendererSDL2::resumeMusic()
 {
-  // TODO: Implement with SDL_mixer
+  if (Mix_PausedMusic())
+    Mix_ResumeMusic();
 }
 
 void RendererSDL2::stopMusic()
 {
-  // TODO: Implement with SDL_mixer
+  Mix_HaltMusic();
 }
 
-void RendererSDL2::setSoundVolume(int /*volume*/)
+void RendererSDL2::setSoundVolume(int volume)
 {
-  // TODO: Implement with SDL_mixer
+  volume = volume < 0 ? 0 : (volume > 128 ? 128 : volume);
+  Mix_Volume(-1, volume);
 }
 
-void RendererSDL2::setMusicVolume(int /*volume*/)
+void RendererSDL2::setMusicVolume(int volume)
 {
-  // TODO: Implement with SDL_mixer
+  volume = volume < 0 ? 0 : (volume > 128 ? 128 : volume);
+  Mix_VolumeMusic(volume);
 }
 
-void RendererSDL2::freeSound(void * /*sound*/)
+void RendererSDL2::freeSound(void *sound)
 {
-  // TODO: Implement with SDL_mixer
+  // if (!sound)
+  //   return;
+
+  // Mix_Chunk *chunk = static_cast<Mix_Chunk *>(sound);
+  // Mix_FreeChunk(chunk);
 }
 
-void RendererSDL2::freeMusic(void * /*music*/)
+void RendererSDL2::freeMusic(void *music)
 {
-  // TODO: Implement with SDL_mixer
+  if (!music)
+    return;
+
+  Mix_Music *mus = static_cast<Mix_Music *>(music);
+  Mix_FreeMusic(mus);
 }
 
 // === IShape ===

@@ -90,6 +90,8 @@ void SettingsMenu::init(IRenderer *renderer, Settings &settings)
     selectedIndex = 0;
     isCapturingKey = false;
     isEditing = false;
+    clickedSound = renderer->loadSound("client/assets/audios/Retro3.mp3");
+    hoverSound = renderer->loadSound("client/assets/Sounds/Hovering3.wav");
   } catch (const std::exception &e) {
     (void)e;
   }
@@ -134,25 +136,32 @@ std::string SettingsMenu::itemValueText(const SettingItem &item) const
   return "";
 }
 
-void SettingsMenu::applyDelta(SettingItem &item, int direction)
+void SettingsMenu::applyDelta(SettingItem &item, int direction, IRenderer *renderer)
 {
   if (direction == 0)
     return;
 
+  bool changed = false;
   switch (item.type) {
   case SettingItemType::SLIDER_INT:
     if (item.intTarget != nullptr) {
       const int delta = (direction > 0) ? item.step : -item.step;
       *item.intTarget = clampInt(*item.intTarget + delta, item.minValue, item.maxValue);
+      changed = true;
     }
     break;
   case SettingItemType::TOGGLE_BOOL:
     if (item.boolTarget != nullptr) {
       *item.boolTarget = !*item.boolTarget;
+      changed = true;
     }
     break;
   case SettingItemType::KEYBIND:
     break;
+  }
+
+  if (changed && clickedSound) {
+    renderer->playSound(clickedSound);
   }
 }
 
@@ -307,7 +316,6 @@ void SettingsMenu::process(IRenderer *renderer)
       isEditing = false;
       return;
     }
-
     int key = captureKeyJustPressed(renderer);
     if (key != KeyCode::KEY_UNKNOWN) {
       auto &items = activeItems();
@@ -334,6 +342,7 @@ void SettingsMenu::process(IRenderer *renderer)
   if (renderer->isKeyJustPressed(KeyCode::KEY_LEFT) && !isEditing) {
     int catIndex = static_cast<int>(currentCategory);
     if (catIndex > 0) {
+      renderer->playSound(hoverSound);
       currentCategory = static_cast<SettingsCategory>(catIndex - 1);
       selectedIndex = 0;
     }
@@ -341,6 +350,7 @@ void SettingsMenu::process(IRenderer *renderer)
   if (renderer->isKeyJustPressed(KeyCode::KEY_RIGHT) && !isEditing) {
     int catIndex = static_cast<int>(currentCategory);
     if (catIndex < 2) {
+      renderer->playSound(hoverSound);
       currentCategory = static_cast<SettingsCategory>(catIndex + 1);
       selectedIndex = 0;
     }
@@ -353,12 +363,14 @@ void SettingsMenu::process(IRenderer *renderer)
 
   if (renderer->isKeyJustPressed(KeyCode::KEY_DOWN)) {
     if (selectedIndex + 1 < items.size()) {
+      renderer->playSound(hoverSound);
       selectedIndex++;
       isEditing = false;
     }
   }
   if (renderer->isKeyJustPressed(KeyCode::KEY_UP)) {
     if (selectedIndex > 0) {
+      renderer->playSound(hoverSound);
       selectedIndex--;
       isEditing = false;
     }
@@ -372,7 +384,7 @@ void SettingsMenu::process(IRenderer *renderer)
       return;
     }
     if (item.type == SettingItemType::TOGGLE_BOOL) {
-      applyDelta(item, +1);
+      applyDelta(item, +1, renderer);
       return;
     }
     isEditing = !isEditing;
@@ -382,10 +394,10 @@ void SettingsMenu::process(IRenderer *renderer)
   // Only modify values while in edit mode
   if (isEditing) {
     if (renderer->isKeyJustPressed(KeyCode::KEY_LEFT)) {
-      applyDelta(items[selectedIndex], -1);
+      applyDelta(items[selectedIndex], -1, renderer);
     }
     if (renderer->isKeyJustPressed(KeyCode::KEY_RIGHT)) {
-      applyDelta(items[selectedIndex], +1);
+      applyDelta(items[selectedIndex], +1, renderer);
     }
   }
 }
