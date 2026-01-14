@@ -8,3 +8,14 @@ capnproto/1.0.2
 doctest/2.4.11
 nlohmann_json/3.11.3
 flac/1.4.2
+
+[generators]
+CMakeDeps
+CMakeToolchain
+VirtualBuildEnv
+
+[options]
+sdl_mixer/*:shared=True
+sdl_mixer/*:with_mp3=True
+sdl_mixer/*:with_ogg=True
+sdl_mixer/*:with_flac=True
