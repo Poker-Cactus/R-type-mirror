@@ -135,6 +135,16 @@ private:
       applyDamage(world, entityB, entityA, damageFromEntityCollision);
     } else if (aHasHealth && !bHasHealth) {
       // Only A has health - projectile B hitting entity A
+      
+      // Check if projectile B is owned by a player and target A is also a player (prevent friendly fire)
+      if (world.hasComponent<ecs::Owner>(entityB) && world.hasComponent<ecs::Input>(entityA)) {
+        const auto &ownerB = world.getComponent<ecs::Owner>(entityB);
+        if (world.isAlive(ownerB.ownerId) && world.hasComponent<ecs::Input>(ownerB.ownerId)) {
+          // Projectile owner is a player and target is a player - skip damage
+          return;
+        }
+      }
+      
       applyDamage(world, entityA, entityB, damageFromProjectile);
 
       // Check if projectile B is immortal - if so, don't destroy it
@@ -159,6 +169,16 @@ private:
       }
     } else if (!aHasHealth && bHasHealth) {
       // Only B has health - projectile A hitting entity B
+      
+      // Check if projectile A is owned by a player and target B is also a player (prevent friendly fire)
+      if (world.hasComponent<ecs::Owner>(entityA) && world.hasComponent<ecs::Input>(entityB)) {
+        const auto &ownerA = world.getComponent<ecs::Owner>(entityA);
+        if (world.isAlive(ownerA.ownerId) && world.hasComponent<ecs::Input>(ownerA.ownerId)) {
+          // Projectile owner is a player and target is a player - skip damage
+          return;
+        }
+      }
+      
       applyDamage(world, entityB, entityA, damageFromProjectile);
 
       // Check if projectile A is immortal - if so, don't destroy it
