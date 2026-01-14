@@ -61,9 +61,17 @@ foreach(module_dir ${MODULE_DIRS})
                     target_link_libraries(${LIB_NAME} PRIVATE SDL2::SDL2 ${_ttf_target} SDL2_image::SDL2_image ${_mixer_target})
                 endif()
             elseif(module_dir STREQUAL "SFML")
-                # SFML dependencies
-                find_package(SFML 2 REQUIRED COMPONENTS graphics window system audio)
-                target_link_libraries(${LIB_NAME} PRIVATE sfml-graphics sfml-window sfml-system sfml-audio)
+                # SFML dependencies - try CMake config first, fallback to pkg-config
+                find_package(SFML 2 QUIET COMPONENTS graphics window system audio)
+                if(SFML_FOUND)
+                    target_link_libraries(${LIB_NAME} PRIVATE sfml-graphics sfml-window sfml-system sfml-audio)
+                else()
+                    # Fallback to pkg-config for systems without CMake config files
+                    find_package(PkgConfig REQUIRED)
+                    pkg_check_modules(SFML REQUIRED sfml-graphics sfml-window sfml-system sfml-audio)
+                    target_link_libraries(${LIB_NAME} PRIVATE ${SFML_LIBRARIES})
+                    target_include_directories(${LIB_NAME} PRIVATE ${SFML_INCLUDE_DIRS})
+                endif()
             endif()
             
             # Place les .so/.dll dans build/
