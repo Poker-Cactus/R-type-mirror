@@ -61,11 +61,10 @@ foreach(module_dir ${MODULE_DIRS})
                     target_link_libraries(${LIB_NAME} PRIVATE SDL2::SDL2 ${_ttf_target} SDL2_image::SDL2_image ${_mixer_target})
                 endif()
             elseif(module_dir STREQUAL "SFML")
-                # SFML dependencies - use pkg-config since Ubuntu doesn't provide CMake config
-                find_package(PkgConfig REQUIRED)
-                pkg_check_modules(SFML REQUIRED sfml-all)
-                target_link_libraries(${LIB_NAME} PRIVATE ${SFML_LIBRARIES})
-                target_include_directories(${LIB_NAME} PRIVATE ${SFML_INCLUDE_DIRS})
+                # SFML dependencies - use Conan
+                find_package(SFML REQUIRED)
+                target_link_libraries(${LIB_NAME} PRIVATE sfml-graphics sfml-window sfml-system sfml-audio)
+                # Or if sfml-all is available: target_link_libraries(${LIB_NAME} PRIVATE sfml-all)
             endif()
             
             # Place les .so/.dll dans build/
