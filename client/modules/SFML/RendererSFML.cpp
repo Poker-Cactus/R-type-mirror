@@ -258,7 +258,6 @@ void RendererSFML::clear(const Color &color)
 
 void RendererSFML::present()
 {
-  std::cout << "[RendererSFML] Presenting frame" << std::endl;
   window.display();
 
   // Update timing
