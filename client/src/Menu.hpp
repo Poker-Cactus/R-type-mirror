@@ -80,6 +80,12 @@ public:
   [[nodiscard]] bool isCreatingLobby() const;
 
   /**
+   * @brief Check if player is playing solo
+   * @return true if solo mode
+   */
+  [[nodiscard]] bool isSolo() const;
+
+  /**
    * @brief Get the lobby code player wants to join
    * @return Lobby code string
    */

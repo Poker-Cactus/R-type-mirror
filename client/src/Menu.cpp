@@ -193,6 +193,11 @@ bool Menu::isCreatingLobby() const
   return m_lobbyMenu != nullptr && m_lobbyMenu->isCreatingLobby();
 }
 
+bool Menu::isSolo() const
+{
+  return m_lobbyMenu != nullptr && m_lobbyMenu->isSolo();
+}
+
 void Menu::refreshHighscoresIfInLobby()
 {
   if (currentState == MenuState::LOBBY && m_lobbyMenu != nullptr) {

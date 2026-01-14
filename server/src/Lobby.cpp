@@ -15,8 +15,8 @@
 #include <iostream>
 #include <nlohmann/json.hpp>
 
-Lobby::Lobby(const std::string &code, std::shared_ptr<INetworkManager> networkManager)
-    : m_code(code), m_networkManager(std::move(networkManager))
+Lobby::Lobby(const std::string &code, std::shared_ptr<INetworkManager> networkManager, bool isSolo)
+    : m_code(code), m_networkManager(std::move(networkManager)), m_isSolo(isSolo)
 {
   // Create isolated world for this lobby
   m_world = std::make_shared<ecs::World>();
@@ -53,6 +53,12 @@ Lobby::~Lobby()
 
 bool Lobby::addClient(std::uint32_t clientId, bool asSpectator)
 {
+  // For solo lobbies, only allow 1 player (excluding spectators)
+  if (m_isSolo && !asSpectator && getPlayerCount() >= 1) {
+    std::cout << "[Lobby:" << m_code << "] Solo lobby full, rejecting player " << clientId << '\n';
+    return false;
+  }
+
   auto [_, inserted] = m_clients.insert(clientId);
   if (inserted) {
     if (asSpectator) {
@@ -91,6 +97,11 @@ bool Lobby::isEmpty() const
 std::size_t Lobby::getClientCount() const
 {
   return m_clients.size();
+}
+
+std::size_t Lobby::getPlayerCount() const
+{
+  return m_clients.size() - m_spectators.size();
 }
 
 const std::string &Lobby::getCode() const

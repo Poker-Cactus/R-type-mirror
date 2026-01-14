@@ -16,7 +16,7 @@ LobbyMenu::LobbyMenu(std::shared_ptr<IRenderer> renderer)
       m_moonMid(nullptr), m_moonFront(nullptr), m_moonFloor(nullptr), m_parallaxOffsetSky(0.0F),
       m_parallaxOffsetBack(0.0F), m_parallaxOffsetMid(0.0F), m_parallaxOffsetFront(0.0F), m_parallaxOffsetFloor(0.0F),
       m_currentIndex(0), m_isEnteringCode(false), m_lobbyCodeInput(""), m_shouldEnterLobbyRoom(false),
-      m_isCreatingLobby(false), m_networkManager(nullptr)
+      m_isCreatingLobby(false), m_isSolo(false), m_networkManager(nullptr)
 {
 }
 
@@ -509,12 +509,19 @@ void LobbyMenu::selectCurrentOption(MenuState *currentState)
     m_lobbyCodeInput.clear();
     break;
 
-  case 2: // Clear Highscores
+  case 2: // Solo
+    std::cout << "[LobbyMenu] Select difficulty for solo game" << '\n';
+    m_isSelectingDifficulty = true;
+    m_difficultyIndex = 1; // Reset to Medium
+    m_isSolo = true;
+    break;
+
+  case 3: // Clear Highscores
     std::cout << "[LobbyMenu] Clearing highscores" << '\n';
     m_highscoreManager.clearHighscores();
     break;
 
-  case 3: // Back
+  case 4: // Back
     *currentState = MenuState::MAIN_MENU;
     break;
 

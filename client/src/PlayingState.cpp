@@ -902,6 +902,11 @@ void PlayingState::cleanup()
   std::cout << "PlayingState: Cleaned up" << '\n';
 }
 
+void PlayingState::setSoloMode(bool isSolo)
+{
+  m_isSolo = isSolo;
+}
+
 void PlayingState::loadSpriteTextures()
 {
   if (renderer == nullptr) {

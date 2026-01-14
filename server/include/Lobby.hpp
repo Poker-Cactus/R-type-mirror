@@ -31,7 +31,7 @@ class LevelConfigManager;
 class Lobby
 {
 public:
-  explicit Lobby(const std::string &code, std::shared_ptr<INetworkManager> networkManager = nullptr);
+  explicit Lobby(const std::string &code, std::shared_ptr<INetworkManager> networkManager = nullptr, bool isSolo = false);
   ~Lobby();
 
   // Disable copy and move to prevent issues with unique resources
@@ -73,6 +73,12 @@ public:
    * @return Number of clients
    */
   [[nodiscard]] std::size_t getClientCount() const;
+
+  /**
+   * @brief Get the number of players in the lobby (excluding spectators)
+   * @return Number of players
+   */
+  [[nodiscard]] std::size_t getPlayerCount() const;
 
   /**
    * @brief Get the lobby code
@@ -167,6 +173,7 @@ private:
   std::unordered_set<std::uint32_t> m_clients;
   std::unordered_set<std::uint32_t> m_spectators;
   bool m_gameStarted = false;
+  bool m_isSolo = false;
 
   // Isolated game world for this lobby
   std::shared_ptr<ecs::World> m_world;

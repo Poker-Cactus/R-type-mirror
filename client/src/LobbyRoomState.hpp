@@ -96,7 +96,7 @@ public:
    * @param isCreating Whether creating new lobby
    * @param lobbyCode Lobby code (for joining)
    */
-  void setLobbyMode(bool isCreating, const std::string &lobbyCode = "", Difficulty difficulty = Difficulty::MEDIUM);
+  void setLobbyMode(bool isCreating, const std::string &lobbyCode = "", Difficulty difficulty = Difficulty::MEDIUM, bool isSolo = false);
 
   /**
    * @brief Send leave lobby message to server
@@ -150,6 +150,7 @@ private:
 
   // Lobby mode
   bool m_isCreatingLobby = true;
+  bool m_isSolo = false;
   std::string m_targetLobbyCode;
   bool m_joinAsSpectator = false;
 

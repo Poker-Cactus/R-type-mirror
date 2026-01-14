@@ -33,6 +33,7 @@ struct WindowDimensions {
 enum class LobbyMenuOption : std::uint8_t {
   CREATE_LOBBY, ///< Create new lobby
   JOIN_LOBBY, ///< Join existing lobby
+  SOLO, ///< Play solo
   CLEAR_HIGHSCORES, ///< Clear highscores
   BACK ///< Return to main menu
 };
@@ -107,6 +108,12 @@ public:
    * @return true if creating lobby
    */
   [[nodiscard]] bool isCreatingLobby() const { return m_isCreatingLobby; }
+
+  /**
+   * @brief Check if player is playing solo
+   * @return true if solo mode
+   */
+  [[nodiscard]] bool isSolo() const { return m_isSolo; }
   [[nodiscard]] Difficulty getSelectedDifficulty() const { return m_selectedDifficulty; }
 
 private:
@@ -143,7 +150,7 @@ private:
   float m_parallaxOffsetFloor;
 
   // Menu state
-  std::vector<std::string> m_menuItems = {"Create Lobby", "Join Lobby", "Clear Highscores", "Back"};
+  std::vector<std::string> m_menuItems = {"Create Lobby", "Join Lobby", "Solo", "Clear Highscores", "Back"};
   std::size_t m_currentIndex;
   bool m_isEnteringCode;
   std::string m_lobbyCodeInput;
@@ -158,6 +165,7 @@ private:
   // Transition flags
   bool m_shouldEnterLobbyRoom;
   bool m_isCreatingLobby;
+  bool m_isSolo;
 
   // Network
   std::shared_ptr<INetworkManager> m_networkManager;

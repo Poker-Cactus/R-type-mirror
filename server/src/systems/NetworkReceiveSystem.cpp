@@ -249,6 +249,7 @@ void NetworkReceiveSystem::handleRequestLobby(const nlohmann::json &json, std::u
   const std::string action = json.value("action", "create");
   const std::string requestedCode = json.value("lobby_code", "");
   const bool asSpectator = json.value("spectator", false);
+  const bool isSolo = json.value("solo", false);
 
   if (asSpectator) {
     std::cout << "[Server] Client " << clientId << " wants to join as SPECTATOR" << '\n';
@@ -307,9 +308,9 @@ void NetworkReceiveSystem::handleRequestLobby(const nlohmann::json &json, std::u
       std::cout << "[Server] >>> NO DIFFICULTY FIELD IN MESSAGE, USING DEFAULT MEDIUM <<<" << '\n';
     }
 
-    lobbyManager.createLobby(lobbyCode, difficulty);
+    lobbyManager.createLobby(lobbyCode, difficulty, isSolo);
     targetLobby = lobbyManager.getLobby(lobbyCode);
-    std::cout << "[Server] Created lobby '" << lobbyCode << "' with final difficulty: " << static_cast<int>(difficulty)
+    std::cout << "[Server] Created " << (isSolo ? "SOLO " : "") << "lobby '" << lobbyCode << "' with final difficulty: " << static_cast<int>(difficulty)
               << " ("
               << (difficulty == GameConfig::Difficulty::EASY       ? "EASY"
                     : difficulty == GameConfig::Difficulty::MEDIUM ? "MEDIUM"
