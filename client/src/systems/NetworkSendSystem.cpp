@@ -65,15 +65,17 @@ void NetworkSendSystem::sendInputToServer(UNUSED ecs::Entity entity, const ecs::
     bool right;
     bool shoot;
     bool chargedShoot;
+    bool detach;
   };
 
   static std::optional<InputState> last;
   static float logAccumulator = 0.0f;
   logAccumulator += SEND_INTERVAL;
 
-  const InputState now{input.up, input.down, input.left, input.right, input.shoot, input.chargedShoot};
+  const InputState now{input.up, input.down, input.left, input.right, input.shoot, input.chargedShoot, input.detach};
   const bool changed = !last.has_value() || last->up != now.up || last->down != now.down || last->left != now.left ||
-    last->right != now.right || last->shoot != now.shoot || last->chargedShoot != now.chargedShoot;
+    last->right != now.right || last->shoot != now.shoot || last->chargedShoot != now.chargedShoot ||
+    last->detach != now.detach;
 
   // Create JSON message with player input
   nlohmann::json message;
@@ -87,6 +89,7 @@ void NetworkSendSystem::sendInputToServer(UNUSED ecs::Entity entity, const ecs::
   message["input"]["right"] = input.right;
   message["input"]["shoot"] = input.shoot;
   message["input"]["chargedShoot"] = input.chargedShoot;
+  message["input"]["detach"] = input.detach;
 
   // Serialize JSON to string
   std::string jsonStr = message.dump();

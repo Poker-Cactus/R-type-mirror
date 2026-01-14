@@ -19,11 +19,13 @@ struct Input : public IComponent {
   bool right;
   bool shoot;
   bool chargedShoot;
+  bool detach; // Detach current powerup
 
   [[nodiscard]] nlohmann::json toJson() const override
   {
-    return {{"up", up},       {"down", down},   {"left", left},
-            {"right", right}, {"shoot", shoot}, {"chargedShoot", chargedShoot}};
+    return {{"up", up},        {"down", down},   {"left", left},
+            {"right", right},  {"shoot", shoot}, {"chargedShoot", chargedShoot},
+            {"detach", detach}};
   }
 };
 } // namespace ecs
