@@ -61,9 +61,12 @@ foreach(module_dir ${MODULE_DIRS})
                     target_link_libraries(${LIB_NAME} PRIVATE SDL2::SDL2 ${_ttf_target} SDL2_image::SDL2_image ${_mixer_target})
                 endif()
             elseif(module_dir STREQUAL "SFML")
-                # SFML dependencies
-                find_package(SFML 2.5 COMPONENTS system window graphics audio REQUIRED)
-                target_link_libraries(${LIB_NAME} PRIVATE sfml-system sfml-window sfml-graphics sfml-audio)
+                # SFML dependencies - use direct library linking since Ubuntu doesn't provide CMake config
+                find_library(SFML_SYSTEM_LIBRARY sfml-system REQUIRED)
+                find_library(SFML_WINDOW_LIBRARY sfml-window REQUIRED)
+                find_library(SFML_GRAPHICS_LIBRARY sfml-graphics REQUIRED)
+                find_library(SFML_AUDIO_LIBRARY sfml-audio REQUIRED)
+                target_link_libraries(${LIB_NAME} PRIVATE ${SFML_SYSTEM_LIBRARY} ${SFML_WINDOW_LIBRARY} ${SFML_GRAPHICS_LIBRARY} ${SFML_AUDIO_LIBRARY})
             endif()
             
             # Place les .so/.dll dans build/

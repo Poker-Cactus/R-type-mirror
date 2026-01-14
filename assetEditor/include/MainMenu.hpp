@@ -7,7 +7,8 @@
 
 #pragma once
 
-namespace AssetEditor {
+namespace AssetEditor
+{
 
 /**
  * @brief Render the main menu screen

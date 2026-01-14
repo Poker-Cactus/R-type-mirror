@@ -18,10 +18,10 @@ InfoMode::InfoMode(std::shared_ptr<IRenderer> renderer, void *hudFont)
 {
   initializeCategories();
   setupCategoryLayout();
-  
+
   // Initialize frame counters for each category
   m_categoryFrameCounters.resize(m_categories.size(), 0);
-  
+
   m_isActive = false;
 }
 
