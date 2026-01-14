@@ -16,12 +16,13 @@
     "showCPUUsage": true,
     "showEntityCount": true,
     "showFPS": true,
-    "showInfoMode": true,
+    "showInfoMode": false,
     "showNetworkInfo": true,
     "showRAMUsage": true
   },
   "graphics": {
-    "fullScreen": true
+    "fullScreen": true,
+    "targetFPS": 60
   },
   "profile": {
     "username": "Player"

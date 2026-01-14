@@ -65,6 +65,7 @@ struct SettingItem {
   int step = 5; ///< Step increment (for sliders)
   int *intTarget = nullptr; ///< Target integer variable
   bool *boolTarget = nullptr; ///< Target boolean variable
+  std::string suffix = "%"; ///< Suffix for slider value display
 };
 
 /**

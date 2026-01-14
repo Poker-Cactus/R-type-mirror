@@ -30,6 +30,7 @@ bool Settings::saveToFile()
 
     // Graphics settings
     settingsJson["graphics"]["fullScreen"] = fullScreen;
+    settingsJson["graphics"]["targetFPS"] = targetFPS;
 
     // Debug settings
     settingsJson["debug"]["showInfoMode"] = showInfoMode;
@@ -92,6 +93,7 @@ bool Settings::loadFromFile()
     // Graphics settings
     if (settingsJson.contains("graphics")) {
       fullScreen = settingsJson["graphics"].value("fullScreen", fullScreen);
+      targetFPS = settingsJson["graphics"].value("targetFPS", targetFPS);
     }
 
     // Debug settings

@@ -108,6 +108,9 @@ bool Game::init()
     }
     renderer->setWindowTitle("ChaD");
 
+    // Apply target FPS from settings
+    renderer->setTargetFPS(settings.targetFPS);
+
     // Start the game in fullscreen by default
     try {
       renderer->setFullscreen(true);

@@ -50,6 +50,7 @@ public:
 
   // GRAPHIC Settings
   bool fullScreen = true; ///< Fullscreen mode toggle
+  int targetFPS = 60; ///< Target framerate limit (60-240)
 
   // DEBUG Settings
   bool showInfoMode = true; ///< Show debug info overlay

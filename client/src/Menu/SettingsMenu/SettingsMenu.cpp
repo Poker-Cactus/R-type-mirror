@@ -105,6 +105,13 @@ void SettingsMenu::init(Settings &settings)
     graphicItems.clear();
     graphicItems.push_back(
       {.label = "Fullscreen", .type = SettingItemType::TOGGLE_BOOL, .boolTarget = &this->settings->fullScreen});
+    graphicItems.push_back({.label = "FPS Limit",
+                            .type = SettingItemType::SLIDER_INT,
+                            .minValue = 60,
+                            .maxValue = 240,
+                            .step = 30,
+                            .intTarget = &this->settings->targetFPS,
+                            .suffix = " FPS"});
 
     controlsItems.clear();
     controlsItems.push_back({.label = "Move Up", .type = SettingItemType::KEYBIND, .intTarget = &this->settings->up});
@@ -170,7 +177,7 @@ std::string SettingsMenu::itemValueText(const SettingItem &item) const
   switch (item.type) {
   case SettingItemType::SLIDER_INT: {
     const int value = (item.intTarget != nullptr) ? *item.intTarget : 0;
-    return std::to_string(value) + "%";
+    return std::to_string(value) + item.suffix;
   }
   case SettingItemType::TOGGLE_BOOL: {
     const bool value = (item.boolTarget != nullptr) ? *item.boolTarget : false;
@@ -199,6 +206,10 @@ void SettingsMenu::applyDelta(SettingItem &item, int direction)
       const int delta = (direction > 0) ? item.step : -item.step;
       *item.intTarget = clampInt(*item.intTarget + delta, item.minValue, item.maxValue);
       changed = true;
+      // Apply FPS limit change immediately
+      if (item.label == "FPS Limit") {
+        m_renderer->setTargetFPS(*item.intTarget);
+      }
     }
     break;
   case SettingItemType::TOGGLE_BOOL:
