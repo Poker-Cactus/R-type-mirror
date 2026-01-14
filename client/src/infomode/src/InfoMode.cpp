@@ -64,8 +64,10 @@ InfoMode::InfoMode(std::shared_ptr<IRenderer> renderer, std::shared_ptr<void> hu
     : m_renderer(std::move(renderer))
     , m_hudFont(std::move(hudFont))
     , m_settings(settings)
+    , m_isActive(false)
     , m_lastSystemUpdate(std::chrono::steady_clock::now())
 {
+  m_settings.showInfoMode = false;
   initStaticSystemInfo();
   updateDynamicSystemInfo();
 }
@@ -80,7 +82,7 @@ void InfoMode::initStaticSystemInfo()
   size_t size = sizeof(cpuBrand);
   if (sysctlbyname("machdep.cpu.brand_string", &cpuBrand, &size, nullptr, 0) == 0) {
     m_cpuName.assign(cpuBrand, size > 30 ? 27 : size);
-    if (size > 30) m_cpuName += "...";
+    if (size > 22) m_cpuName += "...";
   } else {
     m_cpuName = "Apple Silicon";
   }
