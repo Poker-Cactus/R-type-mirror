@@ -6,11 +6,6 @@
 
 set -e
 
-# Set pkg-config path for SFML on macOS
-export PKG_CONFIG_PATH="/opt/homebrew/opt/sfml@2/lib/pkgconfig:$PKG_CONFIG_PATH"
-# Set CMake prefix path for SFML on macOS
-export CMAKE_PREFIX_PATH="/opt/homebrew/opt/sfml@2:$CMAKE_PREFIX_PATH"
-
 # ─────────────────────────────────────────────────────────────────────────────
 # Colors & Styles
 # ─────────────────────────────────────────────────────────────────────────────
@@ -164,11 +159,6 @@ configure_cmake() {
         cmake_args+=("-DCMAKE_TOOLCHAIN_FILE=$BUILD_DIR/conan_toolchain.cmake")
     fi
     
-    # Add SFML prefix path for macOS (keg-only formula)
-    if [[ "$OSTYPE" == "darwin"* ]] && [ -d "/opt/homebrew/opt/sfml@2" ]; then
-        cmake_args+=("-DCMAKE_PREFIX_PATH=/opt/homebrew/opt/sfml@2")
-    fi
-    
     if ! cmake "${cmake_args[@]}" > "$log_file" 2>&1; then
         # Check for generator mismatch
         if grep -q "Does not match the generator used previously" "$log_file"; then
@@ -216,7 +206,6 @@ compile_editor() {
     # Configure with editor flag
     local cmake_args=("-S" "." "-B" "$BUILD_DIR" "-DCMAKE_BUILD_TYPE=$BUILD_TYPE" "-DBUILD_ASSET_EDITOR=ON")
     [ -f "$BUILD_DIR/conan_toolchain.cmake" ] && cmake_args+=("-DCMAKE_TOOLCHAIN_FILE=$BUILD_DIR/conan_toolchain.cmake")
-    [[ "$OSTYPE" == "darwin"* ]] && [ -d "/opt/homebrew/opt/sfml@2" ] && cmake_args+=("-DCMAKE_PREFIX_PATH=/opt/homebrew/opt/sfml@2")
     
     cmake "${cmake_args[@]}" > /dev/null 2>&1 || {
         print_error "CMake configuration failed!"
@@ -242,7 +231,6 @@ compile_editor() {
     # Configure with editor flag
     local cmake_args=("-S" "." "-B" "$BUILD_DIR" "-DCMAKE_BUILD_TYPE=$BUILD_TYPE" "-DBUILD_ASSET_EDITOR=ON")
     [ -f "$BUILD_DIR/conan_toolchain.cmake" ] && cmake_args+=("-DCMAKE_TOOLCHAIN_FILE=$BUILD_DIR/conan_toolchain.cmake")
-    [[ "$OSTYPE" == "darwin"* ]] && [ -d "/opt/homebrew/opt/sfml@2" ] && cmake_args+=("-DCMAKE_PREFIX_PATH=/opt/homebrew/opt/sfml@2")
     
     cmake "${cmake_args[@]}" > /dev/null 2>&1 || {
         print_error "CMake configuration failed!"

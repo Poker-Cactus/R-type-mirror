@@ -1,212 +1,154 @@
-name: Build and Test
+name: Build
 
 on:
   push:
-    branches: [ main, develop, '*please-give-me-ci', '**/*please-give-me-ci' ]
+    branches: [main, develop]
   pull_request:
-    branches: [ main, develop ]
+    branches: [main, develop]
+
+env:
+  BUILD_TYPE: Release
 
 jobs:
+  # ============================================================================
+  # Linux Build
+  # ============================================================================
   build-linux:
-    name: Build on Linux
+    name: Linux
     runs-on: ubuntu-latest
-    
+
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
-    - name: Install system dependencies
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y \
-          build-essential \
-          cmake \
-          python3 \
-          python3-pip \
-          libgl1-mesa-dev \
-          libx11-dev \
-          libxrandr-dev \
-          libxi-dev \
-          libudev-dev \
-          libasound2-dev \
-          libsfml-dev
+      - name: Cache Conan packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.conan2
+          key: conan-linux-${{ hashFiles('conanfile.txt') }}
+          restore-keys: conan-linux-
 
-    - name: Install Conan
-      run: |
-        pip3 install conan
-        conan profile detect --force
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential \
+            cmake \
+            python3 \
+            python3-pip \
+            pkg-config \
+            libgl1-mesa-dev \
+            libx11-dev \
+            libxrandr-dev \
+            libxcursor-dev \
+            libxi-dev \
+            libudev-dev \
+            libasound2-dev \
+            libpulse-dev \
+            libsfml-dev
 
-    - name: Install dependencies with Conan
-      run: |
-        conan install . --output-folder=build --build=missing --profile=conan_profile
+      - name: Install Conan
+        run: |
+          pip3 install conan
+          conan profile detect --force
 
-    - name: Configure CMake
-      run: |
-        cmake --preset conan-release
+      - name: Install dependencies
+        run: conan install . --output-folder=build --build=missing -s build_type=${{ env.BUILD_TYPE }}
 
-    - name: Build project
-      run: |
-        cmake --build build --config Release
+      - name: Configure
+        run: |
+          cmake -S . -B build \
+            -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }} \
+            -DCMAKE_TOOLCHAIN_FILE=build/conan_toolchain.cmake
 
-    - name: Check executables
-      run: |
-        ls -lh build/server/server
-        ls -lh build/client/client
-        file build/server/server
-        file build/client/client
+      - name: Build
+        run: cmake --build build --config ${{ env.BUILD_TYPE }} -j$(nproc)
 
-    - name: Upload Linux artifacts
-      uses: actions/upload-artifact@v4
-      with:
-        name: linux-binaries
-        path: |
-          build/server/server
-          build/client/client
-          build/libs/
-        retention-days: 7
-    
-    - name: Create portable package
-      run: |
-        mkdir -p linux-package
-        cp build/server/server linux-package/
-        cp build/client/client linux-package/
-        cp -r build/libs linux-package/ 2>/dev/null || true
-        # Copy assets
-        if [ -d "client/assets" ]; then
-          cp -r client/assets linux-package/
-        fi
-        if [ -d "server/assets" ]; then
-          cp -r server/assets linux-package/ 2>/dev/null || true
-        fi
-        # Copy SDL2 libraries from Conan
-        if [ -d "build" ]; then
-          find build -name "*.so*" -type f -exec cp {} linux-package/ \; 2>/dev/null || true
-        fi
-        echo "#!/bin/bash" > linux-package/run_server.sh
-        echo 'cd "$(dirname "$0")"' >> linux-package/run_server.sh
-        echo 'export LD_LIBRARY_PATH="$PWD:$LD_LIBRARY_PATH"' >> linux-package/run_server.sh
-        echo './server "$@"' >> linux-package/run_server.sh
-        chmod +x linux-package/run_server.sh
-        echo "#!/bin/bash" > linux-package/run_client.sh
-        echo 'cd "$(dirname "$0")"' >> linux-package/run_client.sh
-        echo 'export LD_LIBRARY_PATH="$PWD:$LD_LIBRARY_PATH"' >> linux-package/run_client.sh
-        echo './client "$@"' >> linux-package/run_client.sh
-        chmod +x linux-package/run_client.sh
-    
-    - name: Upload Linux portable package
-      uses: actions/upload-artifact@v4
-      with:
-        name: linux-portable-package
-        path: linux-package/
-        retention-days: 7
+      - name: Verify binaries
+        run: |
+          test -f build/server/server && echo "✓ Server built"
+          test -f build/client/client && echo "✓ Client built"
 
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: rtype-linux
+          path: |
+            build/server/server
+            build/client/client
+            build/libs/
+          retention-days: 14
+
+  # ============================================================================
+  # Windows Build
+  # ============================================================================
   build-windows:
-    name: Build on Windows
+    name: Windows
     runs-on: windows-latest
-    
+
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
-    - name: Setup Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: '3.11'
+      - name: Cache Conan packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.conan2
+          key: conan-windows-${{ hashFiles('conanfile.txt') }}
+          restore-keys: conan-windows-
 
-    - name: Setup MSVC
-      uses: microsoft/setup-msbuild@v2
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
 
-    - name: Install Conan
-      run: |
-        pip install conan
-        conan profile detect --force
+      - name: Install Conan
+        run: pip install conan
 
-    - name: Verify Conan profile
-      run: |
-        conan profile show
+      - name: Detect Conan profile
+        run: conan profile detect --force
 
-    - name: Install dependencies with Conan
-      run: |
-        conan install . --output-folder=build --build=missing
+      - name: Install dependencies
+        run: conan install . --output-folder=build --build=missing -s build_type=${{ env.BUILD_TYPE }}
 
-    - name: Configure CMake
-      run: |
-        cmake -S . -B build -G "Visual Studio 17 2022" -DCMAKE_TOOLCHAIN_FILE="${PWD}/build/conan_toolchain.cmake"
+      - name: Configure
+        run: |
+          cmake -S . -B build `
+            -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }} `
+            -DCMAKE_TOOLCHAIN_FILE=build/conan_toolchain.cmake
 
-    - name: Build project
-      run: |
-        cmake --build build --config Release
+      - name: Build
+        run: cmake --build build --config ${{ env.BUILD_TYPE }} -j $env:NUMBER_OF_PROCESSORS
 
-    - name: Check executables
-      run: |
-        dir build\server\Release\
-        dir build\client\Release\
-        if (Test-Path build\server\Release\server.exe) { Write-Host "✓ Server built successfully" } else { exit 1 }
-        if (Test-Path build\client\Release\client.exe) { Write-Host "✓ Client built successfully" } else { exit 1 }
+      - name: Verify binaries
+        shell: pwsh
+        run: |
+          if (Test-Path "build/server/${{ env.BUILD_TYPE }}/server.exe") { Write-Host "✓ Server built" }
+          if (Test-Path "build/client/${{ env.BUILD_TYPE }}/client.exe") { Write-Host "✓ Client built" }
 
-    - name: Upload Windows artifacts
-      uses: actions/upload-artifact@v4
-      with:
-        name: windows-binaries
-        path: |
-          build/server/Release/server.exe
-          build/client/Release/client.exe
-          build/libs/
-        retention-days: 7
-    
-    - name: Create portable package
-      run: |
-        New-Item -ItemType Directory -Force -Path windows-package
-        Copy-Item build\server\Release\server.exe windows-package\
-        Copy-Item build\client\Release\client.exe windows-package\
-        # Copy SDL2 module
-        if (Test-Path build\libs) {
-          Copy-Item -Recurse build\libs windows-package\
-        }
-        # Copy assets
-        if (Test-Path client\assets) {
-          Copy-Item -Recurse client\assets windows-package\
-        }
-        if (Test-Path server\assets) {
-          Copy-Item -Recurse server\assets windows-package\ -ErrorAction SilentlyContinue
-        }
-        # Copy DLLs from Conan build directory
-        Get-ChildItem -Path build -Filter *.dll -Recurse | Copy-Item -Destination windows-package\ -ErrorAction SilentlyContinue
-        # Create run scripts
-        @"
-        @echo off
-        cd /d "%~dp0"
-        server.exe %*
-        "@ | Out-File -FilePath windows-package\run_server.bat -Encoding ASCII
-        @"
-        @echo off
-        cd /d "%~dp0"
-        client.exe %*
-        "@ | Out-File -FilePath windows-package\run_client.bat -Encoding ASCII
-      shell: pwsh
-    
-    - name: Upload Windows portable package
-      uses: actions/upload-artifact@v4
-      with:
-        name: windows-portable-package
-        path: windows-package/
-        retention-days: 7
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: rtype-windows
+          path: |
+            build/server/${{ env.BUILD_TYPE }}/server.exe
+            build/client/${{ env.BUILD_TYPE }}/client.exe
+            build/libs/
+          retention-days: 14
 
-  build-status:
-    name: Build Status Summary
+  # ============================================================================
+  # Code Quality
+  # ============================================================================
+  lint:
+    name: Lint
     runs-on: ubuntu-latest
-    needs: [build-linux, build-windows]
-    if: always()
-    
+
     steps:
-    - name: Check build results
-      run: |
-        if [[ "${{ needs.build-linux.result }}" == "success" && "${{ needs.build-windows.result }}" == "success" ]]; then
-          echo "✅ All builds successful!"
-          exit 0
-        else
-          echo "❌ Some builds failed:"
-          echo "  Linux: ${{ needs.build-linux.result }}"
-          echo "  Windows: ${{ needs.build-windows.result }}"
-          exit 1
-        fi
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install clang-format
+        run: sudo apt-get update && sudo apt-get install -y clang-format
+
+      - name: Check formatting
+        run: ./scripts/format-check.sh
