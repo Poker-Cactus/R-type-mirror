@@ -270,7 +270,7 @@ private:
     sprite.startFrame = 0;
     sprite.endFrame = bubbleConfig.frameCount - 1; // 0 to 11 (12 frames)
     sprite.currentFrame = 0;
-    sprite.frameTime = 0.3f; // Slightly faster animation
+    sprite.frameTime = 0.1f; // Moderate animation speed
     sprite.reverseAnimation = false; // Play forward to avoid loop cut
     sprite.loop = true;
     sprite.row = 0; // bubble.png has only one row

@@ -21,6 +21,7 @@
 #include "../interface/Geometry.hpp"
 #include "../interface/KeyCodes.hpp"
 #include <iostream>
+#include <unordered_set>
 
 PlayingState::PlayingState(std::shared_ptr<IRenderer> renderer, const std::shared_ptr<ecs::World> &world,
                            Settings &settings, std::shared_ptr<INetworkManager> networkManager)
@@ -192,12 +193,15 @@ void PlayingState::render()
           // Yellow Bee: 256x64 with 2 rows x 8 columns = 16 frames
           frameWidth = 256 / 8; // 32px per frame
           frameHeight = 64 / 2; // 32px per frame (2 rows)
+          break;
         case ecs::SpriteId::CHARGED_PROJECTILE:
           frameWidth = 165 / 2; // 82px per frame
           frameHeight = 16;
+          break;
         case ecs::SpriteId::LOADING_SHOT:
           frameWidth = 255 / 8; // 31-32px per frame
           frameHeight = 29;
+          break;
         case ecs::SpriteId::ENEMY_WALKER:
           // Walker: 200x67 with 2 rows x 6 columns = 12 frames
           frameWidth = 200 / 6; // 33px per frame
@@ -260,18 +264,16 @@ void PlayingState::render()
             }
           }
           break;
-        default:
-          break;
-        }
-
-        if (sprite.spriteId == ecs::SpriteId::ENEMY_ROBOT) {
-          // Robot: 200x34 with 6 frames in single row (0-2: left, 3-5: right)
+        case ecs::SpriteId::ENEMY_ROBOT:
           frameWidth = 200 / 6; // 33px per frame
           frameHeight = 34;
-        } else if (sprite.spriteId == ecs::SpriteId::ROBOT_PROJECTILE) {
-          // Robot Projectile: 101x114 single frame
+          break;
+        case ecs::SpriteId::ROBOT_PROJECTILE:
           frameWidth = 101;
           frameHeight = 114;
+          break;
+        default:
+          break;
         }
 
         if (frameWidth > 0 && frameHeight > 0) {
@@ -1277,13 +1279,16 @@ void PlayingState::loadSpriteTextures()
 
 void PlayingState::freeSpriteTextures()
 {
-  if (renderer == nullptr) {
+  if (renderer == nullptr || m_spriteTextures.empty()) {
     return;
   }
 
+  std::unordered_set<void *> destroyedTextures;
+
   for (auto &[spriteId, texture] : m_spriteTextures) {
-    if (texture != nullptr) {
+    if (texture != nullptr && destroyedTextures.find(texture) == destroyedTextures.end()) {
       renderer->freeTexture(texture);
+      destroyedTextures.insert(texture);
     }
   }
 

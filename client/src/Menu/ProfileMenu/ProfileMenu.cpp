@@ -14,7 +14,19 @@
 
 ProfileMenu::ProfileMenu(std::shared_ptr<IRenderer> renderer) : m_renderer(renderer) {}
 
-ProfileMenu::~ProfileMenu() {}
+ProfileMenu::~ProfileMenu()
+{
+  if (m_renderer) {
+    if (font) {
+      m_renderer->freeFont(font);
+      font = nullptr;
+    }
+    if (titleFont) {
+      m_renderer->freeFont(titleFont);
+      titleFont = nullptr;
+    }
+  }
+}
 
 void ProfileMenu::init(Settings &settings)
 {

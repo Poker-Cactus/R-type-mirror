@@ -537,9 +537,7 @@ private:
     PowerupType powerupType;
     int cycle = m_powerupSpawnCount % 4;
     if (cycle == 0) {
-      powerupType = PowerupType::BUBBLE_RUBAN;
-
-      // powerupType = PowerupType::DRONE;
+      powerupType = PowerupType::DRONE;
     } else if (cycle == 1) {
       powerupType = PowerupType::BUBBLE;
     } else if (cycle == 2) {
@@ -1033,81 +1031,80 @@ private:
   {
     ecs::Entity powerup = world.createEntity();
 
-  // Transform
-  ecs::Transform transform;
-  transform.x = posX;
-  transform.y = posY;
-  transform.rotation = 0.0F;
-  transform.scale = POWERUP_SCALE;
-  world.addComponent(powerup, transform);
+    // Transform
+    ecs::Transform transform;
+    transform.x = posX;
+    transform.y = posY;
+    transform.rotation = 0.0F;
+    transform.scale = POWERUP_SCALE;
+    world.addComponent(powerup, transform);
 
-  // Velocity - slow drift to the left
-  ecs::Velocity velocity;
-  velocity.dx = POWERUP_VELOCITY_X;
-  velocity.dy = 0.0F;
-  world.addComponent(powerup, velocity);
+    // Velocity - slow drift to the left
+    ecs::Velocity velocity;
+    velocity.dx = POWERUP_VELOCITY_X;
+    velocity.dy = 0.0F;
+    world.addComponent(powerup, velocity);
 
-  // Collider for pickup detection
-  world.addComponent(powerup, ecs::Collider{POWERUP_COLLIDER_SIZE, POWERUP_COLLIDER_SIZE});
+    // Collider for pickup detection
+    world.addComponent(powerup, ecs::Collider{POWERUP_COLLIDER_SIZE, POWERUP_COLLIDER_SIZE});
 
-  // Sprite - all powerups use POWERUP spriteId with different currentFrame
-  // Frame 0=BUBBLE, Frame 1=BUBBLE_TRIPLE, Frame 2=BUBBLE_RUBAN, Frame 3=DRONE
-  // R-Type_Items.png: Frame 0=BUBBLE, Frame 1=BUBBLE_TRIPLE, Frame 2=BUBBLE_RUBAN, Frame 3=DRONE
-  ecs::Sprite sprite;
-  sprite.spriteId = ecs::SpriteId::POWERUP;
-  sprite.width = POWERUP_FRAME_WIDTH;
-  sprite.height = POWERUP_SPRITE_HEIGHT;
-  sprite.animated = true; // Enable animation for cycling
-  sprite.frameCount = POWERUP_FRAME_COUNT; // 4 frames total
-  sprite.frameTime = 0.03f; // Animation speed
-  sprite.loop = true;
+    // Sprite - all powerups use POWERUP spriteId with different currentFrame
+    // Frame 0=BUBBLE, Frame 1=BUBBLE_TRIPLE, Frame 2=BUBBLE_RUBAN, Frame 3=DRONE
+    // R-Type_Items.png: Frame 0=BUBBLE, Frame 1=BUBBLE_TRIPLE, Frame 2=BUBBLE_RUBAN, Frame 3=DRONE
+    ecs::Sprite sprite;
+    sprite.spriteId = ecs::SpriteId::POWERUP;
+    sprite.width = POWERUP_FRAME_WIDTH;
+    sprite.height = POWERUP_SPRITE_HEIGHT;
+    sprite.animated = true; // Enable animation for cycling
+    sprite.frameCount = POWERUP_FRAME_COUNT; // 4 frames total
+    sprite.frameTime = 0.08f; // Animation speed
+    sprite.loop = true;
 
-  // Select starting frame and animation range based on powerup type
-  switch (powerupType) {
-  case PowerupType::BUBBLE:
-    sprite.startFrame = 0;
-    sprite.endFrame = 0;
-    sprite.currentFrame = 0;
-    break;
-  case PowerupType::BUBBLE_TRIPLE:
-    sprite.startFrame = 1;
-    sprite.endFrame = 1;
-    sprite.currentFrame = 1;
-    break;
-  case PowerupType::BUBBLE_RUBAN:
-    sprite.startFrame = 2;
-    sprite.endFrame = 2;
-    sprite.currentFrame = 2;
-    break;
-  case PowerupType::DRONE:
-  default:
-    sprite.startFrame = 3;
-    sprite.endFrame = 3;
-    sprite.currentFrame = 3;
-    break;
+    // Select starting frame and animation range based on powerup type
+    switch (powerupType) {
+    case PowerupType::BUBBLE:
+      sprite.startFrame = 0;
+      sprite.endFrame = 0;
+      sprite.currentFrame = 0;
+      break;
+    case PowerupType::BUBBLE_TRIPLE:
+      sprite.startFrame = 1;
+      sprite.endFrame = 1;
+      sprite.currentFrame = 1;
+      break;
+    case PowerupType::BUBBLE_RUBAN:
+      sprite.startFrame = 2;
+      sprite.endFrame = 2;
+      sprite.currentFrame = 2;
+      break;
+    case PowerupType::DRONE:
+    default:
+      sprite.startFrame = 3;
+      sprite.endFrame = 3;
+      sprite.currentFrame = 3;
+      break;
+    }
+    sprite.frameTime = 0.08f;
+    sprite.loop = true;
+    world.addComponent(powerup, sprite);
+
+    // Networked for client replication
+    ecs::Networked net;
+    net.networkId = powerup;
+    world.addComponent(powerup, net);
+
+    const char *typeNames[] = {"DRONE", "BUBBLE", "BUBBLE_TRIPLE", "BUBBLE_RUBAN"};
+    std::cout << "[SpawnSystem] Spawned " << typeNames[static_cast<int>(powerupType)] << " powerup at (" << posX << ", "
+              << posY << ")\n";
   }
-  sprite.frameTime = 0.1f;
-  sprite.loop = true;
-  world.addComponent(powerup, sprite);
 
-  // Networked for client replication
-  ecs::Networked net;
-  net.networkId = powerup;
-  world.addComponent(powerup, net);
-
-  const char *typeNames[] = {"DRONE", "BUBBLE", "BUBBLE_TRIPLE", "BUBBLE_RUBAN"};
-  std::cout << "[SpawnSystem] Spawned " << typeNames[static_cast<int>(powerupType)] << " powerup at (" << posX << ", "
-            << posY << ")\n";
-}
-
-static void
-spawnExplosion(ecs::World &world, float posX, float posY)
-{
-  (void)world;
-  (void)posX;
-  (void)posY;
-  // TODO: Implement explosion effect
-}
+  static void spawnExplosion(ecs::World &world, float posX, float posY)
+  {
+    (void)world;
+    (void)posX;
+    (void)posY;
+    // TODO: Implement explosion effect
+  }
 }; // namespace server
 
 } // namespace server
