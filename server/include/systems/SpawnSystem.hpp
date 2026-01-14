@@ -537,9 +537,7 @@ private:
     PowerupType powerupType;
     int cycle = m_powerupSpawnCount % 4;
     if (cycle == 0) {
-      powerupType = PowerupType::BUBBLE_RUBAN;
-
-      // powerupType = PowerupType::DRONE;
+      powerupType = PowerupType::DRONE;
     } else if (cycle == 1) {
       powerupType = PowerupType::BUBBLE;
     } else if (cycle == 2) {
@@ -1086,7 +1084,7 @@ private:
     sprite.currentFrame = 3;
     break;
   }
-  sprite.frameTime = 0.1f;
+  sprite.frameTime = 0.08f;
   sprite.loop = true;
   world.addComponent(powerup, sprite);
 
