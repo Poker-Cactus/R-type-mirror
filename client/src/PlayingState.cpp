@@ -73,18 +73,23 @@ bool PlayingState::init()
 #ifdef __APPLE__
     // macOS system font path
     constexpr int HUD_FONT_SIZE = 18;
-    m_hudFont = renderer->loadFont("/System/Library/Fonts/Helvetica.ttc", HUD_FONT_SIZE);
+    void* rawFont = renderer->loadFont("/System/Library/Fonts/Helvetica.ttc", HUD_FONT_SIZE);
 #else
     constexpr int HUD_FONT_SIZE = 18;
-    m_hudFont = renderer->loadFont("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", HUD_FONT_SIZE);
+    void* rawFont = renderer->loadFont("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", HUD_FONT_SIZE);
 #endif
+    // Wrap in shared_ptr with custom deleter
+    auto fontDeleter = [r = renderer](void* font) {
+      if (font && r) r->freeFont(font);
+    };
+    m_hudFont = std::shared_ptr<void>(rawFont, fontDeleter);
   } catch (const std::exception &e) {
     std::cerr << "PlayingState: Warning - Could not load HUD font: " << e.what() << '\n';
     m_hudFont = nullptr;
   }
 
   // Initialize info mode
-  m_infoMode = std::make_unique<InfoMode>(renderer, m_hudFont);
+  m_infoMode = std::make_unique<rtype::InfoMode>(renderer, m_hudFont, settings);
 
   std::cout << "PlayingState: Initialized successfully" << '\n';
 
@@ -561,15 +566,14 @@ void PlayingState::renderHUD()
   }
 
   // Score text (only if font is loaded)
-  if (m_hudFont != nullptr) {
+  if (m_hudFont) {
     std::string scoreText = "Score: " + std::to_string(m_playerScore);
-    renderer->drawText(m_hudFont, scoreText, HEARTS_X, HEARTS_Y + HUD_SCORE_OFFSET_Y, HUD_TEXT_WHITE);
+    renderer->drawText(m_hudFont.get(), scoreText, HEARTS_X, HEARTS_Y + HUD_SCORE_OFFSET_Y, HUD_TEXT_WHITE);
   }
 
   // Render info mode if active
   if (m_infoMode) {
-    const int infoTextY = HEARTS_Y + HUD_SCORE_OFFSET_Y + 30; // Below score
-    m_infoMode->render(HEARTS_X, infoTextY);
+    m_infoMode->render();
   }
 }
 
@@ -883,11 +887,8 @@ void PlayingState::cleanup()
     m_heartsTexture = nullptr;
   }
 
-  // Free HUD font
-  if (m_hudFont != nullptr && renderer != nullptr) {
-    renderer->freeFont(m_hudFont);
-    m_hudFont = nullptr;
-  }
+  // Free HUD font (handled by shared_ptr destructor)
+  m_hudFont.reset();
 
   std::cout << "PlayingState: Cleaned up" << '\n';
 }

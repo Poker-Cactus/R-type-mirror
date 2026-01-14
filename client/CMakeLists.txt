@@ -16,12 +16,7 @@ add_executable(client
     src/Menu/ProfileMenu/ProfileMenu.cpp
     src/LobbyRoomState.cpp
     src/PlayingState.cpp
-    src/infomode/InfoMode.cpp
-    src/infomode/InfoCategory.cpp
-    src/infomode/categories/CpuRamCategory.cpp
-    src/infomode/categories/GameCategory.cpp
-    src/infomode/categories/DeviceCategory.cpp
-    src/infomode/categories/NetworkCategory.cpp
+    src/infomode/src/InfoMode.cpp
     src/ParallaxBackground.cpp
     src/Overlay.cpp
     src/Client.cpp
