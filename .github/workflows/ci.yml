@@ -10,67 +10,67 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v3
+      - name: Checkout repository
+        uses: actions/checkout@v3
 
-    - name: Cache Conan packages
-      uses: actions/cache@v3
-      with:
-        path: ~/.conan2
-        key: conan-${{ runner.os }}-${{ hashFiles('conanfile.txt', 'conan_profile_ci') }}
-        restore-keys: |
-          conan-${{ runner.os }}-
+      - name: Cache Conan packages
+        uses: actions/cache@v3
+        with:
+          path: ~/.conan2
+          key: conan-${{ runner.os }}-${{ hashFiles('conanfile.txt', 'conan_profile_ci') }}
+          restore-keys: |
+            conan-${{ runner.os }}-
 
-    - name: Install system dependencies
-      run: |
-        sudo apt update
-        sudo apt install -y \
-          clang clang-tidy clang-format clang-tools \
-          cmake gcc g++ \
-          python3 python3-pip \
-          pkg-config \
-          libsfml-dev
+      - name: Install system dependencies
+        run: |
+          sudo apt update
+          sudo apt install -y \
+            clang clang-tidy clang-format clang-tools \
+            cmake gcc g++ \
+            python3 python3-pip \
+            pkg-config \
+            libsfml-dev
 
-    - name: Install Conan
-      run: |
-        pip3 install conan
-        conan profile detect --force
+      - name: Install Conan
+        run: |
+          pip3 install conan
+          conan profile detect --force
 
-    - name: Install dependencies with Conan
-      run: |
-        conan install . --output-folder=build --build=missing --profile=conan_profile_ci
+      - name: Install dependencies with Conan
+        run: |
+          conan install . --output-folder=build --build=missing --profile=conan_profile_ci
 
-    - name: Configure project
-      run: cmake --preset conan-release -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+      - name: Configure project
+        run: cmake --preset conan-release -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
 
-    - name: Build project
-      run: cmake --build build -- -j4
+      - name: Build project
+        run: cmake --build build -- -j4
 
-    - name: Copy compile_commands.json
-      shell: bash
-      run: |
-        set -euo pipefail
-        src="build/compile_commands.json"
-        dst="./compile_commands.json"
+      - name: Copy compile_commands.json
+        shell: bash
+        run: |
+          set -euo pipefail
+          src="build/compile_commands.json"
+          dst="./compile_commands.json"
 
-        # Some setups already generate `compile_commands.json` at repo root (or as a symlink).
-        # Avoid copying a file onto itself (cp exits non-zero and fails the job).
-        if [ ! -f "$src" ]; then
-          echo "No $src to copy (skipping)."
-          exit 0
-        fi
+          # Some setups already generate `compile_commands.json` at repo root (or as a symlink).
+          # Avoid copying a file onto itself (cp exits non-zero and fails the job).
+          if [ ! -f "$src" ]; then
+            echo "No $src to copy (skipping)."
+            exit 0
+          fi
 
-        src_real="$(readlink -f "$src" 2>/dev/null || echo "$src")"
-        dst_real="$(readlink -f "$dst" 2>/dev/null || echo "$dst")"
-        if [ "$src_real" = "$dst_real" ]; then
-          echo "compile_commands.json already at destination (skipping)."
-          exit 0
-        fi
+          src_real="$(readlink -f "$src" 2>/dev/null || echo "$src")"
+          dst_real="$(readlink -f "$dst" 2>/dev/null || echo "$dst")"
+          if [ "$src_real" = "$dst_real" ]; then
+            echo "compile_commands.json already at destination (skipping)."
+            exit 0
+          fi
 
-        cp -f "$src" "$dst"
+          cp -f "$src" "$dst"
 
-    - name: Run clang-format check
-      run: ./scripts/format-check.sh
+      - name: Run clang-format check
+        run: ./scripts/format-check.sh
 
-    - name: Run clang-tidy check
-      run: ./scripts/tidy-check.sh
+      - name: Run clang-tidy check
+        run: ./scripts/tidy-check.sh

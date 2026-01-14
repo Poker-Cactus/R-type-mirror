@@ -52,6 +52,13 @@ if(BUILD_ASSET_EDITOR)
     add_subdirectory(assetEditor)
 endif()
 
+# FlappyBird (optional game - separate build)
+option(BUILD_FLAPPYBIRD "Build the FlappyBird game" OFF)
+if(BUILD_FLAPPYBIRD)
+    add_subdirectory(flappyBird/server)
+    add_subdirectory(flappyBird/client)
+endif()
+
 
 
 find_program(CLANG_TIDY_EXE NAMES clang-tidy)

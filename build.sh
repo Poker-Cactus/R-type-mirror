@@ -406,6 +406,53 @@ cmd_run_editor() {
     exec "$BUILD_DIR/assetEditor/assetEditor" "$@"
 }
 
+cmd_flappy() {
+    print_banner
+    print_section "Building FlappyBird"
+    
+    # Check if conan dependencies are installed
+    if [ ! -d "$BUILD_DIR" ] || [ ! -f "$BUILD_DIR/CMakeCache.txt" ]; then
+        install_dependencies || exit 1
+        echo ""
+        configure_cmake || exit 1
+        echo ""
+    fi
+    
+    print_step "Configuring FlappyBird..."
+    cmake --preset conan-release -DBUILD_FLAPPYBIRD=ON > /dev/null 2>&1 || {
+        print_error "CMake configuration failed!"
+        return 1
+    }
+    
+    print_step "Compiling FlappyBird server..."
+    echo ""
+    
+    # Build both FlappyBird server and client
+    cmake --build "$BUILD_DIR" --target flappybird_server flappybird_client 2>&1 | format_build_output
+    
+    if [ ${PIPESTATUS[0]} -eq 0 ]; then
+        echo ""
+        echo -e "${GREEN}${BOLD}"
+        echo "╔═══════════════════════════════════════════════════════════╗"
+        echo "║        🐦  FLAPPYBIRD BUILD SUCCESSFUL!  🐦              ║"
+        echo "╚═══════════════════════════════════════════════════════════╝"
+        echo -e "${RESET}"
+        echo ""
+        echo -e "${WHITE}${BOLD}Run:${RESET}"
+        echo -e "  ${GREEN}$BUILD_DIR/flappyBird/server/flappybird_server${RESET}  │  FlappyBird Server"
+        echo -e "  ${BLUE}$BUILD_DIR/flappyBird/client/flappybird_client${RESET}  │  FlappyBird Client"
+        echo ""
+    else
+        echo ""
+        echo -e "${RED}${BOLD}"
+        echo "╔═══════════════════════════════════════════════════════════╗"
+        echo "║          ❌  FLAPPYBIRD BUILD FAILED!  ❌                ║"
+        echo "╚═══════════════════════════════════════════════════════════╝"
+        echo -e "${RESET}"
+        exit 1
+    fi
+}
+
 cmd_engine() {
     print_banner
     print_section "Building Engine"
@@ -532,6 +579,7 @@ cmd_help() {
     echo -e "  ${GREEN}client${RESET}      Run the client"
     echo -e "  ${GREEN}editor${RESET}      Run the Asset Editor"
     echo -e "  ${GREEN}engine${RESET}      Build engineCore only"
+    echo -e "  ${GREEN}flappy${RESET}      Build FlappyBird server"
     echo -e "  ${GREEN}help${RESET}        Show this help message"
     echo ""
 }
@@ -554,6 +602,7 @@ main() {
         "client")           cmd_run_client "$@" ;;
         "editor")           cmd_run_editor "$@" ;;
         "engine")           cmd_engine ;;
+        "flappy")           cmd_flappy ;;
         "help"|"-h"|"--help") cmd_help ;;
         *)
             print_error "Unknown command: $command"
