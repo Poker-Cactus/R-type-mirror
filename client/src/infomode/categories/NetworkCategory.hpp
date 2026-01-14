@@ -38,9 +38,14 @@ public:
 
   /**
    * @brief Update network information
-   * @param deltaTime Time elapsed since last update
    */
-  void update(float deltaTime) override;
+  void update() override;
+
+  /**
+   * @brief Get the update interval for this category in frames (at 60 FPS)
+   * @return 12 frames (every 0.2 seconds at 60 FPS)
+   */
+  int getUpdateIntervalFrames() const override { return 12; }
 
   /**
    * @brief Set network latency for display

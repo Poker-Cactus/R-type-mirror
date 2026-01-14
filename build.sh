@@ -81,6 +81,7 @@ print_result_banner() {
         echo -e "  ${GREEN}./build.sh server${RESET}  │  Server"
         echo -e "  ${BLUE}./build.sh client${RESET}  │  Client"
         echo -e "  ${MAGENTA}./build.sh editor${RESET}  │  Asset Editor"
+        echo -e "  ${CYAN}./build.sh engine${RESET}  │  Engine Only"
         echo ""
     else
         echo -e "${RED}${BOLD}"
@@ -181,7 +182,29 @@ compile_project() {
     print_step "Compiling project..."
     echo ""
     
-    cmake --build "$BUILD_DIR" --config "$BUILD_TYPE" 2>&1 | format_build_output
+    cmake --build "$BUILD_DIR" --config "$BUILD_TYPE" -j8 2>&1 | format_build_output
+    return ${PIPESTATUS[0]}
+}
+
+compile_editor() {
+    # Setup ImGui if not present
+    if [ ! -d "assetEditor/vendor/imgui" ]; then
+        print_step "Downloading ImGui..."
+        ./assetEditor/setup_imgui.sh
+        print_success "ImGui downloaded"
+        echo ""
+    fi
+    
+    print_step "Compiling Asset Editor..."
+    
+    # Configure with editor flag
+    cmake --preset conan-release -DBUILD_ASSET_EDITOR=ON > /dev/null 2>&1 || {
+        print_error "CMake configuration failed!"
+        return 1
+    }
+    
+    # Build just the editor
+    cmake --build "$BUILD_DIR" --target assetEditor -j8 2>&1 | format_build_output
     return ${PIPESTATUS[0]}
 }
 
@@ -264,6 +287,12 @@ cmd_clean() {
     else
         print_info "Nothing to clean"
     fi
+    
+    # Remove imgui.ini if it exists
+    if [ -f "imgui.ini" ]; then
+        rm -f "imgui.ini"
+        print_info "Removed imgui.ini"
+    fi
 }
 
 cmd_fclean() {
@@ -321,7 +350,7 @@ cmd_test() {
     ) || { print_error "CMake configuration failed!"; exit 1; }
     
     print_step "Building tests..."
-    cmake --build "$BUILD_DIR" --target component_signature_tests component_manager_tests entity_tests entity_manager_tests component_storage_tests system_manager_tests world_tests 2>&1 | tail -5
+    cmake --build "$BUILD_DIR" --target component_signature_tests component_manager_tests entity_tests entity_manager_tests component_storage_tests system_manager_tests world_tests -j8 2>&1 | tail -5
     
     print_step "Executing tests..."
     echo ""
@@ -377,6 +406,42 @@ cmd_run_editor() {
     exec "$BUILD_DIR/assetEditor/assetEditor" "$@"
 }
 
+cmd_engine() {
+    print_banner
+    print_section "Building Engine"
+    
+    # Check if conan dependencies are installed
+    if [ ! -d "$BUILD_DIR" ] || [ ! -f "$BUILD_DIR/CMakeCache.txt" ]; then
+        install_dependencies || exit 1
+        echo ""
+        configure_cmake || exit 1
+        echo ""
+    fi
+    
+    print_step "Compiling engineCore..."
+    echo ""
+    
+    # Build just the engine
+    cmake --build "$BUILD_DIR" --target engineCore -j8 2>&1 | format_build_output
+    
+    if [ ${PIPESTATUS[0]} -eq 0 ]; then
+        echo ""
+        echo -e "${GREEN}${BOLD}"
+        echo "╔═══════════════════════════════════════════════════════════╗"
+        echo "║           ✨  ENGINE BUILD SUCCESSFUL!  ✨                ║"
+        echo "╚═══════════════════════════════════════════════════════════╝"
+        echo -e "${RESET}"
+    else
+        echo ""
+        echo -e "${RED}${BOLD}"
+        echo "╔═══════════════════════════════════════════════════════════╗"
+        echo "║              ❌  ENGINE BUILD FAILED!  ❌                ║"
+        echo "╚═══════════════════════════════════════════════════════════╝"
+        echo -e "${RESET}"
+        exit 1
+    fi
+}
+
 cmd_launch() {
     print_banner
     print_section "Quick Launch"
@@ -388,7 +453,7 @@ cmd_launch() {
     fi
     
     print_step "Recompiling..."
-    cmake --build "$BUILD_DIR" --config "$BUILD_TYPE" > /dev/null 2>&1
+    cmake --build "$BUILD_DIR" --config "$BUILD_TYPE" -j8 > /dev/null 2>&1
     
     if [ $? -ne 0 ]; then
         print_error "Compilation failed!"
@@ -466,6 +531,7 @@ cmd_help() {
     echo -e "  ${GREEN}server${RESET}      Run the server"
     echo -e "  ${GREEN}client${RESET}      Run the client"
     echo -e "  ${GREEN}editor${RESET}      Run the Asset Editor"
+    echo -e "  ${GREEN}engine${RESET}      Build engineCore only"
     echo -e "  ${GREEN}help${RESET}        Show this help message"
     echo ""
 }
@@ -487,6 +553,7 @@ main() {
         "server")           cmd_run_server "$@" ;;
         "client")           cmd_run_client "$@" ;;
         "editor")           cmd_run_editor "$@" ;;
+        "engine")           cmd_engine ;;
         "help"|"-h"|"--help") cmd_help ;;
         *)
             print_error "Unknown command: $command"

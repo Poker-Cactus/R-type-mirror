@@ -37,13 +37,12 @@ public:
 
   /**
    * @brief Update the category's information
-   * @param deltaTime Time elapsed since last update in seconds
    */
-  virtual void update(float deltaTime) = 0;
+  virtual void update() = 0;
 
   /**
-   * @brief Check if this category should be updated frequently
-   * @return true if category needs frequent updates (e.g., CPU usage)
+   * @brief Get the update interval for this category in frames (at 60 FPS)
+   * @return Number of frames between updates (e.g., 120 for every 2 seconds at 60 FPS)
    */
-  virtual bool needsFrequentUpdates() const { return false; }
+  virtual int getUpdateIntervalFrames() const = 0;
 };

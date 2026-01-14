@@ -1,261 +1,261 @@
 {
   "enemies": [
     {
-      "id": "enemy_red",
-      "name": "Red Oscillator",
+      "collider": {
+        "height": 108.0,
+        "width": 99.0
+      },
       "description": "Standard enemy with sine wave movement",
-      "sprite": {
-        "spriteId": 2,
-        "width": 33,
-        "height": 36,
-        "animated": true,
-        "frameCount": 16,
-        "startFrame": 7,
-        "endFrame": 0,
-        "loop": true,
-        "frameTime": 0.1,
-        "reverseAnimation": true
-      },
-      "transform": {
-        "scale": 3.0
-      },
       "health": {
         "hp": 30,
         "maxHp": 30
       },
-      "collider": {
-        "width": 99.0,
-        "height": 108.0
+      "id": "enemy_red",
+      "name": "Red Oscillator",
+      "pattern": {
+        "amplitude": 40.0,
+        "frequency": 6.0,
+        "type": "sine_wave"
+      },
+      "spawn": {
+        "groupSizeMax": 5,
+        "groupSizeMin": 1,
+        "spawnDelay": 0.3,
+        "spawnInterval": 6.0
+      },
+      "sprite": {
+        "animated": true,
+        "endFrame": 0,
+        "frameCount": 16,
+        "frameTime": 0.1,
+        "height": 36,
+        "loop": true,
+        "reverseAnimation": true,
+        "spriteId": 2,
+        "startFrame": 7,
+        "width": 33
+      },
+      "transform": {
+        "scale": 3.0
       },
       "velocity": {
         "dx": -384.0,
         "dy": 0.0
-      },
-      "pattern": {
-        "type": "sine_wave",
-        "amplitude": 40.0,
-        "frequency": 6.0
-      },
-      "spawn": {
-        "groupSizeMin": 1,
-        "groupSizeMax": 5,
-        "spawnDelay": 0.3,
-        "spawnInterval": 6.0
       }
     },
     {
-      "id": "enemy_blue",
-      "name": "Yellow Bee Zigzag",
+      "collider": {
+        "height": 80.0,
+        "width": 80.0
+      },
       "description": "Bee-like enemy in formation with zigzag diagonal movement",
-      "sprite": {
-        "spriteId": 6,
-        "width": 32,
-        "height": 32,
-        "animated": false,
-        "frameCount": 1,
-        "startFrame": 8,
-        "endFrame": 8,
-        "loop": false,
-        "frameTime": 0.0,
-        "reverseAnimation": false
-      },
-      "transform": {
-        "scale": 2.5
-      },
       "health": {
         "hp": 15,
         "maxHp": 15
       },
-      "collider": {
-        "width": 80.0,
-        "height": 80.0
+      "id": "enemy_blue",
+      "name": "Yellow Bee Zigzag",
+      "pattern": {
+        "amplitude": 200.0,
+        "frequency": 1.0,
+        "type": "zigzag"
+      },
+      "spawn": {
+        "groupSizeMax": 10,
+        "groupSizeMin": 10,
+        "spawnDelay": 0.2,
+        "spawnInterval": 5.0
+      },
+      "sprite": {
+        "animated": false,
+        "endFrame": 8,
+        "frameCount": 1,
+        "frameTime": 0.0,
+        "height": 32,
+        "loop": false,
+        "reverseAnimation": false,
+        "spriteId": 6,
+        "startFrame": 8,
+        "width": 32
+      },
+      "transform": {
+        "scale": 2.5
       },
       "velocity": {
         "dx": -250.0,
         "dy": 150.0
-      },
-      "pattern": {
-        "type": "zigzag",
-        "amplitude": 200.0,
-        "frequency": 1.0
-      },
-      "spawn": {
-        "groupSizeMin": 10,
-        "groupSizeMax": 10,
-        "spawnDelay": 0.2,
-        "spawnInterval": 5.0
       }
     },
     {
-      "id": "enemy_fast",
-      "name": "Fast Scout",
+      "collider": {
+        "height": 72.0,
+        "width": 66.0
+      },
       "description": "Quick, fragile enemy that rushes straight",
-      "sprite": {
-        "spriteId": 2,
-        "width": 33,
-        "height": 36,
-        "animated": true,
-        "frameCount": 16,
-        "startFrame": 0,
-        "endFrame": 15,
-        "loop": true,
-        "frameTime": 0.05,
-        "reverseAnimation": false
-      },
-      "transform": {
-        "scale": 2.0
-      },
       "health": {
         "hp": 15,
         "maxHp": 15
       },
-      "collider": {
-        "width": 66.0,
-        "height": 72.0
+      "id": "enemy_fast",
+      "name": "Fast Scout",
+      "pattern": {
+        "amplitude": 0.0,
+        "frequency": 0.0,
+        "type": "none"
+      },
+      "spawn": {
+        "groupSizeMax": 7,
+        "groupSizeMin": 3,
+        "spawnDelay": 0.2,
+        "spawnInterval": 4.0
+      },
+      "sprite": {
+        "animated": true,
+        "endFrame": 15,
+        "frameCount": 16,
+        "frameTime": 0.05,
+        "height": 36,
+        "loop": true,
+        "reverseAnimation": false,
+        "spriteId": 2,
+        "startFrame": 0,
+        "width": 33
+      },
+      "transform": {
+        "scale": 2.0
       },
       "velocity": {
         "dx": -600.0,
         "dy": 0.0
-      },
-      "pattern": {
-        "type": "none",
-        "amplitude": 0.0,
-        "frequency": 0.0
-      },
-      "spawn": {
-        "groupSizeMin": 3,
-        "groupSizeMax": 7,
-        "spawnDelay": 0.2,
-        "spawnInterval": 4.0
       }
     },
     {
-      "id": "enemy_tank",
-      "name": "Heavy Tank",
+      "collider": {
+        "height": 144.0,
+        "width": 132.0
+      },
       "description": "Slow but heavily armored enemy",
-      "sprite": {
-        "spriteId": 2,
-        "width": 33,
-        "height": 36,
-        "animated": true,
-        "frameCount": 16,
-        "startFrame": 7,
-        "endFrame": 0,
-        "loop": true,
-        "frameTime": 0.15,
-        "reverseAnimation": true
-      },
-      "transform": {
-        "scale": 4.0
-      },
       "health": {
         "hp": 100,
         "maxHp": 100
       },
-      "collider": {
-        "width": 132.0,
-        "height": 144.0
-      },
-      "velocity": {
-        "dx": -150.0,
-        "dy": 0.0
-      },
+      "id": "enemy_tank",
+      "name": "Heavy Tank",
       "pattern": {
-        "type": "sine_wave",
         "amplitude": 20.0,
-        "frequency": 2.0
+        "frequency": 2.0,
+        "type": "sine_wave"
       },
       "spawn": {
-        "groupSizeMin": 1,
         "groupSizeMax": 2,
+        "groupSizeMin": 1,
         "spawnDelay": 1.0,
         "spawnInterval": 12.0
-      }
-    },
-    {
-      "id": "enemy_walker",
-      "name": "Ground Walker",
-      "description": "Walking enemy that moves on ground and shoots projectiles at player",
+      },
       "sprite": {
-        "spriteId": 7,
-        "width": 33,
-        "height": 33,
         "animated": true,
-        "frameCount": 6,
-        "startFrame": 0,
-        "endFrame": 2,
-        "loop": true,
+        "endFrame": 0,
+        "frameCount": 16,
         "frameTime": 0.15,
-        "reverseAnimation": false
+        "height": 36,
+        "loop": true,
+        "reverseAnimation": true,
+        "spriteId": 2,
+        "startFrame": 7,
+        "width": 33
       },
       "transform": {
-        "scale": 2.5
-      },
-      "health": {
-        "hp": 40,
-        "maxHp": 40
-      },
-      "collider": {
-        "width": 82.5,
-        "height": 82.5
+        "scale": 4.0
       },
       "velocity": {
         "dx": -150.0,
         "dy": 0.0
-      },
-      "pattern": {
-        "type": "ground_walk",
-        "amplitude": 0.0,
-        "frequency": 0.0
-      },
-      "spawn": {
-        "groupSizeMin": 1,
-        "groupSizeMax": 3,
-        "spawnDelay": 0.5,
-        "spawnInterval": 8.0
       }
     },
     {
-      "id": "enemy_robot",
-      "name": "Flying Robot",
-      "description": "Flying robot that bouce up and down while shooting",
-      "sprite": {
-        "spriteId": 9,
-        "width": 33,
-        "height": 34,
-        "animated": true,
-        "frameCount": 6,
-        "startFrame": 0,
-        "endFrame": 2,
-        "loop": true,
-        "frameTime": 0.3,
-        "reverseAnimation": false
+      "collider": {
+        "height": 82.5,
+        "width": 82.5
       },
-      "transform": {
-        "scale": 2.5
-      },
+      "description": "Walking enemy that moves on ground and shoots projectiles at player",
       "health": {
         "hp": 40,
         "maxHp": 40
       },
+      "id": "enemy_walker",
+      "name": "Ground Walker",
+      "pattern": {
+        "amplitude": 0.0,
+        "frequency": 0.0,
+        "type": "ground_walk"
+      },
+      "spawn": {
+        "groupSizeMax": 3,
+        "groupSizeMin": 1,
+        "spawnDelay": 0.5,
+        "spawnInterval": 8.0
+      },
+      "sprite": {
+        "animated": true,
+        "endFrame": 2,
+        "frameCount": 6,
+        "frameTime": 0.15,
+        "height": 33,
+        "loop": true,
+        "reverseAnimation": false,
+        "spriteId": 7,
+        "startFrame": 0,
+        "width": 33
+      },
+      "transform": {
+        "scale": 2.5
+      },
+      "velocity": {
+        "dx": -150.0,
+        "dy": 0.0
+      }
+    },
+    {
       "collider": {
-        "width": 82.5,
-        "height": 82.5
+        "height": 82.5,
+        "width": 82.5
+      },
+      "description": "Flying robot that bouce up and down while shooting",
+      "health": {
+        "hp": 40,
+        "maxHp": 40
+      },
+      "id": "enemy_robot",
+      "name": "Flying Robot",
+      "pattern": {
+        "amplitude": 0.0,
+        "frequency": 0.0,
+        "type": "bounce"
+      },
+      "spawn": {
+        "groupSizeMax": 10,
+        "groupSizeMin": 5,
+        "spawnDelay": 0.3,
+        "spawnInterval": 10.0
+      },
+      "sprite": {
+        "animated": true,
+        "endFrame": 2,
+        "frameCount": 6,
+        "frameTime": 0.3,
+        "height": 34,
+        "loop": true,
+        "reverseAnimation": false,
+        "spriteId": 9,
+        "startFrame": 0,
+        "width": 33
+      },
+      "transform": {
+        "scale": 2.5
       },
       "velocity": {
         "dx": -300.0,
         "dy": 200.0
-      },
-      "pattern": {
-        "type": "bounce",
-        "amplitude": 0.0,
-        "frequency": 0.0
-      },
-      "spawn": {
-        "groupSizeMin": 5,
-        "groupSizeMax": 10,
-        "spawnDelay": 0.3,
-        "spawnInterval": 10.0
       }
     }
   ]

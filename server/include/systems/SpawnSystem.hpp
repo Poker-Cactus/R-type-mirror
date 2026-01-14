@@ -17,6 +17,7 @@
 #include "../../../engineCore/include/ecs/components/Follower.hpp"
 #include "../../../engineCore/include/ecs/components/GunOffset.hpp"
 #include "../../../engineCore/include/ecs/components/Health.hpp"
+#include "../../../engineCore/include/ecs/components/Immortal.hpp"
 #include "../../../engineCore/include/ecs/components/Networked.hpp"
 #include "../../../engineCore/include/ecs/components/Owner.hpp"
 #include "../../../engineCore/include/ecs/components/Pattern.hpp"
@@ -458,6 +459,21 @@ private:
   static constexpr float PROJECTILE_VELOCITY_MULTIPLIER = 2400.0F;
   static constexpr float DIRECTION_THRESHOLD = 0.01F;
 
+  // Charged projectile configuration
+  static constexpr float CHARGED_PROJECTILE_COLLIDER_SIZE = 20.0F;
+  static constexpr unsigned int CHARGED_PROJECTILE_SPRITE_WIDTH = 165;
+  static constexpr unsigned int CHARGED_PROJECTILE_SPRITE_HEIGHT = 16;
+  static constexpr float CHARGED_PROJECTILE_VELOCITY = 2400.0F;
+  static constexpr float CHARGED_PROJECTILE_SCALE = 3.0F;
+
+  // loading shot configuration
+  static constexpr float LOADING_SHOT_COLLIDER_SIZE = 12.0F;
+  static constexpr unsigned int LOADING_SHOT_SPRITE_WIDTH = 255 / 8;
+  static constexpr unsigned int LOADING_SHOT_SPRITE_HEIGHT = 29;
+  static constexpr float LOADING_SHOT_VELOCITY = 0.0F;
+  static constexpr float LOADING_SHOT_SCALE = 2.5F;
+  static constexpr float LOADING_SHOT_FRAME_TIME = 0.12F; // plus rapide (≈1s pour 8 frames)
+
   // Ruban/Wave beam projectile configuration (R-Type ribbon effect)
   // Uses xruban_projectile.png format (x = phase 1-14)
   // Phase 1 initial dimensions: 21x49, 1 frame
@@ -696,6 +712,12 @@ private:
     case ecs::SpawnEntityEvent::EntityType::PROJECTILE:
       spawnProjectile(world, event.x, event.y, event.spawner);
       break;
+    case ecs::SpawnEntityEvent::EntityType::CHARGED_PROJECTILE:
+      spawnChargedProjectile(world, event.x, event.y, event.spawner);
+      break;
+    case ecs::SpawnEntityEvent::EntityType::LOADING_SHOT:
+      spawnLoadingShot(world, event.x, event.y, event.spawner);
+      break;
     case ecs::SpawnEntityEvent::EntityType::TRIPLE_PROJECTILE:
       spawnTripleProjectile(world, event.x, event.y, event.spawner);
       break;
@@ -795,12 +817,12 @@ private:
     // Note: In game coords, negative Y = up, positive Y = down
     constexpr float PI = 3.14159265358979323846F;
     const std::array<float, 3> angles = {0.0F, -50.0F * PI / 180.0F, 50.0F * PI / 180.0F};
-    
+
     // Corresponding sprite IDs for each direction
     const std::array<std::uint32_t, 3> spriteIds = {
       ecs::SpriteId::TRIPLE_PROJECTILE_RIGHT, // Straight forward
-      ecs::SpriteId::TRIPLE_PROJECTILE_UP,    // Up-forward
-      ecs::SpriteId::TRIPLE_PROJECTILE_DOWN   // Down-forward
+      ecs::SpriteId::TRIPLE_PROJECTILE_UP, // Up-forward
+      ecs::SpriteId::TRIPLE_PROJECTILE_DOWN // Down-forward
     };
 
     for (int i = 0; i < 3; i++) {
@@ -908,85 +930,185 @@ private:
     world.addComponent(projectile, ownerComp);
   }
 
-  static void spawnPowerup(ecs::World &world, float posX, float posY, PowerupType powerupType = PowerupType::DRONE)
+  static void spawnChargedProjectile(ecs::World &world, float posX, float posY, ecs::Entity owner)
   {
-    ecs::Entity powerup = world.createEntity();
+    float directionX = 0.0F;
+    if (std::abs(directionX) < DIRECTION_THRESHOLD && world.hasComponent<ecs::Velocity>(owner)) {
+      directionX = world.getComponent<ecs::Velocity>(owner).dx;
+    }
+    if (std::abs(directionX) < DIRECTION_THRESHOLD) {
+      directionX = 1.0F;
+    }
 
-    // Transform
+    ecs::Entity projectile = world.createEntity();
+
+    float offsetX = 0.0F;
+    if (world.hasComponent<ecs::GunOffset>(owner)) {
+      offsetX = world.getComponent<ecs::GunOffset>(owner).x;
+    }
+
+    ecs::Transform transform;
+    transform.x = posX + offsetX;
+    transform.y = posY;
+    transform.rotation = 0.0F;
+    transform.scale = CHARGED_PROJECTILE_SCALE;
+    world.addComponent(projectile, transform);
+
+    ecs::Velocity velocity;
+    velocity.dx = CHARGED_PROJECTILE_VELOCITY * 1.0F;
+    velocity.dy = 0.0F;
+    world.addComponent(projectile, velocity);
+
+    world.addComponent(projectile, ecs::Collider{CHARGED_PROJECTILE_COLLIDER_SIZE, CHARGED_PROJECTILE_COLLIDER_SIZE});
+
+    ecs::Sprite sprite;
+    sprite.spriteId = ecs::SpriteId::CHARGED_PROJECTILE;
+    sprite.width = CHARGED_PROJECTILE_SPRITE_WIDTH;
+    sprite.height = CHARGED_PROJECTILE_SPRITE_HEIGHT;
+    sprite.animated = true;
+    sprite.frameCount = 2;
+    sprite.loop = true;
+    sprite.startFrame = 0;
+    sprite.endFrame = 1;
+    world.addComponent(projectile, sprite);
+
+    ecs::Networked net;
+    net.networkId = projectile;
+    world.addComponent(projectile, net);
+
+    ecs::Owner ownerComp;
+    ownerComp.ownerId = owner;
+    world.addComponent(projectile, ownerComp);
+
+    ecs::Immortal immortalComponent;
+    immortalComponent.isImmortal = true;
+    world.addComponent(projectile, immortalComponent);
+  }
+
+  static void spawnLoadingShot(ecs::World &world, float posX, float posY, ecs::Entity owner)
+  {
+    ecs::Entity loadingShot = world.createEntity();
+
+    // Transform component
     ecs::Transform transform;
     transform.x = posX;
     transform.y = posY;
     transform.rotation = 0.0F;
-    transform.scale = POWERUP_SCALE;
-    world.addComponent(powerup, transform);
+    transform.scale = LOADING_SHOT_SCALE;
+    world.addComponent(loadingShot, transform);
 
-    // Velocity - slow drift to the left
+    // Velocity = 0 (l'animation suivra le joueur)
     ecs::Velocity velocity;
-    velocity.dx = POWERUP_VELOCITY_X;
+    velocity.dx = 0.0F;
     velocity.dy = 0.0F;
-    world.addComponent(powerup, velocity);
+    world.addComponent(loadingShot, velocity);
 
-    // Collider for pickup detection
-    world.addComponent(powerup, ecs::Collider{POWERUP_COLLIDER_SIZE, POWERUP_COLLIDER_SIZE});
-
-    // Sprite - all powerups use POWERUP spriteId with different currentFrame
-    // Frame 0=BUBBLE, Frame 1=BUBBLE_TRIPLE, Frame 2=BUBBLE_RUBAN, Frame 3=DRONE
-    // R-Type_Items.png: Frame 0=BUBBLE, Frame 1=BUBBLE_TRIPLE, Frame 2=BUBBLE_RUBAN, Frame 3=DRONE
+    // Sprite avec animation de chargement
     ecs::Sprite sprite;
-    sprite.spriteId = ecs::SpriteId::POWERUP;
-    sprite.width = POWERUP_FRAME_WIDTH;
-    sprite.height = POWERUP_SPRITE_HEIGHT;
-    sprite.animated = true; // Enable animation for cycling
-    sprite.frameCount = POWERUP_FRAME_COUNT; // 4 frames total
-    sprite.frameTime = 0.03f; // Animation speed
+    sprite.spriteId = ecs::SpriteId::LOADING_SHOT;
+    sprite.width = LOADING_SHOT_SPRITE_WIDTH;
+    sprite.height = LOADING_SHOT_SPRITE_HEIGHT;
+    sprite.animated = true;
+    sprite.frameCount = 8;
     sprite.loop = true;
+    sprite.startFrame = 0;
+    sprite.endFrame = 7;
+    sprite.frameTime = LOADING_SHOT_FRAME_TIME; // Animation rapide
+    world.addComponent(loadingShot, sprite);
 
-    // Select starting frame and animation range based on powerup type
-    switch (powerupType) {
-    case PowerupType::BUBBLE:
-      sprite.startFrame = 0;
-      sprite.endFrame = 0;
-      sprite.currentFrame = 0;
-      break;
-    case PowerupType::BUBBLE_TRIPLE:
-      sprite.startFrame = 1;
-      sprite.endFrame = 1;
-      sprite.currentFrame = 1;
-      break;
-    case PowerupType::BUBBLE_RUBAN:
-      sprite.startFrame = 2;
-      sprite.endFrame = 2;
-      sprite.currentFrame = 2;
-      break;
-    case PowerupType::DRONE:
-    default:
-      sprite.startFrame = 3;
-      sprite.endFrame = 3;
-      sprite.currentFrame = 3;
-      break;
-    }
-    sprite.frameTime = 0.1f;
-    sprite.loop = true;
-    world.addComponent(powerup, sprite);
-
-    // Networked for client replication
+    // Networked component pour la réplication
     ecs::Networked net;
-    net.networkId = powerup;
-    world.addComponent(powerup, net);
+    net.networkId = loadingShot;
+    world.addComponent(loadingShot, net);
 
-    const char *typeNames[] = {"DRONE", "BUBBLE", "BUBBLE_TRIPLE", "BUBBLE_RUBAN"};
-    std::cout << "[SpawnSystem] Spawned " << typeNames[static_cast<int>(powerupType)] << " powerup at (" << posX << ", "
-              << posY << ")\n";
+    // Owner component pour lier au joueur
+    ecs::Owner ownerComp;
+    ownerComp.ownerId = owner;
+    world.addComponent(loadingShot, ownerComp);
+
+    std::cout << "[SpawnSystem] Spawned loading shot " << loadingShot << " for entity " << owner << std::endl;
   }
 
-  static void spawnExplosion(ecs::World &world, float posX, float posY)
+  static void spawnPowerup(ecs::World &world, float posX, float posY, PowerupType powerupType = PowerupType::DRONE)
   {
-    (void)world;
-    (void)posX;
-    (void)posY;
-    // TODO: Implement explosion effect
+    ecs::Entity powerup = world.createEntity();
+
+  // Transform
+  ecs::Transform transform;
+  transform.x = posX;
+  transform.y = posY;
+  transform.rotation = 0.0F;
+  transform.scale = POWERUP_SCALE;
+  world.addComponent(powerup, transform);
+
+  // Velocity - slow drift to the left
+  ecs::Velocity velocity;
+  velocity.dx = POWERUP_VELOCITY_X;
+  velocity.dy = 0.0F;
+  world.addComponent(powerup, velocity);
+
+  // Collider for pickup detection
+  world.addComponent(powerup, ecs::Collider{POWERUP_COLLIDER_SIZE, POWERUP_COLLIDER_SIZE});
+
+  // Sprite - all powerups use POWERUP spriteId with different currentFrame
+  // Frame 0=BUBBLE, Frame 1=BUBBLE_TRIPLE, Frame 2=BUBBLE_RUBAN, Frame 3=DRONE
+  // R-Type_Items.png: Frame 0=BUBBLE, Frame 1=BUBBLE_TRIPLE, Frame 2=BUBBLE_RUBAN, Frame 3=DRONE
+  ecs::Sprite sprite;
+  sprite.spriteId = ecs::SpriteId::POWERUP;
+  sprite.width = POWERUP_FRAME_WIDTH;
+  sprite.height = POWERUP_SPRITE_HEIGHT;
+  sprite.animated = true; // Enable animation for cycling
+  sprite.frameCount = POWERUP_FRAME_COUNT; // 4 frames total
+  sprite.frameTime = 0.03f; // Animation speed
+  sprite.loop = true;
+
+  // Select starting frame and animation range based on powerup type
+  switch (powerupType) {
+  case PowerupType::BUBBLE:
+    sprite.startFrame = 0;
+    sprite.endFrame = 0;
+    sprite.currentFrame = 0;
+    break;
+  case PowerupType::BUBBLE_TRIPLE:
+    sprite.startFrame = 1;
+    sprite.endFrame = 1;
+    sprite.currentFrame = 1;
+    break;
+  case PowerupType::BUBBLE_RUBAN:
+    sprite.startFrame = 2;
+    sprite.endFrame = 2;
+    sprite.currentFrame = 2;
+    break;
+  case PowerupType::DRONE:
+  default:
+    sprite.startFrame = 3;
+    sprite.endFrame = 3;
+    sprite.currentFrame = 3;
+    break;
   }
-};
+  sprite.frameTime = 0.1f;
+  sprite.loop = true;
+  world.addComponent(powerup, sprite);
+
+  // Networked for client replication
+  ecs::Networked net;
+  net.networkId = powerup;
+  world.addComponent(powerup, net);
+
+  const char *typeNames[] = {"DRONE", "BUBBLE", "BUBBLE_TRIPLE", "BUBBLE_RUBAN"};
+  std::cout << "[SpawnSystem] Spawned " << typeNames[static_cast<int>(powerupType)] << " powerup at (" << posX << ", "
+            << posY << ")\n";
+}
+
+static void
+spawnExplosion(ecs::World &world, float posX, float posY)
+{
+  (void)world;
+  (void)posX;
+  (void)posY;
+  // TODO: Implement explosion effect
+}
+}; // namespace server
 
 } // namespace server
 

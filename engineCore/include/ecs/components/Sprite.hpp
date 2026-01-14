@@ -104,8 +104,6 @@ constexpr std::uint32_t ENEMY_WALKER = 7;
 constexpr std::uint32_t WALKER_PROJECTILE = 8;
 constexpr std::uint32_t ENEMY_ROBOT = 9;
 constexpr std::uint32_t ROBOT_PROJECTILE = 10;
-constexpr std::uint32_t DRONE = 40;
-constexpr std::uint32_t BUBBLE = 41;
 constexpr std::uint32_t BUBBLE_TRIPLE = 11;
 constexpr std::uint32_t BUBBLE_RUBAN1 = 12;
 constexpr std::uint32_t BUBBLE_RUBAN2 = 13;
@@ -136,6 +134,11 @@ constexpr std::uint32_t RUBAN21_PROJECTILE = 36;
 constexpr std::uint32_t RUBAN22_PROJECTILE = 37;
 constexpr std::uint32_t RUBAN23_PROJECTILE = 38;
 constexpr std::uint32_t RUBAN24_PROJECTILE = 39;
+constexpr std::uint32_t DRONE = 40;
+constexpr std::uint32_t BUBBLE = 41;
+constexpr std::uint32_t CHARGED_PROJECTILE = 42;
+constexpr std::uint32_t LOADING_SHOT = 43;
+
 
 // Bubble Ruban individual frames (4 frames each for back/middle/front)
 // Back (compressed) frames 1-4

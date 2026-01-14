@@ -117,7 +117,7 @@ void PlayingState::update(float delta_time)
 
   // Update info mode
   if (m_infoMode) {
-    m_infoMode->update(delta_time);
+    m_infoMode->update();
   }
 
   // Send ping periodically to measure latency
@@ -192,7 +192,12 @@ void PlayingState::render()
           // Yellow Bee: 256x64 with 2 rows x 8 columns = 16 frames
           frameWidth = 256 / 8; // 32px per frame
           frameHeight = 64 / 2; // 32px per frame (2 rows)
-          break;
+        case ecs::SpriteId::CHARGED_PROJECTILE:
+          frameWidth = 165 / 2; // 82px per frame
+          frameHeight = 16;
+        case ecs::SpriteId::LOADING_SHOT:
+          frameWidth = 255 / 8; // 31-32px per frame
+          frameHeight = 29;
         case ecs::SpriteId::ENEMY_WALKER:
           // Walker: 200x67 with 2 rows x 6 columns = 12 frames
           frameWidth = 200 / 6; // 33px per frame
@@ -922,7 +927,7 @@ void PlayingState::loadSpriteTextures()
 
   // PROJECTILE = 3 (spritesheet: 422x92, 2 frames, using first frame only)
   try {
-    void *projectile_tex = renderer->loadTexture("client/assets/sprites/r-typesheet1.png");
+    void *projectile_tex = renderer->loadTexture("client/assets/sprites/simpleShot.png");
     if (projectile_tex != nullptr) {
       m_spriteTextures[ecs::SpriteId::PROJECTILE] = projectile_tex;
       std::cout << "[PlayingState] ✓ Loaded projectile.png" << '\n';
@@ -1241,6 +1246,32 @@ void PlayingState::loadSpriteTextures()
             << " sprite textures" << '\n';
   if (m_spriteTextures.size() < EXPECTED_TEXTURE_COUNT) {
     std::cerr << "[PlayingState] Missing textures will use fallback colored rectangles" << '\n';
+  }
+
+  // CHARGED_PROJECTILE = 6
+  try {
+    void *charged_projectile_tex = renderer->loadTexture("client/assets/sprites/chargedShot.png");
+    if (charged_projectile_tex != nullptr) {
+      m_spriteTextures[ecs::SpriteId::CHARGED_PROJECTILE] = charged_projectile_tex;
+      std::cout << "[PlayingState] ✓ Loaded charged_projectile.png" << '\n';
+    } else {
+      std::cerr << "[PlayingState] ✗ Failed to load charged_projectile.png (returned null)" << '\n';
+    }
+  } catch (const std::exception &e) {
+    std::cerr << "[PlayingState] ✗ Failed to load charged_projectile.png: " << e.what() << '\n';
+  }
+
+  // LOAD_CHARGED_SHOT = 8
+  try {
+    void *charged_projectile_tex = renderer->loadTexture("client/assets/sprites/loadChargedShot.png");
+    if (charged_projectile_tex != nullptr) {
+      m_spriteTextures[ecs::SpriteId::LOADING_SHOT] = charged_projectile_tex;
+      std::cout << "[PlayingState] ✓ Loaded loadChargedShot.png" << '\n';
+    } else {
+      std::cerr << "[PlayingState] ✗ Failed to load loadChargedShot.png (returned null)" << '\n';
+    }
+  } catch (const std::exception &e) {
+    std::cerr << "[PlayingState] ✗ Failed to load loadChargedShot.png: " << e.what() << '\n';
   }
 }
 

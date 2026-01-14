@@ -58,9 +58,8 @@ public:
 
   /**
    * @brief Update all info categories
-   * @param deltaTime Time elapsed since last update in seconds
    */
-  void update(float deltaTime);
+  void update();
 
   /**
    * @brief Check if info mode is currently active
@@ -124,6 +123,7 @@ private:
 
   std::vector<std::unique_ptr<InfoCategory>> m_categories; ///< All available categories
   std::vector<CategoryPosition> m_categoryPositions; ///< Positions for each category
+  std::vector<int> m_categoryFrameCounters; ///< Frame counters for each category
 
   static constexpr Color HUD_TEXT_WHITE = {.r = 255, .g = 255, .b = 255, .a = 255}; ///< White color for text
 };

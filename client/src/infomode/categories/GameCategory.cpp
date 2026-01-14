@@ -68,7 +68,7 @@ std::vector<std::string> GameCategory::getInfoLines() const
   return lines;
 }
 
-void GameCategory::update(float deltaTime)
+void GameCategory::update()
 {
   // Game category doesn't need frequent updates
   // Player stats are updated externally via setters
