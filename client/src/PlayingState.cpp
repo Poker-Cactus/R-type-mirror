@@ -21,6 +21,7 @@
 #include "../interface/Geometry.hpp"
 #include "../interface/KeyCodes.hpp"
 #include <iostream>
+#include <unordered_set>
 
 PlayingState::PlayingState(std::shared_ptr<IRenderer> renderer, const std::shared_ptr<ecs::World> &world,
                            Settings &settings, std::shared_ptr<INetworkManager> networkManager)
@@ -1277,13 +1278,16 @@ void PlayingState::loadSpriteTextures()
 
 void PlayingState::freeSpriteTextures()
 {
-  if (renderer == nullptr) {
+  if (renderer == nullptr || m_spriteTextures.empty()) {
     return;
   }
 
+  std::unordered_set<void *> destroyedTextures;
+
   for (auto &[spriteId, texture] : m_spriteTextures) {
-    if (texture != nullptr) {
+    if (texture != nullptr && destroyedTextures.find(texture) == destroyedTextures.end()) {
       renderer->freeTexture(texture);
+      destroyedTextures.insert(texture);
     }
   }
 

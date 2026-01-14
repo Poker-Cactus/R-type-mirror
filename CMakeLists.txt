@@ -22,9 +22,8 @@ else()
     add_compile_options(
         -Wall
         -Wextra
+        -g3  # Always include maximum debug information
     )
-    # Debug information for GCC/Clang
-    add_compile_options($<$<CONFIG:Debug>:-g3>)
 endif()
 
 ## Conan dependencies

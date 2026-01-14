@@ -13,8 +13,8 @@
 #include <memory>
 
 SettingsMenu::SettingsMenu(std::shared_ptr<IRenderer> renderer)
-    : m_renderer(std::move(renderer)), font(nullptr), titleFont(nullptr), helpFont(nullptr),
-      currentCategory(SettingsCategory::AUDIO)
+    : m_renderer(std::move(renderer)), font(nullptr), titleFont(nullptr), helpFont(nullptr), clickedSound(nullptr),
+      hoverSound(nullptr), errorSound(nullptr), currentCategory(SettingsCategory::AUDIO)
 {
 }
 

@@ -50,8 +50,8 @@ struct RubanBubbleAnimState {
   int frameIndex = 0; // Current frame within direction (0-3)
   float directionTimer = 0.0f; // Timer for direction transitions
   float frameTimer = 0.0f; // Timer for frame animation
-  static constexpr float DIRECTION_SPEED = 0.02f; // Time between direction changes (faster)
-  static constexpr float FRAME_SPEED = 0.04f; // Time between frame changes within direction (faster)
+  static constexpr float DIRECTION_SPEED = 0.03f; // Time between direction changes
+  static constexpr float FRAME_SPEED = 0.06f; // Time between frame changes within direction
 };
 
 /**
