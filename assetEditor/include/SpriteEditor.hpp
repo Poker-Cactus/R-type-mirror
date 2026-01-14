@@ -15,7 +15,8 @@
 #include <string>
 #include <vector>
 
-namespace AssetEditor {
+namespace AssetEditor
+{
 
 // ═══════════════════════════════════════════════════════════════════════════
 // RAII Wrappers for SDL Resources
@@ -25,22 +26,24 @@ namespace AssetEditor {
  * @brief Custom deleter for SDL_Surface
  */
 struct SurfaceDeleter {
-    void operator()(SDL_Surface* surface) const noexcept {
-        if (surface) {
-            SDL_FreeSurface(surface);
-        }
+  void operator()(SDL_Surface *surface) const noexcept
+  {
+    if (surface) {
+      SDL_FreeSurface(surface);
     }
+  }
 };
 
 /**
  * @brief Custom deleter for SDL_Texture
  */
 struct TextureDeleter {
-    void operator()(SDL_Texture* texture) const noexcept {
-        if (texture) {
-            SDL_DestroyTexture(texture);
-        }
+  void operator()(SDL_Texture *texture) const noexcept
+  {
+    if (texture) {
+      SDL_DestroyTexture(texture);
     }
+  }
 };
 
 /// Smart pointer type for SDL_Surface with automatic cleanup
@@ -54,8 +57,9 @@ using TexturePtr = std::shared_ptr<SDL_Texture>;
  * @param surface Raw SDL_Surface pointer (takes ownership)
  * @return Managed SurfacePtr
  */
-[[nodiscard]] inline SurfacePtr MakeSurfacePtr(SDL_Surface* surface) {
-    return SurfacePtr(surface);
+[[nodiscard]] inline SurfacePtr MakeSurfacePtr(SDL_Surface *surface)
+{
+  return SurfacePtr(surface);
 }
 
 /**
@@ -63,8 +67,9 @@ using TexturePtr = std::shared_ptr<SDL_Texture>;
  * @param texture Raw SDL_Texture pointer (takes ownership)
  * @return Managed TexturePtr (shared)
  */
-[[nodiscard]] inline TexturePtr MakeTexturePtr(SDL_Texture* texture) {
-    return TexturePtr(texture, TextureDeleter{});
+[[nodiscard]] inline TexturePtr MakeTexturePtr(SDL_Texture *texture)
+{
+  return TexturePtr(texture, TextureDeleter{});
 }
 
 /**
@@ -72,7 +77,7 @@ using TexturePtr = std::shared_ptr<SDL_Texture>;
  * @param source Surface to clone
  * @return New managed surface or nullptr on failure
  */
-[[nodiscard]] SurfacePtr CloneSurface(SDL_Surface* source);
+[[nodiscard]] SurfacePtr CloneSurface(SDL_Surface *source);
 
 // ═══════════════════════════════════════════════════════════════════════════
 // Sprite Information
@@ -84,18 +89,16 @@ using TexturePtr = std::shared_ptr<SDL_Texture>;
  * Stores metadata and texture reference for sprite preview/editing.
  */
 struct SpriteInfo {
-    std::string filename;      ///< Name of the sprite file
-    std::string fullPath;      ///< Full path to the sprite file
-    std::string extension;     ///< File extension (.png, .gif, etc.)
-    size_t fileSize = 0;       ///< File size in bytes
-    int width = 0;             ///< Image width in pixels
-    int height = 0;            ///< Image height in pixels
-    TexturePtr texture;        ///< ImGui texture for preview (managed)
+  std::string filename; ///< Name of the sprite file
+  std::string fullPath; ///< Full path to the sprite file
+  std::string extension; ///< File extension (.png, .gif, etc.)
+  size_t fileSize = 0; ///< File size in bytes
+  int width = 0; ///< Image width in pixels
+  int height = 0; ///< Image height in pixels
+  TexturePtr texture; ///< ImGui texture for preview (managed)
 
-    /// Get raw texture pointer for ImGui
-    [[nodiscard]] void* GetTextureID() const noexcept {
-        return texture.get();
-    }
+  /// Get raw texture pointer for ImGui
+  [[nodiscard]] void *GetTextureID() const noexcept { return texture.get(); }
 };
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -108,23 +111,23 @@ struct SpriteInfo {
  * Each layer has its own surface for drawing operations.
  */
 struct Layer {
-    std::string name;          ///< Layer display name
-    SurfacePtr surface;        ///< Layer pixel data (managed)
-    bool visible = true;       ///< Layer visibility toggle
-    int zOrder = 0;            ///< Layer stacking order
+  std::string name; ///< Layer display name
+  SurfacePtr surface; ///< Layer pixel data (managed)
+  bool visible = true; ///< Layer visibility toggle
+  int zOrder = 0; ///< Layer stacking order
 
-    /// Default constructor
-    Layer() = default;
+  /// Default constructor
+  Layer() = default;
 
-    /// Move constructor
-    Layer(Layer&&) = default;
+  /// Move constructor
+  Layer(Layer &&) = default;
 
-    /// Move assignment
-    Layer& operator=(Layer&&) = default;
+  /// Move assignment
+  Layer &operator=(Layer &&) = default;
 
-    /// Non-copyable (surfaces are unique)
-    Layer(const Layer&) = delete;
-    Layer& operator=(const Layer&) = delete;
+  /// Non-copyable (surfaces are unique)
+  Layer(const Layer &) = delete;
+  Layer &operator=(const Layer &) = delete;
 };
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -140,7 +143,7 @@ void RefreshSpriteList();
  * @brief Set the SDL renderer for texture loading
  * @param renderer SDL renderer from main application
  */
-void SetSpriteRenderer(SDL_Renderer* renderer);
+void SetSpriteRenderer(SDL_Renderer *renderer);
 
 /**
  * @brief Clean up all loaded sprite textures
@@ -151,7 +154,7 @@ void CleanupSpriteTextures();
  * @brief Select a sprite for viewing/editing
  * @param filename Name of the sprite file to select
  */
-void SelectSprite(const std::string& filename);
+void SelectSprite(const std::string &filename);
 
 /**
  * @brief Main sprite editor UI rendering function
@@ -173,14 +176,14 @@ void RenderSpriteEditor();
  * @param filePath Full path to the file to import
  * @return true if import was successful
  */
-[[nodiscard]] bool ImportSpriteFile(const std::string& filePath);
+[[nodiscard]] bool ImportSpriteFile(const std::string &filePath);
 
 /**
  * @brief Check if a file extension is supported for sprites
  * @param extension File extension (e.g., ".png")
  * @return true if the extension is supported
  */
-[[nodiscard]] bool IsSupportedSpriteExtension(const std::string& extension);
+[[nodiscard]] bool IsSupportedSpriteExtension(const std::string &extension);
 
 /**
  * @brief Check if the import image overlay is currently shown
@@ -193,6 +196,6 @@ void RenderSpriteEditor();
  * @param filePath Full path to the dropped file
  * @return true if file was loaded for import
  */
-[[nodiscard]] bool HandleImportDroppedFile(const std::string& filePath);
+[[nodiscard]] bool HandleImportDroppedFile(const std::string &filePath);
 
 } // namespace AssetEditor

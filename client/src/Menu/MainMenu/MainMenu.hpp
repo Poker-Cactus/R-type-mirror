@@ -60,8 +60,8 @@ private:
 
   void *clickedSound;
   void *hoverSound;
-  
+
 #ifndef _WIN32
-  pid_t assetEditorPid = -1;  // Track Asset Editor process ID
+  pid_t assetEditorPid = -1; // Track Asset Editor process ID
 #endif
 };

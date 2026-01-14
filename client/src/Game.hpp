@@ -53,6 +53,14 @@ public:
    * @param port Server port
    */
   Game(const std::string &host, const std::string &port);
+
+  /**
+   * @brief Construct game with specific server connection and renderer
+   * @param host Server hostname or IP
+   * @param port Server port
+   * @param rendererType Renderer type: "sdl2" or "sfml"
+   */
+  Game(const std::string &host, const std::string &port, const std::string &rendererType);
   ~Game();
 
   /**
@@ -106,6 +114,7 @@ private:
   GameState currentState = GameState::MENU;
   std::string m_serverHost = "127.0.0.1";
   std::string m_serverPort = "4242";
+  std::string m_rendererType = "sfml";
   ecs::Entity m_inputEntity{0};
   std::unique_ptr<Menu> menu;
   std::unique_ptr<LobbyRoomState> lobbyRoomState;

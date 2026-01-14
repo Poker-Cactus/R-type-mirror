@@ -81,7 +81,7 @@ void InfoMode::initStaticSystemInfo()
   char cpuBrand[256];
   size_t size = sizeof(cpuBrand);
   if (sysctlbyname("machdep.cpu.brand_string", &cpuBrand, &size, nullptr, 0) == 0) {
-    m_cpuName.assign(cpuBrand, size > 30 ? 27 : size);
+    m_cpuName.assign(cpuBrand, size > 22 ? 19 : size);
     if (size > 22) m_cpuName += "...";
   } else {
     m_cpuName = "Apple Silicon";
@@ -113,8 +113,8 @@ void InfoMode::initStaticSystemInfo()
       size_t pos = line.find(':');
       if (pos != std::string::npos && pos + 2 < line.size()) {
         size_t len = line.size() - pos - 2;
-        m_cpuName.assign(line, pos + 2, len > 30 ? 27 : len);
-        if (len > 30) m_cpuName += "...";
+        m_cpuName.assign(line, pos + 2, len > 22 ? 19 : len);
+        if (len > 22) m_cpuName += "...";
       }
       break;
     }
