@@ -12,6 +12,7 @@
 #include <iostream>
 #include <filesystem>
 #include <cstdlib>
+#include <vector>
 
 #ifdef _WIN32
 #include <windows.h>
