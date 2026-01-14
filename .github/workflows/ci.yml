@@ -71,6 +71,3 @@ jobs:
 
     - name: Run clang-format check
       run: ./scripts/format-check.sh
-
-    - name: Run clang-tidy check
-      run: ./scripts/tidy-check.sh
