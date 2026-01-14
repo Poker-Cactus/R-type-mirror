@@ -21,6 +21,7 @@
     "showRAMUsage": true
   },
   "graphics": {
+    "colorBlindMode": 0,
     "fullScreen": true
   },
   "profile": {

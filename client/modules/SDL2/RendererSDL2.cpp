@@ -211,6 +211,7 @@ RendererSDL2::RendererSDL2(int width, int height) : windowWidth(width), windowHe
 
 RendererSDL2::~RendererSDL2()
 {
+  cleanupRenderTarget();
   for (auto *pad : gamepads) {
     SDL_GameControllerClose(pad);
   }
@@ -235,6 +236,10 @@ void RendererSDL2::clear(const Color &color)
 
 void RendererSDL2::present()
 {
+  if (colorBlindMode != ColorBlindMode::NONE) {
+    applyColorBlindOverlay();
+  }
+
   SDL_RenderPresent(renderer);
 
   Uint64 now = SDL_GetPerformanceCounter();
@@ -776,4 +781,88 @@ bool RendererSDL2::checkCollisionCircles(const Circle &circle1, const Circle &ci
 bool RendererSDL2::checkPointInRect(int pointX, int pointY, int rectX, int rectY, int rectW, int rectH)
 {
   return (pointX >= rectX && pointX <= rectX + rectW && pointY >= rectY && pointY <= rectY + rectH);
+}
+
+// === Color Blind Filter ===
+void RendererSDL2::initRenderTarget()
+{
+  if (renderer == nullptr) {
+    return;
+  }
+
+  // Create a texture that we can render to
+  renderTarget =
+    SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, windowWidth, windowHeight);
+  if (renderTarget == nullptr) {
+    std::cerr << "[RendererSDL2] Failed to create render target: " << SDL_GetError() << std::endl;
+  }
+}
+
+void RendererSDL2::cleanupRenderTarget()
+{
+  if (renderTarget != nullptr) {
+    SDL_DestroyTexture(renderTarget);
+    renderTarget = nullptr;
+  }
+}
+
+void RendererSDL2::setColorBlindMode(ColorBlindMode mode)
+{
+  colorBlindMode = mode;
+
+  // If disabling filter, clean up render target
+  if (mode == ColorBlindMode::NONE) {
+    cleanupRenderTarget();
+    return;
+  }
+
+  // If enabling filter and render target doesn't exist, create it
+  if (renderTarget == nullptr) {
+    initRenderTarget();
+    return;
+  }
+
+  // Recreate render target if window size changed
+  int w = 0;
+  int h = 0;
+  SDL_QueryTexture(renderTarget, nullptr, nullptr, &w, &h);
+  if (w != windowWidth || h != windowHeight) {
+    cleanupRenderTarget();
+    initRenderTarget();
+  }
+}
+
+void RendererSDL2::applyColorBlindOverlay()
+{
+  if (colorBlindMode == ColorBlindMode::NONE || renderer == nullptr) {
+    return;
+  }
+
+  // Apply a semi-transparent color overlay based on the colorblind mode
+  // This gives a consistent tint without flickering
+  SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
+
+  Color overlayColor = {0, 0, 0, 0};
+
+  switch (colorBlindMode) {
+  case ColorBlindMode::PROTANOPIA:
+    // Red-blind: add cyan/blue tint to help distinguish
+    overlayColor = {0, 100, 120, 100};
+    break;
+  case ColorBlindMode::DEUTERANOPIA:
+    // Green-blind: add magenta tint to help distinguish
+    overlayColor = {120, 0, 100, 100};
+    break;
+  case ColorBlindMode::TRITANOPIA:
+    // Blue-blind: add yellow tint to help distinguish
+    overlayColor = {120, 120, 0, 100};
+    break;
+  default:
+    return;
+  }
+
+  // Draw the overlay rectangle over the entire screen
+  SDL_SetRenderDrawColor(renderer, overlayColor.r, overlayColor.g, overlayColor.b, overlayColor.a);
+  SDL_Rect fullScreen = {0, 0, windowWidth, windowHeight};
+  SDL_RenderFillRect(renderer, &fullScreen);
 }
