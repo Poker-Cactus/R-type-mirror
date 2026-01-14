@@ -212,6 +212,35 @@ brew install sfml
 sudo apt install libgl1-mesa-dev
 ```
 
+### Pourquoi Conan ne peut pas installer les dépendances système
+
+Conan gère des paquets C/C++ (bibliothèques et artefacts) mais ne remplace pas le gestionnaire
+de paquets de la distribution. Certaines recettes (par ex. `xorg/system`) déclarent des
+`system_requirements` qui correspondent à des paquets fournis par l'OS (headers, librairies
+runtime, paquets X11, etc.).
+
+Par défaut Conan est en mode "check" pour l'installation système : il vérifie la présence
+de ces paquets mais n'exécute pas d'installation automatique afin d'éviter des modifications
+non désirées du système. Vous devez donc installer ces paquets manuellement (ou configurer
+Conan pour autoriser l'installation automatique).
+
+Exemples :
+
+- Installer manuellement (Linux/Ubuntu) :
+
+```bash
+sudo apt-get update && sudo apt-get install -y <liste-de-paquets-systeme>
+```
+
+- Autoriser Conan à installer les paquets (utiliser avec précaution) :
+
+```bash
+conan install . -c tools.system.package_manager:mode=install
+```
+
+Dans notre CI nous installons explicitement les paquets système avant d'exécuter `conan install`.
+Voir `.github/workflows/build.yml` pour la liste et l'ordre d'installation.
+
 ### Windows: "Visual Studio not found"
 
 Assurez-vous que le workload "Desktop development with C++" est installé dans Visual Studio Installer.
