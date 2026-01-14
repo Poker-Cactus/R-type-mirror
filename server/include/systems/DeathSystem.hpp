@@ -14,9 +14,9 @@
 #include "../../../engineCore/include/ecs/components/Health.hpp"
 #include "../../../engineCore/include/ecs/components/Input.hpp"
 #include "../../../engineCore/include/ecs/components/Lifetime.hpp"
+#include "../../../engineCore/include/ecs/components/Networked.hpp"
 #include "../../../engineCore/include/ecs/components/Sprite.hpp"
 #include "../../../engineCore/include/ecs/components/Transform.hpp"
-#include "../../../engineCore/include/ecs/components/Networked.hpp"
 #include "../../../engineCore/include/ecs/events/EventListenerHandle.hpp"
 #include "../../../engineCore/include/ecs/events/GameEvents.hpp"
 #include "../../engineCore/include/ecs/components/PlayerId.hpp"
@@ -62,12 +62,12 @@ public:
     for (auto entity : toDie) {
       // Don't show death animation for players
       bool isPlayer = world.hasComponent<ecs::Input>(entity);
-      
+
       if (!isPlayer && world.hasComponent<ecs::Transform>(entity)) {
         // Spawn death animation for enemies
         spawnDeathAnimation(world, entity);
       }
-      
+
       world.destroyEntity(entity);
     }
   }
@@ -95,10 +95,10 @@ private:
   {
     // Get position of dead entity
     const auto &transform = world.getComponent<ecs::Transform>(deadEntity);
-    
+
     // Create death animation entity
     ecs::Entity deathAnim = world.createEntity();
-    
+
     // Position
     ecs::Transform animTransform;
     animTransform.x = transform.x;
@@ -106,33 +106,33 @@ private:
     animTransform.rotation = 0.0F;
     animTransform.scale = 1.0F;
     world.addComponent(deathAnim, animTransform);
-    
+
     // Sprite configuration for death animation
     // Image: 586x94, 6 frames → each frame is ~98px wide
     ecs::Sprite sprite;
     sprite.spriteId = ecs::SpriteId::DEATH_ANIM;
-    sprite.width = 98;  // 586 / 6
+    sprite.width = 98; // 586 / 6
     sprite.height = 94;
     sprite.animated = true;
     sprite.frameCount = 6;
     sprite.currentFrame = 0;
     sprite.startFrame = 0;
     sprite.endFrame = 5;
-    sprite.frameTime = 0.07F;  // 100ms per frame = 600ms total animation
-    sprite.loop = false;  // One-shot animation
+    sprite.frameTime = 0.07F; // 100ms per frame = 600ms total animation
+    sprite.loop = false; // One-shot animation
     sprite.animationTimer = 0.0F;
     sprite.reverseAnimation = false;
     world.addComponent(deathAnim, sprite);
-    
+
     // Network replication
     ecs::Networked net;
     net.networkId = deathAnim;
     world.addComponent(deathAnim, net);
-    
+
     // Add lifetime: animation duration = 6 frames * 0.05s = 0.3s
     // Set slightly higher to ensure last frame is displayed
     ecs::Lifetime lifetime;
-    lifetime.remaining = 0.35F;  // 350ms = animation duration + minimal buffer
+    lifetime.remaining = 0.35F; // 350ms = animation duration + minimal buffer
     world.addComponent(deathAnim, lifetime);
   }
 
