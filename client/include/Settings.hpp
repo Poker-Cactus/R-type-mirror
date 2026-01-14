@@ -51,6 +51,14 @@ public:
   // GRAPHIC Settings
   bool fullScreen = true; ///< Fullscreen mode toggle
 
+  // DEBUG Settings
+  bool showInfoMode = true; ///< Show debug info overlay
+  bool showCPUUsage = true; ///< Show CPU usage monitoring
+  bool showRAMUsage = true; ///< Show RAM usage monitoring
+  bool showFPS = true; ///< Show FPS counter
+  bool showEntityCount = true; ///< Show entity count
+  bool showNetworkInfo = true; ///< Show network information
+
   // PROFILE Settings
   std::string username = "Player"; ///< Player username
 

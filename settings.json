@@ -12,6 +12,14 @@
     "shoot": 5,
     "up": 10
   },
+  "debug": {
+    "showCPUUsage": true,
+    "showEntityCount": true,
+    "showFPS": true,
+    "showInfoMode": true,
+    "showNetworkInfo": true,
+    "showRAMUsage": true
+  },
   "graphics": {
     "fullScreen": true
   },
