@@ -6,7 +6,7 @@
 */
 
 #include "../include/CapnpHandler.hpp"
-#include "../include/GameMessage.capnp.h"
+#include "GameMessage.capnp.h"
 #include <iostream>
 
 std::vector<std::uint8_t> CapnpHandler::serialize(const std::string &data) const

@@ -31,6 +31,14 @@ bool Settings::saveToFile()
     // Graphics settings
     settingsJson["graphics"]["fullScreen"] = fullScreen;
 
+    // Debug settings
+    settingsJson["debug"]["showInfoMode"] = showInfoMode;
+    settingsJson["debug"]["showCPUUsage"] = showCPUUsage;
+    settingsJson["debug"]["showRAMUsage"] = showRAMUsage;
+    settingsJson["debug"]["showFPS"] = showFPS;
+    settingsJson["debug"]["showEntityCount"] = showEntityCount;
+    settingsJson["debug"]["showNetworkInfo"] = showNetworkInfo;
+
     // Profile settings
     settingsJson["profile"]["username"] = username;
 
@@ -84,6 +92,16 @@ bool Settings::loadFromFile()
     // Graphics settings
     if (settingsJson.contains("graphics")) {
       fullScreen = settingsJson["graphics"].value("fullScreen", fullScreen);
+    }
+
+    // Debug settings
+    if (settingsJson.contains("debug")) {
+      showInfoMode = settingsJson["debug"].value("showInfoMode", showInfoMode);
+      showCPUUsage = settingsJson["debug"].value("showCPUUsage", showCPUUsage);
+      showRAMUsage = settingsJson["debug"].value("showRAMUsage", showRAMUsage);
+      showFPS = settingsJson["debug"].value("showFPS", showFPS);
+      showEntityCount = settingsJson["debug"].value("showEntityCount", showEntityCount);
+      showNetworkInfo = settingsJson["debug"].value("showNetworkInfo", showNetworkInfo);
     }
 
     // Profile settings

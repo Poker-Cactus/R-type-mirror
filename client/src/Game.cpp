@@ -15,16 +15,23 @@
 #include <iostream>
 #include <nlohmann/json.hpp>
 #include <span>
+#include <vector>
 
 Game::Game()
     : module(nullptr), renderer(nullptr), isRunning(false), currentState(GameState::MENU), m_serverHost("127.0.0.1"),
-      m_serverPort("4242")
+      m_serverPort("4242"), m_rendererType("sfml")
 {
 }
 
 Game::Game(const std::string &host, const std::string &port)
     : module(nullptr), renderer(nullptr), isRunning(false), currentState(GameState::MENU), m_serverHost(host),
-      m_serverPort(port)
+      m_serverPort(port), m_rendererType("sfml")
+{
+}
+
+Game::Game(const std::string &host, const std::string &port, const std::string &rendererType)
+    : module(nullptr), renderer(nullptr), isRunning(false), currentState(GameState::MENU), m_serverHost(host),
+      m_serverPort(port), m_rendererType(rendererType)
 {
 }
 
@@ -39,22 +46,45 @@ bool Game::init()
     // Load settings from file
     settings.loadFromFile();
 
-    // Try multiple paths for the SDL2 module
-    const char *modulePaths[] = {
+    // Try multiple paths for the renderer modules
+    std::vector<std::string> modulePaths;
+
+    // Add paths for both SDL2 and SFML modules
+    std::vector<std::string> basePaths = {
 #ifdef _WIN32
-      "sdl2_module.dll", "libs/sdl2_module.dll", "./build/libs/sdl2_module.dll"
+      "sdl2_module.dll",      "libs/sdl2_module.dll",        "./build/libs/sdl2_module.dll", "sfml_module.dll",
+      "libs/sfml_module.dll", "./build/libs/sfml_module.dll"
 #elif defined(__APPLE__)
-      "sdl2_module.dylib", "libs/sdl2_module.dylib", "./build/libs/sdl2_module.dylib"
+      "sdl2_module.dylib",      "libs/sdl2_module.dylib",        "./build/libs/sdl2_module.dylib", "sfml_module.dylib",
+      "libs/sfml_module.dylib", "./build/libs/sfml_module.dylib"
 #else
-      "sdl2_module.so", "libs/sdl2_module.so", "./build/libs/sdl2_module.so"
+      "sdl2_module.so",         "libs/sdl2_module.so",   "./build/libs/sdl2_module.so",
+      "sfml_module.so",         "libs/sfml_module.so",   "./build/libs/sfml_module.so",
+      "../libs/sdl2_module.so", "../libs/sfml_module.so"
 #endif
     };
 
+    // Prioritize the requested renderer type
+    for (const auto &path : basePaths) {
+      if ((m_rendererType == "sdl2" && path.find("sdl2_module") != std::string::npos) ||
+          (m_rendererType == "sfml" && path.find("sfml_module") != std::string::npos)) {
+        modulePaths.push_back(path);
+      }
+    }
+
+    // Add the other renderer as fallback
+    for (const auto &path : basePaths) {
+      if ((m_rendererType == "sdl2" && path.find("sfml_module") != std::string::npos) ||
+          (m_rendererType == "sfml" && path.find("sdl2_module") != std::string::npos)) {
+        modulePaths.push_back(path);
+      }
+    }
+
     bool moduleLoaded = false;
-    for (const char *path : modulePaths) {
+    for (const std::string &path : modulePaths) {
       try {
-        module = std::make_unique<Module<IRenderer>>(path, "createRenderer", "destroyRenderer");
-        std::cout << "[Game::init] Loaded SDL2 module from: " << path << std::endl;
+        module = std::make_unique<Module<IRenderer>>(path.c_str(), "createRenderer", "destroyRenderer");
+        std::cout << "[Game::init] Loaded " << m_rendererType << " module from: " << path << std::endl;
         moduleLoaded = true;
         break;
       } catch (const std::exception &e) {

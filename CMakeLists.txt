@@ -22,9 +22,8 @@ else()
     add_compile_options(
         -Wall
         -Wextra
+        -g3  # Always include maximum debug information
     )
-    # Debug information for GCC/Clang
-    add_compile_options($<$<CONFIG:Debug>:-g3>)
 endif()
 
 ## Conan dependencies
@@ -39,6 +38,9 @@ find_package(asio REQUIRED)
 find_package(CapnProto REQUIRED)
 find_package(doctest REQUIRED)
 find_package(nlohmann_json REQUIRED)
+
+# SFML - system dependency (not via Conan due to version conflicts)
+find_package(SFML 2 COMPONENTS graphics window system audio QUIET)
 
 # Add subdirectories
 add_subdirectory(engineCore)

@@ -22,6 +22,7 @@
 #include "../interface/Geometry.hpp"
 #include "../interface/KeyCodes.hpp"
 #include <iostream>
+#include <unordered_set>
 
 PlayingState::PlayingState(std::shared_ptr<IRenderer> renderer, const std::shared_ptr<ecs::World> &world,
                            Settings &settings, std::shared_ptr<INetworkManager> networkManager)
@@ -73,18 +74,24 @@ bool PlayingState::init()
 #ifdef __APPLE__
     // macOS system font path
     constexpr int HUD_FONT_SIZE = 18;
-    m_hudFont = renderer->loadFont("/System/Library/Fonts/Helvetica.ttc", HUD_FONT_SIZE);
+    void *rawFont = renderer->loadFont("/System/Library/Fonts/Helvetica.ttc", HUD_FONT_SIZE);
 #else
     constexpr int HUD_FONT_SIZE = 18;
-    m_hudFont = renderer->loadFont("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", HUD_FONT_SIZE);
+    void *rawFont = renderer->loadFont("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", HUD_FONT_SIZE);
 #endif
+    // Wrap in shared_ptr with custom deleter
+    auto fontDeleter = [r = renderer](void *font) {
+      if (font && r)
+        r->freeFont(font);
+    };
+    m_hudFont = std::shared_ptr<void>(rawFont, fontDeleter);
   } catch (const std::exception &e) {
     std::cerr << "PlayingState: Warning - Could not load HUD font: " << e.what() << '\n';
     m_hudFont = nullptr;
   }
 
   // Initialize info mode
-  m_infoMode = std::make_unique<InfoMode>(renderer, m_hudFont);
+  m_infoMode = std::make_unique<rtype::InfoMode>(renderer, m_hudFont, settings);
 
   std::cout << "PlayingState: Initialized successfully" << '\n';
 
@@ -193,12 +200,15 @@ void PlayingState::render()
           // Yellow Bee: 256x64 with 2 rows x 8 columns = 16 frames
           frameWidth = 256 / 8; // 32px per frame
           frameHeight = 64 / 2; // 32px per frame (2 rows)
+          break;
         case ecs::SpriteId::CHARGED_PROJECTILE:
           frameWidth = 165 / 2; // 82px per frame
           frameHeight = 16;
+          break;
         case ecs::SpriteId::LOADING_SHOT:
           frameWidth = 255 / 8; // 31-32px per frame
           frameHeight = 29;
+          break;
         case ecs::SpriteId::ENEMY_WALKER:
           // Walker: 200x67 with 2 rows x 6 columns = 12 frames
           frameWidth = 200 / 6; // 33px per frame
@@ -261,18 +271,16 @@ void PlayingState::render()
             }
           }
           break;
-        default:
-          break;
-        }
-
-        if (sprite.spriteId == ecs::SpriteId::ENEMY_ROBOT) {
-          // Robot: 200x34 with 6 frames in single row (0-2: left, 3-5: right)
+        case ecs::SpriteId::ENEMY_ROBOT:
           frameWidth = 200 / 6; // 33px per frame
           frameHeight = 34;
-        } else if (sprite.spriteId == ecs::SpriteId::ROBOT_PROJECTILE) {
-          // Robot Projectile: 101x114 single frame
+          break;
+        case ecs::SpriteId::ROBOT_PROJECTILE:
           frameWidth = 101;
           frameHeight = 114;
+          break;
+        default:
+          break;
         }
 
         if (frameWidth > 0 && frameHeight > 0) {
@@ -575,15 +583,14 @@ void PlayingState::renderHUD()
   }
 
   // Score text (only if font is loaded)
-  if (m_hudFont != nullptr) {
+  if (m_hudFont) {
     std::string scoreText = "Score: " + std::to_string(m_playerScore);
-    renderer->drawText(m_hudFont, scoreText, HEARTS_X, HEARTS_Y + HUD_SCORE_OFFSET_Y, HUD_TEXT_WHITE);
+    renderer->drawText(m_hudFont.get(), scoreText, HEARTS_X, HEARTS_Y + HUD_SCORE_OFFSET_Y, HUD_TEXT_WHITE);
   }
 
   // Render info mode if active
   if (m_infoMode) {
-    const int infoTextY = HEARTS_Y + HUD_SCORE_OFFSET_Y + 30; // Below score
-    m_infoMode->render(HEARTS_X, infoTextY);
+    m_infoMode->render();
   }
 }
 
@@ -852,11 +859,8 @@ void PlayingState::cleanup()
     m_heartsTexture = nullptr;
   }
 
-  // Free HUD font
-  if (m_hudFont != nullptr && renderer != nullptr) {
-    renderer->freeFont(m_hudFont);
-    m_hudFont = nullptr;
-  }
+  // Free HUD font (handled by shared_ptr destructor)
+  m_hudFont.reset();
 
   std::cout << "PlayingState: Cleaned up" << '\n';
 }
@@ -1248,13 +1252,16 @@ void PlayingState::loadSpriteTextures()
 
 void PlayingState::freeSpriteTextures()
 {
-  if (renderer == nullptr) {
+  if (renderer == nullptr || m_spriteTextures.empty()) {
     return;
   }
 
+  std::unordered_set<void *> destroyedTextures;
+
   for (auto &[spriteId, texture] : m_spriteTextures) {
-    if (texture != nullptr) {
+    if (texture != nullptr && destroyedTextures.find(texture) == destroyedTextures.end()) {
       renderer->freeTexture(texture);
+      destroyedTextures.insert(texture);
     }
   }
 
