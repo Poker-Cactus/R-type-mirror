@@ -43,8 +43,10 @@ bool Game::init()
       "sdl2_module.dll", "libs/sdl2_module.dll", "./build/libs/sdl2_module.dll"
 #elif defined(__APPLE__)
       "sdl2_module.dylib", "libs/sdl2_module.dylib", "./build/libs/sdl2_module.dylib"
+// #else
+//       "sdl2_module.so", "libs/sdl2_module.so", "./build/libs/sdl2_module.so"
 #else
-      "sdl2_module.so", "libs/sdl2_module.so", "./build/libs/sdl2_module.so"
+      "sfml_module.so", "libs/sfml_module.so", "./build/libs/sfml_module.so"
 #endif
     };
 

@@ -60,6 +60,10 @@ foreach(module_dir ${MODULE_DIRS})
                 else()
                     target_link_libraries(${LIB_NAME} PRIVATE SDL2::SDL2 ${_ttf_target} SDL2_image::SDL2_image ${_mixer_target})
                 endif()
+            elseif(module_dir STREQUAL "SFML")
+                # SFML dependencies
+                find_package(SFML 2.5 COMPONENTS system window graphics audio REQUIRED)
+                target_link_libraries(${LIB_NAME} PRIVATE sfml-system sfml-window sfml-graphics sfml-audio)
             endif()
             
             # Place les .so/.dll dans build/
