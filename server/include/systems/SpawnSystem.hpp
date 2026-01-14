@@ -32,6 +32,7 @@
 #include "../config/LevelConfig.hpp"
 #include "ecs/ComponentSignature.hpp"
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <iostream>
 #include <random>
@@ -701,6 +702,9 @@ private:
   {
     configRubanProjectile config;
     switch (event.type) {
+    case ecs::SpawnEntityEvent::EntityType::NONE:
+      // NONE type means nothing to spawn (e.g., simple bubble doesn't shoot)
+      break;
     case ecs::SpawnEntityEvent::EntityType::ENEMY:
       std::cerr << "[SpawnSystem] WARNING: SpawnEntityEvent for ENEMY is deprecated, use spawnEnemyFromConfig instead"
                 << std::endl;
@@ -803,50 +807,64 @@ private:
   {
     const float projectileVelocity = PROJECTILE_VELOCITY_MULTIPLIER * 1.0F;
 
-    ecs::Entity projectile = world.createEntity();
-
     // Capability-based offset: use GunOffset if entity has it
     float offsetX = 0.0F;
     if (world.hasComponent<ecs::GunOffset>(owner)) {
       offsetX = world.getComponent<ecs::GunOffset>(owner).x * 1.0F;
     }
 
-    ecs::Transform transform;
-    transform.x = posX + offsetX;
-    transform.y = posY;
-    transform.rotation = 0.0F;
-    transform.scale = 1.0F;
-    world.addComponent(projectile, transform);
+    // Three projectile angles: 0° (forward), -50° (up-forward), 50° (down-forward)
+    // Note: In game coords, negative Y = up, positive Y = down
+    constexpr float PI = 3.14159265358979323846F;
+    const std::array<float, 3> angles = {0.0F, -50.0F * PI / 180.0F, 50.0F * PI / 180.0F};
 
-    ecs::Velocity velocity;
-    velocity.dx = projectileVelocity;
-    velocity.dy = 0.0F;
-    world.addComponent(projectile, velocity);
+    // Corresponding sprite IDs for each direction
+    const std::array<std::uint32_t, 3> spriteIds = {
+      ecs::SpriteId::TRIPLE_PROJECTILE_RIGHT, // Straight forward
+      ecs::SpriteId::TRIPLE_PROJECTILE_UP, // Up-forward
+      ecs::SpriteId::TRIPLE_PROJECTILE_DOWN // Down-forward
+    };
 
-    world.addComponent(projectile, ecs::Collider{PROJECTILE_COLLIDER_SIZE, PROJECTILE_COLLIDER_SIZE});
+    for (int i = 0; i < 3; i++) {
+      ecs::Entity projectile = world.createEntity();
 
-    // Sprite for triple projectile
-    ecs::Sprite sprite;
-    sprite.spriteId = ecs::SpriteId::TRIPLE_PROJECTILE;
-    sprite.width = PROJECTILE_SPRITE_WIDTH;
-    sprite.height = PROJECTILE_SPRITE_HEIGHT;
-    sprite.animated = true;
-    sprite.frameCount = 3;
-    sprite.loop = false;
-    sprite.startFrame = 0;
-    sprite.endFrame = 2;
+      ecs::Transform transform;
+      transform.x = posX + offsetX;
+      transform.y = posY;
+      transform.rotation = 0.0F; // No rotation needed - sprite already oriented correctly
+      transform.scale = 1.0F;
+      world.addComponent(projectile, transform);
 
-    world.addComponent(projectile, sprite);
+      ecs::Velocity velocity;
+      velocity.dx = projectileVelocity * std::cos(angles[i]);
+      velocity.dy = projectileVelocity * std::sin(angles[i]);
+      world.addComponent(projectile, velocity);
 
-    // Mark as networked
-    ecs::Networked net;
-    net.networkId = projectile;
-    world.addComponent(projectile, net);
+      world.addComponent(projectile, ecs::Collider{PROJECTILE_COLLIDER_SIZE, PROJECTILE_COLLIDER_SIZE});
 
-    // Track owner to prevent self-damage
-    ecs::Owner ownerComp;
-    ownerComp.ownerId = owner;
-    world.addComponent(projectile, ownerComp);
+      // Sprite for triple projectile - use direction-specific sprite
+      ecs::Sprite sprite;
+      sprite.spriteId = spriteIds[i];
+      sprite.width = PROJECTILE_SPRITE_WIDTH;
+      sprite.height = PROJECTILE_SPRITE_HEIGHT;
+      sprite.animated = false; // Individual images, no animation
+      sprite.frameCount = 1;
+      sprite.loop = false;
+      sprite.startFrame = 0;
+      sprite.endFrame = 0;
+
+      world.addComponent(projectile, sprite);
+
+      // Mark as networked
+      ecs::Networked net;
+      net.networkId = projectile;
+      world.addComponent(projectile, net);
+
+      // Track owner to prevent self-damage
+      ecs::Owner ownerComp;
+      ownerComp.ownerId = owner;
+      world.addComponent(projectile, ownerComp);
+    }
   }
 
   static void spawnProjectile(ecs::World &world, float posX, float posY, ecs::Entity owner)
@@ -1015,81 +1033,82 @@ private:
   {
     ecs::Entity powerup = world.createEntity();
 
-    // Transform
-    ecs::Transform transform;
-    transform.x = posX;
-    transform.y = posY;
-    transform.rotation = 0.0F;
-    transform.scale = POWERUP_SCALE;
-    world.addComponent(powerup, transform);
+  // Transform
+  ecs::Transform transform;
+  transform.x = posX;
+  transform.y = posY;
+  transform.rotation = 0.0F;
+  transform.scale = POWERUP_SCALE;
+  world.addComponent(powerup, transform);
 
-    // Velocity - slow drift to the left
-    ecs::Velocity velocity;
-    velocity.dx = POWERUP_VELOCITY_X;
-    velocity.dy = 0.0F;
-    world.addComponent(powerup, velocity);
+  // Velocity - slow drift to the left
+  ecs::Velocity velocity;
+  velocity.dx = POWERUP_VELOCITY_X;
+  velocity.dy = 0.0F;
+  world.addComponent(powerup, velocity);
 
-    // Collider for pickup detection
-    world.addComponent(powerup, ecs::Collider{POWERUP_COLLIDER_SIZE, POWERUP_COLLIDER_SIZE});
+  // Collider for pickup detection
+  world.addComponent(powerup, ecs::Collider{POWERUP_COLLIDER_SIZE, POWERUP_COLLIDER_SIZE});
 
-    // Sprite - all powerups use POWERUP spriteId with different currentFrame
-    // Frame 0=BUBBLE, Frame 1=BUBBLE_TRIPLE, Frame 2=BUBBLE_RUBAN, Frame 3=DRONE
-    // R-Type_Items.png: Frame 0=BUBBLE, Frame 1=BUBBLE_TRIPLE, Frame 2=BUBBLE_RUBAN, Frame 3=DRONE
-    ecs::Sprite sprite;
-    sprite.spriteId = ecs::SpriteId::POWERUP;
-    sprite.width = POWERUP_FRAME_WIDTH;
-    sprite.height = POWERUP_SPRITE_HEIGHT;
-    sprite.animated = true; // Enable animation for cycling
-    sprite.frameCount = POWERUP_FRAME_COUNT; // 4 frames total
-    sprite.frameTime = 0.03f; // Animation speed
-    sprite.loop = true;
+  // Sprite - all powerups use POWERUP spriteId with different currentFrame
+  // Frame 0=BUBBLE, Frame 1=BUBBLE_TRIPLE, Frame 2=BUBBLE_RUBAN, Frame 3=DRONE
+  // R-Type_Items.png: Frame 0=BUBBLE, Frame 1=BUBBLE_TRIPLE, Frame 2=BUBBLE_RUBAN, Frame 3=DRONE
+  ecs::Sprite sprite;
+  sprite.spriteId = ecs::SpriteId::POWERUP;
+  sprite.width = POWERUP_FRAME_WIDTH;
+  sprite.height = POWERUP_SPRITE_HEIGHT;
+  sprite.animated = true; // Enable animation for cycling
+  sprite.frameCount = POWERUP_FRAME_COUNT; // 4 frames total
+  sprite.frameTime = 0.03f; // Animation speed
+  sprite.loop = true;
 
-    // Select starting frame and animation range based on powerup type
-    switch (powerupType) {
-    case PowerupType::BUBBLE:
-      sprite.startFrame = 0;
-      sprite.endFrame = 0;
-      sprite.currentFrame = 0;
-      break;
-    case PowerupType::BUBBLE_TRIPLE:
-      sprite.startFrame = 1;
-      sprite.endFrame = 1;
-      sprite.currentFrame = 1;
-      break;
-    case PowerupType::BUBBLE_RUBAN:
-      sprite.startFrame = 2;
-      sprite.endFrame = 2;
-      sprite.currentFrame = 2;
-      break;
-    case PowerupType::DRONE:
-    default:
-      sprite.startFrame = 3;
-      sprite.endFrame = 3;
-      sprite.currentFrame = 3;
-      break;
-    }
-    sprite.frameTime = 0.1f;
-    sprite.loop = true;
-    world.addComponent(powerup, sprite);
-
-    // Networked for client replication
-    ecs::Networked net;
-    net.networkId = powerup;
-    world.addComponent(powerup, net);
-
-    const char *typeNames[] = {"DRONE", "BUBBLE", "BUBBLE_TRIPLE", "BUBBLE_RUBAN"};
-    std::cout << "[SpawnSystem] Spawned " << typeNames[static_cast<int>(powerupType)] << " powerup at (" << posX << ", "
-              << posY << ")\n";
+  // Select starting frame and animation range based on powerup type
+  switch (powerupType) {
+  case PowerupType::BUBBLE:
+    sprite.startFrame = 0;
+    sprite.endFrame = 0;
+    sprite.currentFrame = 0;
+    break;
+  case PowerupType::BUBBLE_TRIPLE:
+    sprite.startFrame = 1;
+    sprite.endFrame = 1;
+    sprite.currentFrame = 1;
+    break;
+  case PowerupType::BUBBLE_RUBAN:
+    sprite.startFrame = 2;
+    sprite.endFrame = 2;
+    sprite.currentFrame = 2;
+    break;
+  case PowerupType::DRONE:
+  default:
+    sprite.startFrame = 3;
+    sprite.endFrame = 3;
+    sprite.currentFrame = 3;
+    break;
   }
+  sprite.frameTime = 0.1f;
+  sprite.loop = true;
+  world.addComponent(powerup, sprite);
 
-  static void spawnExplosion(ecs::World &world, float posX, float posY)
-  {
-    (void)world;
-    (void)posX;
-    (void)posY;
-    // TODO: Implement explosion effect
-  }
-};
+  // Networked for client replication
+  ecs::Networked net;
+  net.networkId = powerup;
+  world.addComponent(powerup, net);
+
+  const char *typeNames[] = {"DRONE", "BUBBLE", "BUBBLE_TRIPLE", "BUBBLE_RUBAN"};
+  std::cout << "[SpawnSystem] Spawned " << typeNames[static_cast<int>(powerupType)] << " powerup at (" << posX << ", "
+            << posY << ")\n";
+}
+
+static void
+spawnExplosion(ecs::World &world, float posX, float posY)
+{
+  (void)world;
+  (void)posX;
+  (void)posY;
+  // TODO: Implement explosion effect
+}
+}; // namespace server
 
 } // namespace server
 

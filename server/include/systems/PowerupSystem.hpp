@@ -92,25 +92,25 @@ private:
     BUBBLE_TRIPLE_SPRITE_WIDTH / BUBBLE_TRIPLE_FRAME_COUNT; // Frame width in pixels
   static constexpr float BUBBLE_TRIPLE_SCALE = 2.5f;
 
-  static constexpr unsigned int BUBBLE_RUBAN1_SPRITE_WIDTH = 128; // bubble.png width (actual)
-  static constexpr unsigned int BUBBLE_RUBAN1_SPRITE_HEIGHT = 34; // bubble.png height
+  // bubble_ruban_back: 32x32 - individual frames (4 separate files)
+  static constexpr unsigned int BUBBLE_RUBAN1_SPRITE_WIDTH = 32;
+  static constexpr unsigned int BUBBLE_RUBAN1_SPRITE_HEIGHT = 32;
   static constexpr unsigned int BUBBLE_RUBAN1_FRAME_COUNT = 4;
-  static constexpr int BUBBLE_RUBAN1_FRAME_WIDTH =
-    BUBBLE_RUBAN1_SPRITE_WIDTH / BUBBLE_RUBAN1_FRAME_COUNT; // Frame width in pixels
+  static constexpr int BUBBLE_RUBAN1_FRAME_WIDTH = 32; // Each file is a single frame
   static constexpr float BUBBLE_RUBAN1_SCALE = 2.5f;
 
-  static constexpr unsigned int BUBBLE_RUBAN2_SPRITE_WIDTH = 137; // bubble.png width (actual)
-  static constexpr unsigned int BUBBLE_RUBAN2_SPRITE_HEIGHT = 30; // bubble.png height
+  // bubble_ruban_middle: 38x29 - individual frames (4 separate files)
+  static constexpr unsigned int BUBBLE_RUBAN2_SPRITE_WIDTH = 38;
+  static constexpr unsigned int BUBBLE_RUBAN2_SPRITE_HEIGHT = 29;
   static constexpr unsigned int BUBBLE_RUBAN2_FRAME_COUNT = 4;
-  static constexpr int BUBBLE_RUBAN2_FRAME_WIDTH =
-    BUBBLE_RUBAN2_SPRITE_WIDTH / BUBBLE_RUBAN2_FRAME_COUNT; // Frame width in pixels
+  static constexpr int BUBBLE_RUBAN2_FRAME_WIDTH = 38; // Each file is a single frame
   static constexpr float BUBBLE_RUBAN2_SCALE = 2.5f;
 
-  static constexpr unsigned int BUBBLE_RUBAN3_SPRITE_WIDTH = 139; // bubble.png width (actual)
-  static constexpr unsigned int BUBBLE_RUBAN3_SPRITE_HEIGHT = 26; // bubble.png height
+  // bubble_ruban_front: 37x31 - individual frames (4 separate files)
+  static constexpr unsigned int BUBBLE_RUBAN3_SPRITE_WIDTH = 37;
+  static constexpr unsigned int BUBBLE_RUBAN3_SPRITE_HEIGHT = 31;
   static constexpr unsigned int BUBBLE_RUBAN3_FRAME_COUNT = 4;
-  static constexpr int BUBBLE_RUBAN3_FRAME_WIDTH =
-    BUBBLE_RUBAN3_SPRITE_WIDTH / BUBBLE_RUBAN3_FRAME_COUNT; // Frame width in pixels
+  static constexpr int BUBBLE_RUBAN3_FRAME_WIDTH = 37; // Each file is a single frame
   static constexpr float BUBBLE_RUBAN3_SCALE = 2.5f;
 
   void handleCollision(ecs::World &world, const ecs::CollisionEvent &event)
@@ -126,16 +126,30 @@ private:
     ecs::Entity powerupEntity = 0;
     ecs::Entity playerEntity = 0;
 
-    // Check if one entity is a POWERUP sprite and the other is a player
+    // Helper to check if sprite is a collectible bubble/powerup
+    auto isCollectibleSprite = [](std::uint32_t spriteId) {
+      return spriteId == ecs::SpriteId::POWERUP || spriteId == ecs::SpriteId::BUBBLE ||
+        spriteId == ecs::SpriteId::BUBBLE_TRIPLE || spriteId == ecs::SpriteId::DRONE ||
+        (spriteId >= ecs::SpriteId::BUBBLE_RUBAN1 && spriteId <= ecs::SpriteId::BUBBLE_RUBAN3) ||
+        (spriteId >= ecs::SpriteId::BUBBLE_RUBAN_BACK1 && spriteId <= ecs::SpriteId::BUBBLE_RUBAN_FRONT4);
+    };
+
+    // Check if one entity is a collectible sprite (without Follower = detached) and the other is a player
     if (world.hasComponent<ecs::Sprite>(entityA) && world.hasComponent<ecs::Input>(entityB)) {
       const auto &sprite = world.getComponent<ecs::Sprite>(entityA);
-      if (sprite.spriteId == ecs::SpriteId::POWERUP) {
+      // Collectible if it's a POWERUP, or a bubble without Follower (detached)
+      bool isCollectible = (sprite.spriteId == ecs::SpriteId::POWERUP) ||
+        (isCollectibleSprite(sprite.spriteId) && !world.hasComponent<ecs::Follower>(entityA));
+      if (isCollectible) {
         powerupEntity = entityA;
         playerEntity = entityB;
       }
     } else if (world.hasComponent<ecs::Sprite>(entityB) && world.hasComponent<ecs::Input>(entityA)) {
       const auto &sprite = world.getComponent<ecs::Sprite>(entityB);
-      if (sprite.spriteId == ecs::SpriteId::POWERUP) {
+      // Collectible if it's a POWERUP, or a bubble without Follower (detached)
+      bool isCollectible = (sprite.spriteId == ecs::SpriteId::POWERUP) ||
+        (isCollectibleSprite(sprite.spriteId) && !world.hasComponent<ecs::Follower>(entityB));
+      if (isCollectible) {
         powerupEntity = entityB;
         playerEntity = entityA;
       }
@@ -145,9 +159,9 @@ private:
       return; // Not a player-powerup collision
     }
 
-    // Determine powerup type from sprite currentFrame
+    // Determine powerup type from sprite
     const auto &powerupSprite = world.getComponent<ecs::Sprite>(powerupEntity);
-    std::cout << "[PowerupSystem] Player " << playerEntity << " collected powerup frame " << powerupSprite.currentFrame
+    std::cout << "[PowerupSystem] Player " << playerEntity << " collected powerup sprite " << powerupSprite.spriteId
               << '\n';
 
     // Get powerup position before destroying it (for BUBBLE spawn location)
@@ -159,8 +173,27 @@ private:
       powerupY = powerupTransform.y;
     }
     BubbleTypeConfig config;
-    // Apply power-up effect based on frame (type)
-    switch (powerupSprite.currentFrame) {
+
+    // Determine bubble type - either from POWERUP frame or directly from sprite ID
+    int bubbleType = -1;
+    if (powerupSprite.spriteId == ecs::SpriteId::POWERUP) {
+      // Standard powerup pickup - use frame to determine type
+      bubbleType = static_cast<int>(powerupSprite.currentFrame);
+    } else if (powerupSprite.spriteId == ecs::SpriteId::BUBBLE) {
+      bubbleType = 0;
+    } else if (powerupSprite.spriteId == ecs::SpriteId::BUBBLE_TRIPLE) {
+      bubbleType = 1;
+    } else if (powerupSprite.spriteId == ecs::SpriteId::DRONE) {
+      bubbleType = 3;
+    } else if ((powerupSprite.spriteId >= ecs::SpriteId::BUBBLE_RUBAN1 &&
+                powerupSprite.spriteId <= ecs::SpriteId::BUBBLE_RUBAN3) ||
+               (powerupSprite.spriteId >= ecs::SpriteId::BUBBLE_RUBAN_BACK1 &&
+                powerupSprite.spriteId <= ecs::SpriteId::BUBBLE_RUBAN_FRONT4)) {
+      bubbleType = 2;
+    }
+
+    // Apply power-up effect based on type
+    switch (bubbleType) {
     case 3: // DRONE
       spawnDroneFollower(world, playerEntity);
       break;
@@ -182,13 +215,13 @@ private:
       config.spriteId = ecs::SpriteId::BUBBLE_TRIPLE;
       spawnBubbleFollower(world, playerEntity, powerupX, powerupY, config);
       break;
-    case 2: // BUBBLE_RUBAN2
+    case 2: // BUBBLE_RUBAN - starts with first middle frame
       config.spriteWidth = BUBBLE_RUBAN2_SPRITE_WIDTH;
       config.spriteHeight = BUBBLE_RUBAN2_SPRITE_HEIGHT;
       config.frameCount = BUBBLE_RUBAN2_FRAME_COUNT;
       config.frameWidth = BUBBLE_RUBAN2_FRAME_WIDTH;
       config.scale = BUBBLE_RUBAN2_SCALE;
-      config.spriteId = ecs::SpriteId::BUBBLE_RUBAN2;
+      config.spriteId = ecs::SpriteId::BUBBLE_RUBAN_MIDDLE1; // Start with first middle frame
       spawnBubbleFollower(world, playerEntity, powerupX, powerupY, config);
       break;
     default:
@@ -347,9 +380,13 @@ private:
         const auto &follower = world.getComponent<ecs::Follower>(entity);
         if (follower.parent == player) {
           const auto &sprite = world.getComponent<ecs::Sprite>(entity);
+          // Check for all bubble sprite IDs including all ruban animation frames
+          bool isRubanSprite =
+            (sprite.spriteId >= ecs::SpriteId::BUBBLE_RUBAN1 && sprite.spriteId <= ecs::SpriteId::BUBBLE_RUBAN3) ||
+            (sprite.spriteId >= ecs::SpriteId::BUBBLE_RUBAN_BACK1 &&
+             sprite.spriteId <= ecs::SpriteId::BUBBLE_RUBAN_FRONT4);
           if (sprite.spriteId == ecs::SpriteId::BUBBLE || sprite.spriteId == ecs::SpriteId::BUBBLE_TRIPLE ||
-              sprite.spriteId == ecs::SpriteId::BUBBLE_RUBAN1 || sprite.spriteId == ecs::SpriteId::BUBBLE_RUBAN2 ||
-              sprite.spriteId == ecs::SpriteId::BUBBLE_RUBAN3) {
+              isRubanSprite) {
             std::cout << "[PowerupSystem] Destroying existing bubble follower " << entity
                       << " (spriteId: " << sprite.spriteId << ")\n";
             world.destroyEntity(entity);

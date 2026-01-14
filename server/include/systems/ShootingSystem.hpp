@@ -12,11 +12,13 @@
 #include "../../../engineCore/include/ecs/ISystem.hpp"
 #include "../../../engineCore/include/ecs/World.hpp"
 #include "../../../engineCore/include/ecs/components/Charging.hpp"
+#include "../../../engineCore/include/ecs/components/Collider.hpp"
 #include "../../../engineCore/include/ecs/components/Follower.hpp"
 #include "../../../engineCore/include/ecs/components/Input.hpp"
 #include "../../../engineCore/include/ecs/components/Owner.hpp"
 #include "../../../engineCore/include/ecs/components/Sprite.hpp"
 #include "../../../engineCore/include/ecs/components/Transform.hpp"
+#include "../../../engineCore/include/ecs/components/Velocity.hpp"
 #include "../../../engineCore/include/ecs/events/EventListenerHandle.hpp"
 #include "../../../engineCore/include/ecs/events/GameEvents.hpp"
 #include "ecs/ComponentSignature.hpp"
@@ -145,6 +147,16 @@ public:
 
       m_prevShootState[entity] = input.shoot;
       m_prevChargedShootState[entity] = input.chargedShoot;
+
+      // Détachement du powerup
+      const bool wasDetaching = m_prevDetachState.contains(entity) ? m_prevDetachState[entity] : false;
+      const bool justDetachPressed = input.detach && !wasDetaching;
+
+      if (justDetachPressed) {
+        detachPowerup(world, entity);
+      }
+
+      m_prevDetachState[entity] = input.detach;
     }
   }
 
@@ -170,11 +182,11 @@ private:
   std::unordered_map<ecs::Entity, float> m_lastShootTime;
   std::unordered_map<ecs::Entity, float> m_lastChargedShootTime;
   std::unordered_map<ecs::Entity, bool> m_prevShootState;
-  std::unordered_map<ecs::Entity, bool> m_prevChargedShootState;
-
+  std::unordered_map<ecs::Entity, bool> m_prevDetachState;
   float m_currentTime = 0.0F;
   const float SHOOT_COOLDOWN = 0.05F; // 5 shots per second (default)
   const float RUBAN_SHOOT_COOLDOWN = 0.02F; // 50 shots per second for ruban (faster)
+  std::unordered_map<ecs::Entity, bool> m_prevChargedShootState;
   const float CHARGED_SHOOT_COOLDOWN = 2.0F; // Cooldown between charged shots
 
   bool canShoot(ecs::Entity entity, ecs::World &world)
@@ -223,8 +235,11 @@ private:
       }
 
       const auto &sprite = world.getComponent<ecs::Sprite>(bubble);
-      if (sprite.spriteId == ecs::SpriteId::BUBBLE_RUBAN1 || sprite.spriteId == ecs::SpriteId::BUBBLE_RUBAN2 ||
-          sprite.spriteId == ecs::SpriteId::BUBBLE_RUBAN3) {
+      // Check for all ruban bubble sprite IDs (legacy + new individual frames)
+      bool isRubanSprite =
+        (sprite.spriteId >= ecs::SpriteId::BUBBLE_RUBAN1 && sprite.spriteId <= ecs::SpriteId::BUBBLE_RUBAN3) ||
+        (sprite.spriteId >= ecs::SpriteId::BUBBLE_RUBAN_BACK1 && sprite.spriteId <= ecs::SpriteId::BUBBLE_RUBAN_FRONT4);
+      if (isRubanSprite) {
         return true;
       }
     }
@@ -254,13 +269,28 @@ private:
   static ecs::SpawnEntityEvent::EntityType whichProjectile(std::uint32_t bubble)
   {
     switch (bubble) {
+    case ecs::SpriteId::BUBBLE:
+      return ecs::SpawnEntityEvent::EntityType::NONE; // Simple bubble doesn't shoot
     case ecs::SpriteId::DRONE:
       return ecs::SpawnEntityEvent::EntityType::PROJECTILE;
     case ecs::SpriteId::BUBBLE_TRIPLE:
       return ecs::SpawnEntityEvent::EntityType::TRIPLE_PROJECTILE;
+    // All ruban bubble sprites fire RUBAN1_PROJECTILE
     case ecs::SpriteId::BUBBLE_RUBAN1:
     case ecs::SpriteId::BUBBLE_RUBAN2:
     case ecs::SpriteId::BUBBLE_RUBAN3:
+    case ecs::SpriteId::BUBBLE_RUBAN_BACK1:
+    case ecs::SpriteId::BUBBLE_RUBAN_BACK2:
+    case ecs::SpriteId::BUBBLE_RUBAN_BACK3:
+    case ecs::SpriteId::BUBBLE_RUBAN_BACK4:
+    case ecs::SpriteId::BUBBLE_RUBAN_MIDDLE1:
+    case ecs::SpriteId::BUBBLE_RUBAN_MIDDLE2:
+    case ecs::SpriteId::BUBBLE_RUBAN_MIDDLE3:
+    case ecs::SpriteId::BUBBLE_RUBAN_MIDDLE4:
+    case ecs::SpriteId::BUBBLE_RUBAN_FRONT1:
+    case ecs::SpriteId::BUBBLE_RUBAN_FRONT2:
+    case ecs::SpriteId::BUBBLE_RUBAN_FRONT3:
+    case ecs::SpriteId::BUBBLE_RUBAN_FRONT4:
       return ecs::SpawnEntityEvent::EntityType::RUBAN1_PROJECTILE;
     default:
       return ecs::SpawnEntityEvent::EntityType::PROJECTILE;
@@ -301,11 +331,86 @@ private:
         projectileType = whichProjectile(sprite.spriteId);
       }
 
+      // Skip if this bubble type doesn't shoot (simple bubble)
+      if (projectileType == ecs::SpawnEntityEvent::EntityType::NONE) {
+        continue;
+      }
+
       // Spawn projectile from drone position
       ecs::SpawnEntityEvent droneSpawnEvent(projectileType, droneTransform.x + droneOffsetX,
                                             droneTransform.y + droneOffsetY,
                                             player); // Owner is still the player for scoring
       world.emitEvent(droneSpawnEvent);
+    }
+  }
+
+  /**
+   * @brief Detach the current powerup (bubble/drone) from a player
+   * The powerup becomes a floating collectible moving left at half player speed
+   */
+  static void detachPowerup(ecs::World &world, ecs::Entity player)
+  {
+    // Find all followers (bubbles/drones) that follow this player
+    ecs::ComponentSignature followerSig;
+    followerSig.set(ecs::getComponentId<ecs::Follower>());
+    followerSig.set(ecs::getComponentId<ecs::Sprite>());
+
+    std::vector<ecs::Entity> followers;
+    world.getEntitiesWithSignature(followerSig, followers);
+
+    for (const auto &followerEntity : followers) {
+      if (!world.isAlive(followerEntity)) {
+        continue;
+      }
+
+      const auto &followerComp = world.getComponent<ecs::Follower>(followerEntity);
+      if (followerComp.parent != player) {
+        continue;
+      }
+
+      auto &sprite = world.getComponent<ecs::Sprite>(followerEntity);
+
+      // Check if this is a powerup (bubble or drone), not other followers
+      bool isPowerup = sprite.spriteId == ecs::SpriteId::BUBBLE || sprite.spriteId == ecs::SpriteId::BUBBLE_TRIPLE ||
+        sprite.spriteId == ecs::SpriteId::DRONE ||
+        (sprite.spriteId >= ecs::SpriteId::BUBBLE_RUBAN1 && sprite.spriteId <= ecs::SpriteId::BUBBLE_RUBAN3) ||
+        (sprite.spriteId >= ecs::SpriteId::BUBBLE_RUBAN_BACK1 && sprite.spriteId <= ecs::SpriteId::BUBBLE_RUBAN_FRONT4);
+
+      if (isPowerup) {
+        std::cout << "[ShootingSystem] Detaching powerup " << followerEntity << " from player " << player
+                  << " (keeping sprite " << sprite.spriteId << ")" << std::endl;
+
+        // Keep the original sprite - don't transform it
+        // The powerup will display with the same appearance as when it was attached
+
+        // Remove Follower component so it stops following
+        world.removeComponent<ecs::Follower>(followerEntity);
+
+        // Add or update Velocity - move left at half player speed (175.0F = 350.0F / 2)
+        constexpr float DETACHED_SPEED = -175.0F; // Negative = left
+        if (world.hasComponent<ecs::Velocity>(followerEntity)) {
+          auto &velocity = world.getComponent<ecs::Velocity>(followerEntity);
+          velocity.dx = DETACHED_SPEED;
+          velocity.dy = 0.0F;
+        } else {
+          ecs::Velocity velocity;
+          velocity.dx = DETACHED_SPEED;
+          velocity.dy = 0.0F;
+          world.addComponent(followerEntity, velocity);
+        }
+
+        // Ensure Collider exists for re-collection
+        if (!world.hasComponent<ecs::Collider>(followerEntity)) {
+          ecs::Collider collider;
+          collider.width = 12;
+          collider.height = 12;
+          world.addComponent(followerEntity, collider);
+        }
+
+        std::cout << "[ShootingSystem] Powerup detached and moving left at " << DETACHED_SPEED << " units/s"
+                  << std::endl;
+        return; // Only detach one powerup at a time
+      }
     }
   }
 };

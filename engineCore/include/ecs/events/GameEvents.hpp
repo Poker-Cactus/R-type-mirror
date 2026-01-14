@@ -64,6 +64,7 @@ struct ShootEvent : public IEvent {
  */
 struct SpawnEntityEvent : public IEvent {
   enum class EntityType {
+    NONE,
     ENEMY,
     PROJECTILE,
     POWERUP,
