@@ -6,8 +6,8 @@
 */
 
 #include "../../network/include/AsioServer.hpp"
-#include "Game.hpp"
 #include "../include/config/ShipStatsConfig.hpp"
+#include "Game.hpp"
 #include <exception>
 #include <iostream>
 #include <memory>

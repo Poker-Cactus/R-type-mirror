@@ -139,7 +139,6 @@ constexpr std::uint32_t BUBBLE = 41;
 constexpr std::uint32_t CHARGED_PROJECTILE = 42;
 constexpr std::uint32_t LOADING_SHOT = 43;
 
-
 // Bubble Ruban individual frames (4 frames each for back/middle/front)
 // Back (compressed) frames 1-4
 constexpr std::uint32_t BUBBLE_RUBAN_BACK1 = 50;

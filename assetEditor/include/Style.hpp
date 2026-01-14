@@ -9,7 +9,8 @@
 
 #include <imgui.h>
 
-namespace AssetEditor {
+namespace AssetEditor
+{
 
 /**
  * @brief Apply macOS-inspired dark theme to ImGui
@@ -26,6 +27,6 @@ void ApplyMacOSStyle();
  * Attempts to load bundled Inter font first, then falls back
  * to macOS system fonts, and finally to ImGui default font.
  */
-void LoadFont(ImGuiIO& io);
+void LoadFont(ImGuiIO &io);
 
 } // namespace AssetEditor

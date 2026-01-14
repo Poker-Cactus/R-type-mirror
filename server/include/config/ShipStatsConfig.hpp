@@ -48,52 +48,36 @@ public:
       // Load default ship
       if (ships.contains("default")) {
         const auto &def = ships["default"];
-        m_defaultShip = ecs::ShipStats(
-          def.value("maxHP", 100),
-          def.value("moveSpeed", 200.0f),
-          def.value("fireRate", 0.25f),
-          def.value("damage", 10)
-        );
+        m_defaultShip = ecs::ShipStats(def.value("maxHP", 100), def.value("moveSpeed", 200.0f),
+                                       def.value("fireRate", 0.25f), def.value("damage", 10));
       }
 
       // Load fast ship
       if (ships.contains("fast")) {
         const auto &fast = ships["fast"];
-        m_fastShip = ecs::ShipStats(
-          fast.value("maxHP", 70),
-          fast.value("moveSpeed", 300.0f),
-          fast.value("fireRate", 0.25f),
-          fast.value("damage", 10)
-        );
+        m_fastShip = ecs::ShipStats(fast.value("maxHP", 70), fast.value("moveSpeed", 300.0f),
+                                    fast.value("fireRate", 0.25f), fast.value("damage", 10));
       }
 
       // Load tank ship
       if (ships.contains("tank")) {
         const auto &tank = ships["tank"];
-        m_tankShip = ecs::ShipStats(
-          tank.value("maxHP", 150),
-          tank.value("moveSpeed", 150.0f),
-          tank.value("fireRate", 0.25f),
-          tank.value("damage", 10)
-        );
+        m_tankShip = ecs::ShipStats(tank.value("maxHP", 150), tank.value("moveSpeed", 150.0f),
+                                    tank.value("fireRate", 0.25f), tank.value("damage", 10));
       }
 
       // Load sniper ship
       if (ships.contains("sniper")) {
         const auto &sniper = ships["sniper"];
-        m_sniperShip = ecs::ShipStats(
-          sniper.value("maxHP", 100),
-          sniper.value("moveSpeed", 200.0f),
-          sniper.value("fireRate", 0.5f),
-          sniper.value("damage", 20)
-        );
+        m_sniperShip = ecs::ShipStats(sniper.value("maxHP", 100), sniper.value("moveSpeed", 200.0f),
+                                      sniper.value("fireRate", 0.5f), sniper.value("damage", 20));
       }
 
       std::cout << "[ShipStatsConfig] Loaded ship stats from: " << filePath << std::endl;
       std::cout << "  DEFAULT: HP=" << m_defaultShip.maxHP << " Speed=" << m_defaultShip.moveSpeed << std::endl;
       std::cout << "  FAST:    HP=" << m_fastShip.maxHP << " Speed=" << m_fastShip.moveSpeed << std::endl;
       std::cout << "  TANK:    HP=" << m_tankShip.maxHP << " Speed=" << m_tankShip.moveSpeed << std::endl;
-      std::cout << "  SNIPER:  HP=" << m_sniperShip.maxHP << " Speed=" << m_sniperShip.moveSpeed 
+      std::cout << "  SNIPER:  HP=" << m_sniperShip.maxHP << " Speed=" << m_sniperShip.moveSpeed
                 << " Damage=" << m_sniperShip.damage << " FireRate=" << m_sniperShip.fireRate << std::endl;
 
       return true;

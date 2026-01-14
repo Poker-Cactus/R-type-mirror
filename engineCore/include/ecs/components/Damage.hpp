@@ -24,10 +24,7 @@ namespace ecs
 struct Damage : public IComponent {
   int amount = 10; // Damage amount dealt on collision
 
-  [[nodiscard]] nlohmann::json toJson() const override
-  {
-    return {{"amount", amount}};
-  }
+  [[nodiscard]] nlohmann::json toJson() const override { return {{"amount", amount}}; }
 
   static Damage fromJson(const nlohmann::json &json)
   {

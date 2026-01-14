@@ -373,13 +373,12 @@ void PlayingState::render()
           // Calculate source rectangle based on row and currentFrame
           int srcX = sprite.currentFrame * PLAYER_FRAME_WIDTH;
           int srcY = playerRow * PLAYER_FRAME_HEIGHT;
-          
+
           int scaledWidth = static_cast<int>(sprite.width * transformComponent.scale);
           int scaledHeight = static_cast<int>(sprite.height * transformComponent.scale);
-          
+
           renderer->drawTextureRegion(
-            textureIt->second,
-            {.x = srcX, .y = srcY, .width = PLAYER_FRAME_WIDTH, .height = PLAYER_FRAME_HEIGHT},
+            textureIt->second, {.x = srcX, .y = srcY, .width = PLAYER_FRAME_WIDTH, .height = PLAYER_FRAME_HEIGHT},
             {.x = static_cast<int>(transformComponent.x),
              .y = static_cast<int>(transformComponent.y),
              .width = scaledWidth,

@@ -37,10 +37,7 @@ namespace server
 class PlayerAnimationSystem : public ecs::ISystem
 {
 public:
-  PlayerAnimationSystem() 
-  {
-    std::cout << "[PlayerAnimationSystem] Initialized" << std::endl;
-  }
+  PlayerAnimationSystem() { std::cout << "[PlayerAnimationSystem] Initialized" << std::endl; }
 
   void update(ecs::World &world, float deltaTime) override
   {
@@ -77,9 +74,8 @@ public:
 
       // Debug log when frame changes OR when there's input
       if (prevFrame != sprite.currentFrame || input.up || input.down) {
-        std::cout << "[PlayerAnimationSystem] Entity " << entity 
-                  << " frame: " << prevFrame << " -> " << sprite.currentFrame
-                  << " (up=" << input.up << ", down=" << input.down << ")" << std::endl;
+        std::cout << "[PlayerAnimationSystem] Entity " << entity << " frame: " << prevFrame << " -> "
+                  << sprite.currentFrame << " (up=" << input.up << ", down=" << input.down << ")" << std::endl;
       }
     }
   }

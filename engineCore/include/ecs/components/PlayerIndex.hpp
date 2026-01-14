@@ -30,10 +30,7 @@ namespace ecs
 struct PlayerIndex : public IComponent {
   std::uint32_t index = 0; // Player index (0-4)
 
-  [[nodiscard]] nlohmann::json toJson() const override
-  {
-    return {{"index", index}};
-  }
+  [[nodiscard]] nlohmann::json toJson() const override { return {{"index", index}}; }
 
   static PlayerIndex fromJson(const nlohmann::json &json)
   {

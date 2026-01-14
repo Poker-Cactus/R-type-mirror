@@ -53,14 +53,14 @@ public:
       }
 
       auto &animation = world.getComponent<ecs::Animation>(entity);
-      
+
       // Check if entity has velocity to drive animation
       if (world.hasComponent<ecs::Velocity>(entity)) {
         const auto &velocity = world.getComponent<ecs::Velocity>(entity);
-        
+
         // Animate based on vertical velocity (dy)
         constexpr float VELOCITY_THRESHOLD = 50.0f;
-        
+
         if (velocity.dy > VELOCITY_THRESHOLD) {
           animation.targetFrame = 0; // max down
         } else if (velocity.dy > 0.0f) {

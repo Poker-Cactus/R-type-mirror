@@ -58,7 +58,7 @@ bool Lobby::addClient(std::uint32_t clientId, bool asSpectator)
   if (inserted) {
     // Assign join order index (used for player index)
     m_clientJoinOrder[clientId] = m_nextJoinIndex++;
-    
+
     if (asSpectator) {
       m_spectators.insert(clientId);
       std::cout << "[Lobby:" << m_code << "] Spectator " << clientId << " joined (" << m_clients.size() << " total, "
@@ -312,34 +312,33 @@ void Lobby::spawnPlayer(std::uint32_t clientId)
   if (joinOrderIt != m_clientJoinOrder.end()) {
     playerIndex = joinOrderIt->second;
   }
-  std::cout << "[Lobby:" << m_code << "] DEBUG: Client " << clientId 
-            << " spawning with playerIndex = " << playerIndex 
+  std::cout << "[Lobby:" << m_code << "] DEBUG: Client " << clientId << " spawning with playerIndex = " << playerIndex
             << " (based on lobby join order)" << '\n';
   std::uint32_t shipTypeIndex = playerIndex % 4; // Cycle through 4 ship types
-  
+
   // Load ship stats from config
   auto &config = server::ShipStatsConfig::getInstance();
   ecs::ShipStats shipStats;
   switch (shipTypeIndex) {
   case 0:
     shipStats = config.getDefaultShip();
-    std::cout << "[Lobby:" << m_code << "] Player " << clientId << " (index=" << playerIndex 
+    std::cout << "[Lobby:" << m_code << "] Player " << clientId << " (index=" << playerIndex
               << ") assigned DEFAULT ship" << '\n';
     break;
   case 1:
     shipStats = config.getFastShip();
-    std::cout << "[Lobby:" << m_code << "] Player " << clientId << " (index=" << playerIndex 
-              << ") assigned FAST ship" << '\n';
+    std::cout << "[Lobby:" << m_code << "] Player " << clientId << " (index=" << playerIndex << ") assigned FAST ship"
+              << '\n';
     break;
   case 2:
     shipStats = config.getTankShip();
-    std::cout << "[Lobby:" << m_code << "] Player " << clientId << " (index=" << playerIndex 
-              << ") assigned TANK ship" << '\n';
+    std::cout << "[Lobby:" << m_code << "] Player " << clientId << " (index=" << playerIndex << ") assigned TANK ship"
+              << '\n';
     break;
   case 3:
     shipStats = config.getSniperShip();
-    std::cout << "[Lobby:" << m_code << "] Player " << clientId << " (index=" << playerIndex 
-              << ") assigned SNIPER ship" << '\n';
+    std::cout << "[Lobby:" << m_code << "] Player " << clientId << " (index=" << playerIndex << ") assigned SNIPER ship"
+              << '\n';
     break;
   default:
     shipStats = config.getDefaultShip();
@@ -354,7 +353,7 @@ void Lobby::spawnPlayer(std::uint32_t clientId)
   int finalHP = (shipStats.maxHP * difficultyHP) / 100; // Scale ship HP by difficulty
   std::cout << "[Lobby:" << m_code << "] >>> Base HP=" << shipStats.maxHP << ", Difficulty HP=" << difficultyHP
             << ", Final HP=" << finalHP << '\n';
-  
+
   ecs::Health health;
   health.hp = finalHP;
   health.maxHp = finalHP;

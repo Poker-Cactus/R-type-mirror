@@ -7,12 +7,13 @@
 
 #pragma once
 
-#include <nlohmann/json.hpp>
 #include <memory>
+#include <nlohmann/json.hpp>
 #include <string>
 #include <vector>
 
-namespace AssetEditor {
+namespace AssetEditor
+{
 
 using Json = nlohmann::json;
 
@@ -20,9 +21,9 @@ using Json = nlohmann::json;
  * @brief Editor operating modes
  */
 enum class EditorMode {
-    MainMenu,      ///< Main menu selection screen
-    JsonEditor,    ///< JSON file editor mode
-    SpriteEditor,  ///< Sprite editor mode
+  MainMenu, ///< Main menu selection screen
+  JsonEditor, ///< JSON file editor mode
+  SpriteEditor, ///< Sprite editor mode
 };
 
 /**
@@ -32,22 +33,22 @@ enum class EditorMode {
  * current selections, and configuration paths.
  */
 struct EditorState {
-    EditorMode mode = EditorMode::MainMenu;
+  EditorMode mode = EditorMode::MainMenu;
 
-    // JSON Editor state
-    std::vector<std::string> jsonFiles;
-    std::string selectedFile;
-    Json currentJson;
-    bool modified = false;
+  // JSON Editor state
+  std::vector<std::string> jsonFiles;
+  std::string selectedFile;
+  Json currentJson;
+  bool modified = false;
 
-    // Sprite Editor state
-    std::vector<std::string> spriteFiles;
-    std::string selectedSprite;
-    std::string spritePath = SPRITE_PATH;
-    bool pixelEditorMode = false;
+  // Sprite Editor state
+  std::vector<std::string> spriteFiles;
+  std::string selectedSprite;
+  std::string spritePath = SPRITE_PATH;
+  bool pixelEditorMode = false;
 
-    // Config path
-    std::string configPath = CONFIG_PATH;
+  // Config path
+  std::string configPath = CONFIG_PATH;
 };
 
 /// Global state instance
@@ -63,7 +64,7 @@ void RefreshFileList();
  * @param filename Name of the file to load (without path)
  * @return true if loaded successfully
  */
-[[nodiscard]] bool LoadFile(const std::string& filename);
+[[nodiscard]] bool LoadFile(const std::string &filename);
 
 /**
  * @brief Save the current JSON file

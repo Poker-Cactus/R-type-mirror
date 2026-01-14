@@ -34,8 +34,7 @@ struct ShipStats : public IComponent {
   int damage = 10; // Damage dealt by projectiles
 
   ShipStats() = default;
-  ShipStats(int hp, float speed, float rate, int dmg)
-      : maxHP(hp), moveSpeed(speed), fireRate(rate), damage(dmg) {}
+  ShipStats(int hp, float speed, float rate, int dmg) : maxHP(hp), moveSpeed(speed), fireRate(rate), damage(dmg) {}
 
   [[nodiscard]] nlohmann::json toJson() const override
   {
