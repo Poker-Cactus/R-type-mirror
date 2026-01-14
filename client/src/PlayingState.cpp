@@ -277,6 +277,10 @@ void PlayingState::render()
           frameWidth = 101;
           frameHeight = 114;
           break;
+        case ecs::SpriteId::DEATH_ANIM:
+          frameWidth = 586 / 6; // 6 frames horizontally
+          frameHeight = 94;
+          break;
         default:
           break;
         }
@@ -314,6 +318,10 @@ void PlayingState::render()
           } else if (sprite.spriteId == ecs::SpriteId::ROBOT_PROJECTILE) {
             // Robot Projectile: single frame
             srcX = 0;
+            srcY = 0;
+          } else if (sprite.spriteId == ecs::SpriteId::DEATH_ANIM) {
+            // Death animation: horizontal spritesheet with 6 frames
+            srcX = sprite.currentFrame * frameWidth;
             srcY = 0;
           } else if (sprite.spriteId >= ecs::SpriteId::BUBBLE_RUBAN_BACK1 &&
                      sprite.spriteId <= ecs::SpriteId::BUBBLE_RUBAN_FRONT4) {
@@ -1275,6 +1283,19 @@ void PlayingState::loadSpriteTextures()
     }
   } catch (const std::exception &e) {
     std::cerr << "[PlayingState] ✗ Failed to load loadChargedShot.png: " << e.what() << '\n';
+  }
+
+  // DEATH_ANIM = 65 (spritesheet: 586x94, 6 frames)
+  try {
+    void *death_anim_tex = renderer->loadTexture("client/assets/sprites/death_anim.png");
+    if (death_anim_tex != nullptr) {
+      m_spriteTextures[ecs::SpriteId::DEATH_ANIM] = death_anim_tex;
+      std::cout << "[PlayingState] ✓ Loaded death_anim.png" << '\n';
+    } else {
+      std::cerr << "[PlayingState] ✗ Failed to load death_anim.png (returned null)" << '\n';
+    }
+  } catch (const std::exception &e) {
+    std::cerr << "[PlayingState] ✗ Failed to load death_anim.png: " << e.what() << '\n';
   }
 }
 
