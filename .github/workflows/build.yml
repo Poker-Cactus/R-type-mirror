@@ -66,6 +66,8 @@ jobs:
             libxcb-xkb-dev \
             libxcb-icccm4-dev \
             libxcb-image0-dev \
+            libxcb-util-dev \
+            libxcb-util0-dev \
             libxcb-keysyms1-dev \
             libxcb-randr0-dev \
             libxcb-shape0-dev \
