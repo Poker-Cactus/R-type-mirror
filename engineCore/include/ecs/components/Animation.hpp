@@ -26,7 +26,7 @@ namespace ecs
 struct Animation {
   std::uint32_t targetFrame = 2; // Target frame (set by driver system)
   float currentFrame = 2.0f; // Current interpolated frame (used for rendering)
-  float interpolationSpeed = 5.0f; // How fast to interpolate (frames per second)
+  float interpolationSpeed = 20.0f; // How fast to interpolate (frames per second)
 };
 
 } // namespace ecs

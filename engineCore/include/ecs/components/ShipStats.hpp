@@ -51,27 +51,6 @@ struct ShipStats : public IComponent {
     stats.damage = json.value("damage", 10);
     return stats;
   }
-
-  // Predefined ship configurations
-  static ShipStats getDefaultShip()
-  {
-    return {100, 200.0f, 0.25f, 10};
-  }
-
-  static ShipStats getFastShip()
-  {
-    return {70, 300.0f, 0.25f, 10};
-  }
-
-  static ShipStats getTankShip()
-  {
-    return {150, 150.0f, 0.25f, 10};
-  }
-
-  static ShipStats getSniperShip()
-  {
-    return {100, 200.0f, 0.5f, 20};
-  }
 };
 
 } // namespace ecs

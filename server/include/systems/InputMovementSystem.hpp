@@ -11,6 +11,7 @@
 #include "../../engineCore/include/ecs/ISystem.hpp"
 #include "../../engineCore/include/ecs/World.hpp"
 #include "../../engineCore/include/ecs/components/Input.hpp"
+#include "../../engineCore/include/ecs/components/ShipStats.hpp"
 #include "../../engineCore/include/ecs/components/Velocity.hpp"
 #include "ecs/ComponentSignature.hpp"
 #include "ecs/Entity.hpp"
@@ -30,26 +31,30 @@ public:
     std::vector<ecs::Entity> entities;
     world.getEntitiesWithSignature(getSignature(), entities);
 
-    constexpr float SPEED = 350.0F;
-
     for (auto entity : entities) {
       auto &input = world.getComponent<ecs::Input>(entity);
       auto &velocity = world.getComponent<ecs::Velocity>(entity);
+
+      // Get ship's move speed from ShipStats (default to 200.0f if not present)
+      float speed = 200.0f;
+      if (world.hasComponent<ecs::ShipStats>(entity)) {
+        speed = world.getComponent<ecs::ShipStats>(entity).moveSpeed;
+      }
 
       velocity.dx = 0.0F;
       velocity.dy = 0.0F;
 
       if (input.left) {
-        velocity.dx -= SPEED;
+        velocity.dx -= speed;
       }
       if (input.right) {
-        velocity.dx += SPEED;
+        velocity.dx += speed;
       }
       if (input.up) {
-        velocity.dy -= SPEED;
+        velocity.dy -= speed;
       }
       if (input.down) {
-        velocity.dy += SPEED;
+        velocity.dy += speed;
       }
     }
   }

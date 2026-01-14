@@ -1,0 +1,28 @@
+{
+  "ships": {
+    "default": {
+      "maxHP": 100,
+      "moveSpeed": 250.0,
+      "fireRate": 0.5,
+      "damage": 15
+    },
+    "fast": {
+      "maxHP": 50,
+      "moveSpeed": 400.0,
+      "fireRate": 0.5,
+      "damage": 15
+    },
+    "tank": {
+      "maxHP": 250,
+      "moveSpeed": 150.0,
+      "fireRate": 0.5,
+      "damage": 10
+    },
+    "sniper": {
+      "maxHP": 100,
+      "moveSpeed": 200.0,
+      "fireRate": 1.0,
+      "damage": 50
+    }
+  }
+}

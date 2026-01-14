@@ -49,6 +49,13 @@ public:
     std::vector<ecs::Entity> entities;
     world.getEntitiesWithSignature(getSignature(), entities);
 
+    // Debug: log entity count (only first few times)
+    static int updateCount = 0;
+    if (updateCount < 5) {
+      std::cout << "[PlayerAnimationSystem] Found " << entities.size() << " player entities" << std::endl;
+      updateCount++;
+    }
+
     for (auto entity : entities) {
       const auto &input = world.getComponent<ecs::Input>(entity);
       auto &sprite = world.getComponent<ecs::Sprite>(entity);
@@ -68,8 +75,8 @@ public:
         sprite.currentFrame = 2;
       }
 
-      // Debug log when frame changes
-      if (prevFrame != sprite.currentFrame) {
+      // Debug log when frame changes OR when there's input
+      if (prevFrame != sprite.currentFrame || input.up || input.down) {
         std::cout << "[PlayerAnimationSystem] Entity " << entity 
                   << " frame: " << prevFrame << " -> " << sprite.currentFrame
                   << " (up=" << input.up << ", down=" << input.down << ")" << std::endl;

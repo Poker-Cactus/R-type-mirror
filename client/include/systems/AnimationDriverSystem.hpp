@@ -54,11 +54,28 @@ public:
 
       auto &animation = world.getComponent<ecs::Animation>(entity);
       
-      // Keep player ships in neutral position (frame 2)
-      // Animation based on input would require Input component to be replicated,
-      // which goes against network-authoritative architecture.
-      // For visual feedback, neutral frame is stable and doesn't flicker.
-      animation.targetFrame = 2;
+      // Check if entity has velocity to drive animation
+      if (world.hasComponent<ecs::Velocity>(entity)) {
+        const auto &velocity = world.getComponent<ecs::Velocity>(entity);
+        
+        // Animate based on vertical velocity (dy)
+        constexpr float VELOCITY_THRESHOLD = 50.0f;
+        
+        if (velocity.dy > VELOCITY_THRESHOLD) {
+          animation.targetFrame = 0; // max down
+        } else if (velocity.dy > 0.0f) {
+          animation.targetFrame = 1; // down transition
+        } else if (velocity.dy < -VELOCITY_THRESHOLD) {
+          animation.targetFrame = 4; // max up
+        } else if (velocity.dy < 0.0f) {
+          animation.targetFrame = 3; // up transition
+        } else {
+          animation.targetFrame = 2; // neutral
+        }
+      } else {
+        // No velocity component, keep neutral
+        animation.targetFrame = 2;
+      }
     }
   }
 

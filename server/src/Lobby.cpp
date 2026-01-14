@@ -11,6 +11,7 @@
 #include "../include/Game.hpp"
 #include "../include/ServerSystems.hpp"
 #include "../include/config/EnemyConfig.hpp"
+#include "../include/config/ShipStatsConfig.hpp"
 #include "WorldLobbyRegistry.hpp"
 #include <iostream>
 #include <nlohmann/json.hpp>
@@ -55,6 +56,9 @@ bool Lobby::addClient(std::uint32_t clientId, bool asSpectator)
 {
   auto [_, inserted] = m_clients.insert(clientId);
   if (inserted) {
+    // Assign join order index (used for player index)
+    m_clientJoinOrder[clientId] = m_nextJoinIndex++;
+    
     if (asSpectator) {
       m_spectators.insert(clientId);
       std::cout << "[Lobby:" << m_code << "] Spectator " << clientId << " joined (" << m_clients.size() << " total, "
@@ -74,6 +78,9 @@ bool Lobby::removeClient(std::uint32_t clientId)
 
   // Remove from spectators if present
   m_spectators.erase(clientId);
+
+  // Remove from join order tracking
+  m_clientJoinOrder.erase(clientId);
 
   auto removed = m_clients.erase(clientId) > 0;
   if (removed) {
@@ -299,33 +306,43 @@ void Lobby::spawnPlayer(std::uint32_t clientId)
 
   // Assign ship type based on player index (cycles through ship types)
   // This demonstrates ECS purity: ship identity = ShipStats component values
-  // IMPORTANT: Calculate playerIndex BEFORE adding to m_playerEntities
-  std::uint32_t playerIndex = static_cast<std::uint32_t>(m_playerEntities.size());
+  // Use join order from lobby (not spawn order) for consistent player indices
+  std::uint32_t playerIndex = 0;
+  auto joinOrderIt = m_clientJoinOrder.find(clientId);
+  if (joinOrderIt != m_clientJoinOrder.end()) {
+    playerIndex = joinOrderIt->second;
+  }
+  std::cout << "[Lobby:" << m_code << "] DEBUG: Client " << clientId 
+            << " spawning with playerIndex = " << playerIndex 
+            << " (based on lobby join order)" << '\n';
   std::uint32_t shipTypeIndex = playerIndex % 4; // Cycle through 4 ship types
+  
+  // Load ship stats from config
+  auto &config = server::ShipStatsConfig::getInstance();
   ecs::ShipStats shipStats;
   switch (shipTypeIndex) {
   case 0:
-    shipStats = ecs::ShipStats::getDefaultShip();
+    shipStats = config.getDefaultShip();
     std::cout << "[Lobby:" << m_code << "] Player " << clientId << " (index=" << playerIndex 
               << ") assigned DEFAULT ship" << '\n';
     break;
   case 1:
-    shipStats = ecs::ShipStats::getFastShip();
+    shipStats = config.getFastShip();
     std::cout << "[Lobby:" << m_code << "] Player " << clientId << " (index=" << playerIndex 
               << ") assigned FAST ship" << '\n';
     break;
   case 2:
-    shipStats = ecs::ShipStats::getTankShip();
+    shipStats = config.getTankShip();
     std::cout << "[Lobby:" << m_code << "] Player " << clientId << " (index=" << playerIndex 
               << ") assigned TANK ship" << '\n';
     break;
   case 3:
-    shipStats = ecs::ShipStats::getSniperShip();
+    shipStats = config.getSniperShip();
     std::cout << "[Lobby:" << m_code << "] Player " << clientId << " (index=" << playerIndex 
               << ") assigned SNIPER ship" << '\n';
     break;
   default:
-    shipStats = ecs::ShipStats::getDefaultShip();
+    shipStats = config.getDefaultShip();
     break;
   }
   m_world->addComponent(player, shipStats);
