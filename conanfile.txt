@@ -7,5 +7,4 @@ asio/1.32.0
 capnproto/1.0.2
 doctest/2.4.11
 nlohmann_json/3.11.3
-sfml/2.6.0
 flac/1.4.2
