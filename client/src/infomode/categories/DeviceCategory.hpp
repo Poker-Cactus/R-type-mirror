@@ -38,9 +38,14 @@ public:
 
   /**
    * @brief Update device information
-   * @param deltaTime Time elapsed since last update
    */
-  void update(float deltaTime) override;
+  void update() override;
+
+  /**
+   * @brief Get the update interval for this category in frames (at 60 FPS)
+   * @return 600 frames (every 10 seconds at 60 FPS)
+   */
+  int getUpdateIntervalFrames() const override { return 600; }
 
 private:
   /**

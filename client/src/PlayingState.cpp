@@ -117,7 +117,7 @@ void PlayingState::update(float delta_time)
 
   // Update info mode
   if (m_infoMode) {
-    m_infoMode->update(delta_time);
+    m_infoMode->update();
   }
 
   // Send ping periodically to measure latency
@@ -192,7 +192,12 @@ void PlayingState::render()
           // Yellow Bee: 256x64 with 2 rows x 8 columns = 16 frames
           frameWidth = 256 / 8; // 32px per frame
           frameHeight = 64 / 2; // 32px per frame (2 rows)
-          break;
+        case ecs::SpriteId::CHARGED_PROJECTILE:
+          frameWidth = 165 / 2; // 82px per frame
+          frameHeight = 16;
+        case ecs::SpriteId::LOADING_SHOT:
+          frameWidth = 255 / 8; // 31-32px per frame
+          frameHeight = 29;
         case ecs::SpriteId::ENEMY_WALKER:
           // Walker: 200x67 with 2 rows x 6 columns = 12 frames
           frameWidth = 200 / 6; // 33px per frame
@@ -209,7 +214,23 @@ void PlayingState::render()
         case ecs::SpriteId::BUBBLE_RUBAN1:
         case ecs::SpriteId::BUBBLE_RUBAN2:
         case ecs::SpriteId::BUBBLE_RUBAN3:
+        // Individual bubble ruban animation frames
+        case ecs::SpriteId::BUBBLE_RUBAN_BACK1:
+        case ecs::SpriteId::BUBBLE_RUBAN_BACK2:
+        case ecs::SpriteId::BUBBLE_RUBAN_BACK3:
+        case ecs::SpriteId::BUBBLE_RUBAN_BACK4:
+        case ecs::SpriteId::BUBBLE_RUBAN_MIDDLE1:
+        case ecs::SpriteId::BUBBLE_RUBAN_MIDDLE2:
+        case ecs::SpriteId::BUBBLE_RUBAN_MIDDLE3:
+        case ecs::SpriteId::BUBBLE_RUBAN_MIDDLE4:
+        case ecs::SpriteId::BUBBLE_RUBAN_FRONT1:
+        case ecs::SpriteId::BUBBLE_RUBAN_FRONT2:
+        case ecs::SpriteId::BUBBLE_RUBAN_FRONT3:
+        case ecs::SpriteId::BUBBLE_RUBAN_FRONT4:
         case ecs::SpriteId::TRIPLE_PROJECTILE:
+        case ecs::SpriteId::TRIPLE_PROJECTILE_RIGHT:
+        case ecs::SpriteId::TRIPLE_PROJECTILE_UP:
+        case ecs::SpriteId::TRIPLE_PROJECTILE_DOWN:
         case ecs::SpriteId::RUBAN1_PROJECTILE:
         case ecs::SpriteId::RUBAN2_PROJECTILE:
         case ecs::SpriteId::RUBAN3_PROJECTILE:
@@ -285,6 +306,16 @@ void PlayingState::render()
             srcY = 0;
           } else if (sprite.spriteId == ecs::SpriteId::ROBOT_PROJECTILE) {
             // Robot Projectile: single frame
+            srcX = 0;
+            srcY = 0;
+          } else if (sprite.spriteId >= ecs::SpriteId::BUBBLE_RUBAN_BACK1 &&
+                     sprite.spriteId <= ecs::SpriteId::BUBBLE_RUBAN_FRONT4) {
+            // Individual bubble ruban frames: single image per file, no spritesheet
+            srcX = 0;
+            srcY = 0;
+          } else if (sprite.spriteId >= ecs::SpriteId::TRIPLE_PROJECTILE_RIGHT &&
+                     sprite.spriteId <= ecs::SpriteId::TRIPLE_PROJECTILE_DOWN) {
+            // Triple projectile direction sprites: single image per file
             srcX = 0;
             srcY = 0;
           } else {
@@ -896,7 +927,7 @@ void PlayingState::loadSpriteTextures()
 
   // PROJECTILE = 3 (spritesheet: 422x92, 2 frames, using first frame only)
   try {
-    void *projectile_tex = renderer->loadTexture("client/assets/sprites/r-typesheet1.png");
+    void *projectile_tex = renderer->loadTexture("client/assets/sprites/simpleShot.png");
     if (projectile_tex != nullptr) {
       m_spriteTextures[ecs::SpriteId::PROJECTILE] = projectile_tex;
       std::cout << "[PlayingState] ✓ Loaded projectile.png" << '\n';
@@ -996,70 +1027,71 @@ void PlayingState::loadSpriteTextures()
     }
   }
 
-  // BUBBLE_RUBAN1 = 9 (uses powerup texture as fallback)
-  try {
-    void *buble_triple_tex = renderer->loadTexture("client/assets/sprites/bubble_ruban1.png");
-    if (buble_triple_tex != nullptr) {
-      m_spriteTextures[ecs::SpriteId::BUBBLE_RUBAN1] = buble_triple_tex;
-      std::cout << "[PlayingState] ✓ Loaded bubble_ruban1.png" << '\n';
-    } else {
-      // Fallback to powerup texture for bubbles
-      if (m_spriteTextures.find(ecs::SpriteId::POWERUP) != m_spriteTextures.end()) {
-        m_spriteTextures[ecs::SpriteId::BUBBLE_RUBAN1] = m_spriteTextures[ecs::SpriteId::POWERUP];
-        std::cout << "[PlayingState] ✓ Using powerup.png for ruban bubble (fallback)" << '\n';
+  // Load all 12 bubble ruban frames (4 back + 4 middle + 4 front)
+  // BACK frames (compressed/backward)
+  const std::array<std::uint32_t, 4> backSpriteIds = {
+    ecs::SpriteId::BUBBLE_RUBAN_BACK1, ecs::SpriteId::BUBBLE_RUBAN_BACK2, ecs::SpriteId::BUBBLE_RUBAN_BACK3,
+    ecs::SpriteId::BUBBLE_RUBAN_BACK4};
+  for (int i = 0; i < 4; i++) {
+    std::string path = "client/assets/sprites/bubble_ruban_sprite/bubble_ruban_back" + std::to_string(i + 1) + ".png";
+    try {
+      void *tex = renderer->loadTexture(path.c_str());
+      if (tex != nullptr) {
+        m_spriteTextures[backSpriteIds[i]] = tex;
+        std::cout << "[PlayingState] ✓ Loaded bubble_ruban_back" << (i + 1) << ".png" << '\n';
       }
-    }
-  } catch (const std::exception &e) {
-    // Fallback to powerup texture for BUBBLE_RUBAN1s
-    if (m_spriteTextures.find(ecs::SpriteId::POWERUP) != m_spriteTextures.end()) {
-      m_spriteTextures[ecs::SpriteId::BUBBLE_RUBAN1] = m_spriteTextures[ecs::SpriteId::POWERUP];
-      std::cout << "[PlayingState] ✓ Using powerup.png for ruban bubble (fallback after error)" << '\n';
+    } catch (const std::exception &e) {
+      std::cerr << "[PlayingState] ✗ Failed to load " << path << ": " << e.what() << '\n';
     }
   }
-
-  // BUBBLE_RUBAN2 = 10 (uses powerup texture as fallback)
-  try {
-    void *buble_triple_tex = renderer->loadTexture("client/assets/sprites/bubble_ruban2.png");
-    if (buble_triple_tex != nullptr) {
-      m_spriteTextures[ecs::SpriteId::BUBBLE_RUBAN2] = buble_triple_tex;
-      std::cout << "[PlayingState] ✓ Loaded bubble_ruban2.png" << '\n';
-    } else {
-      // Fallback to powerup texture for bubbles
-      if (m_spriteTextures.find(ecs::SpriteId::POWERUP) != m_spriteTextures.end()) {
-        m_spriteTextures[ecs::SpriteId::BUBBLE_RUBAN2] = m_spriteTextures[ecs::SpriteId::POWERUP];
-        std::cout << "[PlayingState] ✓ Using powerup.png for ruban bubble (fallback)" << '\n';
-      }
-    }
-  } catch (const std::exception &e) {
-    // Fallback to powerup texture for BUBBLE_RUBAN2s
-    if (m_spriteTextures.find(ecs::SpriteId::POWERUP) != m_spriteTextures.end()) {
-      m_spriteTextures[ecs::SpriteId::BUBBLE_RUBAN2] = m_spriteTextures[ecs::SpriteId::POWERUP];
-      std::cout << "[PlayingState] ✓ Using powerup.png for ruban bubble (fallback after error)" << '\n';
-    }
+  // Also set BUBBLE_RUBAN1 to point to first back frame for compatibility
+  if (m_spriteTextures.find(ecs::SpriteId::BUBBLE_RUBAN_BACK1) != m_spriteTextures.end()) {
+    m_spriteTextures[ecs::SpriteId::BUBBLE_RUBAN1] = m_spriteTextures[ecs::SpriteId::BUBBLE_RUBAN_BACK1];
   }
 
-  // BUBBLE_RUBAN3 = 11 (uses powerup texture as fallback)
-  try {
-    void *buble_triple_tex = renderer->loadTexture("client/assets/sprites/bubble_ruban3.png");
-    if (buble_triple_tex != nullptr) {
-      m_spriteTextures[ecs::SpriteId::BUBBLE_RUBAN3] = buble_triple_tex;
-      std::cout << "[PlayingState] ✓ Loaded bubble_ruban3.png" << '\n';
-    } else {
-      // Fallback to powerup texture for bubbles
-      if (m_spriteTextures.find(ecs::SpriteId::POWERUP) != m_spriteTextures.end()) {
-        m_spriteTextures[ecs::SpriteId::BUBBLE_RUBAN3] = m_spriteTextures[ecs::SpriteId::POWERUP];
-        std::cout << "[PlayingState] ✓ Using powerup.png for ruban bubble (fallback)" << '\n';
+  // MIDDLE frames (neutral)
+  const std::array<std::uint32_t, 4> middleSpriteIds = {
+    ecs::SpriteId::BUBBLE_RUBAN_MIDDLE1, ecs::SpriteId::BUBBLE_RUBAN_MIDDLE2, ecs::SpriteId::BUBBLE_RUBAN_MIDDLE3,
+    ecs::SpriteId::BUBBLE_RUBAN_MIDDLE4};
+  for (int i = 0; i < 4; i++) {
+    std::string path = "client/assets/sprites/bubble_ruban_sprite/bubble_ruban_middle" + std::to_string(i + 1) + ".png";
+    try {
+      void *tex = renderer->loadTexture(path.c_str());
+      if (tex != nullptr) {
+        m_spriteTextures[middleSpriteIds[i]] = tex;
+        std::cout << "[PlayingState] ✓ Loaded bubble_ruban_middle" << (i + 1) << ".png" << '\n';
       }
-    }
-  } catch (const std::exception &e) {
-    // Fallback to powerup texture for BUBBLE_RUBAN3s
-    if (m_spriteTextures.find(ecs::SpriteId::POWERUP) != m_spriteTextures.end()) {
-      m_spriteTextures[ecs::SpriteId::BUBBLE_RUBAN3] = m_spriteTextures[ecs::SpriteId::POWERUP];
-      std::cout << "[PlayingState] ✓ Using powerup.png for ruban bubble (fallback after error)" << '\n';
+    } catch (const std::exception &e) {
+      std::cerr << "[PlayingState] ✗ Failed to load " << path << ": " << e.what() << '\n';
     }
   }
+  // Also set BUBBLE_RUBAN2 to point to first middle frame for compatibility
+  if (m_spriteTextures.find(ecs::SpriteId::BUBBLE_RUBAN_MIDDLE1) != m_spriteTextures.end()) {
+    m_spriteTextures[ecs::SpriteId::BUBBLE_RUBAN2] = m_spriteTextures[ecs::SpriteId::BUBBLE_RUBAN_MIDDLE1];
+  }
 
-  // triple_projectile = 15 (uses bubble_shoot.png)
+  // FRONT frames (stretched/forward)
+  const std::array<std::uint32_t, 4> frontSpriteIds = {
+    ecs::SpriteId::BUBBLE_RUBAN_FRONT1, ecs::SpriteId::BUBBLE_RUBAN_FRONT2, ecs::SpriteId::BUBBLE_RUBAN_FRONT3,
+    ecs::SpriteId::BUBBLE_RUBAN_FRONT4};
+  for (int i = 0; i < 4; i++) {
+    std::string path = "client/assets/sprites/bubble_ruban_sprite/bubble_ruban_front" + std::to_string(i + 1) + ".png";
+    try {
+      void *tex = renderer->loadTexture(path.c_str());
+      if (tex != nullptr) {
+        m_spriteTextures[frontSpriteIds[i]] = tex;
+        std::cout << "[PlayingState] ✓ Loaded bubble_ruban_front" << (i + 1) << ".png" << '\n';
+      }
+    } catch (const std::exception &e) {
+      std::cerr << "[PlayingState] ✗ Failed to load " << path << ": " << e.what() << '\n';
+    }
+  }
+  // Also set BUBBLE_RUBAN3 to point to first front frame for compatibility
+  if (m_spriteTextures.find(ecs::SpriteId::BUBBLE_RUBAN_FRONT1) != m_spriteTextures.end()) {
+    m_spriteTextures[ecs::SpriteId::BUBBLE_RUBAN3] = m_spriteTextures[ecs::SpriteId::BUBBLE_RUBAN_FRONT1];
+  }
+
+  // triple_projectile = 15 (uses bubble_shoot.png) - legacy, kept for compatibility
   try {
     void *triple_projectile_tex = renderer->loadTexture("client/assets/bubble_shoot.png");
     if (triple_projectile_tex != nullptr) {
@@ -1078,6 +1110,35 @@ void PlayingState::loadSpriteTextures()
       m_spriteTextures[ecs::SpriteId::TRIPLE_PROJECTILE] = m_spriteTextures[ecs::SpriteId::PROJECTILE];
       std::cout << "[PlayingState] ✓ Using projectile texture for TRIPLE_PROJECTILE (fallback after error)" << '\n';
     }
+  }
+
+  // Triple projectile direction sprites
+  try {
+    void *triple_right_tex = renderer->loadTexture("client/assets/sprites/triple_projectile_srpite/triple_right.png");
+    if (triple_right_tex != nullptr) {
+      m_spriteTextures[ecs::SpriteId::TRIPLE_PROJECTILE_RIGHT] = triple_right_tex;
+      std::cout << "[PlayingState] ✓ Loaded triple_right.png" << '\n';
+    }
+  } catch (const std::exception &e) {
+    std::cerr << "[PlayingState] ✗ Failed to load triple_right.png: " << e.what() << '\n';
+  }
+  try {
+    void *triple_up_tex = renderer->loadTexture("client/assets/sprites/triple_projectile_srpite/triple_up.png");
+    if (triple_up_tex != nullptr) {
+      m_spriteTextures[ecs::SpriteId::TRIPLE_PROJECTILE_UP] = triple_up_tex;
+      std::cout << "[PlayingState] ✓ Loaded triple_up.png" << '\n';
+    }
+  } catch (const std::exception &e) {
+    std::cerr << "[PlayingState] ✗ Failed to load triple_up.png: " << e.what() << '\n';
+  }
+  try {
+    void *triple_down_tex = renderer->loadTexture("client/assets/sprites/triple_projectile_srpite/triple_down.png");
+    if (triple_down_tex != nullptr) {
+      m_spriteTextures[ecs::SpriteId::TRIPLE_PROJECTILE_DOWN] = triple_down_tex;
+      std::cout << "[PlayingState] ✓ Loaded triple_down.png" << '\n';
+    }
+  } catch (const std::exception &e) {
+    std::cerr << "[PlayingState] ✗ Failed to load triple_down.png: " << e.what() << '\n';
   }
 
   // Ruban projectile sprites (24 phases): Xruban_projectile.png where X = 1-24
@@ -1185,6 +1246,32 @@ void PlayingState::loadSpriteTextures()
             << " sprite textures" << '\n';
   if (m_spriteTextures.size() < EXPECTED_TEXTURE_COUNT) {
     std::cerr << "[PlayingState] Missing textures will use fallback colored rectangles" << '\n';
+  }
+
+  // CHARGED_PROJECTILE = 6
+  try {
+    void *charged_projectile_tex = renderer->loadTexture("client/assets/sprites/chargedShot.png");
+    if (charged_projectile_tex != nullptr) {
+      m_spriteTextures[ecs::SpriteId::CHARGED_PROJECTILE] = charged_projectile_tex;
+      std::cout << "[PlayingState] ✓ Loaded charged_projectile.png" << '\n';
+    } else {
+      std::cerr << "[PlayingState] ✗ Failed to load charged_projectile.png (returned null)" << '\n';
+    }
+  } catch (const std::exception &e) {
+    std::cerr << "[PlayingState] ✗ Failed to load charged_projectile.png: " << e.what() << '\n';
+  }
+
+  // LOAD_CHARGED_SHOT = 8
+  try {
+    void *charged_projectile_tex = renderer->loadTexture("client/assets/sprites/loadChargedShot.png");
+    if (charged_projectile_tex != nullptr) {
+      m_spriteTextures[ecs::SpriteId::LOADING_SHOT] = charged_projectile_tex;
+      std::cout << "[PlayingState] ✓ Loaded loadChargedShot.png" << '\n';
+    } else {
+      std::cerr << "[PlayingState] ✗ Failed to load loadChargedShot.png (returned null)" << '\n';
+    }
+  } catch (const std::exception &e) {
+    std::cerr << "[PlayingState] ✗ Failed to load loadChargedShot.png: " << e.what() << '\n';
   }
 }
 

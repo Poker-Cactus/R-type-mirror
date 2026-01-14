@@ -123,7 +123,6 @@ private:
   std::unique_ptr<InfoMode> m_infoMode; ///< Info mode manager
 
   int m_playerFrameIndex = 2; ///< Current animation frame
-  int m_playerAnimToggle = 0; ///< Animation toggle state
   float m_playerAnimTimer = 0.f; ///< Animation timer
 
   /**

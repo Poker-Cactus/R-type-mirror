@@ -9,6 +9,7 @@
 #include "../../engineCore/include/ecs/EngineComponents.hpp"
 #include "../include/config/EnemyConfig.hpp"
 #include "../include/config/LevelConfig.hpp"
+#include "systems/ChargeSystem.hpp"
 #include "systems/SpawnSystem.hpp"
 #include <chrono>
 #include <cstdint>
@@ -34,6 +35,7 @@ Game::Game()
   damageSystem = &world->registerSystem<server::DamageSystem>();
   deathSystem = &world->registerSystem<server::DeathSystem>();
   shootingSystem = &world->registerSystem<server::ShootingSystem>();
+  world->registerSystem<server::ChargeSystem>();
   scoreSystem = &world->registerSystem<server::ScoreSystem>();
   powerupSystem = &world->registerSystem<server::PowerupSystem>();
 

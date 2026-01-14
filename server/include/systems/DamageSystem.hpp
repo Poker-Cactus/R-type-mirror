@@ -11,7 +11,9 @@
 #include "../../../engineCore/include/ecs/Entity.hpp"
 #include "../../../engineCore/include/ecs/ISystem.hpp"
 #include "../../../engineCore/include/ecs/World.hpp"
+#include "../../../engineCore/include/ecs/components/Follower.hpp"
 #include "../../../engineCore/include/ecs/components/Health.hpp"
+#include "../../../engineCore/include/ecs/components/Immortal.hpp"
 #include "../../../engineCore/include/ecs/components/Input.hpp"
 #include "../../../engineCore/include/ecs/components/Owner.hpp"
 #include "../../../engineCore/include/ecs/components/Sprite.hpp"
@@ -69,17 +71,31 @@ private:
       return;
     }
 
-    // Skip if either entity is a powerup (POWERUP sprite) - PowerupSystem handles those
+    // Skip if either entity is a follower (bubble/drone attached to player)
+    // Followers should not cause damage - they only block projectiles and shoot
+    if (world.hasComponent<ecs::Follower>(entityA) || world.hasComponent<ecs::Follower>(entityB)) {
+      return;
+    }
+
+    // Helper to check if sprite is a bubble/powerup (collectible, should not cause damage)
+    auto isBubbleOrPowerup = [](std::uint32_t spriteId) {
+      return spriteId == ecs::SpriteId::POWERUP || spriteId == ecs::SpriteId::BUBBLE ||
+        spriteId == ecs::SpriteId::BUBBLE_TRIPLE || spriteId == ecs::SpriteId::DRONE ||
+        (spriteId >= ecs::SpriteId::BUBBLE_RUBAN1 && spriteId <= ecs::SpriteId::BUBBLE_RUBAN3) ||
+        (spriteId >= ecs::SpriteId::BUBBLE_RUBAN_BACK1 && spriteId <= ecs::SpriteId::BUBBLE_RUBAN_FRONT4);
+    };
+
+    // Skip if either entity is a bubble or powerup - PowerupSystem handles those
     bool isAPowerup = false;
     bool isBPowerup = false;
 
     if (world.hasComponent<ecs::Sprite>(entityA)) {
       const auto &spriteA = world.getComponent<ecs::Sprite>(entityA);
-      isAPowerup = (spriteA.spriteId == ecs::SpriteId::POWERUP);
+      isAPowerup = isBubbleOrPowerup(spriteA.spriteId);
     }
     if (world.hasComponent<ecs::Sprite>(entityB)) {
       const auto &spriteB = world.getComponent<ecs::Sprite>(entityB);
-      isBPowerup = (spriteB.spriteId == ecs::SpriteId::POWERUP);
+      isBPowerup = isBubbleOrPowerup(spriteB.spriteId);
     }
 
     if (isAPowerup || isBPowerup) {
@@ -115,11 +131,16 @@ private:
       }
 
       // Otherwise apply mutual damage (e.g., enemy vs player)
-      applyDamage(world, entityA, entityB, 10);
-      applyDamage(world, entityB, entityA, 10);
+      applyDamage(world, entityA, entityB, damageFromEntityCollision);
+      applyDamage(world, entityB, entityA, damageFromEntityCollision);
     } else if (aHasHealth && !bHasHealth) {
       // Only A has health - projectile B hitting entity A
       applyDamage(world, entityA, entityB, damageFromProjectile);
+
+      // Check if projectile B is immortal - if so, don't destroy it
+      if (world.hasComponent<ecs::Immortal>(entityB) && world.getComponent<ecs::Immortal>(entityB).isImmortal) {
+        return; // Don't destroy immortal projectiles
+      }
 
       // Check if projectile should be destroyed: don't destroy enemy projectiles hitting enemies
       bool shouldDestroyProjectile = true;
@@ -139,6 +160,11 @@ private:
     } else if (!aHasHealth && bHasHealth) {
       // Only B has health - projectile A hitting entity B
       applyDamage(world, entityB, entityA, damageFromProjectile);
+
+      // Check if projectile A is immortal - if so, don't destroy it
+      if (world.hasComponent<ecs::Immortal>(entityA) && world.getComponent<ecs::Immortal>(entityA).isImmortal) {
+        return; // Don't destroy immortal projectiles
+      }
 
       // Check if projectile should be destroyed: don't destroy enemy projectiles hitting enemies
       bool shouldDestroyProjectile = true;
@@ -176,6 +202,14 @@ private:
     // Prevent friendly fire: if source is a player and target is also a player, skip
     if (realSource != 0 && world.hasComponent<ecs::Input>(realSource) && world.hasComponent<ecs::Input>(target)) {
       return;
+    }
+
+    // Check immortality first
+    if (world.hasComponent<ecs::Immortal>(target)) {
+      const auto &immortal = world.getComponent<ecs::Immortal>(target);
+      if (immortal.isImmortal) {
+        return; // Do not apply damage to immortal entities
+      }
     }
 
     // Prevent enemy friendly fire: if source is an enemy (no Input) and target is also an enemy (no Input), skip
