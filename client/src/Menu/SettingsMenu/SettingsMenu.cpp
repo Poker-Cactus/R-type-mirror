@@ -13,8 +13,8 @@
 #include <memory>
 
 SettingsMenu::SettingsMenu(std::shared_ptr<IRenderer> renderer)
-    : m_renderer(std::move(renderer)), font(nullptr), titleFont(nullptr), helpFont(nullptr),
-      currentCategory(SettingsCategory::AUDIO)
+    : m_renderer(std::move(renderer)), font(nullptr), titleFont(nullptr), helpFont(nullptr), clickedSound(nullptr),
+      hoverSound(nullptr), errorSound(nullptr), currentCategory(SettingsCategory::AUDIO)
 {
 }
 
@@ -67,7 +67,7 @@ void SettingsMenu::init(Settings &settings)
     int winWidth = m_renderer->getWindowWidth();
     int winHeight = m_renderer->getWindowHeight();
 
-    std::vector<std::string> categoryLabels = {"Audio", "Graphics", "Controls"};
+    std::vector<std::string> categoryLabels = {"Audio", "Graphics", "Controls", "Debug"};
     const int tabWidth = winWidth / 4;
     const int tabHeight = static_cast<int>(winHeight * 0.06);
     const int tabY = static_cast<int>(winHeight * 0.05);
@@ -118,6 +118,20 @@ void SettingsMenu::init(Settings &settings)
     controlsItems.push_back(
       {.label = "Charged Shoot", .type = SettingItemType::KEYBIND, .intTarget = &this->settings->chargedShoot});
 
+    debugItems.clear();
+    debugItems.push_back(
+      {.label = "Show Info Mode", .type = SettingItemType::TOGGLE_BOOL, .boolTarget = &this->settings->showInfoMode});
+    debugItems.push_back(
+      {.label = "Show CPU Usage", .type = SettingItemType::TOGGLE_BOOL, .boolTarget = &this->settings->showCPUUsage});
+    debugItems.push_back(
+      {.label = "Show RAM Usage", .type = SettingItemType::TOGGLE_BOOL, .boolTarget = &this->settings->showRAMUsage});
+    debugItems.push_back(
+      {.label = "Show FPS", .type = SettingItemType::TOGGLE_BOOL, .boolTarget = &this->settings->showFPS});
+    debugItems.push_back(
+      {.label = "Show Entities", .type = SettingItemType::TOGGLE_BOOL, .boolTarget = &this->settings->showEntityCount});
+    debugItems.push_back(
+      {.label = "Show Network", .type = SettingItemType::TOGGLE_BOOL, .boolTarget = &this->settings->showNetworkInfo});
+
     selectedIndex = 0;
     isCapturingKey = false;
     isEditing = false;
@@ -141,6 +155,8 @@ std::vector<SettingItem> &SettingsMenu::activeItems()
     return graphicItems;
   case SettingsCategory::CONTROLS:
     return controlsItems;
+  case SettingsCategory::DEBUG:
+    return debugItems;
   }
   return audioItems;
 }
@@ -385,7 +401,7 @@ void SettingsMenu::process()
   }
   if (m_renderer->isKeyJustPressed(KeyCode::KEY_RIGHT) && !isEditing) {
     int catIndex = static_cast<int>(currentCategory);
-    if (catIndex < 2) {
+    if (catIndex < 3) {
       m_renderer->playSound(hoverSound);
       currentCategory = static_cast<SettingsCategory>(catIndex + 1);
       selectedIndex = 0;

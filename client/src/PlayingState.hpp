@@ -9,7 +9,7 @@
 #include "../interface/IRenderer.hpp"
 #include "Menu/SettingsMenu/SettingsMenu.hpp"
 #include "ParallaxBackground.hpp"
-#include "infomode/InfoMode.hpp"
+#include "infomode/include/InfoMode.hpp"
 #include <memory>
 #include <unordered_map>
 
@@ -96,7 +96,7 @@ private:
 
   // HUD state
   static constexpr int INITIAL_PLAYER_HEALTH = 100;
-  void *m_hudFont = nullptr;
+  std::shared_ptr<void> m_hudFont = nullptr;
   void *m_heartsTexture = nullptr;
   int m_playerHealth = INITIAL_PLAYER_HEALTH;
   int m_playerMaxHealth = INITIAL_PLAYER_HEALTH;
@@ -120,7 +120,7 @@ private:
   bool m_returnUp = false; ///< Return to neutral animation from up
   bool m_returnDown = false; ///< Return to neutral animation from down
 
-  std::unique_ptr<InfoMode> m_infoMode; ///< Info mode manager
+  std::unique_ptr<rtype::InfoMode> m_infoMode; ///< Info mode manager
 
   int m_playerFrameIndex = 2; ///< Current animation frame
   float m_playerAnimTimer = 0.f; ///< Animation timer

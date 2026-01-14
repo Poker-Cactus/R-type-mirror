@@ -123,6 +123,8 @@ void Menu::cleanup()
 {
   if (menu_font != nullptr && m_renderer != nullptr)
     m_renderer->freeFont(menu_font);
+  if (menuMusic != nullptr && m_renderer != nullptr)
+    m_renderer->freeMusic(menuMusic);
   if (moonFloor != nullptr && m_renderer != nullptr)
     m_renderer->freeTexture(moonFloor);
   if (moonSky != nullptr && m_renderer != nullptr)
@@ -134,6 +136,7 @@ void Menu::cleanup()
   if (moonBack != nullptr && m_renderer != nullptr)
     m_renderer->freeTexture(moonBack);
   menu_font = nullptr;
+  menuMusic = nullptr;
   moonFloor = nullptr;
   moonSky = nullptr;
   moonMid = nullptr;

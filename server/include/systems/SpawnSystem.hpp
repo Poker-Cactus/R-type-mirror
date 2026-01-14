@@ -537,9 +537,7 @@ private:
     PowerupType powerupType;
     int cycle = m_powerupSpawnCount % 4;
     if (cycle == 0) {
-      powerupType = PowerupType::BUBBLE_RUBAN;
-
-      // powerupType = PowerupType::DRONE;
+      powerupType = PowerupType::DRONE;
     } else if (cycle == 1) {
       powerupType = PowerupType::BUBBLE;
     } else if (cycle == 2) {
@@ -1059,7 +1057,7 @@ private:
     sprite.height = POWERUP_SPRITE_HEIGHT;
     sprite.animated = true; // Enable animation for cycling
     sprite.frameCount = POWERUP_FRAME_COUNT; // 4 frames total
-    sprite.frameTime = 0.03f; // Animation speed
+    sprite.frameTime = 0.08f; // Animation speed
     sprite.loop = true;
 
     // Select starting frame and animation range based on powerup type
@@ -1086,7 +1084,7 @@ private:
       sprite.currentFrame = 3;
       break;
     }
-    sprite.frameTime = 0.1f;
+    sprite.frameTime = 0.08f;
     sprite.loop = true;
     world.addComponent(powerup, sprite);
 
