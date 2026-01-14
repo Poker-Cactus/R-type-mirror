@@ -3,7 +3,8 @@
  * @brief Editor state management implementation
  */
 
-#include "EditorState.h"
+#include "EditorState.hpp"
+
 #include <algorithm>
 #include <filesystem>
 #include <fstream>
@@ -26,45 +27,47 @@ void RefreshFileList() {
         }
         std::sort(g_state.jsonFiles.begin(), g_state.jsonFiles.end());
     } catch (const std::exception& e) {
-        std::cerr << "Error scanning directory: " << e.what() << std::endl;
+        std::cerr << "[AssetEditor] Error scanning directory: " << e.what() << std::endl;
     }
 }
 
 bool LoadFile(const std::string& filename) {
-    std::string fullPath = g_state.configPath + "/" + filename;
+    const std::string fullPath = g_state.configPath + "/" + filename;
     try {
         std::ifstream file(fullPath);
         if (!file.is_open()) {
-            std::cerr << "Failed to open: " << filename << std::endl;
+            std::cerr << "[AssetEditor] Failed to open: " << filename << std::endl;
             return false;
         }
-        g_state.currentJson = json::parse(file);
+        g_state.currentJson = Json::parse(file);
         g_state.selectedFile = filename;
         g_state.modified = false;
-        std::cout << "Loaded: " << filename << std::endl;
+        std::cout << "[AssetEditor] Loaded: " << filename << std::endl;
         return true;
     } catch (const std::exception& e) {
-        std::cerr << "Parse error: " << e.what() << std::endl;
+        std::cerr << "[AssetEditor] Parse error: " << e.what() << std::endl;
         return false;
     }
 }
 
 bool SaveFile() {
-    if (g_state.selectedFile.empty()) return false;
-    
-    std::string fullPath = g_state.configPath + "/" + g_state.selectedFile;
+    if (g_state.selectedFile.empty()) {
+        return false;
+    }
+
+    const std::string fullPath = g_state.configPath + "/" + g_state.selectedFile;
     try {
         std::ofstream file(fullPath);
         if (!file.is_open()) {
-            std::cerr << "Failed to save: " << g_state.selectedFile << std::endl;
+            std::cerr << "[AssetEditor] Failed to save: " << g_state.selectedFile << std::endl;
             return false;
         }
         file << g_state.currentJson.dump(2);
         g_state.modified = false;
-        std::cout << "Saved: " << g_state.selectedFile << std::endl;
+        std::cout << "[AssetEditor] Saved: " << g_state.selectedFile << std::endl;
         return true;
     } catch (const std::exception& e) {
-        std::cerr << "Save error: " << e.what() << std::endl;
+        std::cerr << "[AssetEditor] Save error: " << e.what() << std::endl;
         return false;
     }
 }

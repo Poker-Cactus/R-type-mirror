@@ -161,6 +161,7 @@ void MainMenu::render(int winWidth, int winHeight)
 
 void MainMenu::process(MenuState *currentState, Settings &settings)
 {
+  (void)settings; // Unused parameter
   // Flèche bas - descendre dans le menu
   if (m_renderer->isKeyJustPressed(KeyCode::KEY_DOWN)) {
     m_renderer->playSound(hoverSound);

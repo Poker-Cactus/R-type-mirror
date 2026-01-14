@@ -54,6 +54,11 @@ target_link_libraries(assetEditor PRIVATE
     nlohmann_json::nlohmann_json
 )
 
+# Link SDL2_ttf if available
+if(TARGET sdl_ttf::sdl_ttf)
+    target_link_libraries(assetEditor PRIVATE sdl_ttf::sdl_ttf)
+endif()
+
 # Copy config path reference
 target_compile_definitions(assetEditor PRIVATE
     CONFIG_PATH="${CMAKE_SOURCE_DIR}/server/config"

@@ -42,6 +42,15 @@ target_link_libraries(client PRIVATE
     SDL2::SDL2
 )
 
+# Link macOS frameworks for DeviceCategory
+if(APPLE)
+    target_link_libraries(client PRIVATE
+        "-framework CoreFoundation"
+        "-framework CoreGraphics"
+        "-framework IOKit"
+    )
+endif()
+
 # Ensure SDL2main handles the main/WinMain conversion on Windows
 if(WIN32)
     set_target_properties(client PROPERTIES

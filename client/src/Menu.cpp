@@ -143,7 +143,6 @@ void Menu::cleanup()
 
 void Menu::setState(MenuState newState)
 {
-  MenuState previousState = currentState;
   currentState = newState;
 
   // Refresh highscores when entering lobby menu

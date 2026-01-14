@@ -1,17 +1,20 @@
 /**
- * @file EditorState.h
+ * @file EditorState.hpp
  * @brief Editor state management and data structures
+ *
+ * Modern C++ implementation with RAII patterns.
  */
 
 #pragma once
 
 #include <nlohmann/json.hpp>
+#include <memory>
 #include <string>
 #include <vector>
 
-using json = nlohmann::json;
-
 namespace AssetEditor {
+
+using Json = nlohmann::json;
 
 /**
  * @brief Editor operating modes
@@ -19,32 +22,35 @@ namespace AssetEditor {
 enum class EditorMode {
     MainMenu,      ///< Main menu selection screen
     JsonEditor,    ///< JSON file editor mode
-    SpriteEditor,  ///< Sprite editor mode (future)
+    SpriteEditor,  ///< Sprite editor mode
 };
 
 /**
- * @brief Global editor state
+ * @brief Global editor state container
+ *
+ * Manages all shared state across the application including file lists,
+ * current selections, and configuration paths.
  */
 struct EditorState {
     EditorMode mode = EditorMode::MainMenu;
-    
+
     // JSON Editor state
     std::vector<std::string> jsonFiles;
     std::string selectedFile;
-    json currentJson;
+    Json currentJson;
     bool modified = false;
-    
+
     // Sprite Editor state
     std::vector<std::string> spriteFiles;
     std::string selectedSprite;
     std::string spritePath = SPRITE_PATH;
-    bool pixelEditorMode = false;  // Toggle between preview and pixel editor
-    
+    bool pixelEditorMode = false;
+
     // Config path
     std::string configPath = CONFIG_PATH;
 };
 
-// Global state instance
+/// Global state instance
 extern EditorState g_state;
 
 /**
@@ -57,12 +63,12 @@ void RefreshFileList();
  * @param filename Name of the file to load (without path)
  * @return true if loaded successfully
  */
-bool LoadFile(const std::string& filename);
+[[nodiscard]] bool LoadFile(const std::string& filename);
 
 /**
  * @brief Save the current JSON file
  * @return true if saved successfully
  */
-bool SaveFile();
+[[nodiscard]] bool SaveFile();
 
 } // namespace AssetEditor

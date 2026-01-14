@@ -70,6 +70,7 @@ std::vector<std::string> GameCategory::getInfoLines() const
 
 void GameCategory::update(float deltaTime)
 {
+  (void)deltaTime; // Unused parameter
   // Game category doesn't need frequent updates
   // Player stats are updated externally via setters
 }

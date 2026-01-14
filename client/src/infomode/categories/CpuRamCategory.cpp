@@ -42,6 +42,7 @@ std::vector<std::string> CpuRamCategory::getInfoLines() const
 
 void CpuRamCategory::update(float deltaTime)
 {
+  (void)deltaTime; // Unused parameter
   m_sampleCount++;
 
   // Update usage periodically to avoid excessive system calls

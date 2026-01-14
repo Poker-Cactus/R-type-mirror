@@ -81,6 +81,7 @@ print_result_banner() {
         echo -e "  ${GREEN}./build.sh server${RESET}  │  Server"
         echo -e "  ${BLUE}./build.sh client${RESET}  │  Client"
         echo -e "  ${MAGENTA}./build.sh editor${RESET}  │  Asset Editor"
+        echo -e "  ${CYAN}./build.sh engine${RESET}  │  Engine Only"
         echo ""
     else
         echo -e "${RED}${BOLD}"
@@ -264,6 +265,12 @@ cmd_clean() {
     else
         print_info "Nothing to clean"
     fi
+    
+    # Remove imgui.ini if it exists
+    if [ -f "imgui.ini" ]; then
+        rm -f "imgui.ini"
+        print_info "Removed imgui.ini"
+    fi
 }
 
 cmd_fclean() {
@@ -377,6 +384,42 @@ cmd_run_editor() {
     exec "$BUILD_DIR/assetEditor/assetEditor" "$@"
 }
 
+cmd_engine() {
+    print_banner
+    print_section "Building Engine"
+    
+    # Check if conan dependencies are installed
+    if [ ! -d "$BUILD_DIR" ] || [ ! -f "$BUILD_DIR/CMakeCache.txt" ]; then
+        install_dependencies || exit 1
+        echo ""
+        configure_cmake || exit 1
+        echo ""
+    fi
+    
+    print_step "Compiling engineCore..."
+    echo ""
+    
+    # Build just the engine
+    cmake --build "$BUILD_DIR" --target engineCore -j8 2>&1 | format_build_output
+    
+    if [ ${PIPESTATUS[0]} -eq 0 ]; then
+        echo ""
+        echo -e "${GREEN}${BOLD}"
+        echo "╔═══════════════════════════════════════════════════════════╗"
+        echo "║           ✨  ENGINE BUILD SUCCESSFUL!  ✨                ║"
+        echo "╚═══════════════════════════════════════════════════════════╝"
+        echo -e "${RESET}"
+    else
+        echo ""
+        echo -e "${RED}${BOLD}"
+        echo "╔═══════════════════════════════════════════════════════════╗"
+        echo "║              ❌  ENGINE BUILD FAILED!  ❌                ║"
+        echo "╚═══════════════════════════════════════════════════════════╝"
+        echo -e "${RESET}"
+        exit 1
+    fi
+}
+
 cmd_launch() {
     print_banner
     print_section "Quick Launch"
@@ -466,6 +509,7 @@ cmd_help() {
     echo -e "  ${GREEN}server${RESET}      Run the server"
     echo -e "  ${GREEN}client${RESET}      Run the client"
     echo -e "  ${GREEN}editor${RESET}      Run the Asset Editor"
+    echo -e "  ${GREEN}engine${RESET}      Build engineCore only"
     echo -e "  ${GREEN}help${RESET}        Show this help message"
     echo ""
 }
@@ -487,6 +531,7 @@ main() {
         "server")           cmd_run_server "$@" ;;
         "client")           cmd_run_client "$@" ;;
         "editor")           cmd_run_editor "$@" ;;
+        "engine")           cmd_engine ;;
         "help"|"-h"|"--help") cmd_help ;;
         *)
             print_error "Unknown command: $command"

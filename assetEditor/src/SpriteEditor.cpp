@@ -5,8 +5,8 @@
  * Uses authentic macOS system colors from Apple HIG.
  */
 
-#include "SpriteEditor.h"
-#include "EditorState.h"
+#include "SpriteEditor.hpp"
+#include "EditorState.hpp"
 #include <imgui.h>
 #include <imgui_impl_sdl2.h>
 #include <imgui_impl_sdlrenderer2.h>
@@ -30,24 +30,23 @@ namespace {
 static std::vector<SpriteInfo> s_spriteCache;
 static SDL_Renderer* s_renderer = nullptr;
 
-// Layer structure
-struct Layer {
-    std::string name;
-    SDL_Surface* surface = nullptr;
-    bool visible = true;
-    int zOrder = 0;
-};
-
 // Pixel editor state
 static float s_zoomLevel = 1.0f;
 static bool s_showGrid = true;
 static ImVec4 s_currentColor = ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
-static int s_selectedTool = 0; // 0=Pencil, 1=Eraser, 2=Eyedropper
+static int s_selectedTool = 0; // 0=Pencil, 1=Eraser, 2=Eyedropper, 3=Move
 static int s_brushSize = 1; // Brush size in pixels
 static SDL_Surface* s_editingSurface = nullptr; // Surface for editing (deprecated, use layers)
 static bool s_isDrawing = false;
 static bool s_spriteModified = false;
+static bool s_textureDirty = false; // Flag to update texture only when needed
 static char s_renameBuffer[256] = "";
+
+// Move tool state
+static bool s_isMoving = false;
+static ImVec2 s_moveStartPos;
+static int s_moveOffsetX = 0;
+static int s_moveOffsetY = 0;
 
 // Notification system
 static std::string s_notificationMessage = "";
@@ -62,15 +61,15 @@ static int s_renamingLayerIndex = -1; // -1 = not renaming, >= 0 = renaming laye
 static char s_layerRenameBuffer[64] = "";
 
 // Clipboard for copy/paste
-static SDL_Surface* s_clipboardSurface = nullptr;
+static SurfacePtr s_clipboardSurface = nullptr;
 
 // Canvas dimensions (can grow when importing larger images)
 static int s_canvasWidth = 0;
 static int s_canvasHeight = 0;
 
 // Undo/Redo system - only for pixel changes, not layer operations
-static std::vector<SDL_Surface*> s_undoStack;
-static std::vector<SDL_Surface*> s_redoStack;
+static std::vector<SurfacePtr> s_undoStack;
+static std::vector<SurfacePtr> s_redoStack;
 static const int MAX_UNDO_HISTORY = 50;
 
 // Import Image overlay state
@@ -171,18 +170,18 @@ static void ApplyImportedImage(SpriteInfo* info) {
         // Create new layer with the imported image
         Layer newLayer;
         newLayer.name = "Import " + std::to_string(s_layerCounter++);
-        newLayer.surface = SDL_CreateRGBSurfaceWithFormat(0, s_canvasWidth, s_canvasHeight, 32, SDL_PIXELFORMAT_RGBA32);
+        newLayer.surface = MakeSurfacePtr(SDL_CreateRGBSurfaceWithFormat(0, s_canvasWidth, s_canvasHeight, 32, SDL_PIXELFORMAT_RGBA32));
         
         // Clear to transparent
-        SDL_FillRect(newLayer.surface, nullptr, SDL_MapRGBA(newLayer.surface->format, 0, 0, 0, 0));
+        SDL_FillRect(newLayer.surface.get(), nullptr, SDL_MapRGBA(newLayer.surface->format, 0, 0, 0, 0));
         
         // Blit scaled image at offset
         SDL_Rect dstRect = {adjustedOffsetX, adjustedOffsetY, scaledW, scaledH};
-        SDL_BlitSurface(scaledSurface, nullptr, newLayer.surface, &dstRect);
+        SDL_BlitSurface(scaledSurface, nullptr, newLayer.surface.get(), &dstRect);
         
         newLayer.visible = true;
         newLayer.zOrder = s_layers.size();
-        s_layers.push_back(newLayer);
+        s_layers.push_back(std::move(newLayer));
         s_activeLayerIndex = s_layers.size() - 1;
     } else {
         // Merge onto active layer
@@ -190,7 +189,7 @@ static void ApplyImportedImage(SpriteInfo* info) {
             PushUndoState();
             
             SDL_Rect dstRect = {adjustedOffsetX, adjustedOffsetY, scaledW, scaledH};
-            SDL_BlitSurface(scaledSurface, nullptr, s_layers[s_activeLayerIndex].surface, &dstRect);
+            SDL_BlitSurface(scaledSurface, nullptr, s_layers[s_activeLayerIndex].surface.get(), &dstRect);
             s_spriteModified = true;
         }
     }
@@ -215,42 +214,36 @@ static void ApplyImportedImage(SpriteInfo* info) {
 }
 
 // Helper: Clone a surface
-static SDL_Surface* CloneSurface(SDL_Surface* src) {
+// ═══════════════════════════════════════════════════════════════════════════
+// Utility Functions Implementation
+// ═══════════════════════════════════════════════════════════════════════════
+
+namespace AssetEditor {
+
+SurfacePtr CloneSurface(SDL_Surface* src) {
     if (!src) return nullptr;
-    return SDL_ConvertSurface(src, src->format, 0);
+    return SurfacePtr(SDL_ConvertSurface(src, src->format, 0));
 }
 
-// Helper: Free undo/redo surfaces
+} // namespace AssetEditor
+
+// Helper: Free undo/redo surfaces (now automatic with smart pointers)
 static void FreeUndoStack() {
-    for (auto* surface : s_undoStack) {
-        if (surface) SDL_FreeSurface(surface);
-    }
-    s_undoStack.clear();
+    s_undoStack.clear(); // unique_ptr handles cleanup
 }
 
 static void FreeRedoStack() {
-    for (auto* surface : s_redoStack) {
-        if (surface) SDL_FreeSurface(surface);
-    }
-    s_redoStack.clear();
+    s_redoStack.clear(); // unique_ptr handles cleanup
 }
 
-// Helper: Free layer surfaces
+// Helper: Free layer surfaces (now automatic with smart pointers, but kept for API compatibility)
 static void FreeLayers(std::vector<Layer>& layers) {
-    for (auto& layer : layers) {
-        if (layer.surface) {
-            SDL_FreeSurface(layer.surface);
-            layer.surface = nullptr;
-        }
-    }
+    layers.clear(); // unique_ptr handles cleanup automatically
 }
 
-// Helper: Free clipboard
+// Helper: Free clipboard (now automatic with smart pointers)
 static void FreeClipboard() {
-    if (s_clipboardSurface) {
-        SDL_FreeSurface(s_clipboardSurface);
-        s_clipboardSurface = nullptr;
-    }
+    s_clipboardSurface.reset(); // Releases the managed pointer
 }
 
 // Helper: Copy active layer to clipboard
@@ -259,7 +252,7 @@ static void CopyLayerToClipboard() {
     if (!s_layers[s_activeLayerIndex].surface) return;
     
     FreeClipboard();
-    s_clipboardSurface = CloneSurface(s_layers[s_activeLayerIndex].surface);
+    s_clipboardSurface = AssetEditor::CloneSurface(s_layers[s_activeLayerIndex].surface.get());
 }
 
 // Helper: Resize all layers to new dimensions
@@ -282,18 +275,18 @@ static void PasteFromClipboard(SpriteInfo* info) {
     // Create new layer from clipboard
     Layer newLayer;
     newLayer.name = "Paste " + std::to_string(s_layerCounter++);
-    newLayer.surface = SDL_CreateRGBSurfaceWithFormat(0, s_canvasWidth, s_canvasHeight, 32, SDL_PIXELFORMAT_RGBA32);
+    newLayer.surface = MakeSurfacePtr(SDL_CreateRGBSurfaceWithFormat(0, s_canvasWidth, s_canvasHeight, 32, SDL_PIXELFORMAT_RGBA32));
     
     // Clear to transparent
-    SDL_FillRect(newLayer.surface, nullptr, SDL_MapRGBA(newLayer.surface->format, 0, 0, 0, 0));
+    SDL_FillRect(newLayer.surface.get(), nullptr, SDL_MapRGBA(newLayer.surface->format, 0, 0, 0, 0));
     
     // Blit clipboard content (centered)
     SDL_Rect dstRect = {0, 0, clipW, clipH};
-    SDL_BlitSurface(s_clipboardSurface, nullptr, newLayer.surface, &dstRect);
+    SDL_BlitSurface(s_clipboardSurface.get(), nullptr, newLayer.surface.get(), &dstRect);
     
     newLayer.visible = true;
     newLayer.zOrder = s_layers.size();
-    s_layers.push_back(newLayer);
+    s_layers.push_back(std::move(newLayer));
     s_activeLayerIndex = s_layers.size() - 1;
     
     // Update
@@ -323,11 +316,10 @@ static void ResizeCanvas(int newWidth, int newHeight, SpriteInfo* info) {
         SDL_FillRect(newSurface, nullptr, SDL_MapRGBA(newSurface->format, 0, 0, 0, 0));
         
         // Copy old content (top-left aligned)
-        SDL_BlitSurface(layer.surface, nullptr, newSurface, nullptr);
+        SDL_BlitSurface(layer.surface.get(), nullptr, newSurface, nullptr);
         
-        // Replace surface
-        SDL_FreeSurface(layer.surface);
-        layer.surface = newSurface;
+        // Replace surface with smart pointer (automatic cleanup of old surface)
+        layer.surface.reset(newSurface);
     }
     
     s_canvasWidth = newWidth;
@@ -361,21 +353,41 @@ static void InitializeLayers(SpriteInfo* info) {
     SDL_Surface* surface = IMG_Load(info->fullPath.c_str());
     if (!surface) return;
     
-    // Convert to RGBA
-    SDL_Surface* converted = SDL_ConvertSurfaceFormat(surface, SDL_PIXELFORMAT_RGBA32, 0);
+    // Convert to ARGB8888 for consistency
+    SDL_Surface* converted = SDL_ConvertSurfaceFormat(surface, SDL_PIXELFORMAT_ARGB8888, 0);
     SDL_FreeSurface(surface);
     
     if (converted) {
+        // Fix color channels for GIFs: swap R and B
+        std::string ext = info->fullPath.substr(info->fullPath.find_last_of(".") + 1);
+        std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
+        
+        if (ext == "gif") {
+            if (SDL_MUSTLOCK(converted)) SDL_LockSurface(converted);
+            
+            Uint32* pixels = (Uint32*)converted->pixels;
+            int totalPixels = converted->w * converted->h;
+            
+            for (int i = 0; i < totalPixels; i++) {
+                Uint8 a, r, g, b;
+                SDL_GetRGBA(pixels[i], converted->format, &r, &g, &b, &a);
+                // Swap R and B
+                pixels[i] = SDL_MapRGBA(converted->format, b, g, r, a);
+            }
+            
+            if (SDL_MUSTLOCK(converted)) SDL_UnlockSurface(converted);
+        }
+        
         // Set canvas dimensions
         s_canvasWidth = converted->w;
         s_canvasHeight = converted->h;
         
         Layer baseLayer;
         baseLayer.name = "Layer 0";
-        baseLayer.surface = converted;
+        baseLayer.surface = MakeSurfacePtr(converted);
         baseLayer.visible = true;
         baseLayer.zOrder = 0;
-        s_layers.push_back(baseLayer);
+        s_layers.push_back(std::move(baseLayer));
         s_layerCounter++;
     }
     
@@ -391,16 +403,13 @@ static void PushUndoState() {
     }
     
     // Clone active layer surface
-    SDL_Surface* state = CloneSurface(s_layers[s_activeLayerIndex].surface);
+    SurfacePtr state = AssetEditor::CloneSurface(s_layers[s_activeLayerIndex].surface.get());
     if (!state) return;
     
-    s_undoStack.push_back(state);
+    s_undoStack.push_back(std::move(state));
     
-    // Limit undo history
+    // Limit undo history (automatic cleanup with unique_ptr)
     if (s_undoStack.size() > MAX_UNDO_HISTORY) {
-        if (s_undoStack.front()) {
-            SDL_FreeSurface(s_undoStack.front());
-        }
         s_undoStack.erase(s_undoStack.begin());
     }
     
@@ -415,19 +424,14 @@ static void Undo() {
     if (s_undoStack.empty() || s_activeLayerIndex >= static_cast<int>(s_layers.size())) return;
     
     // Save current state to redo stack
-    SDL_Surface* currentState = CloneSurface(s_layers[s_activeLayerIndex].surface);
+    SurfacePtr currentState = AssetEditor::CloneSurface(s_layers[s_activeLayerIndex].surface.get());
     if (currentState) {
-        s_redoStack.push_back(currentState);
+        s_redoStack.push_back(std::move(currentState));
     }
     
-    // Restore previous state
-    SDL_Surface* previousState = s_undoStack.back();
+    // Restore previous state (move ownership from undo stack)
+    s_layers[s_activeLayerIndex].surface = std::move(s_undoStack.back());
     s_undoStack.pop_back();
-    
-    if (s_layers[s_activeLayerIndex].surface) {
-        SDL_FreeSurface(s_layers[s_activeLayerIndex].surface);
-    }
-    s_layers[s_activeLayerIndex].surface = previousState;
     
     // Update composite and texture
     for (auto& info : s_spriteCache) {
@@ -444,19 +448,14 @@ static void Redo() {
     if (s_redoStack.empty() || s_activeLayerIndex >= static_cast<int>(s_layers.size())) return;
     
     // Save current state to undo stack
-    SDL_Surface* currentState = CloneSurface(s_layers[s_activeLayerIndex].surface);
+    SurfacePtr currentState = AssetEditor::CloneSurface(s_layers[s_activeLayerIndex].surface.get());
     if (currentState) {
-        s_undoStack.push_back(currentState);
+        s_undoStack.push_back(std::move(currentState));
     }
     
-    // Restore next state
-    SDL_Surface* nextState = s_redoStack.back();
+    // Restore next state (move ownership from redo stack)
+    s_layers[s_activeLayerIndex].surface = std::move(s_redoStack.back());
     s_redoStack.pop_back();
-    
-    if (s_layers[s_activeLayerIndex].surface) {
-        SDL_FreeSurface(s_layers[s_activeLayerIndex].surface);
-    }
-    s_layers[s_activeLayerIndex].surface = nextState;
     
     // Update composite and texture
     for (auto& info : s_spriteCache) {
@@ -471,6 +470,12 @@ static void Redo() {
 // Composite all visible layers into single surface
 static SDL_Surface* CompositeLayersToSurface() {
     if (s_layers.empty()) return nullptr;
+    
+    // Check if first layer has valid surface
+    if (!s_layers[0].surface) {
+        fprintf(stderr, "[AssetEditor] Error: First layer has null surface\n");
+        return nullptr;
+    }
     
     // Use canvas dimensions (handles expanded canvas)
     int width = s_canvasWidth > 0 ? s_canvasWidth : s_layers[0].surface->w;
@@ -496,7 +501,9 @@ static SDL_Surface* CompositeLayersToSurface() {
     for (int idx : layerIndices) {
         const auto& layer = s_layers[idx];
         if (layer.visible && layer.surface) {
-            SDL_BlitSurface(layer.surface, nullptr, result, nullptr);
+            // Enable blending for proper alpha compositing
+            SDL_SetSurfaceBlendMode(layer.surface.get(), SDL_BLENDMODE_BLEND);
+            SDL_BlitSurface(layer.surface.get(), nullptr, result, nullptr);
         }
     }
     
@@ -516,18 +523,29 @@ void UpdateEditingSurface(SpriteInfo* info) {
 }
 
 void UpdateTextureFromSurface(SpriteInfo* info) {
-    if (!info || !s_editingSurface || !s_renderer) return;
-    
-    // Destroy old texture
-    if (info->textureId) {
-        SDL_DestroyTexture(static_cast<SDL_Texture*>(info->textureId));
-        info->textureId = nullptr;
+    if (!info || !s_editingSurface || !s_renderer) {
+        return;
     }
     
-    // Create new texture from modified surface
-    SDL_Texture* newTexture = SDL_CreateTextureFromSurface(s_renderer, s_editingSurface);
-    if (newTexture) {
-        info->textureId = newTexture;
+    // Si la texture n'existe pas encore OU si les dimensions ont changé, créer une nouvelle texture
+    bool needNewTexture = !info->texture;
+    if (info->texture) {
+        int w, h;
+        SDL_QueryTexture(info->texture.get(), nullptr, nullptr, &w, &h);
+        if (w != s_editingSurface->w || h != s_editingSurface->h) {
+            needNewTexture = true;
+        }
+    }
+    
+    if (needNewTexture) {
+        // Créer une nouvelle texture
+        SDL_Texture* newTexture = SDL_CreateTextureFromSurface(s_renderer, s_editingSurface);
+        if (newTexture) {
+            info->texture = MakeTexturePtr(newTexture);
+        }
+    } else {
+        // Mettre à jour la texture existante (pas de flickering !)
+        SDL_UpdateTexture(info->texture.get(), nullptr, s_editingSurface->pixels, s_editingSurface->pitch);
     }
 }
 
@@ -536,17 +554,13 @@ void SetSpriteRenderer(SDL_Renderer* renderer) {
 }
 
 void CleanupSpriteTextures() {
-    for (auto& sprite : s_spriteCache) {
-        if (sprite.textureId) {
-            SDL_DestroyTexture(static_cast<SDL_Texture*>(sprite.textureId));
-            sprite.textureId = nullptr;
-        }
-    }
+    // Automatic cleanup with smart pointers - just clear the vector
+    s_spriteCache.clear();
 }
 
 bool LoadSpriteTexture(SpriteInfo& info) {
     if (!s_renderer) return false;
-    if (info.textureId) return true; // Already loaded
+    if (info.texture) return true; // Already loaded
     
     SDL_Surface* surface = IMG_Load(info.fullPath.c_str());
     if (!surface) {
@@ -563,7 +577,7 @@ bool LoadSpriteTexture(SpriteInfo& info) {
         return false;
     }
     
-    info.textureId = texture;
+    info.texture = MakeTexturePtr(texture);
     return true;
 }
 
@@ -672,6 +686,7 @@ void SelectSprite(const std::string& filename) {
             LoadSpriteTexture(info);
             InitializeLayers(&info);
             UpdateEditingSurface(&info);
+            UpdateTextureFromSurface(&info);  // Update texture from composite
             break;
         }
     }
@@ -722,6 +737,10 @@ bool SaveSprite(SpriteInfo* info) {
     
     // Update info if renamed
     if (savePath != info->fullPath) {
+        // Delete old file when renaming
+        std::error_code ec;
+        fs::remove(info->fullPath, ec);
+        
         info->filename = s_renameBuffer;
         info->fullPath = savePath;
         g_state.selectedSprite = s_renameBuffer;
@@ -733,7 +752,7 @@ bool SaveSprite(SpriteInfo* info) {
 }
 
 void RenderPixelEditor(SpriteInfo* spriteInfo) {
-    if (!spriteInfo || !spriteInfo->textureId) {
+    if (!spriteInfo || !spriteInfo->texture) {
         ImGui::TextDisabled("No sprite loaded for editing");
         return;
     }
@@ -867,7 +886,6 @@ void RenderPixelEditor(SpriteInfo* spriteInfo) {
         
         // Tool selection
         ImGui::Text("Tool:");
-        ImGui::SameLine();
         if (ImGui::RadioButton("Pencil", s_selectedTool == 0)) {
             s_selectedTool = 0;
         }
@@ -875,9 +893,12 @@ void RenderPixelEditor(SpriteInfo* spriteInfo) {
         if (ImGui::RadioButton("Eraser", s_selectedTool == 1)) {
             s_selectedTool = 1;
         }
-        ImGui::SameLine();
         if (ImGui::RadioButton("Pipette", s_selectedTool == 2)) {
             s_selectedTool = 2;
+        }
+        ImGui::SameLine();
+        if (ImGui::RadioButton("Move", s_selectedTool == 3)) {
+            s_selectedTool = 3;
         }
         
         ImGui::Spacing();
@@ -886,7 +907,8 @@ void RenderPixelEditor(SpriteInfo* spriteInfo) {
         if (s_selectedTool < 2) {
             ImGui::Text("Brush Size:");
             ImGui::SetNextItemWidth(-1);
-            ImGui::SliderInt("##brushsize", &s_brushSize, 1, 10);
+            ImGui::InputInt("##brushsize", &s_brushSize, 1, 5);
+            s_brushSize = std::max(1, std::min(s_brushSize, 500));
             ImGui::Spacing();
         }
         
@@ -912,13 +934,52 @@ void RenderPixelEditor(SpriteInfo* spriteInfo) {
         ImGui::Text("%.0f%%", s_zoomLevel * 100.0f);
         ImGui::SameLine();
         if (ImGui::Button("+##zoom", ImVec2(30, 0))) {
-            s_zoomLevel = std::min(s_zoomLevel + 0.5f, 20.0f);
+            s_zoomLevel = std::min(s_zoomLevel + 0.5f, 100.0f);
         }
         
         ImGui::Spacing();
         
         // Grid toggle
         ImGui::Checkbox("Show Grid", &s_showGrid);
+        
+        ImGui::Spacing();
+        ImGui::Spacing();
+        
+        // === CANVAS SIZE SECTION ===
+        ImGui::Text("Canvas Size");
+        ImGui::Separator();
+        
+        static int newCanvasW = 64;
+        static int newCanvasH = 64;
+        
+        ImGui::Text("Current: %dx%d", s_canvasWidth, s_canvasHeight);
+        
+        ImGui::Text("New Width:");
+        ImGui::SetNextItemWidth(-1);
+        ImGui::InputInt("##newwidth", &newCanvasW, 1, 10);
+        newCanvasW = std::max(1, std::min(newCanvasW, 4096));
+        
+        ImGui::Text("New Height:");
+        ImGui::SetNextItemWidth(-1);
+        ImGui::InputInt("##newheight", &newCanvasH, 1, 10);
+        newCanvasH = std::max(1, std::min(newCanvasH, 4096));
+        
+        if (ImGui::Button("Resize Canvas", ImVec2(-1, 0))) {
+            ResizeCanvas(newCanvasW, newCanvasH, spriteInfo);
+            s_notificationMessage = "Canvas resized!";
+            s_notificationTimer = NOTIFICATION_DURATION;
+        }
+        
+        ImGui::Spacing();
+        if (ImGui::Button("Quick: 64x64", ImVec2(-1, 0))) {
+            ResizeCanvas(64, 64, spriteInfo);
+        }
+        if (ImGui::Button("Quick: 128x128", ImVec2(-1, 0))) {
+            ResizeCanvas(128, 128, spriteInfo);
+        }
+        if (ImGui::Button("Quick: 256x256", ImVec2(-1, 0))) {
+            ResizeCanvas(256, 256, spriteInfo);
+        }
         
         ImGui::Spacing();
         ImGui::Spacing();
@@ -932,20 +993,20 @@ void RenderPixelEditor(SpriteInfo* spriteInfo) {
             if (!s_layers.empty()) {
                 Layer newLayer;
                 newLayer.name = "Layer " + std::to_string(s_layerCounter++);
-                newLayer.surface = SDL_CreateRGBSurfaceWithFormat(
+                newLayer.surface = MakeSurfacePtr(SDL_CreateRGBSurfaceWithFormat(
                     0, 
                     s_canvasWidth, 
                     s_canvasHeight, 
                     32, 
                     SDL_PIXELFORMAT_RGBA32
-                );
+                ));
                 
                 // Clear to transparent
-                SDL_FillRect(newLayer.surface, nullptr, SDL_MapRGBA(newLayer.surface->format, 0, 0, 0, 0));
+                SDL_FillRect(newLayer.surface.get(), nullptr, SDL_MapRGBA(newLayer.surface->format, 0, 0, 0, 0));
                 
                 newLayer.visible = true;
                 newLayer.zOrder = s_layers.size();
-                s_layers.push_back(newLayer);
+                s_layers.push_back(std::move(newLayer));
                 s_activeLayerIndex = s_layers.size() - 1;
                 
                 // Clear undo stack for new layer
@@ -1129,10 +1190,7 @@ void RenderPixelEditor(SpriteInfo* spriteInfo) {
                     ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.9f, 0.3f, 0.3f, 1.0f));
                     ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.7f, 0.1f, 0.1f, 1.0f));
                     if (ImGui::SmallButton("X")) {
-                        // Free the layer surface
-                        if (s_layers[i].surface) {
-                            SDL_FreeSurface(s_layers[i].surface);
-                        }
+                        // Erase layer (unique_ptr handles automatic cleanup)
                         s_layers.erase(s_layers.begin() + i);
                         
                         // Adjust active layer index
@@ -1197,7 +1255,7 @@ void RenderPixelEditor(SpriteInfo* spriteInfo) {
         ImGuiIO& io = ImGui::GetIO();
         
         // Draw sprite
-        ImGui::Image(spriteInfo->textureId, ImVec2(displayW, displayH));
+        ImGui::Image(spriteInfo->GetTextureID(), ImVec2(displayW, displayH));
         
         // Check if mouse is over the image
         bool isHovered = ImGui::IsItemHovered();
@@ -1285,14 +1343,27 @@ void RenderPixelEditor(SpriteInfo* spriteInfo) {
             }
             
             if (ImGui::IsMouseDown(0)) {
-                if (s_selectedTool == 2) {
+                if (s_selectedTool == 3) {
+                    // Move tool - drag to move layer
+                    if (!s_isMoving) {
+                        s_isMoving = true;
+                        s_moveStartPos = ImVec2((float)pixelX, (float)pixelY);
+                        s_moveOffsetX = 0;
+                        s_moveOffsetY = 0;
+                        PushUndoState();
+                    } else {
+                        // Calculate offset from start position
+                        s_moveOffsetX = pixelX - (int)s_moveStartPos.x;
+                        s_moveOffsetY = pixelY - (int)s_moveStartPos.y;
+                    }
+                } else if (s_selectedTool == 2) {
                     // Pipette - pick color from composite surface
                     if (pixelX >= 0 && pixelX < spriteInfo->width && 
                         pixelY >= 0 && pixelY < spriteInfo->height) {
                         
                         // Get color from the active layer
                         if (s_activeLayerIndex < static_cast<int>(s_layers.size()) && s_layers[s_activeLayerIndex].surface) {
-                            SDL_Surface* activeSurface = s_layers[s_activeLayerIndex].surface;
+                            SDL_Surface* activeSurface = s_layers[s_activeLayerIndex].surface.get();
                             
                             if (SDL_MUSTLOCK(activeSurface)) {
                                 SDL_LockSurface(activeSurface);
@@ -1330,7 +1401,29 @@ void RenderPixelEditor(SpriteInfo* spriteInfo) {
                         
                         // Get active layer
                         if (s_activeLayerIndex < static_cast<int>(s_layers.size()) && s_layers[s_activeLayerIndex].surface) {
-                            SDL_Surface* activeSurface = s_layers[s_activeLayerIndex].surface;
+                            SDL_Surface* activeSurface = s_layers[s_activeLayerIndex].surface.get();
+                            
+                            // Lock surface ONCE for all brush pixels
+                            if (SDL_MUSTLOCK(activeSurface)) {
+                                SDL_LockSurface(activeSurface);
+                            }
+                            
+                            Uint32* pixels = (Uint32*)activeSurface->pixels;
+                            int pitch = activeSurface->pitch / 4;
+                            
+                            // Pre-calculate color for pencil
+                            Uint32 drawColor = 0;
+                            if (s_selectedTool == 0) {
+                                Uint8 r = (Uint8)(s_currentColor.x * 255);
+                                Uint8 g = (Uint8)(s_currentColor.y * 255);
+                                Uint8 b = (Uint8)(s_currentColor.z * 255);
+                                Uint8 a = (Uint8)(s_currentColor.w * 255);
+                                // ARGB8888: swap R and B for correct colors
+                                drawColor = SDL_MapRGBA(activeSurface->format, b, g, r, a);
+                            } else {
+                                // Eraser - transparent
+                                drawColor = SDL_MapRGBA(activeSurface->format, 0, 0, 0, 0);
+                            }
                             
                             // Apply brush strokes
                             for (int bx = -s_brushSize/2; bx <= s_brushSize/2; bx++) {
@@ -1340,45 +1433,82 @@ void RenderPixelEditor(SpriteInfo* spriteInfo) {
                                     
                                     if (px >= 0 && px < spriteInfo->width && 
                                         py >= 0 && py < spriteInfo->height) {
-                                        
-                                        // Actually modify the active layer surface
-                                        if (SDL_MUSTLOCK(activeSurface)) {
-                                            SDL_LockSurface(activeSurface);
-                                        }
-                                        
-                                        Uint32* pixels = (Uint32*)activeSurface->pixels;
-                                        int pitch = activeSurface->pitch / 4;
-                                        
-                                        if (s_selectedTool == 0) {
-                                            // Pencil - draw color
-                                            Uint8 r = (Uint8)(s_currentColor.x * 255);
-                                            Uint8 g = (Uint8)(s_currentColor.y * 255);
-                                            Uint8 b = (Uint8)(s_currentColor.z * 255);
-                                            Uint8 a = (Uint8)(s_currentColor.w * 255);
-                                            pixels[py * pitch + px] = SDL_MapRGBA(activeSurface->format, r, g, b, a);
-                                        } else {
-                                            // Eraser - transparent
-                                            pixels[py * pitch + px] = SDL_MapRGBA(activeSurface->format, 0, 0, 0, 0);
-                                        }
-                                        
-                                        if (SDL_MUSTLOCK(activeSurface)) {
-                                            SDL_UnlockSurface(activeSurface);
-                                        }
-                                        
+                                        pixels[py * pitch + px] = drawColor;
                                         s_spriteModified = true;
                                     }
                                 }
                             }
                             
-                            // Update composite texture
-                            UpdateEditingSurface(spriteInfo);
-                            UpdateTextureFromSurface(spriteInfo);
+                            // Unlock surface ONCE after all brush pixels
+                            if (SDL_MUSTLOCK(activeSurface)) {
+                                SDL_UnlockSurface(activeSurface);
+                            }
+                            
+                            // Marquer la texture comme devant être mise à jour
+                            s_textureDirty = true;
                         }
                     }
                 }
             } else {
-                // Released mouse - end drawing
-                s_isDrawing = false;
+                // Released mouse - end drawing/moving
+                if (s_isDrawing) {
+                    s_isDrawing = false;
+                    s_textureDirty = true;
+                }
+                
+                // Apply move transformation
+                if (s_isMoving && (s_moveOffsetX != 0 || s_moveOffsetY != 0)) {
+                    if (s_activeLayerIndex < static_cast<int>(s_layers.size()) && s_layers[s_activeLayerIndex].surface) {
+                        SDL_Surface* activeSurface = s_layers[s_activeLayerIndex].surface.get();
+                        
+                        // Create a new surface for the shifted content
+                        SDL_Surface* shiftedSurface = SDL_CreateRGBSurfaceWithFormat(
+                            0, activeSurface->w, activeSurface->h, 32, SDL_PIXELFORMAT_RGBA32);
+                        
+                        if (shiftedSurface) {
+                            // Clear to transparent
+                            SDL_FillRect(shiftedSurface, nullptr, SDL_MapRGBA(shiftedSurface->format, 0, 0, 0, 0));
+                            
+                            // Copy pixels with offset
+                            if (SDL_MUSTLOCK(activeSurface)) SDL_LockSurface(activeSurface);
+                            if (SDL_MUSTLOCK(shiftedSurface)) SDL_LockSurface(shiftedSurface);
+                            
+                            Uint32* srcPixels = (Uint32*)activeSurface->pixels;
+                            Uint32* dstPixels = (Uint32*)shiftedSurface->pixels;
+                            int pitch = activeSurface->pitch / 4;
+                            
+                            for (int y = 0; y < activeSurface->h; y++) {
+                                for (int x = 0; x < activeSurface->w; x++) {
+                                    int newX = x + s_moveOffsetX;
+                                    int newY = y + s_moveOffsetY;
+                                    
+                                    if (newX >= 0 && newX < activeSurface->w && 
+                                        newY >= 0 && newY < activeSurface->h) {
+                                        dstPixels[newY * pitch + newX] = srcPixels[y * pitch + x];
+                                    }
+                                }
+                            }
+                            
+                            if (SDL_MUSTLOCK(activeSurface)) SDL_UnlockSurface(activeSurface);
+                            if (SDL_MUSTLOCK(shiftedSurface)) SDL_UnlockSurface(shiftedSurface);
+                            
+                            // Replace the layer surface
+                            s_layers[s_activeLayerIndex].surface = MakeSurfacePtr(shiftedSurface);
+                            s_spriteModified = true;
+                            s_textureDirty = true;
+                        }
+                    }
+                }
+                s_isMoving = false;
+                s_moveOffsetX = 0;
+                s_moveOffsetY = 0;
+            }
+            
+            // Mettre à jour la texture UNE FOIS par frame si nécessaire
+            if (s_textureDirty) {
+                UpdateEditingSurface(spriteInfo);
+                UpdateTextureFromSurface(spriteInfo);
+                s_textureDirty = false;
             }
         }
     }
@@ -1494,7 +1624,7 @@ void RenderSpriteEditor() {
             ImGui::Text("Preview");
             ImGui::Spacing();
             
-            if (selectedInfo->textureId) {
+            if (selectedInfo->texture) {
                 // Calculate preview size to fit width
                 float regionWidth = ImGui::GetContentRegionAvail().x;
                 float scale = 1.0f;
@@ -1514,7 +1644,7 @@ void RenderSpriteEditor() {
                 float offsetX = (regionWidth - displayW) * 0.5f;
                 if (offsetX > 0) ImGui::SetCursorPosX(ImGui::GetCursorPosX() + offsetX);
                 
-                ImGui::Image(selectedInfo->textureId, ImVec2(displayW, displayH));
+                ImGui::Image(selectedInfo->GetTextureID(), ImVec2(displayW, displayH));
                 
                 // Zoom info
                 if (scale != 1.0f) {
@@ -1576,6 +1706,32 @@ void RenderSpriteEditorUI() {
     {
         if (ImGui::CollapsingHeader("Sprites", ImGuiTreeNodeFlags_DefaultOpen)) {
             ImGui::Indent();
+            
+            // New Sprite button
+            ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.2f, 0.7f, 0.3f, 1.0f));
+            ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.25f, 0.8f, 0.35f, 1.0f));
+            ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.15f, 0.6f, 0.25f, 1.0f));
+            if (ImGui::Button("New Sprite", ImVec2(-1, 0))) {
+                // Create new blank sprite
+                static int newSpriteCounter = 1;
+                char newName[64];
+                snprintf(newName, sizeof(newName), "new_sprite_%d.png", newSpriteCounter++);
+                
+                // Create a blank 64x64 sprite
+                SDL_Surface* newSurface = SDL_CreateRGBSurfaceWithFormat(0, 64, 64, 32, SDL_PIXELFORMAT_RGBA32);
+                if (newSurface) {
+                    SDL_FillRect(newSurface, nullptr, SDL_MapRGBA(newSurface->format, 0, 0, 0, 0));
+                    std::string newPath = g_state.spritePath + "/" + newName;
+                    if (IMG_SavePNG(newSurface, newPath.c_str()) == 0) {
+                        SDL_FreeSurface(newSurface);
+                        RefreshSpriteList();
+                        SelectSprite(newName);
+                    } else {
+                        SDL_FreeSurface(newSurface);
+                    }
+                }
+            }
+            ImGui::PopStyleColor(3);
             
             if (ImGui::Button("Refresh", ImVec2(-1, 0))) {
                 RefreshSpriteList();
@@ -1674,7 +1830,7 @@ void RenderSpriteEditorUI() {
                 }
                 
                 // Tooltip with size info
-                if (ImGui::IsItemHovered() && sprite.textureId) {
+                if (ImGui::IsItemHovered() && sprite.texture) {
                     ImGui::BeginTooltip();
                     ImGui::Text("%d x %d px", sprite.width, sprite.height);
                     ImGui::EndTooltip();

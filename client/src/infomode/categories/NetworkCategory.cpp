@@ -98,6 +98,7 @@ std::vector<std::string> NetworkCategory::getInfoLines() const
 
 void NetworkCategory::update(float deltaTime)
 {
+  (void)deltaTime; // Unused parameter
   // Network info doesn't change frequently, cache it
   if (!m_networkInfoCached) {
     m_localIP = getLocalIPAddress();
