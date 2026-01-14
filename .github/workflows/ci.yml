@@ -41,7 +41,7 @@ jobs:
         conan install . --output-folder=build --build=missing --profile=conan_profile_ci
 
     - name: Configure project
-      run: cmake -S . -B build -DCMAKE_TOOLCHAIN_FILE=build/conan_toolchain.cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+      run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_TOOLCHAIN_FILE=build/conan_toolchain.cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
 
     - name: Build project
       run: cmake --build build -- -j4
