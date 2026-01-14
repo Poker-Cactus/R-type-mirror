@@ -353,34 +353,19 @@ static void InitializeLayers(SpriteInfo* info) {
     SDL_Surface* surface = IMG_Load(info->fullPath.c_str());
     if (!surface) return;
     
-    // Convert to ARGB8888 for consistency
-    SDL_Surface* converted = SDL_ConvertSurfaceFormat(surface, SDL_PIXELFORMAT_ARGB8888, 0);
+    // Convert to RGBA32 for consistency across all formats
+    SDL_Surface* converted = SDL_ConvertSurfaceFormat(surface, SDL_PIXELFORMAT_RGBA32, 0);
     SDL_FreeSurface(surface);
     
     if (converted) {
-        // Fix color channels for GIFs: swap R and B
-        std::string ext = info->fullPath.substr(info->fullPath.find_last_of(".") + 1);
-        std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
-        
-        if (ext == "gif") {
-            if (SDL_MUSTLOCK(converted)) SDL_LockSurface(converted);
-            
-            Uint32* pixels = (Uint32*)converted->pixels;
-            int totalPixels = converted->w * converted->h;
-            
-            for (int i = 0; i < totalPixels; i++) {
-                Uint8 a, r, g, b;
-                SDL_GetRGBA(pixels[i], converted->format, &r, &g, &b, &a);
-                // Swap R and B
-                pixels[i] = SDL_MapRGBA(converted->format, b, g, r, a);
-            }
-            
-            if (SDL_MUSTLOCK(converted)) SDL_UnlockSurface(converted);
-        }
         
         // Set canvas dimensions
         s_canvasWidth = converted->w;
         s_canvasHeight = converted->h;
+        
+        // Update sprite info dimensions
+        info->width = converted->w;
+        info->height = converted->h;
         
         Layer baseLayer;
         baseLayer.name = "Layer 0";
@@ -567,11 +552,19 @@ bool LoadSpriteTexture(SpriteInfo& info) {
         return false;
     }
     
-    info.width = surface->w;
-    info.height = surface->h;
-    
-    SDL_Texture* texture = SDL_CreateTextureFromSurface(s_renderer, surface);
+    // Convert to RGBA32 for consistent color handling
+    SDL_Surface* converted = SDL_ConvertSurfaceFormat(surface, SDL_PIXELFORMAT_RGBA32, 0);
     SDL_FreeSurface(surface);
+    
+    if (!converted) {
+        return false;
+    }
+    
+    info.width = converted->w;
+    info.height = converted->h;
+    
+    SDL_Texture* texture = SDL_CreateTextureFromSurface(s_renderer, converted);
+    SDL_FreeSurface(converted);
     
     if (!texture) {
         return false;
@@ -680,13 +673,14 @@ void SelectSprite(const std::string& filename) {
     strncpy(s_renameBuffer, filename.c_str(), sizeof(s_renameBuffer) - 1);
     s_renameBuffer[sizeof(s_renameBuffer) - 1] = '\0';
     
-    // Preload texture for selected sprite
+    // Initialize layers and texture for selected sprite
     for (auto& info : s_spriteCache) {
         if (info.filename == filename) {
-            LoadSpriteTexture(info);
+            // Initialize layers first (this loads and converts the image)
             InitializeLayers(&info);
+            // Create composite and texture from layers (ensures consistent colors)
             UpdateEditingSurface(&info);
-            UpdateTextureFromSurface(&info);  // Update texture from composite
+            UpdateTextureFromSurface(&info);
             break;
         }
     }
@@ -1376,6 +1370,7 @@ void RenderPixelEditor(SpriteInfo* spriteInfo) {
                             Uint8 r, g, b, a;
                             SDL_GetRGBA(pixel, activeSurface->format, &r, &g, &b, &a);
                             
+                            // Store colors in RGB order (no swap needed with RGBA32)
                             s_currentColor.x = r / 255.0f;
                             s_currentColor.y = g / 255.0f;
                             s_currentColor.z = b / 255.0f;
@@ -1418,8 +1413,8 @@ void RenderPixelEditor(SpriteInfo* spriteInfo) {
                                 Uint8 g = (Uint8)(s_currentColor.y * 255);
                                 Uint8 b = (Uint8)(s_currentColor.z * 255);
                                 Uint8 a = (Uint8)(s_currentColor.w * 255);
-                                // ARGB8888: swap R and B for correct colors
-                                drawColor = SDL_MapRGBA(activeSurface->format, b, g, r, a);
+                                // RGBA32: use RGB in correct order
+                                drawColor = SDL_MapRGBA(activeSurface->format, r, g, b, a);
                             } else {
                                 // Eraser - transparent
                                 drawColor = SDL_MapRGBA(activeSurface->format, 0, 0, 0, 0);

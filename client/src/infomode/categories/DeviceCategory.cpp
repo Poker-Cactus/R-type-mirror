@@ -60,7 +60,6 @@ std::vector<std::string> DeviceCategory::getInfoLines() const
 
 void DeviceCategory::update()
 {
-  (void)deltaTime; // Unused parameter
   // Device info doesn't change frequently, cache it
   if (!m_infoCached) {
     m_osInfo = getOperatingSystem();
