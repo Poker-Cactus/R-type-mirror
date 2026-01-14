@@ -126,16 +126,30 @@ private:
     ecs::Entity powerupEntity = 0;
     ecs::Entity playerEntity = 0;
 
-    // Check if one entity is a POWERUP sprite and the other is a player
+    // Helper to check if sprite is a collectible bubble/powerup
+    auto isCollectibleSprite = [](std::uint32_t spriteId) {
+      return spriteId == ecs::SpriteId::POWERUP || spriteId == ecs::SpriteId::BUBBLE ||
+        spriteId == ecs::SpriteId::BUBBLE_TRIPLE || spriteId == ecs::SpriteId::DRONE ||
+        (spriteId >= ecs::SpriteId::BUBBLE_RUBAN1 && spriteId <= ecs::SpriteId::BUBBLE_RUBAN3) ||
+        (spriteId >= ecs::SpriteId::BUBBLE_RUBAN_BACK1 && spriteId <= ecs::SpriteId::BUBBLE_RUBAN_FRONT4);
+    };
+
+    // Check if one entity is a collectible sprite (without Follower = detached) and the other is a player
     if (world.hasComponent<ecs::Sprite>(entityA) && world.hasComponent<ecs::Input>(entityB)) {
       const auto &sprite = world.getComponent<ecs::Sprite>(entityA);
-      if (sprite.spriteId == ecs::SpriteId::POWERUP) {
+      // Collectible if it's a POWERUP, or a bubble without Follower (detached)
+      bool isCollectible = (sprite.spriteId == ecs::SpriteId::POWERUP) ||
+        (isCollectibleSprite(sprite.spriteId) && !world.hasComponent<ecs::Follower>(entityA));
+      if (isCollectible) {
         powerupEntity = entityA;
         playerEntity = entityB;
       }
     } else if (world.hasComponent<ecs::Sprite>(entityB) && world.hasComponent<ecs::Input>(entityA)) {
       const auto &sprite = world.getComponent<ecs::Sprite>(entityB);
-      if (sprite.spriteId == ecs::SpriteId::POWERUP) {
+      // Collectible if it's a POWERUP, or a bubble without Follower (detached)
+      bool isCollectible = (sprite.spriteId == ecs::SpriteId::POWERUP) ||
+        (isCollectibleSprite(sprite.spriteId) && !world.hasComponent<ecs::Follower>(entityB));
+      if (isCollectible) {
         powerupEntity = entityB;
         playerEntity = entityA;
       }
@@ -145,9 +159,9 @@ private:
       return; // Not a player-powerup collision
     }
 
-    // Determine powerup type from sprite currentFrame
+    // Determine powerup type from sprite
     const auto &powerupSprite = world.getComponent<ecs::Sprite>(powerupEntity);
-    std::cout << "[PowerupSystem] Player " << playerEntity << " collected powerup frame " << powerupSprite.currentFrame
+    std::cout << "[PowerupSystem] Player " << playerEntity << " collected powerup sprite " << powerupSprite.spriteId
               << '\n';
 
     // Get powerup position before destroying it (for BUBBLE spawn location)
@@ -159,8 +173,27 @@ private:
       powerupY = powerupTransform.y;
     }
     BubbleTypeConfig config;
-    // Apply power-up effect based on frame (type)
-    switch (powerupSprite.currentFrame) {
+
+    // Determine bubble type - either from POWERUP frame or directly from sprite ID
+    int bubbleType = -1;
+    if (powerupSprite.spriteId == ecs::SpriteId::POWERUP) {
+      // Standard powerup pickup - use frame to determine type
+      bubbleType = static_cast<int>(powerupSprite.currentFrame);
+    } else if (powerupSprite.spriteId == ecs::SpriteId::BUBBLE) {
+      bubbleType = 0;
+    } else if (powerupSprite.spriteId == ecs::SpriteId::BUBBLE_TRIPLE) {
+      bubbleType = 1;
+    } else if (powerupSprite.spriteId == ecs::SpriteId::DRONE) {
+      bubbleType = 3;
+    } else if ((powerupSprite.spriteId >= ecs::SpriteId::BUBBLE_RUBAN1 &&
+                powerupSprite.spriteId <= ecs::SpriteId::BUBBLE_RUBAN3) ||
+               (powerupSprite.spriteId >= ecs::SpriteId::BUBBLE_RUBAN_BACK1 &&
+                powerupSprite.spriteId <= ecs::SpriteId::BUBBLE_RUBAN_FRONT4)) {
+      bubbleType = 2;
+    }
+
+    // Apply power-up effect based on type
+    switch (bubbleType) {
     case 3: // DRONE
       spawnDroneFollower(world, playerEntity);
       break;

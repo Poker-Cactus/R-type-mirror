@@ -11,6 +11,7 @@
 #include "../../../engineCore/include/ecs/Entity.hpp"
 #include "../../../engineCore/include/ecs/ISystem.hpp"
 #include "../../../engineCore/include/ecs/World.hpp"
+#include "../../../engineCore/include/ecs/components/Follower.hpp"
 #include "../../../engineCore/include/ecs/components/Health.hpp"
 #include "../../../engineCore/include/ecs/components/Immortal.hpp"
 #include "../../../engineCore/include/ecs/components/Input.hpp"
@@ -70,17 +71,31 @@ private:
       return;
     }
 
-    // Skip if either entity is a powerup (POWERUP sprite) - PowerupSystem handles those
+    // Skip if either entity is a follower (bubble/drone attached to player)
+    // Followers should not cause damage - they only block projectiles and shoot
+    if (world.hasComponent<ecs::Follower>(entityA) || world.hasComponent<ecs::Follower>(entityB)) {
+      return;
+    }
+
+    // Helper to check if sprite is a bubble/powerup (collectible, should not cause damage)
+    auto isBubbleOrPowerup = [](std::uint32_t spriteId) {
+      return spriteId == ecs::SpriteId::POWERUP || spriteId == ecs::SpriteId::BUBBLE ||
+        spriteId == ecs::SpriteId::BUBBLE_TRIPLE || spriteId == ecs::SpriteId::DRONE ||
+        (spriteId >= ecs::SpriteId::BUBBLE_RUBAN1 && spriteId <= ecs::SpriteId::BUBBLE_RUBAN3) ||
+        (spriteId >= ecs::SpriteId::BUBBLE_RUBAN_BACK1 && spriteId <= ecs::SpriteId::BUBBLE_RUBAN_FRONT4);
+    };
+
+    // Skip if either entity is a bubble or powerup - PowerupSystem handles those
     bool isAPowerup = false;
     bool isBPowerup = false;
 
     if (world.hasComponent<ecs::Sprite>(entityA)) {
       const auto &spriteA = world.getComponent<ecs::Sprite>(entityA);
-      isAPowerup = (spriteA.spriteId == ecs::SpriteId::POWERUP);
+      isAPowerup = isBubbleOrPowerup(spriteA.spriteId);
     }
     if (world.hasComponent<ecs::Sprite>(entityB)) {
       const auto &spriteB = world.getComponent<ecs::Sprite>(entityB);
-      isBPowerup = (spriteB.spriteId == ecs::SpriteId::POWERUP);
+      isBPowerup = isBubbleOrPowerup(spriteB.spriteId);
     }
 
     if (isAPowerup || isBPowerup) {
