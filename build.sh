@@ -81,7 +81,10 @@ print_result_banner() {
         echo -e "  ${GREEN}./build.sh server${RESET}  │  Server"
         echo -e "  ${BLUE}./build.sh client${RESET}  │  Client"
         echo -e "  ${MAGENTA}./build.sh editor${RESET}  │  Asset Editor"
+<<<<<<< HEAD
         echo -e "  ${CYAN}./build.sh engine${RESET}  │  Engine Only"
+=======
+>>>>>>> 86d346a15f54bb91f31ff80934956ed150883549
         echo ""
     else
         echo -e "${RED}${BOLD}"
@@ -205,6 +208,28 @@ compile_editor() {
     
     # Build just the editor
     cmake --build "$BUILD_DIR" --target assetEditor -j8 2>&1 | format_build_output
+    return ${PIPESTATUS[0]}
+}
+
+compile_editor() {
+    # Setup ImGui if not present
+    if [ ! -d "assetEditor/vendor/imgui" ]; then
+        print_step "Downloading ImGui..."
+        ./assetEditor/setup_imgui.sh
+        print_success "ImGui downloaded"
+        echo ""
+    fi
+    
+    print_step "Compiling Asset Editor..."
+    
+    # Configure with editor flag
+    cmake --preset conan-release -DBUILD_ASSET_EDITOR=ON > /dev/null 2>&1 || {
+        print_error "CMake configuration failed!"
+        return 1
+    }
+    
+    # Build just the editor
+    cmake --build "$BUILD_DIR" --target assetEditor 2>&1 | format_build_output
     return ${PIPESTATUS[0]}
 }
 
@@ -384,6 +409,7 @@ cmd_run_editor() {
     exec "$BUILD_DIR/assetEditor/assetEditor" "$@"
 }
 
+<<<<<<< HEAD
 cmd_engine() {
     print_banner
     print_section "Building Engine"
@@ -420,6 +446,8 @@ cmd_engine() {
     fi
 }
 
+=======
+>>>>>>> 86d346a15f54bb91f31ff80934956ed150883549
 cmd_launch() {
     print_banner
     print_section "Quick Launch"
@@ -431,7 +459,11 @@ cmd_launch() {
     fi
     
     print_step "Recompiling..."
+<<<<<<< HEAD
     cmake --build "$BUILD_DIR" --config "$BUILD_TYPE" -j8 > /dev/null 2>&1
+=======
+    cmake --build "$BUILD_DIR" --config "$BUILD_TYPE" > /dev/null 2>&1
+>>>>>>> 86d346a15f54bb91f31ff80934956ed150883549
     
     if [ $? -ne 0 ]; then
         print_error "Compilation failed!"
@@ -509,7 +541,10 @@ cmd_help() {
     echo -e "  ${GREEN}server${RESET}      Run the server"
     echo -e "  ${GREEN}client${RESET}      Run the client"
     echo -e "  ${GREEN}editor${RESET}      Run the Asset Editor"
+<<<<<<< HEAD
     echo -e "  ${GREEN}engine${RESET}      Build engineCore only"
+=======
+>>>>>>> 86d346a15f54bb91f31ff80934956ed150883549
     echo -e "  ${GREEN}help${RESET}        Show this help message"
     echo ""
 }
@@ -531,7 +566,10 @@ main() {
         "server")           cmd_run_server "$@" ;;
         "client")           cmd_run_client "$@" ;;
         "editor")           cmd_run_editor "$@" ;;
+<<<<<<< HEAD
         "engine")           cmd_engine ;;
+=======
+>>>>>>> 86d346a15f54bb91f31ff80934956ed150883549
         "help"|"-h"|"--help") cmd_help ;;
         *)
             print_error "Unknown command: $command"

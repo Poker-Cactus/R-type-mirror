@@ -16,6 +16,7 @@
 
 // Components
 #include "components/Collider.hpp"
+#include "components/Follower.hpp"
 #include "components/GunOffset.hpp"
 #include "components/Health.hpp"
 #include "components/Input.hpp"

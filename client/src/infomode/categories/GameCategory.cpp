@@ -68,7 +68,7 @@ std::vector<std::string> GameCategory::getInfoLines() const
   return lines;
 }
 
-void GameCategory::update(float deltaTime)
+void GameCategory::update()
 {
   (void)deltaTime; // Unused parameter
   // Game category doesn't need frequent updates

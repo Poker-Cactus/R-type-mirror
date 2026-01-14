@@ -18,6 +18,10 @@ InfoMode::InfoMode(std::shared_ptr<IRenderer> renderer, void *hudFont)
 {
   initializeCategories();
   setupCategoryLayout();
+  
+  // Initialize frame counters for each category
+  m_categoryFrameCounters.resize(m_categories.size(), 0);
+  
   m_isActive = false;
 }
 
@@ -100,11 +104,20 @@ void InfoMode::render(int x, int y)
   }
 }
 
-void InfoMode::update(float deltaTime)
+void InfoMode::update()
 {
-  // Update all categories
-  for (auto &category : m_categories) {
-    category->update(deltaTime);
+  // Update each category based on its individual frame interval
+  for (size_t i = 0; i < m_categories.size(); ++i) {
+    if (i >= m_categoryFrameCounters.size())
+      continue;
+
+    m_categoryFrameCounters[i]++;
+    int frameInterval = m_categories[i]->getUpdateIntervalFrames();
+
+    if (m_categoryFrameCounters[i] >= frameInterval) {
+      m_categories[i]->update();
+      m_categoryFrameCounters[i] = 0;
+    }
   }
 }
 
@@ -165,5 +178,3 @@ void InfoMode::setNetworkBandwidth(int uploadBytes, int downloadBytes)
     }
   }
 }
-
-// bah ecoute a cause de cafard on doit re trigger la ci hein

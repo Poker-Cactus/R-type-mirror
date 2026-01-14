@@ -96,7 +96,7 @@ std::vector<std::string> NetworkCategory::getInfoLines() const
   return lines;
 }
 
-void NetworkCategory::update(float deltaTime)
+void NetworkCategory::update()
 {
   (void)deltaTime; // Unused parameter
   // Network info doesn't change frequently, cache it

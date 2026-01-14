@@ -15,7 +15,11 @@
 #pragma comment(lib, "pdh.lib")
 #endif
 
-CpuRamCategory::CpuRamCategory() {}
+CpuRamCategory::CpuRamCategory()
+{
+  // Initialize with current values
+  update();
+}
 
 std::vector<std::string> CpuRamCategory::getInfoLines() const
 {
@@ -28,9 +32,8 @@ std::vector<std::string> CpuRamCategory::getInfoLines() const
   lines.push_back(cpuText.str());
 
   // RAM Information
-  auto [ramUsed, ramTotal] = getRamUsage();
-  double ramUsedGB = static_cast<double>(ramUsed) / 1024.0;
-  double ramTotalGB = static_cast<double>(ramTotal) / 1024.0;
+  double ramUsedGB = static_cast<double>(m_lastRamUsed) / 1024.0;
+  double ramTotalGB = static_cast<double>(m_lastRamTotal) / 1024.0;
 
   std::stringstream ramText;
   ramText << std::fixed << std::setprecision(1);
@@ -40,16 +43,13 @@ std::vector<std::string> CpuRamCategory::getInfoLines() const
   return lines;
 }
 
-void CpuRamCategory::update(float deltaTime)
+void CpuRamCategory::update()
 {
-  (void)deltaTime; // Unused parameter
-  m_sampleCount++;
-
-  // Update usage periodically to avoid excessive system calls
-  if (m_sampleCount >= SAMPLES_PER_UPDATE) {
-    m_lastCpuUsage = getCpuUsage();
-    m_sampleCount = 0;
-  }
+  // Update both CPU and RAM information at the same rate (every 2 seconds)
+  m_lastCpuUsage = getCpuUsage();
+  auto [ramUsed, ramTotal] = getRamUsage();
+  m_lastRamUsed = ramUsed;
+  m_lastRamTotal = ramTotal;
 }
 
 float CpuRamCategory::getCpuUsage()

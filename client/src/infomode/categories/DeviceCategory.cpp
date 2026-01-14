@@ -58,7 +58,7 @@ std::vector<std::string> DeviceCategory::getInfoLines() const
   return lines;
 }
 
-void DeviceCategory::update(float deltaTime)
+void DeviceCategory::update()
 {
   (void)deltaTime; // Unused parameter
   // Device info doesn't change frequently, cache it
