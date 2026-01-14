@@ -17,6 +17,7 @@ add_library(network
 target_include_directories(network PUBLIC
     include
     ${CMAKE_CURRENT_BINARY_DIR}
+    ${CMAKE_CURRENT_BINARY_DIR}/include
 )
 
 target_link_libraries(network PUBLIC
