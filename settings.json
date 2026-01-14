@@ -16,7 +16,7 @@
     "showCPUUsage": true,
     "showEntityCount": true,
     "showFPS": true,
-    "showInfoMode": true,
+    "showInfoMode": false,
     "showNetworkInfo": true,
     "showRAMUsage": true
   },

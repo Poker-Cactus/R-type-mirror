@@ -7733,7 +7733,7 @@ bool ImGui::Begin(const char *name, bool *p_open, ImGuiWindowFlags flags)
       DebugLocateItemResolveWithLastItem();
 #endif
 
-    // [Test Engine] Register title bar / tab with MoveId.
+      // [Test Engine] Register title bar / tab with MoveId.
 #ifdef IMGUI_ENABLE_TEST_ENGINE
     if (!(window->Flags & ImGuiWindowFlags_NoTitleBar))
       IMGUI_TEST_ENGINE_ITEM_ADD(g.LastItemData.ID, g.LastItemData.Rect, &g.LastItemData);
@@ -10171,7 +10171,7 @@ void ImGui::UpdateInputEvents(bool trickle_fast_inputs)
   for (int n = 0; n < event_n; n++)
     g.InputEventsTrail.push_back(g.InputEventsQueue[n]);
 
-  // [DEBUG]
+    // [DEBUG]
 #ifndef IMGUI_DISABLE_DEBUG_TOOLS
   if (event_n != 0 && (g.DebugLogFlags & ImGuiDebugLogFlags_EventIO))
     for (int n = 0; n < g.InputEventsQueue.Size; n++)
@@ -10460,9 +10460,9 @@ static void ImGui::ErrorCheckNewFrameSanityChecks()
   else
     IM_ASSERT(0);
 
-  // Emscripten backends are often imprecise in their submission of DeltaTime. (#6114, #3644)
-  // Ideally the Emscripten app/backend should aim to fix or smooth this value and avoid feeding zero, but we tolerate
-  // it.
+    // Emscripten backends are often imprecise in their submission of DeltaTime. (#6114, #3644)
+    // Ideally the Emscripten app/backend should aim to fix or smooth this value and avoid feeding zero, but we tolerate
+    // it.
 #ifdef __EMSCRIPTEN__
   if (g.IO.DeltaTime <= 0.0f && g.FrameCount > 0)
     g.IO.DeltaTime = 0.00001f;
@@ -10825,7 +10825,7 @@ bool ImGui::ItemAdd(const ImRect &bb, ImGuiID id, const ImRect *nav_bb_arg, ImGu
       if (!g.LogEnabled)
         return false;
 
-  // [DEBUG]
+        // [DEBUG]
 #ifndef IMGUI_DISABLE_DEBUG_TOOLS
   if (id != 0) {
     if (id == g.DebugLocateId)
