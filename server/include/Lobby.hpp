@@ -167,6 +167,7 @@ public:
 private:
   void initializeSystems();
   void spawnPlayer(std::uint32_t clientId);
+  void spawnAI();
   void destroyPlayerEntity(std::uint32_t clientId);
 
   std::string m_code;
@@ -183,6 +184,7 @@ private:
 
   // Map client IDs to their player entities
   std::unordered_map<std::uint32_t, ecs::Entity> m_playerEntities;
+  ecs::Entity m_aiEntity = 0;
 
   // Enemy configuration manager
   std::shared_ptr<server::EnemyConfigManager> m_enemyConfigManager;

@@ -144,7 +144,12 @@ void Lobby::startGame()
     }
   }
 
-  std::cout << "[Lobby:" << m_code << "] Game started with " << playerCount << " players and " << m_spectators.size()
+  // Spawn AI entity if this is solo mode
+  if (m_isSolo) {
+    spawnAI();
+  }
+
+  std::cout << "[Lobby:" << m_code << "] Game started with " << playerCount << " players" << (m_isSolo ? " + AI" : "") << " and " << m_spectators.size()
             << " spectators" << '\n';
 }
 
@@ -359,6 +364,68 @@ void Lobby::spawnPlayer(std::uint32_t clientId)
   m_playerEntities[clientId] = player;
 
   std::cout << "[Lobby:" << m_code << "] Spawned player entity " << player << " for client " << clientId << '\n';
+}
+
+void Lobby::spawnAI()
+{
+  if (!m_world || !m_isSolo) {
+    return;
+  }
+
+  ecs::Entity ai = m_world->createEntity();
+
+  m_world->addComponent(ai, ecs::GunOffset{GameConfig::PLAYER_GUN_OFFSET});
+
+  ecs::Transform transform;
+  transform.x = GameConfig::AI_SPAWN_X;
+  transform.y = GameConfig::AI_SPAWN_Y;
+  transform.rotation = 0.0F;
+  transform.scale = 1.0F;
+  m_world->addComponent(ai, transform);
+
+  ecs::Velocity velocity;
+  velocity.dx = 0.0F;
+  velocity.dy = 0.0F;
+  m_world->addComponent(ai, velocity);
+
+  // AI has same HP as player
+  int startingHP = GameConfig::getPlayerHPForDifficulty(m_difficulty);
+  ecs::Health health;
+  health.hp = startingHP;
+  health.maxHp = startingHP;
+  m_world->addComponent(ai, health);
+
+  m_world->addComponent(ai, ecs::Collider{GameConfig::AI_COLLIDER_SIZE, GameConfig::AI_COLLIDER_SIZE});
+
+  ecs::Sprite sprite;
+  sprite.spriteId = ecs::SpriteId::PLAYER_SHIP; // Same sprite as player
+  sprite.width = GameConfig::AI_SPRITE_WIDTH;
+  sprite.height = GameConfig::AI_SPRITE_HEIGHT;
+  // Configure AI sprite for ECS animation system (not manual animation)
+  sprite.animated = true;
+  sprite.frameCount = 5; // 5 frames: 0,1,2,3,4
+  sprite.currentFrame = 2; // Start at neutral frame (idle)
+  sprite.startFrame = 2; // Idle frame
+  sprite.endFrame = 2; // Stay at idle frame
+  sprite.loop = false; // Don't loop, stay at idle
+  sprite.frameTime = 1.0f; // Not used since no animation
+  m_world->addComponent(ai, sprite);
+
+  ecs::Networked networked;
+  networked.networkId = ai; // Use entity ID
+  m_world->addComponent(ai, networked);
+
+  ecs::Score score;
+  score.points = 0;
+  m_world->addComponent(ai, score);
+
+  // Add AI component to mark this as AI-controlled
+  m_world->addComponent(ai, ecs::AI{});
+
+  // Track the AI entity
+  m_aiEntity = ai;
+
+  std::cout << "[Lobby:" << m_code << "] Spawned AI entity " << ai << '\n';
 }
 
 void Lobby::destroyPlayerEntity(std::uint32_t clientId)

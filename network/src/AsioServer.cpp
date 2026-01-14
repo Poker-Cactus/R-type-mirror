@@ -234,3 +234,4 @@ void AsioServer::createPlayerEntity(std::uint32_t clientId)
 
   std::cout << "[Server] Player entity " << player << " created for client " << clientId << '\n';
 }
+

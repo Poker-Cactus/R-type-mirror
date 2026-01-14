@@ -15,6 +15,7 @@
 #include "World.hpp"
 
 // Components
+#include "components/AI.hpp"
 #include "components/Collider.hpp"
 #include "components/Follower.hpp"
 #include "components/GunOffset.hpp"
