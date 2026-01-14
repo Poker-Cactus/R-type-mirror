@@ -95,6 +95,17 @@ jobs:
       - name: Install dependencies
         run: conan install . --output-folder=build --build=missing -s build_type=${{ env.BUILD_TYPE }}
 
+      - name: Verify Conan toolchain was generated
+        shell: pwsh
+        run: |
+          if (-Not (Test-Path "build/conan_toolchain.cmake")) {
+            Write-Error "conan_toolchain.cmake not found in build/; listing build/ for debugging"
+            ls -la build
+            exit 1
+          } else {
+            Write-Host "conan_toolchain.cmake present"
+          }
+
       - name: Configure
         run: |
           cmake -S . -B build \
