@@ -299,24 +299,30 @@ void Lobby::spawnPlayer(std::uint32_t clientId)
 
   // Assign ship type based on player index (cycles through ship types)
   // This demonstrates ECS purity: ship identity = ShipStats component values
-  std::uint32_t playerIndex = static_cast<std::uint32_t>(m_playerEntities.size()) % 4;
+  // IMPORTANT: Calculate playerIndex BEFORE adding to m_playerEntities
+  std::uint32_t playerIndex = static_cast<std::uint32_t>(m_playerEntities.size());
+  std::uint32_t shipTypeIndex = playerIndex % 4; // Cycle through 4 ship types
   ecs::ShipStats shipStats;
-  switch (playerIndex) {
+  switch (shipTypeIndex) {
   case 0:
     shipStats = ecs::ShipStats::getDefaultShip();
-    std::cout << "[Lobby:" << m_code << "] Player " << clientId << " assigned DEFAULT ship" << '\n';
+    std::cout << "[Lobby:" << m_code << "] Player " << clientId << " (index=" << playerIndex 
+              << ") assigned DEFAULT ship" << '\n';
     break;
   case 1:
     shipStats = ecs::ShipStats::getFastShip();
-    std::cout << "[Lobby:" << m_code << "] Player " << clientId << " assigned FAST ship" << '\n';
+    std::cout << "[Lobby:" << m_code << "] Player " << clientId << " (index=" << playerIndex 
+              << ") assigned FAST ship" << '\n';
     break;
   case 2:
     shipStats = ecs::ShipStats::getTankShip();
-    std::cout << "[Lobby:" << m_code << "] Player " << clientId << " assigned TANK ship" << '\n';
+    std::cout << "[Lobby:" << m_code << "] Player " << clientId << " (index=" << playerIndex 
+              << ") assigned TANK ship" << '\n';
     break;
   case 3:
     shipStats = ecs::ShipStats::getSniperShip();
-    std::cout << "[Lobby:" << m_code << "] Player " << clientId << " assigned SNIPER ship" << '\n';
+    std::cout << "[Lobby:" << m_code << "] Player " << clientId << " (index=" << playerIndex 
+              << ") assigned SNIPER ship" << '\n';
     break;
   default:
     shipStats = ecs::ShipStats::getDefaultShip();
@@ -349,6 +355,8 @@ void Lobby::spawnPlayer(std::uint32_t clientId)
   input.left = false;
   input.right = false;
   input.shoot = false;
+  input.chargedShoot = false;
+  input.detach = false;
   m_world->addComponent(player, input);
 
   m_world->addComponent(player, ecs::Collider{GameConfig::PLAYER_COLLIDER_SIZE, GameConfig::PLAYER_COLLIDER_SIZE});
@@ -362,11 +370,11 @@ void Lobby::spawnPlayer(std::uint32_t clientId)
   sprite.spriteId = ecs::SpriteId::PLAYER_SHIP;
   sprite.width = GameConfig::PLAYER_SPRITE_WIDTH;
   sprite.height = GameConfig::PLAYER_SPRITE_HEIGHT;
-  sprite.animated = true;
+  sprite.animated = false; // No animation - keep neutral frame
   sprite.frameCount = 5;
   sprite.startFrame = 0;
   sprite.endFrame = 4;
-  sprite.currentFrame = 2; // Start at neutral
+  sprite.currentFrame = 2; // Always neutral (no animation)
   sprite.row = playerIndex; // Server sets the row, client uses it
   m_world->addComponent(player, sprite);
 

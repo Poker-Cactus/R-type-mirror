@@ -49,42 +49,22 @@ public:
 
     for (auto entity : entities) {
       if (!world.hasComponent<ecs::Animation>(entity)) {
-        continue; // Skip if no Animation component (should be added by NetworkReceiveSystem)
+        continue; // Skip if no Animation component
       }
 
-      const auto &velocity = world.getComponent<ecs::Velocity>(entity);
       auto &animation = world.getComponent<ecs::Animation>(entity);
-
-      // Determine target frame based on vertical velocity with hysteresis
-      // Only change frame if velocity clearly exceeds thresholds
-      constexpr float MAX_TILT_THRESHOLD = 150.0f; // pixels/sec for full tilt
-      constexpr float MIN_TILT_THRESHOLD = 80.0f; // pixels/sec for slight tilt
-
-      std::uint32_t newTargetFrame = animation.targetFrame; // Start with current
-
-      // Only change if velocity is clearly in a new range
-      if (velocity.dy > MAX_TILT_THRESHOLD) {
-        newTargetFrame = 0; // Max down
-      } else if (velocity.dy > MIN_TILT_THRESHOLD) {
-        newTargetFrame = 1; // Down transition
-      } else if (velocity.dy < -MAX_TILT_THRESHOLD) {
-        newTargetFrame = 4; // Max up
-      } else if (velocity.dy < -MIN_TILT_THRESHOLD) {
-        newTargetFrame = 3; // Up transition
-      } else if (std::abs(velocity.dy) < 20.0f) {
-        // Only snap to neutral if velocity is very close to zero
-        newTargetFrame = 2; // Neutral
-      }
-      // Otherwise keep current frame (hysteresis)
-
-      animation.targetFrame = newTargetFrame;
+      
+      // Keep player ships in neutral position (frame 2)
+      // Animation based on input would require Input component to be replicated,
+      // which goes against network-authoritative architecture.
+      // For visual feedback, neutral frame is stable and doesn't flicker.
+      animation.targetFrame = 2;
     }
   }
 
   [[nodiscard]] ecs::ComponentSignature getSignature() const override
   {
     ecs::ComponentSignature sig;
-    sig.set(ecs::getComponentId<ecs::Velocity>());
     sig.set(ecs::getComponentId<ecs::PlayerIndex>()); // Only applies to player ships
     return sig;
   }

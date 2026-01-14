@@ -119,11 +119,13 @@ bool Game::init()
     m_world->registerSystem<NetworkSendSystem>(m_networkManager);
     auto *networkReceiveSystem = &m_world->registerSystem<ClientNetworkReceiveSystem>(m_networkManager);
 
-    // Register client-side animation systems for per-entity player animation
-    // AnimationDriverSystem reads velocity and sets target frames
-    m_world->registerSystem<client::AnimationDriverSystem>();
-    // AnimationSystem interpolates current frame toward target frame
-    m_world->registerSystem<client::AnimationSystem>();
+    // ANIMATION DISABLED: Server replicates sprite.currentFrame which causes flickering
+    // when combined with client-side animation. Players now use neutral frame (2) from server.
+    // To enable animation, would need to either:
+    // 1. Stop server from sending sprite.currentFrame for players
+    // 2. Replicate Input component and drive animation from that
+    // m_world->registerSystem<client::AnimationDriverSystem>();
+    // m_world->registerSystem<client::AnimationSystem>();
 
     if (networkReceiveSystem != nullptr) {
       networkReceiveSystem->setGameStartedCallback([this]() {

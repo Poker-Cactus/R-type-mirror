@@ -19,6 +19,7 @@
 #include "systems/LifetimeSystem.hpp"
 #include "systems/NetworkReceiveSystem.hpp"
 #include "systems/NetworkSendSystem.hpp"
+#include "systems/PlayerAnimationSystem.hpp"
 #include "systems/PowerupSystem.hpp"
 #include "systems/RubanAnimationSystem.hpp"
 #include "systems/ScoreSystem.hpp"
