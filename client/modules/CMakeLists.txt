@@ -68,7 +68,7 @@ foreach(module_dir ${MODULE_DIRS})
                 else()
                     # Fallback to pkg-config for systems without CMake config files
                     find_package(PkgConfig REQUIRED)
-                    pkg_check_modules(SFML REQUIRED sfml-graphics sfml-window sfml-system sfml-audio)
+                    pkg_check_modules(SFML REQUIRED sfml-all)
                     target_link_libraries(${LIB_NAME} PRIVATE ${SFML_LIBRARIES})
                     target_include_directories(${LIB_NAME} PRIVATE ${SFML_INCLUDE_DIRS})
                 endif()
