@@ -28,7 +28,8 @@ jobs:
           libxrandr-dev \
           libxi-dev \
           libudev-dev \
-          libasound2-dev
+          libasound2-dev \
+          libsfml-dev
 
     - name: Install Conan
       run: |
