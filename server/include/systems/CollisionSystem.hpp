@@ -12,7 +12,7 @@
 #include "../../../engineCore/include/ecs/ISystem.hpp"
 #include "../../../engineCore/include/ecs/World.hpp"
 #include "../../../engineCore/include/ecs/components/Collider.hpp"
-#include "../../../engineCore/include/ecs/components/Sprite.hpp"
+#include "../../../engineCore/include/ecs/components/Pattern.hpp"
 #include "../../../engineCore/include/ecs/components/Transform.hpp"
 #include "../../../engineCore/include/ecs/events/GameEvents.hpp"
 #include "ecs/ComponentSignature.hpp"
@@ -59,11 +59,14 @@ public:
         const auto &colliderA = world.getComponent<ecs::Collider>(entityA);
         const auto &colliderB = world.getComponent<ecs::Collider>(entityB);
 
-        // Skip collision if both entities are enemies
-        bool isEnemyA = isEnemy(world, entityA);
-        bool isEnemyB = isEnemy(world, entityB);
-        if (isEnemyA && isEnemyB) {
-          continue; // Enemies don't collide with each other
+        // ECS-PURE COLLISION FILTERING:
+        // Instead of checking "isEnemy", we filter by component composition.
+        // If both entities have Pattern (movement pattern), they're likely both enemies.
+        // Enemies don't collide with each other - they're on the same "team".
+        bool hasPatternA = world.hasComponent<ecs::Pattern>(entityA);
+        bool hasPatternB = world.hasComponent<ecs::Pattern>(entityB);
+        if (hasPatternA && hasPatternB) {
+          continue; // Both have patterns (both enemies), skip collision
         }
 
         if (checkCollision(transformA, colliderA, transformB, colliderB)) {
@@ -84,19 +87,6 @@ public:
   }
 
 private:
-  /**
-   * @brief Check if an entity is an enemy based on its sprite ID
-   */
-  static bool isEnemy(ecs::World &world, ecs::Entity entity)
-  {
-    if (!world.hasComponent<ecs::Sprite>(entity)) {
-      return false;
-    }
-    const auto &sprite = world.getComponent<ecs::Sprite>(entity);
-    return sprite.spriteId == ecs::SpriteId::ENEMY_SHIP || sprite.spriteId == ecs::SpriteId::ENEMY_YELLOW ||
-      sprite.spriteId == ecs::SpriteId::ENEMY_WALKER || sprite.spriteId == ecs::SpriteId::ENEMY_ROBOT;
-  }
-
   static bool checkCollision(const ecs::Transform &transA, const ecs::Collider &colA, const ecs::Transform &transB,
                              const ecs::Collider &colB)
   {

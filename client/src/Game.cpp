@@ -6,6 +6,8 @@
 */
 
 #include "Game.hpp"
+#include "../include/systems/AnimationDriverSystem.hpp"
+#include "../include/systems/AnimationSystem.hpp"
 #include "../interface/KeyCodes.hpp"
 #include "Menu/MenuState.hpp"
 #include "Settings.hpp"
@@ -116,6 +118,12 @@ bool Game::init()
     m_networkManager = asioClient;
     m_world->registerSystem<NetworkSendSystem>(m_networkManager);
     auto *networkReceiveSystem = &m_world->registerSystem<ClientNetworkReceiveSystem>(m_networkManager);
+
+    // Register client-side animation systems for per-entity player animation
+    // AnimationDriverSystem reads velocity and sets target frames
+    m_world->registerSystem<client::AnimationDriverSystem>();
+    // AnimationSystem interpolates current frame toward target frame
+    m_world->registerSystem<client::AnimationSystem>();
 
     if (networkReceiveSystem != nullptr) {
       networkReceiveSystem->setGameStartedCallback([this]() {

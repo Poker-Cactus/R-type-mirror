@@ -7,13 +7,17 @@
 
 #include "../../include/systems/NetworkReceiveSystem.hpp"
 #include "../../engineCore/include/ecs/World.hpp"
+#include "../../engineCore/include/ecs/components/Animation.hpp"
 #include "../../engineCore/include/ecs/components/Collider.hpp"
 #include "../../engineCore/include/ecs/components/Health.hpp"
 #include "../../engineCore/include/ecs/components/Networked.hpp"
 #include "../../engineCore/include/ecs/components/PlayerId.hpp"
+#include "../../engineCore/include/ecs/components/PlayerIndex.hpp"
 #include "../../engineCore/include/ecs/components/Score.hpp"
+#include "../../engineCore/include/ecs/components/ShipStats.hpp"
 #include "../../engineCore/include/ecs/components/Sprite.hpp"
 #include "../../engineCore/include/ecs/components/Transform.hpp"
+#include "../../engineCore/include/ecs/components/Velocity.hpp"
 #include "../../include/systems/NetworkSendSystem.hpp"
 #include <iostream>
 #include <nlohmann/json.hpp>
@@ -292,6 +296,54 @@ void ClientNetworkReceiveSystem::handleSnapshot(ecs::World &world, const nlohman
       } else {
         auto &score = world.getComponent<ecs::Score>(entity);
         score.points = points;
+      }
+    }
+
+    // Receive velocity for client animation driver
+    if (entityJson.contains("velocity") && entityJson["velocity"].is_object()) {
+      const auto &velJson = entityJson["velocity"];
+      const float dx = velJson.value("dx", 0.0f);
+      const float dy = velJson.value("dy", 0.0f);
+
+      if (!world.hasComponent<ecs::Velocity>(entity)) {
+        ecs::Velocity vel;
+        vel.dx = dx;
+        vel.dy = dy;
+        world.addComponent(entity, vel);
+      } else {
+        auto &vel = world.getComponent<ecs::Velocity>(entity);
+        vel.dx = dx;
+        vel.dy = dy;
+      }
+    }
+
+    // Receive player index for sprite row selection
+    if (entityJson.contains("playerIndex") && entityJson["playerIndex"].is_object()) {
+      const auto &piJson = entityJson["playerIndex"];
+      ecs::PlayerIndex playerIndex = ecs::PlayerIndex::fromJson(piJson);
+
+      if (!world.hasComponent<ecs::PlayerIndex>(entity)) {
+        world.addComponent(entity, playerIndex);
+        // Also initialize Animation component for player entities
+        if (!world.hasComponent<ecs::Animation>(entity)) {
+          world.addComponent(entity, ecs::Animation{});
+        }
+      } else {
+        auto &pi = world.getComponent<ecs::PlayerIndex>(entity);
+        pi = playerIndex;
+      }
+    }
+
+    // Receive ship stats (optional, mainly for debugging/HUD)
+    if (entityJson.contains("shipStats") && entityJson["shipStats"].is_object()) {
+      const auto &statsJson = entityJson["shipStats"];
+      ecs::ShipStats shipStats = ecs::ShipStats::fromJson(statsJson);
+
+      if (!world.hasComponent<ecs::ShipStats>(entity)) {
+        world.addComponent(entity, shipStats);
+      } else {
+        auto &stats = world.getComponent<ecs::ShipStats>(entity);
+        stats = shipStats;
       }
     }
   }

@@ -11,6 +11,7 @@
 #include "../../engineCore/include/ecs/components/Networked.hpp"
 #include "../../engineCore/include/ecs/components/Pattern.hpp"
 #include "../../engineCore/include/ecs/components/PlayerId.hpp"
+#include "../../engineCore/include/ecs/components/PlayerIndex.hpp"
 #include "../../engineCore/include/ecs/components/Score.hpp"
 #include "../../engineCore/include/ecs/components/Sprite.hpp"
 #include "../../engineCore/include/ecs/components/Transform.hpp"
@@ -330,17 +331,33 @@ void PlayingState::render()
       if (!rendered) {
         // Draw using actual texture
         if (sprite.spriteId == ecs::SpriteId::PLAYER_SHIP) {
-          // Player ship is a spritesheet with player animation
-          int srcX = m_playerFrameIndex * PLAYER_FRAME_WIDTH;
-          int srcY = 0; // première ligne seulement
+          // Player ship uses multi-row sprite sheet: players_ships.gif
+          // 5 rows (player indices) x 5 columns (animation frames)
+          // Row is determined by PlayerIndex component (server-assigned)
+          // Frame is determined by Animation component (client-managed via AnimationSystem)
+          constexpr int PLAYER_FRAME_WIDTH = 33; // 166 / 5
+          constexpr int PLAYER_FRAME_HEIGHT = 17; // 86 / 5
+
+          // Get player row (defaults to 0 if PlayerIndex not present)
+          std::uint32_t playerRow = 0;
+          if (world->hasComponent<ecs::PlayerIndex>(entity)) {
+            playerRow = world->getComponent<ecs::PlayerIndex>(entity).index;
+          }
+
+          // Calculate source rectangle based on row and currentFrame
+          int srcX = sprite.currentFrame * PLAYER_FRAME_WIDTH;
+          int srcY = playerRow * PLAYER_FRAME_HEIGHT;
+          
           int scaledWidth = static_cast<int>(sprite.width * transformComponent.scale);
           int scaledHeight = static_cast<int>(sprite.height * transformComponent.scale);
+          
           renderer->drawTextureRegion(
-            textureIt->second, {.x = srcX, .y = srcY, .width = PLAYER_FRAME_WIDTH, .height = PLAYER_FRAME_HEIGHT},
+            textureIt->second,
+            {.x = srcX, .y = srcY, .width = PLAYER_FRAME_WIDTH, .height = PLAYER_FRAME_HEIGHT},
             {.x = static_cast<int>(transformComponent.x),
              .y = static_cast<int>(transformComponent.y),
              .width = scaledWidth,
-             .height = scaledHeight}); // Destination with scale
+             .height = scaledHeight});
         } else if (sprite.spriteId == ecs::SpriteId::PROJECTILE) {
           // Projectile is a spritesheet: 422x92 with 2 frames
           constexpr int PROJECTILE_FRAME_WIDTH = 18;
@@ -789,54 +806,9 @@ void PlayingState::processInput()
 
 void PlayingState::changeAnimationPlayers(float delta_time)
 {
-  // No input: reset to idle and clear any queued single-shot animation
-  if (!m_returnUp && !m_returnDown) {
-    m_playerAnimTimer = 0.f;
-    m_playerFrameIndex = 2;
-    m_playerAnimDirection = PlayerAnimDirection::None;
-    m_playerAnimPlayingOnce = false;
-    m_playerAnimPhase = 0;
-    return;
-  }
-
-  // Determine desired direction based on current input
-  const PlayerAnimDirection desiredDirection = m_returnUp ? PlayerAnimDirection::Up : PlayerAnimDirection::Down;
-
-  // Start a new single-shot animation only on a fresh key press or direction change
-  if (desiredDirection != m_playerAnimDirection) {
-    m_playerAnimDirection = desiredDirection;
-    m_playerAnimPlayingOnce = true;
-    m_playerAnimPhase = 0;
-    m_playerAnimTimer = 0.f;
-    m_playerFrameIndex = 2; // start from neutral frame before stepping
-  }
-
-  if (!m_playerAnimPlayingOnce) {
-    return; // already played for this press
-  }
-
-  m_playerAnimTimer += delta_time;
-  constexpr float ANIM_FRAME_DURATION = 0.12f; // slightly faster for snappier feel
-  if (m_playerAnimTimer >= ANIM_FRAME_DURATION) {
-    m_playerAnimTimer = 0.f;
-    m_playerAnimPhase++;
-
-    if (m_playerAnimDirection == PlayerAnimDirection::Up) {
-      if (m_playerAnimPhase == 1) {
-        m_playerFrameIndex = 3; // mid frame
-      } else {
-        m_playerFrameIndex = 4; // end frame
-        m_playerAnimPlayingOnce = false; // done for this press
-      }
-    } else if (m_playerAnimDirection == PlayerAnimDirection::Down) {
-      if (m_playerAnimPhase == 1) {
-        m_playerFrameIndex = 1; // mid frame
-      } else {
-        m_playerFrameIndex = 0; // end frame
-        m_playerAnimPlayingOnce = false; // done for this press
-      }
-    }
-  }
+  // DEPRECATED: Animation is now handled by AnimationDriverSystem and AnimationSystem
+  // This function is kept for compatibility but does nothing
+  (void)delta_time;
 }
 
 void PlayingState::cleanup()
