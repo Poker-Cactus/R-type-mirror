@@ -16,6 +16,7 @@
 
 #ifdef _WIN32
 #include <windows.h>
+using pid_t = int; // Windows doesn't have pid_t, use int
 #else
 #include <signal.h>
 #include <spawn.h>

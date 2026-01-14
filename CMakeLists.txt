@@ -39,6 +39,9 @@ find_package(CapnProto REQUIRED)
 find_package(doctest REQUIRED)
 find_package(nlohmann_json REQUIRED)
 
+# SFML - system dependency (not via Conan due to version conflicts)
+find_package(SFML 2 COMPONENTS graphics window system audio QUIET)
+
 # Add subdirectories
 add_subdirectory(engineCore)
 add_subdirectory(common)

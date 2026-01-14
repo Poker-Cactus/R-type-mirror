@@ -2,7 +2,7 @@
 
 echo "==> Running clang-format check..."
 
-FILES=$(git ls-files '*.cpp' '*.hpp' '*.h')
+FILES=$(git ls-files '*.cpp' '*.hpp' '*.h' | grep -v 'vendor/' | grep -v 'build/')
 
 if [ -z "$FILES" ]; then
     echo "No C++ files found."
