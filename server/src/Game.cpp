@@ -42,6 +42,7 @@ Game::Game()
   world->registerSystem<server::EnemyAISystem>();
   world->registerSystem<server::FollowerSystem>();
   world->registerSystem<server::RubanAnimationSystem>();
+  world->registerSystem<server::PlayerAnimationSystem>(); // Animate player ships based on input
 
   spawnSystem = &world->registerSystem<server::SpawnSystem>();
   world->registerSystem<server::EntityLifetimeSystem>();

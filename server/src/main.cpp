@@ -6,6 +6,7 @@
 */
 
 #include "../../network/include/AsioServer.hpp"
+#include "../include/config/ShipStatsConfig.hpp"
 #include "Game.hpp"
 #include <exception>
 #include <iostream>
@@ -15,6 +16,12 @@
 int main()
 {
   std::cout << "🎮 R-Type Server Starting..." << '\n';
+
+  // Load ship stats configuration
+  auto &shipStatsConfig = server::ShipStatsConfig::getInstance();
+  if (!shipStatsConfig.loadFromFile("server/config/ship_stats.json")) {
+    std::cerr << "⚠️  Warning: Failed to load ship stats config, using defaults" << '\n';
+  }
 
   try {
     auto networkManager = std::make_shared<AsioServer>(GameConfig::DEFAULT_PORT);

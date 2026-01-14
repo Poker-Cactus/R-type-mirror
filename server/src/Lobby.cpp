@@ -11,6 +11,7 @@
 #include "../include/Game.hpp"
 #include "../include/ServerSystems.hpp"
 #include "../include/config/EnemyConfig.hpp"
+#include "../include/config/ShipStatsConfig.hpp"
 #include "WorldLobbyRegistry.hpp"
 #include <iostream>
 #include <nlohmann/json.hpp>
@@ -55,6 +56,9 @@ bool Lobby::addClient(std::uint32_t clientId, bool asSpectator)
 {
   auto [_, inserted] = m_clients.insert(clientId);
   if (inserted) {
+    // Assign join order index (used for player index)
+    m_clientJoinOrder[clientId] = m_nextJoinIndex++;
+
     if (asSpectator) {
       m_spectators.insert(clientId);
       std::cout << "[Lobby:" << m_code << "] Spectator " << clientId << " joined (" << m_clients.size() << " total, "
@@ -74,6 +78,9 @@ bool Lobby::removeClient(std::uint32_t clientId)
 
   // Remove from spectators if present
   m_spectators.erase(clientId);
+
+  // Remove from join order tracking
+  m_clientJoinOrder.erase(clientId);
 
   auto removed = m_clients.erase(clientId) > 0;
   if (removed) {
@@ -297,17 +304,62 @@ void Lobby::spawnPlayer(std::uint32_t clientId)
   velocity.dy = 0.0F;
   m_world->addComponent(player, velocity);
 
-  // Apply difficulty-based HP
+  // Assign ship type based on player index (cycles through ship types)
+  // This demonstrates ECS purity: ship identity = ShipStats component values
+  // Use join order from lobby (not spawn order) for consistent player indices
+  std::uint32_t playerIndex = 0;
+  auto joinOrderIt = m_clientJoinOrder.find(clientId);
+  if (joinOrderIt != m_clientJoinOrder.end()) {
+    playerIndex = joinOrderIt->second;
+  }
+  std::cout << "[Lobby:" << m_code << "] DEBUG: Client " << clientId << " spawning with playerIndex = " << playerIndex
+            << " (based on lobby join order)" << '\n';
+  std::uint32_t shipTypeIndex = playerIndex % 4; // Cycle through 4 ship types
+
+  // Load ship stats from config
+  auto &config = server::ShipStatsConfig::getInstance();
+  ecs::ShipStats shipStats;
+  switch (shipTypeIndex) {
+  case 0:
+    shipStats = config.getDefaultShip();
+    std::cout << "[Lobby:" << m_code << "] Player " << clientId << " (index=" << playerIndex
+              << ") assigned DEFAULT ship" << '\n';
+    break;
+  case 1:
+    shipStats = config.getFastShip();
+    std::cout << "[Lobby:" << m_code << "] Player " << clientId << " (index=" << playerIndex << ") assigned FAST ship"
+              << '\n';
+    break;
+  case 2:
+    shipStats = config.getTankShip();
+    std::cout << "[Lobby:" << m_code << "] Player " << clientId << " (index=" << playerIndex << ") assigned TANK ship"
+              << '\n';
+    break;
+  case 3:
+    shipStats = config.getSniperShip();
+    std::cout << "[Lobby:" << m_code << "] Player " << clientId << " (index=" << playerIndex << ") assigned SNIPER ship"
+              << '\n';
+    break;
+  default:
+    shipStats = config.getDefaultShip();
+    break;
+  }
+  m_world->addComponent(player, shipStats);
+
+  // Apply difficulty modifier to maxHP
   std::cout << "[Lobby:" << m_code << "] >>> SPAWNING PLAYER: m_difficulty = " << static_cast<int>(m_difficulty)
             << '\n';
-  int startingHP = GameConfig::getPlayerHPForDifficulty(m_difficulty);
-  std::cout << "[Lobby:" << m_code << "] >>> getPlayerHPForDifficulty returned: " << startingHP << '\n';
+  int difficultyHP = GameConfig::getPlayerHPForDifficulty(m_difficulty);
+  int finalHP = (shipStats.maxHP * difficultyHP) / 100; // Scale ship HP by difficulty
+  std::cout << "[Lobby:" << m_code << "] >>> Base HP=" << shipStats.maxHP << ", Difficulty HP=" << difficultyHP
+            << ", Final HP=" << finalHP << '\n';
+
   ecs::Health health;
-  health.hp = startingHP;
-  health.maxHp = startingHP;
+  health.hp = finalHP;
+  health.maxHp = finalHP;
   m_world->addComponent(player, health);
 
-  std::cout << "[Lobby:" << m_code << "] Player " << clientId << " spawned with " << startingHP << " HP (Difficulty: "
+  std::cout << "[Lobby:" << m_code << "] Player " << clientId << " spawned with " << finalHP << " HP (Difficulty: "
             << (m_difficulty == GameConfig::Difficulty::EASY
                   ? "EASY"
                   : (m_difficulty == GameConfig::Difficulty::MEDIUM ? "MEDIUM" : "EXPERT"))
@@ -319,14 +371,27 @@ void Lobby::spawnPlayer(std::uint32_t clientId)
   input.left = false;
   input.right = false;
   input.shoot = false;
+  input.chargedShoot = false;
+  input.detach = false;
   m_world->addComponent(player, input);
 
   m_world->addComponent(player, ecs::Collider{GameConfig::PLAYER_COLLIDER_SIZE, GameConfig::PLAYER_COLLIDER_SIZE});
+
+  // Assign player index for sprite row selection (client will use this)
+  ecs::PlayerIndex playerIndexComp;
+  playerIndexComp.index = playerIndex;
+  m_world->addComponent(player, playerIndexComp);
 
   ecs::Sprite sprite;
   sprite.spriteId = ecs::SpriteId::PLAYER_SHIP;
   sprite.width = GameConfig::PLAYER_SPRITE_WIDTH;
   sprite.height = GameConfig::PLAYER_SPRITE_HEIGHT;
+  sprite.animated = false; // No animation - keep neutral frame
+  sprite.frameCount = 5;
+  sprite.startFrame = 0;
+  sprite.endFrame = 4;
+  sprite.currentFrame = 2; // Always neutral (no animation)
+  sprite.row = playerIndex; // Server sets the row, client uses it
   m_world->addComponent(player, sprite);
 
   ecs::Networked networked;

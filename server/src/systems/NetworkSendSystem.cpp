@@ -11,9 +11,12 @@
 #include "../../engineCore/include/ecs/components/Health.hpp"
 #include "../../engineCore/include/ecs/components/Networked.hpp"
 #include "../../engineCore/include/ecs/components/PlayerId.hpp"
+#include "../../engineCore/include/ecs/components/PlayerIndex.hpp"
 #include "../../engineCore/include/ecs/components/Score.hpp"
+#include "../../engineCore/include/ecs/components/ShipStats.hpp"
 #include "../../engineCore/include/ecs/components/Sprite.hpp"
 #include "../../engineCore/include/ecs/components/Transform.hpp"
+#include "../../engineCore/include/ecs/components/Velocity.hpp"
 #include "INetworkManager.hpp"
 #include "LobbyManager.hpp"
 #include "ecs/ComponentSignature.hpp"
@@ -142,6 +145,24 @@ void NetworkSendSystem::update(UNUSED ecs::World &world, float deltaTime)
         if (lobbyWorld->hasComponent<ecs::Sprite>(entity)) {
           const auto &sprite = lobbyWorld->getComponent<ecs::Sprite>(entity);
           entityJson["sprite"] = sprite.toJson();
+        }
+
+        // Replicate velocity for client animation driver (needed for player ship animation)
+        if (lobbyWorld->hasComponent<ecs::Velocity>(entity)) {
+          const auto &vel = lobbyWorld->getComponent<ecs::Velocity>(entity);
+          entityJson["velocity"] = {{"dx", vel.dx}, {"dy", vel.dy}};
+        }
+
+        // Replicate player index for sprite row selection
+        if (lobbyWorld->hasComponent<ecs::PlayerIndex>(entity)) {
+          const auto &playerIndex = lobbyWorld->getComponent<ecs::PlayerIndex>(entity);
+          entityJson["playerIndex"] = playerIndex.toJson();
+        }
+
+        // Replicate ship stats for gameplay info (optional, mainly for debugging/HUD)
+        if (lobbyWorld->hasComponent<ecs::ShipStats>(entity)) {
+          const auto &shipStats = lobbyWorld->getComponent<ecs::ShipStats>(entity);
+          entityJson["shipStats"] = shipStats.toJson();
         }
 
         // Replicate health for HUD display

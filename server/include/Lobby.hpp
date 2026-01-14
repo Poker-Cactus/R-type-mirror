@@ -177,6 +177,10 @@ private:
   // Map client IDs to their player entities
   std::unordered_map<std::uint32_t, ecs::Entity> m_playerEntities;
 
+  // Map client IDs to their join order (for player index assignment)
+  std::unordered_map<std::uint32_t, std::uint32_t> m_clientJoinOrder;
+  std::uint32_t m_nextJoinIndex = 0;
+
   // Enemy configuration manager
   std::shared_ptr<server::EnemyConfigManager> m_enemyConfigManager;
 
