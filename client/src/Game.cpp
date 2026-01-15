@@ -209,7 +209,6 @@ void Game::shutdown()
     if (colorBlindSupport) {
       colorBlindSupport->setColorBlindMode(ColorBlindMode::NONE);
     }
-    settings.colorBlindMode = ColorBlindMode::NONE;
   }
 
   // Save settings before shutting down
