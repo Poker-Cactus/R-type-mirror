@@ -838,23 +838,24 @@ void RendererSDL2::applyColorBlindOverlay()
     return;
   }
 
-  // Apply a semi-transparent color overlay based on the colorblind mode
-  // This gives a consistent tint without flickering
+  // Apply a semi-transparent color overlay based on the colorblind mode.
+  // NOTE: This is a simple global tint for a basic visual aid, not a true
+  // color-blindness simulation or matrix-based color correction.
   SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
 
   Color overlayColor = {0, 0, 0, 0};
 
   switch (colorBlindMode) {
   case ColorBlindMode::PROTANOPIA:
-    // Red-blind: add cyan/blue tint to help distinguish
+    // Red-blind: apply a cyan/blue-tinted overlay as a coarse visual aid
     overlayColor = {0, 100, 120, 100};
     break;
   case ColorBlindMode::DEUTERANOPIA:
-    // Green-blind: add magenta tint to help distinguish
+    // Green-blind: apply a magenta-tinted overlay as a coarse visual aid
     overlayColor = {120, 0, 100, 100};
     break;
   case ColorBlindMode::TRITANOPIA:
-    // Blue-blind: add yellow tint to help distinguish
+    // Blue-blind: apply a yellow-tinted overlay as a coarse visual aid
     overlayColor = {120, 120, 0, 100};
     break;
   default:
