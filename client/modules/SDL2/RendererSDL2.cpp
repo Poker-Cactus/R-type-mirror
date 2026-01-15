@@ -786,16 +786,10 @@ bool RendererSDL2::checkPointInRect(int pointX, int pointY, int rectX, int rectY
 // === Color Blind Filter ===
 void RendererSDL2::initRenderTarget()
 {
-  if (renderer == nullptr) {
-    return;
-  }
-
-  // Create a texture that we can render to
-  renderTarget =
-    SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, windowWidth, windowHeight);
-  if (renderTarget == nullptr) {
-    std::cerr << "[RendererSDL2] Failed to create render target: " << SDL_GetError() << std::endl;
-  }
+  // Previously created an SDL render target texture here, but the texture was
+  // never used (no SDL_SetRenderTarget / SDL_RenderCopy with renderTarget).
+  // To avoid allocating an unused resource and to satisfy static analysis,
+  // this function is now intentionally a no-op.
 }
 
 void RendererSDL2::cleanupRenderTarget()
