@@ -8,7 +8,6 @@
 #ifndef COLOR_BLIND_FILTER_HPP
 #define COLOR_BLIND_FILTER_HPP
 
-#include <array>
 #include <cstdint>
 
 enum class ColorBlindMode : std::uint8_t {
