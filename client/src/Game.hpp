@@ -122,5 +122,6 @@ private:
   float m_lobbyStateTime = 0.0F;
   Settings settings;
   bool fullScreen = true;
+  ColorBlindMode currentColorBlindMode = ColorBlindMode::NONE;
   HighscoreManager highscoreManager;
 };

@@ -6,6 +6,7 @@
 */
 
 #include "SettingsMenu.hpp"
+#include "../../../include/ColorBlindFilter.hpp"
 #include "../../../include/KeyToLabel.hpp"
 #include "../interface/Color.hpp"
 #include "../interface/KeyCodes.hpp"
@@ -106,6 +107,17 @@ void SettingsMenu::init(Settings &settings)
     graphicItems.push_back(
       {.label = "Fullscreen", .type = SettingItemType::TOGGLE_BOOL, .boolTarget = &this->settings->fullScreen});
 
+    graphicItems.push_back({.label = "Color Blind Filter",
+                            .type = SettingItemType::ENUM_CYCLE,
+                            .enumLabels =
+                              {
+                                getColorBlindModeName(ColorBlindMode::NONE),
+                                getColorBlindModeName(ColorBlindMode::PROTANOPIA),
+                                getColorBlindModeName(ColorBlindMode::DEUTERANOPIA),
+                                getColorBlindModeName(ColorBlindMode::TRITANOPIA),
+                              },
+                            .enumTarget = reinterpret_cast<std::uint8_t *>(&this->settings->colorBlindMode)});
+
     controlsItems.clear();
     controlsItems.push_back({.label = "Move Up", .type = SettingItemType::KEYBIND, .intTarget = &this->settings->up});
     controlsItems.push_back(
@@ -183,6 +195,15 @@ std::string SettingsMenu::itemValueText(const SettingItem &item) const
       label = "?";
     return label;
   }
+  case SettingItemType::ENUM_CYCLE: {
+    if (item.enumTarget != nullptr && !item.enumLabels.empty()) {
+      std::uint8_t value = *item.enumTarget;
+      if (value < item.enumLabels.size()) {
+        return item.enumLabels[value];
+      }
+    }
+    return "Unknown";
+  }
   }
   return "";
 }
@@ -204,6 +225,23 @@ void SettingsMenu::applyDelta(SettingItem &item, int direction)
   case SettingItemType::TOGGLE_BOOL:
     if (item.boolTarget != nullptr) {
       *item.boolTarget = !*item.boolTarget;
+      changed = true;
+    }
+    break;
+  case SettingItemType::ENUM_CYCLE:
+    if (item.enumTarget != nullptr && !item.enumLabels.empty()) {
+      std::uint8_t currentValue = *item.enumTarget;
+      std::uint8_t maxValue = static_cast<std::uint8_t>(item.enumLabels.size() - 1);
+
+      if (direction > 0) {
+        // Cycle forward
+        currentValue = (currentValue >= maxValue) ? 0 : currentValue + 1;
+      } else {
+        // Cycle backward
+        currentValue = (currentValue == 0) ? maxValue : currentValue - 1;
+      }
+
+      *item.enumTarget = currentValue;
       changed = true;
     }
     break;

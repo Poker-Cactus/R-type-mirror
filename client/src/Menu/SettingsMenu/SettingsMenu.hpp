@@ -50,7 +50,8 @@ enum class SettingsCategory : std::uint8_t {
 enum class SettingItemType : std::uint8_t {
   SLIDER_INT, ///< Integer slider
   TOGGLE_BOOL, ///< Boolean toggle
-  KEYBIND ///< Key binding
+  KEYBIND, ///< Key binding
+  ENUM_CYCLE ///< Cycle through enum values
 };
 
 /**
@@ -65,6 +66,8 @@ struct SettingItem {
   int step = 5; ///< Step increment (for sliders)
   int *intTarget = nullptr; ///< Target integer variable
   bool *boolTarget = nullptr; ///< Target boolean variable
+  std::vector<std::string> enumLabels; ///< Labels for enum values (for ENUM_CYCLE)
+  std::uint8_t *enumTarget = nullptr; ///< Target enum variable (for ENUM_CYCLE)
 };
 
 /**
