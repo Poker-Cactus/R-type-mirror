@@ -2,16 +2,17 @@
 ** EPITECH PROJECT, 2025
 ** R-type-mirror
 ** File description:
-** AISystem.hpp - AI system for controlling AI entities
+** AllySystem.hpp - Ally system for controlling ally entities
 */
 
-#ifndef SERVER_AI_SYSTEM_HPP_
-#define SERVER_AI_SYSTEM_HPP_
+#ifndef SERVER_ALLY_SYSTEM_HPP_
+#define SERVER_ALLY_SYSTEM_HPP_
 
 #include "../../../engineCore/include/ecs/Entity.hpp"
 #include "../../../engineCore/include/ecs/ISystem.hpp"
 #include "../../../engineCore/include/ecs/World.hpp"
-#include "../../../engineCore/include/ecs/components/AI.hpp"
+#include "../../../engineCore/include/ecs/components/Ally.hpp"
+#include "../../../engineCore/include/ecs/components/Pattern.hpp"
 #include "../../../engineCore/include/ecs/components/Sprite.hpp"
 #include "../../../engineCore/include/ecs/components/Transform.hpp"
 #include "../../../engineCore/include/ecs/components/Velocity.hpp"
@@ -23,23 +24,23 @@ namespace server
 {
 
 /**
- * @brief System that controls AI entities
+ * @brief System that controls ally entities
  *
- * This system handles the behavior of AI-controlled entities, such as
+ * This system handles the behavior of ally-controlled entities, such as
  * movement decisions, shooting, and other actions based on game state.
  */
-class AISystem : public ecs::ISystem
+class AllySystem : public ecs::ISystem
 {
 public:
   void update(ecs::World &world, float deltaTime) override
   {
-    std::vector<ecs::Entity> aiEntities;
-    world.getEntitiesWithSignature(getSignature(), aiEntities);
+    std::vector<ecs::Entity> allyEntities;
+    world.getEntitiesWithSignature(getSignature(), allyEntities);
 
-    for (auto aiEntity : aiEntities) {
-      // Get AI entity's position
-      auto &aiTransform = world.getComponent<ecs::Transform>(aiEntity);
-      auto &aiVelocity = world.getComponent<ecs::Velocity>(aiEntity);
+    for (auto allyEntity : allyEntities) {
+      // Get ally entity's position
+      auto &allyTransform = world.getComponent<ecs::Transform>(allyEntity);
+      auto &allyVelocity = world.getComponent<ecs::Velocity>(allyEntity);
 
       // Find player position
       ecs::Entity playerEntity = findPlayer(world);
@@ -49,17 +50,17 @@ public:
       auto &playerTransform = world.getComponent<ecs::Transform>(playerEntity);
 
       // Find nearest enemy
-      ecs::Entity nearestEnemy = findNearestEnemy(world, aiTransform.x, aiTransform.y);
+      ecs::Entity nearestEnemy = findNearestEnemy(world, allyTransform.x, allyTransform.y);
       if (nearestEnemy != 0) {
         auto &enemyTransform = world.getComponent<ecs::Transform>(nearestEnemy);
 
-        // AI logic here (to be implemented)
+        // Ally logic here (to be implemented)
         // For now, just move towards player and shoot at enemies
-        updateAIMovement(world, aiEntity, aiVelocity, aiTransform, playerTransform, enemyTransform, deltaTime);
-        updateAIShooting(world, aiEntity, aiTransform, enemyTransform);
+        updateAllyMovement(world, allyEntity, allyVelocity, allyTransform, playerTransform, enemyTransform, deltaTime);
+        updateAllyShooting(world, allyEntity, allyTransform, enemyTransform);
       } else {
         // No enemies, follow player
-        updateAIMovement(world, aiEntity, aiVelocity, aiTransform, playerTransform, playerTransform, deltaTime);
+        updateAllyMovement(world, allyEntity, allyVelocity, allyTransform, playerTransform, playerTransform, deltaTime);
       }
     }
   }
@@ -67,7 +68,7 @@ public:
   [[nodiscard]] ecs::ComponentSignature getSignature() const override
   {
     ecs::ComponentSignature sig;
-    sig.set(ecs::getComponentId<ecs::AI>());
+    sig.set(ecs::getComponentId<ecs::Ally>());
     sig.set(ecs::getComponentId<ecs::Transform>());
     sig.set(ecs::getComponentId<ecs::Velocity>());
     return sig;
@@ -120,26 +121,26 @@ private:
   }
 
   /**
-   * @brief Update AI movement (placeholder)
+   * @brief Update ally movement (placeholder)
    */
-  void updateAIMovement(ecs::World &world, ecs::Entity aiEntity, ecs::Velocity &velocity, const ecs::Transform &aiTransform,
-                        const ecs::Transform &playerTransform, const ecs::Transform &targetTransform,
-                        float deltaTime)
+  void updateAllyMovement(ecs::World &world, ecs::Entity allyEntity, ecs::Velocity &velocity, const ecs::Transform &allyTransform,
+                          const ecs::Transform &playerTransform, const ecs::Transform &targetTransform,
+                          float deltaTime)
   {
     // Placeholder: move towards target
-    // AI logic to be implemented here
-    constexpr float AI_SPEED = 200.0f;
+    // Ally logic to be implemented here
+    constexpr float ALLY_SPEED = 200.0f;
 
-    float dx = targetTransform.x - aiTransform.x;
-    float dy = targetTransform.y - aiTransform.y;
+    float dx = targetTransform.x - allyTransform.x;
+    float dy = targetTransform.y - allyTransform.y;
     float distance = std::sqrt(dx * dx + dy * dy);
 
     if (distance > 0) {
-      velocity.dx = (dx / distance) * AI_SPEED;
-      velocity.dy = (dy / distance) * AI_SPEED;
+      velocity.dx = (dx / distance) * ALLY_SPEED;
+      velocity.dy = (dy / distance) * ALLY_SPEED;
       
       // Update animation based on movement direction
-      auto &sprite = world.getComponent<ecs::Sprite>(aiEntity);
+      auto &sprite = world.getComponent<ecs::Sprite>(allyEntity);
       if (velocity.dy < -50.0f) { // Moving up
         sprite.currentFrame = 4; // Up animation frame
       } else if (velocity.dy > 50.0f) { // Moving down
@@ -151,28 +152,28 @@ private:
       velocity.dx = 0;
       velocity.dy = 0;
       // Idle animation
-      auto &sprite = world.getComponent<ecs::Sprite>(aiEntity);
+      auto &sprite = world.getComponent<ecs::Sprite>(allyEntity);
       sprite.currentFrame = 2; // Neutral frame
     }
   }
 
   /**
-   * @brief Update AI shooting (placeholder)
+   * @brief Update ally shooting (placeholder)
    */
-  void updateAIShooting(ecs::World &world, ecs::Entity aiEntity, const ecs::Transform &aiTransform,
-                        const ecs::Transform &enemyTransform)
+  void updateAllyShooting(ecs::World &world, ecs::Entity allyEntity, const ecs::Transform &allyTransform,
+                          const ecs::Transform &enemyTransform)
   {
     // Placeholder: shoot at enemy if close enough
-    // AI logic to be implemented here
-    float dx = enemyTransform.x - aiTransform.x;
-    float dy = enemyTransform.y - aiTransform.y;
+    // Ally logic to be implemented here
+    float dx = enemyTransform.x - allyTransform.x;
+    float dy = enemyTransform.y - allyTransform.y;
     float distance = std::sqrt(dx * dx + dy * dy);
 
     constexpr float SHOOT_RANGE = 300.0f;
 
     if (distance <= SHOOT_RANGE) {
       // Emit shoot event
-      ecs::ShootEvent shootEvent(aiEntity, dx / distance, dy / distance);
+      ecs::ShootEvent shootEvent(allyEntity, dx / distance, dy / distance);
       world.emitEvent(shootEvent);
     }
   }
@@ -180,4 +181,4 @@ private:
 
 } // namespace server
 
-#endif // SERVER_AI_SYSTEM_HPP_
+#endif // SERVER_ALLY_SYSTEM_HPP_

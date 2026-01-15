@@ -11,7 +11,7 @@
 #include "../include/config/LevelConfig.hpp"
 #include "systems/ChargeSystem.hpp"
 #include "systems/SpawnSystem.hpp"
-#include "systems/AISystem.hpp"
+#include "systems/AllySystem.hpp"
 #include <chrono>
 #include <cstdint>
 #include <memory>
@@ -41,7 +41,7 @@ Game::Game()
   powerupSystem = &world->registerSystem<server::PowerupSystem>();
 
   world->registerSystem<server::EnemyAISystem>();
-  world->registerSystem<server::AISystem>();
+  world->registerSystem<server::AllySystem>();
   world->registerSystem<server::FollowerSystem>();
   world->registerSystem<server::RubanAnimationSystem>();
 

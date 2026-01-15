@@ -144,12 +144,12 @@ void Lobby::startGame()
     }
   }
 
-  // Spawn AI entity if this is solo mode
+  // Spawn ally entity if this is solo mode
   if (m_isSolo) {
-    spawnAI();
+    spawnAlly();
   }
 
-  std::cout << "[Lobby:" << m_code << "] Game started with " << playerCount << " players" << (m_isSolo ? " + AI" : "") << " and " << m_spectators.size()
+  std::cout << "[Lobby:" << m_code << "] Game started with " << playerCount << " players" << (m_isSolo ? " + ally" : "") << " and " << m_spectators.size()
             << " spectators" << '\n';
 }
 
@@ -241,6 +241,7 @@ void Lobby::initializeSystems()
   auto *powerupSystem = &m_world->registerSystem<server::PowerupSystem>();
 
   m_world->registerSystem<server::EnemyAISystem>();
+  m_world->registerSystem<server::AllySystem>();
   m_world->registerSystem<server::FollowerSystem>();
   m_world->registerSystem<server::RubanAnimationSystem>();
 
@@ -366,42 +367,42 @@ void Lobby::spawnPlayer(std::uint32_t clientId)
   std::cout << "[Lobby:" << m_code << "] Spawned player entity " << player << " for client " << clientId << '\n';
 }
 
-void Lobby::spawnAI()
+void Lobby::spawnAlly()
 {
   if (!m_world || !m_isSolo) {
     return;
   }
 
-  ecs::Entity ai = m_world->createEntity();
+  ecs::Entity ally = m_world->createEntity();
 
-  m_world->addComponent(ai, ecs::GunOffset{GameConfig::PLAYER_GUN_OFFSET});
+  m_world->addComponent(ally, ecs::GunOffset{GameConfig::PLAYER_GUN_OFFSET});
 
   ecs::Transform transform;
-  transform.x = GameConfig::AI_SPAWN_X;
-  transform.y = GameConfig::AI_SPAWN_Y;
+  transform.x = GameConfig::ALLY_SPAWN_X;
+  transform.y = GameConfig::ALLY_SPAWN_Y;
   transform.rotation = 0.0F;
   transform.scale = 1.0F;
-  m_world->addComponent(ai, transform);
+  m_world->addComponent(ally, transform);
 
   ecs::Velocity velocity;
   velocity.dx = 0.0F;
   velocity.dy = 0.0F;
-  m_world->addComponent(ai, velocity);
+  m_world->addComponent(ally, velocity);
 
-  // AI has same HP as player
+  // Ally has same HP as player
   int startingHP = GameConfig::getPlayerHPForDifficulty(m_difficulty);
   ecs::Health health;
   health.hp = startingHP;
   health.maxHp = startingHP;
-  m_world->addComponent(ai, health);
+  m_world->addComponent(ally, health);
 
-  m_world->addComponent(ai, ecs::Collider{GameConfig::AI_COLLIDER_SIZE, GameConfig::AI_COLLIDER_SIZE});
+  m_world->addComponent(ally, ecs::Collider{GameConfig::ALLY_COLLIDER_SIZE, GameConfig::ALLY_COLLIDER_SIZE});
 
   ecs::Sprite sprite;
   sprite.spriteId = ecs::SpriteId::PLAYER_SHIP; // Same sprite as player
-  sprite.width = GameConfig::AI_SPRITE_WIDTH;
-  sprite.height = GameConfig::AI_SPRITE_HEIGHT;
-  // Configure AI sprite for ECS animation system (not manual animation)
+  sprite.width = GameConfig::ALLY_SPRITE_WIDTH;
+  sprite.height = GameConfig::ALLY_SPRITE_HEIGHT;
+  // Configure ally sprite for ECS animation system (not manual animation)
   sprite.animated = true;
   sprite.frameCount = 5; // 5 frames: 0,1,2,3,4
   sprite.currentFrame = 2; // Start at neutral frame (idle)
@@ -409,23 +410,23 @@ void Lobby::spawnAI()
   sprite.endFrame = 2; // Stay at idle frame
   sprite.loop = false; // Don't loop, stay at idle
   sprite.frameTime = 1.0f; // Not used since no animation
-  m_world->addComponent(ai, sprite);
+  m_world->addComponent(ally, sprite);
 
   ecs::Networked networked;
-  networked.networkId = ai; // Use entity ID
-  m_world->addComponent(ai, networked);
+  networked.networkId = ally; // Use entity ID
+  m_world->addComponent(ally, networked);
 
   ecs::Score score;
   score.points = 0;
-  m_world->addComponent(ai, score);
+  m_world->addComponent(ally, score);
 
-  // Add AI component to mark this as AI-controlled
-  m_world->addComponent(ai, ecs::AI{});
+  // Add ally component to mark this as ally-controlled
+  m_world->addComponent(ally, ecs::Ally{});
 
-  // Track the AI entity
-  m_aiEntity = ai;
+  // Track the ally entity
+  m_allyEntity = ally;
 
-  std::cout << "[Lobby:" << m_code << "] Spawned AI entity " << ai << '\n';
+  std::cout << "[Lobby:" << m_code << "] Spawned ally entity " << ally << '\n';
 }
 
 void Lobby::destroyPlayerEntity(std::uint32_t clientId)

@@ -25,13 +25,13 @@ constexpr float PLAYER_COLLIDER_SIZE = 32.0F;
 constexpr int PLAYER_SPRITE_WIDTH = 140;
 constexpr int PLAYER_SPRITE_HEIGHT = 60;
 
-// AI spawn configuration
-constexpr float AI_SPAWN_X = 150.0F;
-constexpr float AI_SPAWN_Y = 350.0F;
-constexpr int AI_MAX_HP = 100;
-constexpr float AI_COLLIDER_SIZE = 32.0F;
-constexpr int AI_SPRITE_WIDTH = 140;
-constexpr int AI_SPRITE_HEIGHT = 60;
+// Ally spawn configuration
+constexpr float ALLY_SPAWN_X = 150.0F;
+constexpr float ALLY_SPAWN_Y = 350.0F;
+constexpr int ALLY_MAX_HP = 100;
+constexpr float ALLY_COLLIDER_SIZE = 32.0F;
+constexpr int ALLY_SPRITE_WIDTH = 140;
+constexpr int ALLY_SPRITE_HEIGHT = 60;
 } // namespace NetworkConfig
 
 #endif /* !NETWORKCONFIG_HPP_ */
