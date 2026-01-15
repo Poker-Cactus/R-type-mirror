@@ -231,6 +231,8 @@ void Lobby::initializeSystems()
 
   // Register all game systems for this lobby's world
   m_world->registerSystem<server::InputMovementSystem>();
+  m_world->registerSystem<server::EnemyAISystem>();
+  m_world->registerSystem<server::AllySystem>();
   m_world->registerSystem<ecs::MovementSystem>();
   m_world->registerSystem<server::CollisionSystem>();
 
@@ -240,8 +242,6 @@ void Lobby::initializeSystems()
   auto *scoreSystem = &m_world->registerSystem<server::ScoreSystem>();
   auto *powerupSystem = &m_world->registerSystem<server::PowerupSystem>();
 
-  m_world->registerSystem<server::EnemyAISystem>();
-  m_world->registerSystem<server::AllySystem>();
   m_world->registerSystem<server::FollowerSystem>();
   m_world->registerSystem<server::RubanAnimationSystem>();
 

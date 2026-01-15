@@ -30,6 +30,8 @@ Game::Game()
 
   // Register all systems
   world->registerSystem<server::InputMovementSystem>();
+  world->registerSystem<server::EnemyAISystem>();
+  world->registerSystem<server::AllySystem>();
   world->registerSystem<ecs::MovementSystem>();
   world->registerSystem<server::CollisionSystem>();
 
@@ -40,8 +42,6 @@ Game::Game()
   scoreSystem = &world->registerSystem<server::ScoreSystem>();
   powerupSystem = &world->registerSystem<server::PowerupSystem>();
 
-  world->registerSystem<server::EnemyAISystem>();
-  world->registerSystem<server::AllySystem>();
   world->registerSystem<server::FollowerSystem>();
   world->registerSystem<server::RubanAnimationSystem>();
 
