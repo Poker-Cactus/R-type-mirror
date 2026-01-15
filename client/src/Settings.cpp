@@ -94,7 +94,9 @@ bool Settings::loadFromFile()
     if (settingsJson.contains("graphics")) {
       fullScreen = settingsJson["graphics"].value("fullScreen", fullScreen);
       int colorBlindModeInt = settingsJson["graphics"].value("colorBlindMode", static_cast<int>(colorBlindMode));
-      colorBlindMode = static_cast<ColorBlindMode>(colorBlindModeInt);
+      if (colorBlindModeInt >= 0 && colorBlindModeInt <= 3) {
+        colorBlindMode = static_cast<ColorBlindMode>(colorBlindModeInt);
+      }
     }
 
     // Debug settings
