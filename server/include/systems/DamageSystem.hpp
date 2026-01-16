@@ -11,6 +11,7 @@
 #include "../../../engineCore/include/ecs/Entity.hpp"
 #include "../../../engineCore/include/ecs/ISystem.hpp"
 #include "../../../engineCore/include/ecs/World.hpp"
+#include "../../../engineCore/include/ecs/components/Ally.hpp"
 #include "../../../engineCore/include/ecs/components/Follower.hpp"
 #include "../../../engineCore/include/ecs/components/Health.hpp"
 #include "../../../engineCore/include/ecs/components/Immortal.hpp"
@@ -153,6 +154,14 @@ private:
           if (projectileOwnerIsEnemy && targetIsEnemy) {
             shouldDestroyProjectile = false; // Enemy projectile passes through enemies
           }
+          // Prevent destruction in friendly fire between allies and players
+          bool ownerIsAlly = world.hasComponent<ecs::Ally>(owner.ownerId);
+          bool targetIsPlayer = world.hasComponent<ecs::Input>(entityA);
+          bool ownerIsPlayer = world.hasComponent<ecs::Input>(owner.ownerId);
+          bool targetIsAlly = world.hasComponent<ecs::Ally>(entityA);
+          if ((ownerIsAlly && targetIsPlayer) || (ownerIsPlayer && targetIsAlly)) {
+            shouldDestroyProjectile = false; // Don't destroy in friendly fire
+          }
         }
       }
       if (shouldDestroyProjectile) {
@@ -176,6 +185,14 @@ private:
           bool targetIsEnemy = world.hasComponent<ecs::Pattern>(entityB);
           if (projectileOwnerIsEnemy && targetIsEnemy) {
             shouldDestroyProjectile = false; // Enemy projectile passes through enemies
+          }
+          // Prevent destruction in friendly fire between allies and players
+          bool ownerIsAlly = world.hasComponent<ecs::Ally>(owner.ownerId);
+          bool targetIsPlayer = world.hasComponent<ecs::Input>(entityB);
+          bool ownerIsPlayer = world.hasComponent<ecs::Input>(owner.ownerId);
+          bool targetIsAlly = world.hasComponent<ecs::Ally>(entityB);
+          if ((ownerIsAlly && targetIsPlayer) || (ownerIsPlayer && targetIsAlly)) {
+            shouldDestroyProjectile = false; // Don't destroy in friendly fire
           }
         }
       }
@@ -203,6 +220,14 @@ private:
     // Prevent friendly fire: if source is a player and target is also a player, skip
     if (realSource != 0 && world.hasComponent<ecs::Input>(realSource) && world.hasComponent<ecs::Input>(target)) {
       return;
+    }
+
+    // Prevent friendly fire between allies and players
+    if (realSource != 0 && world.hasComponent<ecs::Ally>(realSource) && world.hasComponent<ecs::Input>(target)) {
+      return; // Ally can't damage player
+    }
+    if (realSource != 0 && world.hasComponent<ecs::Input>(realSource) && world.hasComponent<ecs::Ally>(target)) {
+      return; // Player can't damage ally
     }
 
     // Check immortality first
