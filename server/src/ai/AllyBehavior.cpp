@@ -61,6 +61,7 @@ void MovementBehavior::reset()
   m_currentXDirection = 0.0f;
   m_idleTimer = 0.0f;
   m_idleDuration = 0.0f;
+  m_idleCheckTimer = 0.0f;
   m_isIdling = false;
 }
 
@@ -146,20 +147,19 @@ void MovementBehavior::updateIdleState(float deltaTime, AIStrength strength)
       m_idleDuration = 0.0f;
     }
   } else {
-    // Check if should enter idle state
-    if (shouldEnterIdleState()) {
-      m_isIdling = true;
-      m_idleDuration = generateIdleDuration();
-      m_idleTimer = 0.0f;
+    // Increment timer for checking idle every 3 seconds
+    m_idleCheckTimer += deltaTime;
+    if (m_idleCheckTimer >= 3.0f) {
+      m_idleCheckTimer = 0.0f; // Reset timer
+      // 30% chance to enter idle state
+      float randomValue = static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
+      if (randomValue < 0.3f) {
+        m_isIdling = true;
+        m_idleDuration = generateIdleDuration();
+        m_idleTimer = 0.0f;
+      }
     }
   }
-}
-
-bool MovementBehavior::shouldEnterIdleState() const
-{
-  // Random chance to enter idle state
-  float randomValue = static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
-  return randomValue < utility::IDLE_CHANCE;
 }
 
 float MovementBehavior::generateIdleDuration() const
@@ -181,7 +181,7 @@ void ShootingBehavior::update(float deltaTime, ecs::World &world, ecs::Entity al
 {
   m_shootingTimer += deltaTime;
 
-  if (isAlignedForShooting(allyTransform, targetTransform) && shouldShoot(strength) && m_shootingTimer >= getShootingInterval(strength)) {
+  if (isAlignedForShooting(allyTransform, targetTransform, strength) && shouldShoot(strength) && m_shootingTimer >= getShootingInterval(strength)) {
     // Check if strong AI should use charge shot
     if (shouldUseChargeShot(world, allyTransform, strength)) {
       chargeShoot(world, allyEntity);
@@ -198,10 +198,25 @@ void ShootingBehavior::reset()
 }
 
 bool ShootingBehavior::isAlignedForShooting(const ecs::Transform &allyTransform,
-                                            const ecs::Transform &targetTransform)
+                                            const ecs::Transform &targetTransform, AIStrength strength)
 {
   float dy = targetTransform.y - allyTransform.y;
-  return std::abs(dy) <= utility::VERTICAL_ALIGNMENT_THRESHOLD;
+  float threshold;
+  switch (strength) {
+    case AIStrength::WEAK:
+      threshold = utility::VERTICAL_ALIGNMENT_THRESHOLD * 0.6f; // Smaller range for weak AI
+      break;
+    case AIStrength::MEDIUM:
+      threshold = utility::VERTICAL_ALIGNMENT_THRESHOLD; // Normal range
+      break;
+    case AIStrength::STRONG:
+      threshold = utility::VERTICAL_ALIGNMENT_THRESHOLD * 1.4f; // Larger range for strong AI
+      break;
+    default:
+      threshold = utility::VERTICAL_ALIGNMENT_THRESHOLD;
+      break;
+  }
+  return std::abs(dy) <= threshold;
 }
 
 void ShootingBehavior::shoot(ecs::World &world, ecs::Entity allyEntity)

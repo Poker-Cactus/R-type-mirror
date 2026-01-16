@@ -37,11 +37,11 @@ constexpr float VERTICAL_ALIGNMENT_THRESHOLD = 50.0f;
 
 // Shooting behavior
 constexpr float SHOOTING_INTERVAL = 0.5f; // Shoot every 0.5 seconds
-constexpr float SHOOTING_INTERVAL_STRONG_MULTIPLIER = 0.8f; // 80% of interval (faster) for strong AI
+constexpr float SHOOTING_INTERVAL_STRONG_MULTIPLIER = 0.4f; // 40% of interval (faster) for strong AI
 
 // Idle behavior for weak AI
-constexpr float IDLE_DURATION_MIN = 1.0f; // Minimum idle time in seconds
-constexpr float IDLE_DURATION_MAX = 3.0f; // Maximum idle time in seconds
+constexpr float IDLE_DURATION_MIN = 2.0f; // Minimum idle time in seconds
+constexpr float IDLE_DURATION_MAX = 4.0f; // Maximum idle time in seconds
 constexpr float IDLE_CHANCE = 0.3f;       // 30% chance to enter idle state
 
 // Charge shot detection for strong AI

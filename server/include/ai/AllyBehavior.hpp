@@ -47,6 +47,7 @@ private:
   float m_currentXDirection = 0.0f;
   float m_idleTimer = 0.0f;
   float m_idleDuration = 0.0f;
+  float m_idleCheckTimer = 0.0f; // Timer for checking idle every 3 seconds
   bool m_isIdling = false;
 
   /**
@@ -68,11 +69,6 @@ private:
    * @brief Update idle state for weak AI
    */
   void updateIdleState(float deltaTime, AIStrength strength);
-
-  /**
-   * @brief Check if AI should enter idle state
-   */
-  bool shouldEnterIdleState() const;
 
   /**
    * @brief Generate random idle duration
@@ -111,7 +107,7 @@ private:
   /**
    * @brief Check if ally is aligned vertically with target for shooting
    */
-  bool isAlignedForShooting(const ecs::Transform &allyTransform, const ecs::Transform &targetTransform);
+  bool isAlignedForShooting(const ecs::Transform &allyTransform, const ecs::Transform &targetTransform, AIStrength strength);
 
   /**
    * @brief Emit a shoot event in the direction of target
