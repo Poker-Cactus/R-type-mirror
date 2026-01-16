@@ -132,6 +132,15 @@ private:
         return;
       }
 
+      // Also prevent damage when player collides with ally
+      bool aIsAlly = world.hasComponent<ecs::Ally>(entityA);
+      bool bIsAlly = world.hasComponent<ecs::Ally>(entityB);
+
+      if ((aIsPlayer && bIsAlly) || (aIsAlly && bIsPlayer)) {
+        // Do not apply damage when player collides with ally
+        return;
+      }
+
       // Otherwise apply mutual damage (e.g., enemy vs player)
       applyDamage(world, entityA, entityB, damageFromEntityCollision);
       applyDamage(world, entityB, entityA, damageFromEntityCollision);
