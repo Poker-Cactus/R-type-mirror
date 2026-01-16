@@ -15,8 +15,8 @@
 #include <iostream>
 #include <nlohmann/json.hpp>
 
-Lobby::Lobby(const std::string &code, std::shared_ptr<INetworkManager> networkManager, bool isSolo)
-    : m_code(code), m_networkManager(std::move(networkManager)), m_isSolo(isSolo)
+Lobby::Lobby(const std::string &code, std::shared_ptr<INetworkManager> networkManager, bool isSolo, AIDifficulty aiDifficulty)
+    : m_code(code), m_networkManager(std::move(networkManager)), m_isSolo(isSolo), m_aiDifficulty(aiDifficulty)
 {
   // Create isolated world for this lobby
   m_world = std::make_shared<ecs::World>();
@@ -389,8 +389,29 @@ void Lobby::spawnAlly()
   velocity.dy = 0.0F;
   m_world->addComponent(ally, velocity);
 
-  // Ally has same HP as player
+  // Ally has same HP as player, but stronger allies get bonus HP
   int startingHP = GameConfig::getPlayerHPForDifficulty(m_difficulty);
+  
+  // Map AI difficulty to AI strength (only in solo mode)
+  server::ai::AIStrength allyStrength;
+  switch (m_aiDifficulty) {
+    case AIDifficulty::WEAK:
+      allyStrength = server::ai::AIStrength::WEAK;
+      break;
+    case AIDifficulty::MEDIUM:
+      allyStrength = server::ai::AIStrength::MEDIUM;
+      break;
+    case AIDifficulty::STRONG:
+      allyStrength = server::ai::AIStrength::STRONG;
+      break;
+    default:
+      allyStrength = server::ai::AIStrength::MEDIUM;
+      break;
+  }
+  
+  if (allyStrength == server::ai::AIStrength::STRONG) {
+    startingHP *= 2; // Double HP for strong AI
+  }
   ecs::Health health;
   health.hp = startingHP;
   health.maxHp = startingHP;
@@ -421,7 +442,7 @@ void Lobby::spawnAlly()
   m_world->addComponent(ally, score);
 
   // Add ally component to mark this as ally-controlled
-  m_world->addComponent(ally, ecs::Ally{});
+  m_world->addComponent(ally, ecs::Ally{allyStrength});
 
   // Track the ally entity
   m_allyEntity = ally;

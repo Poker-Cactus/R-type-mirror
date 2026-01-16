@@ -13,6 +13,16 @@
 #include "../../../engineCore/include/ecs/components/Transform.hpp"
 #include <cmath>
 
+namespace server::ai
+{
+
+/**
+ * @brief AI strength levels for ally entities
+ */
+enum class AIStrength { WEAK, MEDIUM, STRONG };
+
+} // namespace server::ai
+
 namespace server::ai::utility
 {
 
@@ -21,10 +31,22 @@ namespace server::ai::utility
 // ============================================================================
 
 constexpr float ALLY_SPEED = 200.0f;
+constexpr float ALLY_SPEED_WEAK_MULTIPLIER = 0.7f;    // 70% of normal speed for weak AI
+constexpr float ALLY_SPEED_STRONG_MULTIPLIER = 1.2f;  // 120% of normal speed for strong AI
 constexpr float VERTICAL_ALIGNMENT_THRESHOLD = 50.0f;
 
 // Shooting behavior
 constexpr float SHOOTING_INTERVAL = 0.5f; // Shoot every 0.5 seconds
+constexpr float SHOOTING_INTERVAL_STRONG_MULTIPLIER = 0.8f; // 80% of interval (faster) for strong AI
+
+// Idle behavior for weak AI
+constexpr float IDLE_DURATION_MIN = 1.0f; // Minimum idle time in seconds
+constexpr float IDLE_DURATION_MAX = 3.0f; // Maximum idle time in seconds
+constexpr float IDLE_CHANCE = 0.3f;       // 30% chance to enter idle state
+
+// Charge shot detection for strong AI
+constexpr float CHARGE_SHOT_ENEMY_Y_THRESHOLD = 50.0f; // ±50 pixels for enemy clustering
+constexpr int CHARGE_SHOT_MIN_ENEMIES = 2;             // Minimum enemies for charge shot
 
 // Horizontal movement
 constexpr float HORIZONTAL_CHANGE_INTERVAL = 2.0f; // Change direction every 2 seconds

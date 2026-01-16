@@ -8,6 +8,7 @@
 #ifndef SERVER_ALLY_BEHAVIOR_HPP_
 #define SERVER_ALLY_BEHAVIOR_HPP_
 
+#include "AllyAIUtility.hpp"
 #include "../../../engineCore/include/ecs/Entity.hpp"
 #include "../../../engineCore/include/ecs/World.hpp"
 #include "../../../engineCore/include/ecs/components/Transform.hpp"
@@ -23,6 +24,7 @@ namespace server::ai::behavior
  * - Vertical alignment with target
  * - Horizontal movement (random but natural)
  * - State tracking for direction changes
+ * - Idle behavior for weak AI
  */
 class MovementBehavior
 {
@@ -33,7 +35,7 @@ public:
    * @brief Update movement velocities based on target position
    */
   void update(float deltaTime, ecs::Velocity &allyVelocity, const ecs::Transform &allyTransform,
-              const ecs::Transform &targetTransform);
+              const ecs::Transform &targetTransform, AIStrength strength);
 
   /**
    * @brief Reset movement state
@@ -43,6 +45,9 @@ public:
 private:
   float m_horizontalTimer = 0.0f;
   float m_currentXDirection = 0.0f;
+  float m_idleTimer = 0.0f;
+  float m_idleDuration = 0.0f;
+  bool m_isIdling = false;
 
   /**
    * @brief Update horizontal movement direction randomly
@@ -52,12 +57,27 @@ private:
   /**
    * @brief Calculate vertical velocity to align with target
    */
-  float calculateVerticalVelocity(const ecs::Transform &allyTransform, const ecs::Transform &targetTransform);
+  float calculateVerticalVelocity(const ecs::Transform &allyTransform, const ecs::Transform &targetTransform, AIStrength strength);
 
   /**
    * @brief Calculate horizontal velocity
    */
-  float calculateHorizontalVelocity();
+  float calculateHorizontalVelocity(AIStrength strength);
+
+  /**
+   * @brief Update idle state for weak AI
+   */
+  void updateIdleState(float deltaTime, AIStrength strength);
+
+  /**
+   * @brief Check if AI should enter idle state
+   */
+  bool shouldEnterIdleState() const;
+
+  /**
+   * @brief Generate random idle duration
+   */
+  float generateIdleDuration() const;
 };
 
 /**
@@ -67,6 +87,7 @@ private:
  * - Shooting timer
  * - Firing condition checks (Y alignment)
  * - Shoot event emission
+ * - Charge shot detection for strong AI
  */
 class ShootingBehavior
 {
@@ -77,7 +98,7 @@ public:
    * @brief Update shooting state and emit shoot events if needed
    */
   void update(float deltaTime, ecs::World &world, ecs::Entity allyEntity, const ecs::Transform &allyTransform,
-              const ecs::Transform &targetTransform);
+              const ecs::Transform &targetTransform, AIStrength strength);
 
   /**
    * @brief Reset shooting state
@@ -96,6 +117,31 @@ private:
    * @brief Emit a shoot event in the direction of target
    */
   void shoot(ecs::World &world, ecs::Entity allyEntity);
+
+  /**
+   * @brief Emit a charge shot event (for strong AI with multiple enemies)
+   */
+  void chargeShoot(ecs::World &world, ecs::Entity allyEntity);
+
+  /**
+   * @brief Check if multiple enemies are clustered on the same Y level (for charge shot)
+   */
+  bool shouldUseChargeShot(ecs::World &world, const ecs::Transform &allyTransform, AIStrength strength);
+
+  /**
+   * @brief Count enemies near the same Y level as the target
+   */
+  int countEnemiesAtYLevel(ecs::World &world, float targetY) const;
+
+  /**
+   * @brief Get shooting interval based on AI strength
+   */
+  float getShootingInterval(AIStrength strength) const;
+
+  /**
+   * @brief Determine if the AI should shoot based on strength level
+   */
+  bool shouldShoot(AIStrength strength) const;
 };
 
 /**

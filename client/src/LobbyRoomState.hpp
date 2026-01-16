@@ -7,6 +7,7 @@
 #include "../../common/include/Common.hpp"
 #include "../../engineCore/include/ecs/Entity.hpp"
 #include "../../network/include/INetworkManager.hpp"
+#include "../include/Settings.hpp"
 #include "../interface/IRenderer.hpp"
 #include "Overlay.hpp"
 #include "ParallaxBackground.hpp"
@@ -96,7 +97,7 @@ public:
    * @param isCreating Whether creating new lobby
    * @param lobbyCode Lobby code (for joining)
    */
-  void setLobbyMode(bool isCreating, const std::string &lobbyCode = "", Difficulty difficulty = Difficulty::MEDIUM, bool isSolo = false);
+  void setLobbyMode(bool isCreating, const std::string &lobbyCode = "", Difficulty difficulty = Difficulty::MEDIUM, bool isSolo = false, AIDifficulty aiDifficulty = AIDifficulty::MEDIUM);
 
   /**
    * @brief Send leave lobby message to server
@@ -147,6 +148,7 @@ private:
   bool m_lobbyRequested = false;
   float m_timeSinceLobbyRequest = 0.0F;
   Difficulty m_creationDifficulty = Difficulty::MEDIUM;
+  AIDifficulty m_aiDifficulty = AIDifficulty::MEDIUM;
 
   // Lobby mode
   bool m_isCreatingLobby = true;

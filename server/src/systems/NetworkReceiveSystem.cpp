@@ -308,13 +308,47 @@ void NetworkReceiveSystem::handleRequestLobby(const nlohmann::json &json, std::u
       std::cout << "[Server] >>> NO DIFFICULTY FIELD IN MESSAGE, USING DEFAULT MEDIUM <<<" << '\n';
     }
 
-    lobbyManager.createLobby(lobbyCode, difficulty, isSolo);
+    // Parse AI difficulty
+    AIDifficulty aiDifficulty = AIDifficulty::MEDIUM;
+    if (json.contains("ai_difficulty")) {
+      int aiDiffInt = json["ai_difficulty"];
+      std::cout << "[Server] >>> AI DIFFICULTY RECEIVED: " << aiDiffInt;
+      if (aiDiffInt == 0)
+        std::cout << " (WEAK)";
+      else if (aiDiffInt == 1)
+        std::cout << " (MEDIUM)";
+      else if (aiDiffInt == 2)
+        std::cout << " (STRONG)";
+      else
+        std::cout << " (INVALID)";
+      std::cout << " <<<" << '\n';
+
+      if (aiDiffInt >= 0 && aiDiffInt <= 2) {
+        aiDifficulty = static_cast<AIDifficulty>(aiDiffInt);
+        std::cout << "[Server] Parsed AI difficulty as: " << static_cast<int>(aiDifficulty) << " ("
+                  << (aiDifficulty == AIDifficulty::WEAK     ? "WEAK"
+                        : aiDifficulty == AIDifficulty::MEDIUM ? "MEDIUM"
+                                                               : "STRONG")
+                  << ")" << '\n';
+      } else {
+        std::cout << "[Server] Invalid AI difficulty value: " << aiDiffInt << ", using default MEDIUM" << '\n';
+      }
+    } else {
+      std::cout << "[Server] >>> NO AI DIFFICULTY FIELD IN MESSAGE, USING DEFAULT MEDIUM <<<" << '\n';
+    }
+
+    lobbyManager.createLobby(lobbyCode, difficulty, isSolo, aiDifficulty);
     targetLobby = lobbyManager.getLobby(lobbyCode);
     std::cout << "[Server] Created " << (isSolo ? "SOLO " : "") << "lobby '" << lobbyCode << "' with final difficulty: " << static_cast<int>(difficulty)
               << " ("
               << (difficulty == GameConfig::Difficulty::EASY       ? "EASY"
                     : difficulty == GameConfig::Difficulty::MEDIUM ? "MEDIUM"
                                                                    : "EXPERT")
+              << ") and AI difficulty: " << static_cast<int>(aiDifficulty)
+              << " ("
+              << (aiDifficulty == AIDifficulty::WEAK     ? "WEAK"
+                    : aiDifficulty == AIDifficulty::MEDIUM ? "MEDIUM"
+                                                           : "STRONG")
               << ")" << '\n';
   }
 

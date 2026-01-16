@@ -13,6 +13,7 @@
 #include "../../../engineCore/include/ecs/ISystem.hpp"
 #include "../../../engineCore/include/ecs/World.hpp"
 #include "../../../engineCore/include/ecs/components/Ally.hpp"
+#include "../../../engineCore/include/ecs/components/Charging.hpp"
 #include "ecs/ComponentSignature.hpp"
 #include <map>
 
@@ -53,13 +54,18 @@ public:
       // Get or create AI controller for this ally
       auto it = m_allyControllers.find(allyEntity);
       if (it == m_allyControllers.end()) {
+        // Get ally strength from component
+        auto &allyComponent = world.getComponent<ecs::Ally>(allyEntity);
         // Create new AI controller
-        m_allyControllers[allyEntity] = std::make_unique<ai::AllyAI>();
+        m_allyControllers[allyEntity] = std::make_unique<ai::AllyAI>(allyComponent.strength);
       }
 
       // Update the AI
       m_allyControllers[allyEntity]->update(world, allyEntity, deltaTime);
     }
+
+    // Update charging for allies
+    updateAllyCharging(world, deltaTime);
 
     // Clean up dead allies
     for (auto it = m_allyControllers.begin(); it != m_allyControllers.end();) {
@@ -78,6 +84,56 @@ public:
     sig.set(ecs::getComponentId<ecs::Transform>());
     sig.set(ecs::getComponentId<ecs::Velocity>());
     return sig;
+  }
+
+  /**
+   * @brief Update charging state for ally entities
+   */
+  void updateAllyCharging(ecs::World &world, float deltaTime)
+  {
+    // Get all ally entities that have charging components
+    ecs::ComponentSignature chargingSig;
+    chargingSig.set(ecs::getComponentId<ecs::Ally>());
+    chargingSig.set(ecs::getComponentId<ecs::Charging>());
+    std::vector<ecs::Entity> chargingAllies;
+    world.getEntitiesWithSignature(chargingSig, chargingAllies);
+
+    for (auto allyEntity : chargingAllies) {
+      if (!world.isAlive(allyEntity)) {
+        continue;
+      }
+
+      auto &charging = world.getComponent<ecs::Charging>(allyEntity);
+
+      // Update charge time
+      if (charging.isCharging) {
+        charging.chargeTime += deltaTime;
+
+        // Auto-fire when charge is complete
+        if (charging.chargeTime >= charging.maxChargeTime) {
+          constexpr float CHARGED_OFFSET_X = 105.0F;
+          constexpr float CHARGED_OFFSET_Y = 25.0F;
+
+          auto &allyTransform = world.getComponent<ecs::Transform>(allyEntity);
+          float spawnX = allyTransform.x + CHARGED_OFFSET_X;
+          float spawnY = allyTransform.y + CHARGED_OFFSET_Y;
+
+          ecs::SpawnEntityEvent spawnEvent(ecs::SpawnEntityEvent::EntityType::CHARGED_PROJECTILE, spawnX, spawnY,
+                                           allyEntity);
+          world.emitEvent(spawnEvent);
+
+          // Destroy loading shot animation
+          if (charging.loadingShotEntity != 0 && world.isAlive(charging.loadingShotEntity)) {
+            world.destroyEntity(charging.loadingShotEntity);
+          }
+
+          // Reset charging state
+          charging.isCharging = false;
+          charging.chargeTime = 0.0F;
+          charging.loadingShotEntity = 0;
+        }
+      }
+    }
   }
 
 private:

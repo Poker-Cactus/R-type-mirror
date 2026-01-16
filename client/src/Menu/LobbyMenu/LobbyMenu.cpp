@@ -510,10 +510,8 @@ void LobbyMenu::selectCurrentOption(MenuState *currentState)
     break;
 
   case 2: // Solo
-    std::cout << "[LobbyMenu] Select difficulty for solo game" << '\n';
-    m_isSelectingDifficulty = true;
-    m_difficultyIndex = 1; // Reset to Medium
-    m_isSolo = true;
+    std::cout << "[LobbyMenu] Going to AI difficulty selection" << '\n';
+    *currentState = MenuState::AI_DIFFICULTY;
     break;
 
   case 3: // Clear Highscores

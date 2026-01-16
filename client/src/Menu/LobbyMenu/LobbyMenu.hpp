@@ -88,6 +88,30 @@ public:
   [[nodiscard]] bool shouldEnterLobbyRoom() const { return m_shouldEnterLobbyRoom; }
 
   /**
+   * @brief Set solo mode
+   * @param solo true to enable solo mode
+   */
+  void setSolo(bool solo) { m_isSolo = solo; }
+
+  /**
+   * @brief Set should enter lobby room flag
+   * @param enter true to enter lobby room
+   */
+  void setShouldEnterLobbyRoom(bool enter) { m_shouldEnterLobbyRoom = enter; }
+
+  /**
+   * @brief Set is creating lobby flag
+   * @param creating true if creating lobby
+   */
+  void setIsCreatingLobby(bool creating) { m_isCreatingLobby = creating; }
+
+  /**
+   * @brief Set selected difficulty
+   * @param diff the difficulty level
+   */
+  void setSelectedDifficulty(Difficulty diff) { m_selectedDifficulty = diff; }
+
+  /**
    * @brief Reset lobby room transition flag
    */
   void resetLobbyRoomFlag() { m_shouldEnterLobbyRoom = false; }

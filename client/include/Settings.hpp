@@ -6,6 +6,7 @@
 #ifndef SETTINGS_HPP
 #define SETTINGS_HPP
 
+#include "../../common/include/Common.hpp"
 #include "../interface/KeyCodes.hpp"
 #include <string>
 
@@ -61,6 +62,7 @@ public:
 
   // PROFILE Settings
   std::string username = "Player"; ///< Player username
+  AIDifficulty aiDifficulty = AIDifficulty::MEDIUM; ///< AI difficulty for solo mode
 
 private:
 };

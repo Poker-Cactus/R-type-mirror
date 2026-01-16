@@ -18,7 +18,7 @@
 namespace server::ai
 {
 
-AllyAI::AllyAI()
+AllyAI::AllyAI(AIStrength strength) : m_strength(strength)
 {
 }
 
@@ -82,11 +82,11 @@ void AllyAI::updateBehaviors(ecs::World &world, ecs::Entity allyEntity, float de
                                                                : playerTransform;
 
   // STEP 2: Update movement toward target
-  m_movement.update(deltaTime, allyVelocity, allyTransform, targetTransform);
+  m_movement.update(deltaTime, allyVelocity, allyTransform, targetTransform, m_strength);
 
   // STEP 3: Update shooting (only if enemy detected)
   if (targetEntity != 0) {
-    m_shooting.update(deltaTime, world, allyEntity, allyTransform, targetTransform);
+    m_shooting.update(deltaTime, world, allyEntity, allyTransform, targetTransform, m_strength);
   }
 
   // STEP 4: Apply obstacle avoidance (highest priority)

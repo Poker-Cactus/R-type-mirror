@@ -8,6 +8,7 @@
 #ifndef LOBBY_HPP_
 #define LOBBY_HPP_
 
+#include "../../common/include/Common.hpp"
 #include "../../engineCore/include/ecs/World.hpp"
 #include "Difficulty.hpp"
 #include <nlohmann/json.hpp>
@@ -31,7 +32,7 @@ class LevelConfigManager;
 class Lobby
 {
 public:
-  explicit Lobby(const std::string &code, std::shared_ptr<INetworkManager> networkManager = nullptr, bool isSolo = false);
+  explicit Lobby(const std::string &code, std::shared_ptr<INetworkManager> networkManager = nullptr, bool isSolo = false, AIDifficulty aiDifficulty = AIDifficulty::MEDIUM);
   ~Lobby();
 
   // Disable copy and move to prevent issues with unique resources
@@ -194,6 +195,9 @@ private:
 
   // Game difficulty setting
   GameConfig::Difficulty m_difficulty = GameConfig::Difficulty::MEDIUM;
+  
+  // AI difficulty setting
+  AIDifficulty m_aiDifficulty = AIDifficulty::MEDIUM;
 };
 
 #endif /* !LOBBY_HPP_ */

@@ -33,7 +33,7 @@ namespace server::ai
 class AllyAI
 {
 public:
-  AllyAI();
+  AllyAI(AIStrength strength = AIStrength::MEDIUM);
   ~AllyAI() = default;
 
   /**
@@ -59,6 +59,9 @@ public:
   void reset();
 
 private:
+  // AI strength level
+  AIStrength m_strength;
+
   // Behavior components
   behavior::MovementBehavior m_movement;
   behavior::ShootingBehavior m_shooting;

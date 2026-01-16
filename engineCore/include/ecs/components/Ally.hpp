@@ -9,6 +9,7 @@
 #define ENGINECORE_ECS_COMPONENTS_ALLY_HPP
 
 #include "IComponent.hpp"
+#include "../../../server/include/ai/AllyAIUtility.hpp"
 
 namespace ecs
 {
@@ -19,14 +20,16 @@ namespace ecs
  * rather than player input. It can contain ally-specific state information.
  */
 struct Ally : public IComponent {
-  // Ally state or parameters can be added here
-  // For now, it's just a marker component
+  server::ai::AIStrength strength;
+
+  Ally() : strength(server::ai::AIStrength::MEDIUM) {}
+  Ally(server::ai::AIStrength s) : strength(s) {}
 
   [[nodiscard]] nlohmann::json toJson() const override
   {
-    return {}; // Empty for now, can add fields later
+    return {{"strength", static_cast<int>(strength)}};
   }
 };
 } // namespace ecs
 
-#endif // ENGINECORE_ECS_COMPONENTS_AI_HPP
+#endif // ENGINECORE_ECS_COMPONENTS_ALLY_HPP
