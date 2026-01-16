@@ -24,6 +24,7 @@ struct AvoidanceState
   float maxWeight = 0.0f;
   bool needsAvoidance = false;
   int threatCount = 0; // Track number of threats
+  float closestDistance = std::numeric_limits<float>::max(); // Track closest threat distance
 };
 
 /**

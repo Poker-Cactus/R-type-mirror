@@ -31,9 +31,9 @@ constexpr float HORIZONTAL_CHANGE_INTERVAL = 2.0f; // Change direction every 2 s
 constexpr float HORIZONTAL_SPEED_MULTIPLIER = 0.5f; // Half speed for natural feel
 
 // Obstacle avoidance
-constexpr float ENEMY_AVOID_RADIUS = 60.0f;
-constexpr float PROJECTILE_AVOID_RADIUS = 60.0f;
-constexpr float EMERGENCY_RADIUS = 40.0f;
+constexpr float ENEMY_AVOID_RADIUS = 100.0f;
+constexpr float PROJECTILE_AVOID_RADIUS = 100.0f;
+constexpr float EMERGENCY_RADIUS = 60.0f;
 constexpr float PREDICTION_TIME = 0.5f;
 constexpr float AVOID_FORCE_MULTIPLIER = 2.0f;
 constexpr float EMERGENCY_MULTIPLIER = 3.0f;
@@ -131,6 +131,16 @@ inline float getVectorMagnitude(float x, float y)
  * @return Radius, or default value if no collider
  */
 float getColliderRadius(ecs::World &world, ecs::Entity entity, float defaultRadius = 20.0f);
+
+/**
+ * @brief Get center position of an entity based on its collider
+ * @param entity Entity to check
+ * @param x Current top-left x
+ * @param y Current top-left y
+ * @param centerX Output center x
+ * @param centerY Output center y
+ */
+void getEntityCenter(ecs::World &world, ecs::Entity entity, float x, float y, float &centerX, float &centerY);
 
 /**
  * @brief Predict future position of entity based on velocity
