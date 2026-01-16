@@ -15,8 +15,6 @@ constexpr std::size_t BUFFER_SIZE = 65535;
 enum class Difficulty { EASY, MEDIUM, EXPERT };
 enum class AIDifficulty { WEAK, MEDIUM, STRONG };
 
-// AI difficulty levels for ally entities
-enum class AIDifficulty { WEAK, MEDIUM, STRONG };
 
 // JSON serialization for Difficulty enum
 NLOHMANN_JSON_SERIALIZE_ENUM(
