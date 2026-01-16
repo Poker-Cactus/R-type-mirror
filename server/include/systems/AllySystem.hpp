@@ -18,6 +18,7 @@
 #include "../../../engineCore/include/ecs/components/Velocity.hpp"
 #include "../../../engineCore/include/ecs/events/GameEvents.hpp"
 #include "ecs/ComponentSignature.hpp"
+#include <cmath>
 #include <vector>
 
 namespace server
@@ -34,7 +35,7 @@ class AllySystem : public ecs::ISystem
 public:
   void update(ecs::World &world, float deltaTime) override
   {
-    m_oscillationTime += deltaTime * OSCILLATION_SPEED;
+    m_shootingTimer += deltaTime;
 
     // Check if solo mode (only one player)
     std::vector<ecs::Entity> players;
@@ -42,6 +43,10 @@ public:
     playerSig.set(ecs::getComponentId<ecs::PlayerId>());
     world.getEntitiesWithSignature(playerSig, players);
     bool isSoloMode = (players.size() == 1);
+
+    if (!isSoloMode) {
+      return; // Only process allies in solo mode
+    }
 
     std::vector<ecs::Entity> allyEntities;
     world.getEntitiesWithSignature(getSignature(), allyEntities);
@@ -58,16 +63,6 @@ public:
       ecs::Entity playerEntity = players[0];
       auto &playerTransform = world.getComponent<ecs::Transform>(playerEntity);
 
-      if (isSoloMode) {
-        // In solo mode, move up at 50 pixels per second (100 pixels every 2 seconds)
-        allyVelocity.dx = 0.0f;
-        allyVelocity.dy = -50.0f;
-        // Update animation to up
-        auto &sprite = world.getComponent<ecs::Sprite>(allyEntity);
-        sprite.currentFrame = 4;
-        continue;
-      }
-
       // Find nearest enemy
       ecs::Entity nearestEnemy = findNearestEnemy(world, allyTransform.x, allyTransform.y);
       if (nearestEnemy != 0) {
@@ -75,11 +70,11 @@ public:
 
         // Ally logic here (to be implemented)
         // For now, just move towards player and shoot at enemies
-        updateAllyMovement(world, allyEntity, allyVelocity, allyTransform, enemyTransform, deltaTime);
+        updateAllyMovement(world, allyEntity, allyVelocity, allyTransform, enemyTransform);
         updateAllyShooting(world, allyEntity, allyTransform, enemyTransform);
       } else {
         // No enemies, follow player
-        updateAllyMovement(world, allyEntity, allyVelocity, allyTransform, playerTransform, deltaTime);
+        updateAllyMovement(world, allyEntity, allyVelocity, allyTransform, playerTransform);
       }
     }
   }
@@ -94,11 +89,11 @@ public:
   }
 
 private:
-  // Oscillation parameters
-  float m_oscillationTime = 0.0f;
-  static constexpr float OSCILLATION_SPEED = 2.0f;
-  static constexpr float OSCILLATION_AMPLITUDE = 50.0f;
   static constexpr float ALLY_SPEED = 200.0f;
+
+  // Shooting parameters
+  float m_shootingTimer = 0.0f;
+  static constexpr float SHOOTING_INTERVAL = 0.5f; // Shoot every 0.5 seconds
 
   /**
    * @brief Find the nearest enemy to the given position
@@ -130,65 +125,41 @@ private:
   }
 
   void updateAllyMovement(ecs::World &world, ecs::Entity allyEntity, ecs::Velocity &velocity, const ecs::Transform &allyTransform,
-                          const ecs::Transform &targetTransform, float deltaTime)
+                          const ecs::Transform &targetTransform)
   {
-    // Simple autonomous movement: follow player with some oscillation
-
-    float dx = targetTransform.x - allyTransform.x;
     float dy = targetTransform.y - allyTransform.y;
-    float distance = std::sqrt(dx * dx + dy * dy);
+    velocity.dx = 0.0f;
 
-    if (distance > 0) {
-      // Move towards target
-      velocity.dx = (dx / distance) * ALLY_SPEED;
-      velocity.dy = (dy / distance) * ALLY_SPEED;
-
-      // Add lateral oscillation perpendicular to movement direction
-      float perpendicularX = -dy / distance; // Perpendicular vector
-      float perpendicularY = dx / distance;
-      float oscillation = std::sin(m_oscillationTime) * OSCILLATION_AMPLITUDE;
-
-      velocity.dx += perpendicularX * oscillation * deltaTime;
-      velocity.dy += perpendicularY * oscillation * deltaTime;
-      
-      // Update animation based on movement direction
-      auto &sprite = world.getComponent<ecs::Sprite>(allyEntity);
-      if (velocity.dy < -50.0f) { // Moving up
-        sprite.currentFrame = 4; // Up animation frame
-      } else if (velocity.dy > 50.0f) { // Moving down
-        sprite.currentFrame = 0; // Down animation frame
-      } else { // Moving horizontally or stopped
-        sprite.currentFrame = 2; // Neutral frame
-      }
+    if (std::abs(dy) > 50.0f) {
+      velocity.dy = (dy > 0 ? 1.0f : -1.0f) * ALLY_SPEED;
     } else {
-      // No target, just oscillate in place
-      velocity.dx = std::sin(m_oscillationTime) * OSCILLATION_AMPLITUDE * deltaTime;
-      velocity.dy = std::cos(m_oscillationTime) * OSCILLATION_AMPLITUDE * deltaTime;
+      velocity.dy = 0.0f;
+    }
 
-      // Idle animation
-      auto &sprite = world.getComponent<ecs::Sprite>(allyEntity);
+    // Update animation based on movement direction
+    auto &sprite = world.getComponent<ecs::Sprite>(allyEntity);
+    if (velocity.dy < -10.0f) { // Moving up
+      sprite.currentFrame = 4; // Up animation frame
+    } else if (velocity.dy > 10.0f) { // Moving down
+      sprite.currentFrame = 0; // Down animation frame
+    } else { // Stopped
       sprite.currentFrame = 2; // Neutral frame
     }
   }
 
   /**
-   * @brief Update ally shooting (placeholder)
+   * @brief Update ally shooting based on Y alignment with enemy
    */
   void updateAllyShooting(ecs::World &world, ecs::Entity allyEntity, const ecs::Transform &allyTransform,
                           const ecs::Transform &enemyTransform)
   {
-    // Placeholder: shoot at enemy if close enough
-    // Ally logic to be implemented here
-    float dx = enemyTransform.x - allyTransform.x;
     float dy = enemyTransform.y - allyTransform.y;
-    float distance = std::sqrt(dx * dx + dy * dy);
 
-    constexpr float SHOOT_RANGE = 300.0f;
-
-    if (distance <= SHOOT_RANGE) {
-      // Emit shoot event
-      ecs::ShootEvent shootEvent(allyEntity, dx / distance, dy / distance);
+    if (std::abs(dy) <= 50.0f && m_shootingTimer >= SHOOTING_INTERVAL) {
+      // Shoot right (assuming enemies are to the right)
+      ecs::ShootEvent shootEvent(allyEntity, 1.0f, 0.0f);
       world.emitEvent(shootEvent);
+      m_shootingTimer = 0.0f;
     }
   }
 };

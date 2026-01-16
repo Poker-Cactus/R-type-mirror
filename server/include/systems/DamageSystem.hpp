@@ -16,6 +16,7 @@
 #include "../../../engineCore/include/ecs/components/Immortal.hpp"
 #include "../../../engineCore/include/ecs/components/Input.hpp"
 #include "../../../engineCore/include/ecs/components/Owner.hpp"
+#include "../../../engineCore/include/ecs/components/Pattern.hpp"
 #include "../../../engineCore/include/ecs/components/Sprite.hpp"
 #include "../../../engineCore/include/ecs/components/Velocity.hpp"
 #include "../../../engineCore/include/ecs/events/EventListenerHandle.hpp"
@@ -147,8 +148,8 @@ private:
       if (world.hasComponent<ecs::Owner>(entityB)) {
         const auto &owner = world.getComponent<ecs::Owner>(entityB);
         if (world.isAlive(owner.ownerId)) {
-          bool projectileOwnerIsEnemy = !world.hasComponent<ecs::Input>(owner.ownerId);
-          bool targetIsEnemy = !world.hasComponent<ecs::Input>(entityA);
+          bool projectileOwnerIsEnemy = world.hasComponent<ecs::Pattern>(owner.ownerId);
+          bool targetIsEnemy = world.hasComponent<ecs::Pattern>(entityA);
           if (projectileOwnerIsEnemy && targetIsEnemy) {
             shouldDestroyProjectile = false; // Enemy projectile passes through enemies
           }
@@ -171,8 +172,8 @@ private:
       if (world.hasComponent<ecs::Owner>(entityA)) {
         const auto &owner = world.getComponent<ecs::Owner>(entityA);
         if (world.isAlive(owner.ownerId)) {
-          bool projectileOwnerIsEnemy = !world.hasComponent<ecs::Input>(owner.ownerId);
-          bool targetIsEnemy = !world.hasComponent<ecs::Input>(entityB);
+          bool projectileOwnerIsEnemy = world.hasComponent<ecs::Pattern>(owner.ownerId);
+          bool targetIsEnemy = world.hasComponent<ecs::Pattern>(entityB);
           if (projectileOwnerIsEnemy && targetIsEnemy) {
             shouldDestroyProjectile = false; // Enemy projectile passes through enemies
           }
@@ -212,10 +213,9 @@ private:
       }
     }
 
-    // Prevent enemy friendly fire: if source is an enemy (no Input) and target is also an enemy (no Input), skip
-    bool sourceIsEnemy = realSource != 0 && world.isAlive(realSource) && world.hasComponent<ecs::Health>(realSource) &&
-      !world.hasComponent<ecs::Input>(realSource);
-    bool targetIsEnemy = !world.hasComponent<ecs::Input>(target);
+    // Prevent enemy friendly fire: if source is an enemy (has Pattern) and target is also an enemy (has Pattern), skip
+    bool sourceIsEnemy = realSource != 0 && world.isAlive(realSource) && world.hasComponent<ecs::Pattern>(realSource);
+    bool targetIsEnemy = world.hasComponent<ecs::Pattern>(target);
 
     if (sourceIsEnemy && targetIsEnemy) {
       return;
