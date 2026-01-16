@@ -314,7 +314,7 @@ void Game::processInput()
   delegateInputToCurrentState();
 }
 
-void Game::handleMenuStateInput()
+void Game::handleMenuStateInput()à
 {
   if (menu && currentState == GameState::MENU && menu->getState() == MenuState::EXIT) {
     isRunning = false;
@@ -354,6 +354,7 @@ void Game::handleLobbyRoomTransition()
   const bool isCreating = menu->isCreatingLobby();
   const std::string lobbyCode = menu->getLobbyCodeToJoin();
   const Difficulty diff = menu->getLobbyMenu()->getSelectedDifficulty();
+  const AIDifficulty aiDiff = menu->getSelectedAIDifficulty();
   const bool isSolo = menu->isSolo();
   const AIDifficulty aiDiff = settings.aiDifficulty;
 
@@ -384,7 +385,7 @@ void Game::handleLobbyRoomTransition()
   }
 
   // Set the lobby mode (create or join)
-  lobbyRoomState->setLobbyMode(isCreating, lobbyCode, diff, isSolo, aiDiff);
+  lobbyRoomState->setLobbyMode(isCreating, lobbyCode, diff, aiDiff, isSolo);
 
   // Connect network callbacks to lobby state
   if (auto *networkReceiveSystem = m_world->getSystem<ClientNetworkReceiveSystem>()) {

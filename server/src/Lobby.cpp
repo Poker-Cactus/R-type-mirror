@@ -512,3 +512,8 @@ GameConfig::Difficulty Lobby::getDifficulty() const
 {
   return m_difficulty;
 }
+
+AIDifficulty Lobby::getAIDifficulty() const
+{
+  return m_aiDifficulty;
+}

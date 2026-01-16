@@ -72,9 +72,12 @@ public:
 
   /**
    * @brief Update avoidance velocity based on nearby threats
+   * @param avoidanceRadiusMultiplier Multiplier for threat detection radius
+   * @param emergencyMultiplier Emergency speed boost multiplier
    */
   void update(ecs::World &world, ecs::Entity allyEntity, ecs::Velocity &allyVelocity,
-              const ecs::Transform &allyTransform);
+              const ecs::Transform &allyTransform, float avoidanceRadiusMultiplier = 1.0f,
+              float emergencyMultiplier = 3.0f);
 
   /**
    * @brief Reset avoidance state
@@ -84,21 +87,27 @@ public:
 private:
   /**
    * @brief Evaluate threat from enemies
+   * @param enemyAvoidRadius Adjusted avoidance radius for enemies
+   * @param emergencyRadius Adjusted emergency radius
    */
   void evaluateEnemyThreats(ecs::World &world, ecs::Entity allyEntity, const ecs::Transform &allyTransform,
-                            float allyRadius, AvoidanceState &state);
+                            float allyRadius, AvoidanceState &state, float enemyAvoidRadius, float emergencyRadius);
 
   /**
    * @brief Evaluate threat from projectiles
+   * @param projectileAvoidRadius Adjusted avoidance radius for projectiles
+   * @param emergencyRadius Adjusted emergency radius
    */
   void evaluateProjectileThreats(ecs::World &world, ecs::Entity allyEntity, const ecs::Transform &allyTransform,
-                                 float allyRadius, AvoidanceState &state);
+                                 float allyRadius, AvoidanceState &state, float projectileAvoidRadius, float emergencyRadius);
 
   /**
    * @brief Apply calculated avoidance to velocity
+   * @param emergencyMultiplier Emergency speed boost multiplier
    */
   void applyAvoidanceForce(ecs::Velocity &allyVelocity, const AvoidanceState &state,
-                          const ecs::Transform &allyTransform, float viewportWidth, float viewportHeight);
+                          const ecs::Transform &allyTransform, float viewportWidth, float viewportHeight,
+                          float emergencyMultiplier);
 
   /**
    * @brief Calculate weight for obstacle based on distance and threat level

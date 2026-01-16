@@ -9,6 +9,7 @@
 #define LOBBY_MANAGER_HPP_
 
 #include "Lobby.hpp"
+#include "../../common/include/Common.hpp"
 #include <memory>
 #include <string>
 #include <unordered_map>

@@ -10,6 +10,7 @@
 
 #include "../../common/include/Common.hpp"
 #include "../../engineCore/include/ecs/World.hpp"
+#include "../../common/include/Common.hpp"
 #include "Difficulty.hpp"
 #include <nlohmann/json.hpp>
 
@@ -160,10 +161,16 @@ public:
   void setDifficulty(GameConfig::Difficulty difficulty);
 
   /**
-   * @brief Get the current difficulty setting
+   * @brief Get the game difficulty setting
    * @return The game difficulty
    */
   [[nodiscard]] GameConfig::Difficulty getDifficulty() const;
+
+  /**
+   * @brief Get the AI difficulty setting
+   * @return The AI difficulty
+   */
+  [[nodiscard]] AIDifficulty getAIDifficulty() const;
 
 private:
   void initializeSystems();

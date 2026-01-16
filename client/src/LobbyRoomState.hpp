@@ -96,6 +96,9 @@ public:
    * @brief Set lobby mode before connection
    * @param isCreating Whether creating new lobby
    * @param lobbyCode Lobby code (for joining)
+   * @param difficulty Game difficulty level
+   * @param aiDifficulty AI difficulty level
+   * @param isSolo Whether this is a solo game
    */
   void setLobbyMode(bool isCreating, const std::string &lobbyCode = "", Difficulty difficulty = Difficulty::MEDIUM, bool isSolo = false, AIDifficulty aiDifficulty = AIDifficulty::MEDIUM);
 

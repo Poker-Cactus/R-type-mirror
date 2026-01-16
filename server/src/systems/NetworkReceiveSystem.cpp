@@ -13,6 +13,7 @@
 #include "../../engineCore/include/ecs/components/PlayerId.hpp"
 #include "../../engineCore/include/ecs/components/Transform.hpp"
 #include "../../engineCore/include/ecs/components/Viewport.hpp"
+#include "../include/ai/AllyAI.hpp"
 #include "Game.hpp"
 #include "Lobby.hpp"
 #include <iostream>
@@ -336,9 +337,6 @@ void NetworkReceiveSystem::handleRequestLobby(const nlohmann::json &json, std::u
     } else {
       std::cout << "[Server] >>> NO AI DIFFICULTY FIELD IN MESSAGE, USING DEFAULT MEDIUM <<<" << '\n';
     }
-
-    lobbyManager.createLobby(lobbyCode, difficulty, isSolo, aiDifficulty);
-    targetLobby = lobbyManager.getLobby(lobbyCode);
     std::cout << "[Server] Created " << (isSolo ? "SOLO " : "") << "lobby '" << lobbyCode << "' with final difficulty: " << static_cast<int>(difficulty)
               << " ("
               << (difficulty == GameConfig::Difficulty::EASY       ? "EASY"
@@ -350,6 +348,13 @@ void NetworkReceiveSystem::handleRequestLobby(const nlohmann::json &json, std::u
                     : aiDifficulty == AIDifficulty::MEDIUM ? "MEDIUM"
                                                            : "STRONG")
               << ")" << '\n';
+
+    // Actually create the lobby
+    if (!lobbyManager.createLobby(lobbyCode, difficulty, isSolo, aiDifficulty)) {
+      std::cerr << "[Server] Failed to create lobby: " << lobbyCode << '\n';
+      sendErrorResponse(clientId, "Failed to create lobby");
+      return;
+    }
   }
 
   // Try to join the lobby
