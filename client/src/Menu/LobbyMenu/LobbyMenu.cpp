@@ -510,10 +510,10 @@ void LobbyMenu::selectCurrentOption(MenuState *currentState)
     break;
 
   case 2: // Solo
-    std::cout << "[LobbyMenu] Select difficulty for solo game" << '\n';
-    m_isSelectingDifficulty = true;
-    m_difficultyIndex = 1; // Reset to Medium
+    std::cout << "[LobbyMenu] Going to AI difficulty selection for solo game" << '\n';
+    *currentState = MenuState::AI_DIFFICULTY;
     m_isSolo = true;
+    m_isCreatingLobby = true; // Solo mode always creates a lobby
     break;
 
   case 3: // Clear Highscores

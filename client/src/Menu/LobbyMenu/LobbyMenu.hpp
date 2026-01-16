@@ -6,6 +6,7 @@
 #pragma once
 #include "../../../../common/include/Common.hpp"
 #include "../../../../common/include/Highscore.hpp"
+#include "../../../include/MenuCommon.hpp"
 #include "../../../../network/include/INetworkManager.hpp"
 #include "../../../include/Settings.hpp"
 #include "../../../interface/IRenderer.hpp"
@@ -16,15 +17,6 @@
 #include <vector>
 
 class Settings;
-
-/**
- * @struct WindowDimensions
- * @brief Window size container to prevent parameter confusion
- */
-struct WindowDimensions {
-  int width; ///< Window width in pixels
-  int height; ///< Window height in pixels
-};
 
 /**
  * @enum LobbyMenuOption

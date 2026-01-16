@@ -17,6 +17,48 @@ namespace server::ai
 {
 
 /**
+ * @brief AI difficulty levels for ally entities
+ */
+enum class AIDifficulty
+{
+  WEAK,    // Slower, less accurate, random idle periods
+  MEDIUM,  // Current AI behavior (balanced)
+  STRONG   // Faster, more accurate, better avoidance
+};
+
+/**
+ * @brief Configuration for different AI difficulty levels
+ */
+struct AIConfig
+{
+  // Movement parameters
+  float speedMultiplier;        // Multiplier for base ally speed
+  float horizontalSpeedMultiplier; // Multiplier for horizontal wandering
+
+  // Shooting parameters
+  float shootingInterval;       // Time between shots (seconds)
+  float shootingAccuracy;       // How well the AI aims (0.0 = random, 1.0 = perfect)
+
+  // Avoidance parameters
+  float avoidanceRadiusMultiplier; // Multiplier for threat detection radius
+  float emergencyMultiplier;    // Emergency speed boost
+
+  // Special behaviors for weak AI
+  float idleCooldownMin;        // Minimum idle time (seconds)
+  float idleCooldownMax;        // Maximum idle time (seconds)
+  float idleProbability;        // Chance to enter idle state (0.0-1.0)
+
+  // Constructor with defaults
+  AIConfig(float speedMult = 1.0f, float horizMult = 1.0f, float shootInt = 0.5f,
+           float accuracy = 1.0f, float avoidMult = 1.0f, float emergMult = 3.0f,
+           float idleMin = 0.0f, float idleMax = 0.0f, float idleProb = 0.0f)
+    : speedMultiplier(speedMult), horizontalSpeedMultiplier(horizMult),
+      shootingInterval(shootInt), shootingAccuracy(accuracy),
+      avoidanceRadiusMultiplier(avoidMult), emergencyMultiplier(emergMult),
+      idleCooldownMin(idleMin), idleCooldownMax(idleMax), idleProbability(idleProb) {}
+};
+
+/**
  * @brief Main AI controller for ally entities in solo mode
  *
  * Orchestrates multiple behavior systems:
@@ -33,7 +75,12 @@ namespace server::ai
 class AllyAI
 {
 public:
-  AllyAI();
+  // Static configurations for each difficulty level
+  static const AIConfig WEAK_CONFIG;
+  static const AIConfig MEDIUM_CONFIG;
+  static const AIConfig STRONG_CONFIG;
+
+  AllyAI(AIDifficulty difficulty = AIDifficulty::MEDIUM);
   ~AllyAI() = default;
 
   /**
@@ -59,6 +106,10 @@ public:
   void reset();
 
 private:
+  // AI configuration
+  AIDifficulty m_difficulty;
+  AIConfig m_config;
+
   // Behavior components
   behavior::MovementBehavior m_movement;
   behavior::ShootingBehavior m_shooting;
@@ -67,10 +118,24 @@ private:
   // Perception and response
   perception::ObstacleAvoidance m_avoidance;
 
+  // Special state for weak AI
+  float m_idleCooldown;         // Time remaining in idle state
+  bool m_isIdle;                // Whether AI is currently idle
+
   /**
    * @brief Internal update flow
    */
   void updateBehaviors(ecs::World &world, ecs::Entity allyEntity, float deltaTime);
+
+  /**
+   * @brief Handle idle behavior for weak AI
+   */
+  void updateIdleBehavior(float deltaTime);
+
+  /**
+   * @brief Get configuration for a difficulty level
+   */
+  static const AIConfig& getConfigForDifficulty(AIDifficulty difficulty);
 };
 
 } // namespace server::ai

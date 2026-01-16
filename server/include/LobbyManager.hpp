@@ -9,6 +9,7 @@
 #define LOBBY_MANAGER_HPP_
 
 #include "Lobby.hpp"
+#include "../../common/include/Common.hpp"
 #include <memory>
 #include <string>
 #include <unordered_map>
@@ -51,7 +52,8 @@ public:
    * @param difficulty The game difficulty
    * @return true if lobby was created, false if code already exists
    */
-  bool createLobby(const std::string &code, GameConfig::Difficulty difficulty = GameConfig::Difficulty::MEDIUM, bool isSolo = false);
+  bool createLobby(const std::string &code, GameConfig::Difficulty difficulty = GameConfig::Difficulty::MEDIUM, 
+                   bool isSolo = false, AIDifficulty aiDifficulty = AIDifficulty::MEDIUM);
 
   /**
    * @brief Add a client to a lobby

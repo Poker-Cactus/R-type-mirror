@@ -31,9 +31,12 @@ public:
 
   /**
    * @brief Update movement velocities based on target position
+   * @param speedMultiplier Multiplier for overall movement speed
+   * @param horizontalSpeedMultiplier Multiplier for horizontal movement speed
    */
   void update(float deltaTime, ecs::Velocity &allyVelocity, const ecs::Transform &allyTransform,
-              const ecs::Transform &targetTransform);
+              const ecs::Transform &targetTransform, float speedMultiplier = 1.0f, 
+              float horizontalSpeedMultiplier = 1.0f);
 
   /**
    * @brief Reset movement state
@@ -51,13 +54,15 @@ private:
 
   /**
    * @brief Calculate vertical velocity to align with target
+   * @param speedMultiplier Multiplier for movement speed
    */
-  float calculateVerticalVelocity(const ecs::Transform &allyTransform, const ecs::Transform &targetTransform);
+  float calculateVerticalVelocity(const ecs::Transform &allyTransform, const ecs::Transform &targetTransform, float speedMultiplier);
 
   /**
    * @brief Calculate horizontal velocity
+   * @param horizontalSpeedMultiplier Multiplier for horizontal movement speed
    */
-  float calculateHorizontalVelocity();
+  float calculateHorizontalVelocity(float horizontalSpeedMultiplier);
 };
 
 /**
@@ -75,9 +80,11 @@ public:
 
   /**
    * @brief Update shooting state and emit shoot events if needed
+   * @param shootingInterval Time between shots (seconds)
+   * @param shootingAccuracy How well the AI aims (0.0 = random, 1.0 = perfect)
    */
   void update(float deltaTime, ecs::World &world, ecs::Entity allyEntity, const ecs::Transform &allyTransform,
-              const ecs::Transform &targetTransform);
+              const ecs::Transform &targetTransform, float shootingInterval = 0.5f, float shootingAccuracy = 1.0f);
 
   /**
    * @brief Reset shooting state
@@ -89,8 +96,9 @@ private:
 
   /**
    * @brief Check if ally is aligned vertically with target for shooting
+   * @param shootingAccuracy How well the AI aims (affects alignment tolerance)
    */
-  bool isAlignedForShooting(const ecs::Transform &allyTransform, const ecs::Transform &targetTransform);
+  bool isAlignedForShooting(const ecs::Transform &allyTransform, const ecs::Transform &targetTransform, float shootingAccuracy);
 
   /**
    * @brief Emit a shoot event in the direction of target

@@ -15,8 +15,8 @@
 #include <iostream>
 #include <nlohmann/json.hpp>
 
-Lobby::Lobby(const std::string &code, std::shared_ptr<INetworkManager> networkManager, bool isSolo)
-    : m_code(code), m_networkManager(std::move(networkManager)), m_isSolo(isSolo)
+Lobby::Lobby(const std::string &code, std::shared_ptr<INetworkManager> networkManager, bool isSolo, AIDifficulty aiDifficulty)
+    : m_code(code), m_networkManager(std::move(networkManager)), m_isSolo(isSolo), m_aiDifficulty(aiDifficulty)
 {
   // Create isolated world for this lobby
   m_world = std::make_shared<ecs::World>();
@@ -490,4 +490,9 @@ void Lobby::setDifficulty(GameConfig::Difficulty difficulty)
 GameConfig::Difficulty Lobby::getDifficulty() const
 {
   return m_difficulty;
+}
+
+AIDifficulty Lobby::getAIDifficulty() const
+{
+  return m_aiDifficulty;
 }

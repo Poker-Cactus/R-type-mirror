@@ -24,12 +24,13 @@ MovementBehavior::MovementBehavior() : m_horizontalTimer(0.0f), m_currentXDirect
 }
 
 void MovementBehavior::update(float deltaTime, ecs::Velocity &allyVelocity, const ecs::Transform &allyTransform,
-                               const ecs::Transform &targetTransform)
+                               const ecs::Transform &targetTransform, float speedMultiplier, 
+                               float horizontalSpeedMultiplier)
 {
   m_horizontalTimer += deltaTime;
 
   // Update vertical movement
-  allyVelocity.dy = calculateVerticalVelocity(allyTransform, targetTransform);
+  allyVelocity.dy = calculateVerticalVelocity(allyTransform, targetTransform, speedMultiplier);
 
   // Update horizontal movement (changes direction periodically)
   if (m_horizontalTimer >= utility::HORIZONTAL_CHANGE_INTERVAL) {
@@ -37,7 +38,7 @@ void MovementBehavior::update(float deltaTime, ecs::Velocity &allyVelocity, cons
     m_horizontalTimer = 0.0f;
   }
 
-  allyVelocity.dx = calculateHorizontalVelocity();
+  allyVelocity.dx = calculateHorizontalVelocity(horizontalSpeedMultiplier);
 }
 
 void MovementBehavior::reset()
@@ -63,21 +64,21 @@ void MovementBehavior::updateHorizontalDirection()
 }
 
 float MovementBehavior::calculateVerticalVelocity(const ecs::Transform &allyTransform,
-                                                   const ecs::Transform &targetTransform)
+                                                   const ecs::Transform &targetTransform, float speedMultiplier)
 {
   float dy = targetTransform.y - allyTransform.y;
 
   // Only move vertically if significantly out of alignment
   if (std::abs(dy) > utility::VERTICAL_ALIGNMENT_THRESHOLD) {
-    return (dy > 0 ? 1.0f : -1.0f) * utility::ALLY_SPEED;
+    return (dy > 0 ? 1.0f : -1.0f) * utility::ALLY_SPEED * speedMultiplier;
   }
 
   return 0.0f;
 }
 
-float MovementBehavior::calculateHorizontalVelocity()
+float MovementBehavior::calculateHorizontalVelocity(float horizontalSpeedMultiplier)
 {
-  return m_currentXDirection * (utility::ALLY_SPEED * utility::HORIZONTAL_SPEED_MULTIPLIER);
+  return m_currentXDirection * (utility::ALLY_SPEED * utility::HORIZONTAL_SPEED_MULTIPLIER * horizontalSpeedMultiplier);
 }
 
 // ============================================================================
@@ -89,11 +90,12 @@ ShootingBehavior::ShootingBehavior() : m_shootingTimer(0.0f)
 }
 
 void ShootingBehavior::update(float deltaTime, ecs::World &world, ecs::Entity allyEntity,
-                               const ecs::Transform &allyTransform, const ecs::Transform &targetTransform)
+                               const ecs::Transform &allyTransform, const ecs::Transform &targetTransform,
+                               float shootingInterval, float shootingAccuracy)
 {
   m_shootingTimer += deltaTime;
 
-  if (isAlignedForShooting(allyTransform, targetTransform) && m_shootingTimer >= utility::SHOOTING_INTERVAL) {
+  if (isAlignedForShooting(allyTransform, targetTransform, shootingAccuracy) && m_shootingTimer >= shootingInterval) {
     shoot(world, allyEntity);
     m_shootingTimer = 0.0f;
   }
@@ -105,10 +107,32 @@ void ShootingBehavior::reset()
 }
 
 bool ShootingBehavior::isAlignedForShooting(const ecs::Transform &allyTransform,
-                                            const ecs::Transform &targetTransform)
+                                            const ecs::Transform &targetTransform, float shootingAccuracy)
 {
   float dy = targetTransform.y - allyTransform.y;
-  return std::abs(dy) <= utility::VERTICAL_ALIGNMENT_THRESHOLD;
+  float alignmentError = std::abs(dy);
+  
+  // Perfect accuracy: only shoot when perfectly aligned
+  if (shootingAccuracy >= 1.0f) {
+    return alignmentError <= utility::VERTICAL_ALIGNMENT_THRESHOLD;
+  }
+  
+  // Lower accuracy: shoot based on probability
+  // At accuracy 0.0, shoot randomly regardless of alignment
+  // At accuracy 1.0, only shoot when perfectly aligned
+  float maxAllowedError = utility::VERTICAL_ALIGNMENT_THRESHOLD / shootingAccuracy;
+  if (alignmentError <= maxAllowedError) {
+    return true;
+  }
+  
+  // For errors beyond the threshold but within a wider range, shoot with reduced probability
+  float widerThreshold = maxAllowedError * 2.0f;
+  if (alignmentError <= widerThreshold) {
+    float probability = 1.0f - ((alignmentError - maxAllowedError) / maxAllowedError);
+    return (rand() / static_cast<float>(RAND_MAX)) < probability;
+  }
+  
+  return false;
 }
 
 void ShootingBehavior::shoot(ecs::World &world, ecs::Entity allyEntity)

@@ -8,7 +8,7 @@
 #include "LobbyManager.hpp"
 #include <iostream>
 
-bool LobbyManager::createLobby(const std::string &code, GameConfig::Difficulty difficulty, bool isSolo)
+bool LobbyManager::createLobby(const std::string &code, GameConfig::Difficulty difficulty, bool isSolo, AIDifficulty aiDifficulty)
 {
   if (m_lobbies.find(code) != m_lobbies.end()) {
     return false;
@@ -18,7 +18,7 @@ bool LobbyManager::createLobby(const std::string &code, GameConfig::Difficulty d
             << '\n';
 
   // Pass the network manager (if any) to the lobby so it can send direct messages
-  m_lobbies[code] = std::make_unique<Lobby>(code, m_networkManager, isSolo);
+  m_lobbies[code] = std::make_unique<Lobby>(code, m_networkManager, isSolo, aiDifficulty);
 
   // Pass enemy config manager to the lobby
   if (m_enemyConfigManager) {

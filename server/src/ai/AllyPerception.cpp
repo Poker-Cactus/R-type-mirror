@@ -95,16 +95,22 @@ ObstacleAvoidance::ObstacleAvoidance()
 }
 
 void ObstacleAvoidance::update(ecs::World &world, ecs::Entity allyEntity, ecs::Velocity &allyVelocity,
-                               const ecs::Transform &allyTransform)
+                               const ecs::Transform &allyTransform, float avoidanceRadiusMultiplier,
+                               float emergencyMultiplier)
 {
   AvoidanceState state;
 
   // Get ally size
   float allyRadius = utility::getColliderRadius(world, allyEntity);
 
+  // Calculate adjusted avoidance radii based on difficulty
+  float adjustedEnemyAvoidRadius = utility::ENEMY_AVOID_RADIUS * avoidanceRadiusMultiplier;
+  float adjustedProjectileAvoidRadius = utility::PROJECTILE_AVOID_RADIUS * avoidanceRadiusMultiplier;
+  float adjustedEmergencyRadius = utility::EMERGENCY_RADIUS * avoidanceRadiusMultiplier;
+
   // Evaluate threats from enemies and projectiles
-  evaluateEnemyThreats(world, allyEntity, allyTransform, allyRadius, state);
-  evaluateProjectileThreats(world, allyEntity, allyTransform, allyRadius, state);
+  evaluateEnemyThreats(world, allyEntity, allyTransform, allyRadius, state, adjustedEnemyAvoidRadius, adjustedEmergencyRadius);
+  evaluateProjectileThreats(world, allyEntity, allyTransform, allyRadius, state, adjustedProjectileAvoidRadius, adjustedEmergencyRadius);
 
   // Apply avoidance if threats detected
   if (state.needsAvoidance) {
@@ -126,7 +132,7 @@ void ObstacleAvoidance::update(ecs::World &world, ecs::Entity allyEntity, ecs::V
     centerTransform.x = allyCenterX;
     centerTransform.y = allyCenterY;
 
-    applyAvoidanceForce(allyVelocity, state, centerTransform, viewportWidth, viewportHeight);
+    applyAvoidanceForce(allyVelocity, state, centerTransform, viewportWidth, viewportHeight, emergencyMultiplier);
   }
 }
 
@@ -136,7 +142,7 @@ void ObstacleAvoidance::reset()
 
 void ObstacleAvoidance::evaluateEnemyThreats(ecs::World &world, ecs::Entity allyEntity,
                                              const ecs::Transform &allyTransform, float allyRadius,
-                                             AvoidanceState &state)
+                                             AvoidanceState &state, float enemyAvoidRadius, float emergencyRadius)
 {
   // Calculate ally center once
   float allyCenterX, allyCenterY;
@@ -186,9 +192,9 @@ void ObstacleAvoidance::evaluateEnemyThreats(ecs::World &world, ecs::Entity ally
     float effectiveRadius = allyRadius + enemyRadius;
 
     // Check if threat is within avoidance radius
-    if (distance <= utility::ENEMY_AVOID_RADIUS + effectiveRadius && distance > 0.0f) {
-      bool isEmergency = distance <= utility::EMERGENCY_RADIUS + effectiveRadius;
-      float baseWeight = calculateThreatWeight(distance, utility::ENEMY_AVOID_RADIUS, effectiveRadius, false, isEmergency);
+    if (distance <= enemyAvoidRadius + effectiveRadius && distance > 0.0f) {
+      bool isEmergency = distance <= emergencyRadius + effectiveRadius;
+      float baseWeight = calculateThreatWeight(distance, enemyAvoidRadius, effectiveRadius, false, isEmergency);
       
       // Update closest distance tracking
       state.closestDistance = std::min(state.closestDistance, distance);
@@ -214,7 +220,7 @@ void ObstacleAvoidance::evaluateEnemyThreats(ecs::World &world, ecs::Entity ally
 
 void ObstacleAvoidance::evaluateProjectileThreats(ecs::World &world, ecs::Entity allyEntity,
                                                   const ecs::Transform &allyTransform, float allyRadius,
-                                                  AvoidanceState &state)
+                                                  AvoidanceState &state, float projectileAvoidRadius, float emergencyRadius)
 {
   // Calculate ally center once
   float allyCenterX, allyCenterY;
@@ -271,9 +277,9 @@ void ObstacleAvoidance::evaluateProjectileThreats(ecs::World &world, ecs::Entity
     float effectiveRadius = allyRadius + projRadius;
 
     // Check if threat is within avoidance radius
-    if (distance <= utility::PROJECTILE_AVOID_RADIUS + effectiveRadius && distance > 0.0f) {
-      bool isEmergency = distance <= utility::EMERGENCY_RADIUS + effectiveRadius;
-      float baseWeight = calculateThreatWeight(distance, utility::PROJECTILE_AVOID_RADIUS, effectiveRadius, true, isEmergency);
+    if (distance <= projectileAvoidRadius + effectiveRadius && distance > 0.0f) {
+      bool isEmergency = distance <= emergencyRadius + effectiveRadius;
+      float baseWeight = calculateThreatWeight(distance, projectileAvoidRadius, effectiveRadius, true, isEmergency);
       
       // Update closest distance tracking (projectiles can be closer than enemies)
       state.closestDistance = std::min(state.closestDistance, distance);
@@ -299,7 +305,7 @@ void ObstacleAvoidance::evaluateProjectileThreats(ecs::World &world, ecs::Entity
 
 void ObstacleAvoidance::applyAvoidanceForce(ecs::Velocity &allyVelocity, const AvoidanceState &state,
                                             const ecs::Transform &allyTransform, float viewportWidth,
-                                            float viewportHeight)
+                                            float viewportHeight, float emergencyMultiplier)
 {
   // Normalize avoidance vector (create mutable copies)
   float totalX = state.totalX;
@@ -313,7 +319,7 @@ void ObstacleAvoidance::applyAvoidanceForce(ecs::Velocity &allyVelocity, const A
   // Determine speed multiplier based on threat level
   float speedMultiplier = utility::AVOID_FORCE_MULTIPLIER;
   if (state.maxWeight > utility::HIGH_THREAT_THRESHOLD) {
-    speedMultiplier = utility::EMERGENCY_MULTIPLIER;
+    speedMultiplier = emergencyMultiplier;
   }
 
   // Apply avoidance velocity
