@@ -136,8 +136,42 @@ static int mapSDLKeyToGeneric(int sdlKey)
   case SDLK_9:
     return KeyCode::KEY_9;
 
+  case SDLK_SLASH:
+    return KeyCode::KEY_SLASH;
+  case SDLK_PERIOD:
+    return KeyCode::KEY_PERIOD;
+  case SDLK_COMMA:
+    return KeyCode::KEY_COMMA;
+  case SDLK_SEMICOLON:
+    return KeyCode::KEY_SEMICOLON;
+  case SDLK_QUOTE:
+    return KeyCode::KEY_APOSTROPHE;
+  case SDLK_MINUS:
+    return KeyCode::KEY_MINUS;
+  case SDLK_EQUALS:
+    return KeyCode::KEY_EQUALS;
+  case SDLK_LEFTBRACKET:
+    return KeyCode::KEY_LEFTBRACKET;
+  case SDLK_RIGHTBRACKET:
+    return KeyCode::KEY_RIGHTBRACKET;
+  case SDLK_BACKSLASH:
+    return KeyCode::KEY_BACKSLASH;
+  case SDLK_BACKQUOTE:
+    return KeyCode::KEY_GRAVE;
+  case SDLK_RIGHTPAREN:
+    return KeyCode::KEY_RIGHTPAREN;
+
   case SDLK_F11:
     return KeyCode::KEY_F11;
+
+  case SDLK_LCTRL:
+    return KeyCode::KEY_LCTRL;
+  case SDLK_RCTRL:
+    return KeyCode::KEY_RCTRL;
+  case SDLK_LSHIFT:
+    return KeyCode::KEY_LSHIFT;
+  case SDLK_RSHIFT:
+    return KeyCode::KEY_RSHIFT;
 
   default:
     return KeyCode::KEY_UNKNOWN;
@@ -307,10 +341,7 @@ bool RendererSDL2::pollEvents()
     if (event.type == SDL_KEYDOWN) {
       int genericKey = mapSDLKeyToGeneric(event.key.keysym.sym);
       keyStates[genericKey] = true;
-      if (event.key.keysym.sym == SDLK_ESCAPE) {
-        std::cout << "[RendererSDL2] ESC pressed - closing\n";
-        return false;
-      }
+      // ESC handling moved to Game.cpp to allow chat to intercept it
     }
     if (event.type == SDL_KEYUP) {
       int genericKey = mapSDLKeyToGeneric(event.key.keysym.sym);

@@ -87,6 +87,12 @@ public:
    */
   void setPlayerDeadCallback(std::function<void(const nlohmann::json &)> callback);
 
+  /**
+   * @brief Set callback for chat message event
+   * @param callback Function to call when chat message received (sender, content, senderId)
+   */
+  void setChatMessageCallback(std::function<void(const std::string &, const std::string &, std::uint32_t)> callback);
+
 private:
   std::shared_ptr<INetworkManager> m_networkManager;
   std::function<void()> m_gameStartedCallback;
@@ -95,6 +101,7 @@ private:
   std::function<void(const std::string &)> m_errorCallback;
   std::function<void()> m_lobbyLeftCallback;
   std::function<void(const nlohmann::json &)> m_playerDeadCallback;
+  std::function<void(const std::string &, const std::string &, std::uint32_t)> m_chatMessageCallback;
 
   void handleEntityCreated(ecs::World &world, const nlohmann::json &json);
   void handleEntityUpdate(ecs::World &world, const nlohmann::json &json);

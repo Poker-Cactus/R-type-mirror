@@ -147,6 +147,15 @@ void ClientNetworkReceiveSystem::update(ecs::World &world, float deltaTime)
         if (m_errorCallback) {
           m_errorCallback(errorMsg);
         }
+      } else if (type == "chat_broadcast") {
+        // Handle incoming chat message from server
+        std::string sender = json.value("sender", "Unknown");
+        std::string content = json.value("content", "");
+        std::uint32_t senderId = json.value("senderId", 0);
+        std::cout << "[Client] Chat from " << sender << ": " << content << std::endl;
+        if (m_chatMessageCallback) {
+          m_chatMessageCallback(sender, content, senderId);
+        }
       }
 
     } catch (const std::exception &e) {
@@ -501,6 +510,12 @@ void ClientNetworkReceiveSystem::setLobbyLeftCallback(std::function<void()> call
 void ClientNetworkReceiveSystem::setPlayerDeadCallback(std::function<void(const nlohmann::json &)> callback)
 {
   m_playerDeadCallback = std::move(callback);
+}
+
+void ClientNetworkReceiveSystem::setChatMessageCallback(
+  std::function<void(const std::string &, const std::string &, std::uint32_t)> callback)
+{
+  m_chatMessageCallback = std::move(callback);
 }
 
 ecs::ComponentSignature ClientNetworkReceiveSystem::getSignature() const

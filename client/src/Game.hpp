@@ -12,6 +12,7 @@
 #include "../include/systems/NetworkReceiveSystem.hpp"
 #include "../include/systems/NetworkSendSystem.hpp"
 #include "../interface/IRenderer.hpp"
+#include "ChatUI.hpp"
 #include "LobbyRoomState.hpp"
 #include "Menu.hpp"
 #include "PlayingState.hpp"
@@ -98,6 +99,8 @@ private:
   void ensureInputEntity();
   void sendLeaveToServer();
   void sendViewportToServer();
+  void sendChatMessage(const std::string &message);
+  void handleChatInput();
 
   void handleMenuStateInput();
   void handleLobbyRoomTransition();
@@ -123,4 +126,5 @@ private:
   Settings settings;
   bool fullScreen = true;
   HighscoreManager highscoreManager;
+  std::unique_ptr<ChatUI> m_chatUI;
 };
