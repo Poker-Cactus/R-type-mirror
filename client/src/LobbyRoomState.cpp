@@ -233,7 +233,7 @@ void LobbyRoomState::setLobbyMode(bool isCreating, const std::string &lobbyCode,
   std::cout << "[LobbyRoomState] Mode set: " << (isCreating ? "CREATE" : "JOIN")
             << (lobbyCode.empty() ? "" : " code=" + lobbyCode) << (isSolo ? " SOLO" : "")
             << " AI Difficulty: " << static_cast<int>(aiDifficulty)
-            << " Game Mode: " << (mode == GameMode::CLASSIC ? "CLASSIC" : "INFINITE") << '\n';
+            << " Game Mode: " << (mode == GameMode::CLASSIC ? "CLASSIC" : "ENDLESS") << '\n';
 }
 
 void LobbyRoomState::sendLeaveLobby()

@@ -14,7 +14,7 @@ constexpr std::size_t BUFFER_SIZE = 65535;
 
 enum class Difficulty { EASY, MEDIUM, EXPERT };
 enum class AIDifficulty { WEAK, MEDIUM, STRONG, NO_ALLY };
-enum class GameMode { CLASSIC, INFINITE };
+enum class GameMode { CLASSIC, ENDLESS };
 
 // JSON serialization for Difficulty enum
 NLOHMANN_JSON_SERIALIZE_ENUM(
@@ -28,6 +28,6 @@ NLOHMANN_JSON_SERIALIZE_ENUM(AIDifficulty,
                               {AIDifficulty::NO_ALLY, "NO_ALLY"}})
 
 // JSON serialization for GameMode enum
-NLOHMANN_JSON_SERIALIZE_ENUM(GameMode, {{GameMode::CLASSIC, "CLASSIC"}, {GameMode::INFINITE, "INFINITE"}})
+NLOHMANN_JSON_SERIALIZE_ENUM(GameMode, {{GameMode::CLASSIC, "CLASSIC"}, {GameMode::ENDLESS, "ENDLESS"}})
 
 #endif // COMMON_HPP_

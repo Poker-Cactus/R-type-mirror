@@ -87,7 +87,7 @@ public:
   void setGameMode(GameMode mode)
   {
     m_gameMode = mode;
-    if (mode == GameMode::INFINITE) {
+    if (mode == GameMode::ENDLESS) {
       enableInfiniteMode();
     } else {
       disableInfiniteMode();

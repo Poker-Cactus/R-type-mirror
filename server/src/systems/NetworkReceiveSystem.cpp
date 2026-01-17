@@ -387,7 +387,7 @@ void NetworkReceiveSystem::handleRequestLobby(const nlohmann::json &json, std::u
       if (modeInt == 0)
         std::cout << " (CLASSIC)";
       else if (modeInt == 1)
-        std::cout << " (INFINITE)";
+        std::cout << " (ENDLESS)";
       else
         std::cout << " (INVALID)";
       std::cout << " <<<" << '\n';
@@ -395,7 +395,7 @@ void NetworkReceiveSystem::handleRequestLobby(const nlohmann::json &json, std::u
       if (modeInt >= 0 && modeInt <= 1) {
         gameMode = static_cast<GameMode>(modeInt);
         std::cout << "[Server] Parsed game mode as: " << static_cast<int>(gameMode) << " ("
-                  << (gameMode == GameMode::CLASSIC ? "CLASSIC" : "INFINITE") << ")" << '\n';
+                  << (gameMode == GameMode::CLASSIC ? "CLASSIC" : "ENDLESS") << ")" << '\n';
       } else {
         std::cout << "[Server] Invalid game mode value: " << modeInt << ", using default CLASSIC" << '\n';
       }
@@ -413,7 +413,7 @@ void NetworkReceiveSystem::handleRequestLobby(const nlohmann::json &json, std::u
                     : aiDifficulty == AIDifficulty::MEDIUM ? "MEDIUM"
                     : aiDifficulty == AIDifficulty::STRONG ? "STRONG"
                                                            : "NO_ALLY")
-          << ") and game mode: " << (gameMode == GameMode::CLASSIC ? "CLASSIC" : "INFINITE") << '\n';
+              << ") and game mode: " << (gameMode == GameMode::CLASSIC ? "CLASSIC" : "ENDLESS") << '\n';
 
     // Actually create the lobby
     if (!lobbyManager.createLobby(lobbyCode, difficulty, isSolo, aiDifficulty, gameMode)) {

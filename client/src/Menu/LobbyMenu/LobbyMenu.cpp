@@ -641,12 +641,12 @@ void LobbyMenu::selectModeOption()
     m_selectedGameMode = GameMode::CLASSIC;
     break;
   case 1:
-    m_selectedGameMode = GameMode::INFINITE;
+    m_selectedGameMode = GameMode::ENDLESS;
     break;
   }
 
   std::cout << "[LobbyMenu] Creating new lobby with mode: "
-            << (m_selectedGameMode == GameMode::CLASSIC ? "CLASSIC" : "INFINITE") << '\n';
+            << (m_selectedGameMode == GameMode::CLASSIC ? "CLASSIC" : "ENDLESS") << '\n';
 
   m_isCreatingLobby = true;
   m_lobbyCodeInput.clear();

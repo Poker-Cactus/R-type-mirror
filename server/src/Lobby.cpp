@@ -283,7 +283,7 @@ void Lobby::initializeSystems()
     // Apply game mode
     spawnSystem->setGameMode(m_gameMode);
 
-    if (m_gameMode == GameMode::INFINITE) {
+    if (m_gameMode == GameMode::ENDLESS) {
       std::cout << "[Lobby:" << m_code << "] Infinite mode enabled" << std::endl;
     } else if (m_levelConfigManager) {
       spawnSystem->startLevel("level_1");

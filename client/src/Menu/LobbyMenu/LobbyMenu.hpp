@@ -195,7 +195,7 @@ private:
 
   // Game mode selection
   bool m_isSelectingMode = false;
-  std::vector<std::string> m_modeItems = {"Classic", "Infinite"};
+  std::vector<std::string> m_modeItems = {"Classic", "Endless"};
   std::size_t m_modeIndex = 0; // Default to Classic
   GameMode m_selectedGameMode = GameMode::CLASSIC;
 
