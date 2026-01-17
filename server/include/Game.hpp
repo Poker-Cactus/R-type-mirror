@@ -39,6 +39,14 @@ constexpr int PLAYER_MAX_HP = 100;
 constexpr float PLAYER_COLLIDER_SIZE = 32.0F;
 constexpr int PLAYER_SPRITE_WIDTH = 140;
 constexpr int PLAYER_SPRITE_HEIGHT = 60;
+
+// Ally configuration
+constexpr float ALLY_SPAWN_X = 150.0F;
+constexpr float ALLY_SPAWN_Y = 350.0F;
+constexpr int ALLY_MAX_HP = 100;
+constexpr float ALLY_COLLIDER_SIZE = 32.0F;
+constexpr int ALLY_SPRITE_WIDTH = 140;
+constexpr int ALLY_SPRITE_HEIGHT = 60;
 } // namespace GameConfig
 
 class NetworkReceiveSystem;

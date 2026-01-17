@@ -16,6 +16,7 @@
 #include "Menu/MainMenu/MainMenu.hpp"
 #include "Menu/ProfileMenu/ProfileMenu.hpp"
 #include "Menu/SettingsMenu/SettingsMenu.hpp"
+#include "Menu/AIDifficultyMenu/AIDifficultyMenu.hpp"
 #include <memory>
 #include <string>
 
@@ -80,6 +81,12 @@ public:
   [[nodiscard]] bool isCreatingLobby() const;
 
   /**
+   * @brief Check if player is playing solo
+   * @return true if solo mode
+   */
+  [[nodiscard]] bool isSolo() const;
+
+  /**
    * @brief Get the lobby code player wants to join
    * @return Lobby code string
    */
@@ -91,6 +98,11 @@ public:
   void resetLobbySelection();
   [[nodiscard]] Difficulty getCurrentDifficulty() const;
   [[nodiscard]] LobbyMenu *getLobbyMenu() const { return m_lobbyMenu.get(); }
+
+  /**
+   * @brief Set solo mode for lobby
+   */
+  void setSoloMode();
 
   /**
    * @brief Reset highscore refresh flag in lobby menu
@@ -160,6 +172,7 @@ private:
   std::shared_ptr<ProfileMenu> m_profileMenu;
   std::shared_ptr<SettingsMenu> m_settingsMenu;
   std::shared_ptr<LobbyMenu> m_lobbyMenu;
+  std::shared_ptr<AIDifficultyMenu> m_aiDifficultyMenu;
   std::shared_ptr<IntroScreen> introScreen; ///< Intro screen
 
   // Moon Parallax offsets

@@ -10,11 +10,13 @@ add_executable(client
     src/Menu/ProcessInputMenu.cpp
     src/Menu/IntroScreen/IntroScreen.cpp
     src/Menu/MainMenu/MainMenu.cpp
+    src/Menu/AIDifficultyMenu/AIDifficultyMenu.cpp
     src/Menu/LobbyMenu/LobbyMenu.cpp
     src/Menu/SettingsMenu/SettingsMenu.cpp
     src/Menu/LobbyMenu/LobbyMenu.cpp
     src/Menu/SettingsMenu/SettingsMenu.cpp
     src/Menu/ProfileMenu/ProfileMenu.cpp
+    src/Menu/AIDifficultyMenu/AIDifficultyMenu.cpp
     src/LobbyRoomState.cpp
     src/PlayingState.cpp
     src/infomode/src/InfoMode.cpp

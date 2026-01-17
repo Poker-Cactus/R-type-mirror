@@ -8,7 +8,9 @@
 #ifndef LOBBY_HPP_
 #define LOBBY_HPP_
 
+#include "../../common/include/Common.hpp"
 #include "../../engineCore/include/ecs/World.hpp"
+#include "../../common/include/Common.hpp"
 #include "Difficulty.hpp"
 #include <nlohmann/json.hpp>
 
@@ -31,7 +33,7 @@ class LevelConfigManager;
 class Lobby
 {
 public:
-  explicit Lobby(const std::string &code, std::shared_ptr<INetworkManager> networkManager = nullptr);
+  explicit Lobby(const std::string &code, std::shared_ptr<INetworkManager> networkManager = nullptr, bool isSolo = false, AIDifficulty aiDifficulty = AIDifficulty::MEDIUM);
   ~Lobby();
 
   // Disable copy and move to prevent issues with unique resources
@@ -73,6 +75,12 @@ public:
    * @return Number of clients
    */
   [[nodiscard]] std::size_t getClientCount() const;
+
+  /**
+   * @brief Get the number of players in the lobby (excluding spectators)
+   * @return Number of players
+   */
+  [[nodiscard]] std::size_t getPlayerCount() const;
 
   /**
    * @brief Get the lobby code
@@ -153,20 +161,28 @@ public:
   void setDifficulty(GameConfig::Difficulty difficulty);
 
   /**
-   * @brief Get the current difficulty setting
+   * @brief Get the game difficulty setting
    * @return The game difficulty
    */
   [[nodiscard]] GameConfig::Difficulty getDifficulty() const;
 
+  /**
+   * @brief Get the AI difficulty setting
+   * @return The AI difficulty
+   */
+  [[nodiscard]] AIDifficulty getAIDifficulty() const;
+
 private:
   void initializeSystems();
   void spawnPlayer(std::uint32_t clientId);
+  void spawnAlly();
   void destroyPlayerEntity(std::uint32_t clientId);
 
   std::string m_code;
   std::unordered_set<std::uint32_t> m_clients;
   std::unordered_set<std::uint32_t> m_spectators;
   bool m_gameStarted = false;
+  bool m_isSolo = false;
 
   // Isolated game world for this lobby
   std::shared_ptr<ecs::World> m_world;
@@ -176,6 +192,7 @@ private:
 
   // Map client IDs to their player entities
   std::unordered_map<std::uint32_t, ecs::Entity> m_playerEntities;
+  ecs::Entity m_allyEntity = 0;
 
   // Enemy configuration manager
   std::shared_ptr<server::EnemyConfigManager> m_enemyConfigManager;
@@ -185,6 +202,9 @@ private:
 
   // Game difficulty setting
   GameConfig::Difficulty m_difficulty = GameConfig::Difficulty::MEDIUM;
+  
+  // AI difficulty setting
+  AIDifficulty m_aiDifficulty = AIDifficulty::MEDIUM;
 };
 
 #endif /* !LOBBY_HPP_ */

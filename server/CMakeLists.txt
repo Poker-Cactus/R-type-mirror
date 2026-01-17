@@ -17,6 +17,11 @@ add_executable(server
     src/config/EnemyConfig.cpp
     src/config/LevelConfig.cpp
 
+    src/ai/AllyAI.cpp
+    src/ai/AllyAIUtility.cpp
+    src/ai/AllyBehavior.cpp
+    src/ai/AllyPerception.cpp
+
     src/systems/NetworkReceiveSystem.cpp
     src/systems/NetworkSendSystem.cpp
 )
