@@ -160,6 +160,18 @@ std::unordered_map<std::uint32_t, asio::ip::udp::endpoint> AsioServer::getClient
   return m_clients;
 }
 
+void AsioServer::disconnect(std::uint32_t clientId)
+{
+  auto it = m_clients.find(clientId);
+  if (it != m_clients.end()) {
+    m_clients.erase(it);
+    if (m_connectedPlayersCount > 0) {
+      --m_connectedPlayersCount;
+    }
+    std::cout << "[Server] Client " << clientId << " disconnected (kicked)" << '\n';
+  }
+}
+
 void AsioServer::createPlayerEntity(std::uint32_t clientId)
 {
   if (!m_world) {

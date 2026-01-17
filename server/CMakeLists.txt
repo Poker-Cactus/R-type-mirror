@@ -12,6 +12,8 @@ add_executable(server
     src/LobbyManager.cpp
     src/WorldLobbyRegistry.cpp
 
+    src/chat/Chat.cpp
+
     src/config/EnemyConfig.cpp
     src/config/LevelConfig.cpp
 

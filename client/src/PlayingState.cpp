@@ -829,6 +829,17 @@ void PlayingState::processInput()
   }
 }
 
+void PlayingState::resetPlayerAnimation()
+{
+  m_returnUp = false;
+  m_returnDown = false;
+  m_playerAnimTimer = 0.f;
+  m_playerFrameIndex = 2;
+  m_playerAnimDirection = PlayerAnimDirection::None;
+  m_playerAnimPlayingOnce = false;
+  m_playerAnimPhase = 0;
+}
+
 void PlayingState::changeAnimationPlayers(float delta_time)
 {
   // No input: reset to idle and clear any queued single-shot animation

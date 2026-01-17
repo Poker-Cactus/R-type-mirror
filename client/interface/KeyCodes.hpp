@@ -12,6 +12,24 @@ constexpr int KEY_BACKSPACE = 3;
 constexpr int KEY_TAB = 4;
 constexpr int KEY_SPACE = 5;
 constexpr int KEY_DELETE = 8;
+constexpr int KEY_LCTRL = 60;
+constexpr int KEY_RCTRL = 61;
+constexpr int KEY_LSHIFT = 62;
+constexpr int KEY_RSHIFT = 63;
+
+// Special characters / punctuation
+constexpr int KEY_SLASH = 70; // /
+constexpr int KEY_PERIOD = 71; // .
+constexpr int KEY_COMMA = 72; // ,
+constexpr int KEY_SEMICOLON = 73; // ;
+constexpr int KEY_APOSTROPHE = 74; // '
+constexpr int KEY_MINUS = 75; // -
+constexpr int KEY_EQUALS = 76; // =
+constexpr int KEY_LEFTBRACKET = 77; // [
+constexpr int KEY_RIGHTBRACKET = 78; // ]
+constexpr int KEY_BACKSLASH = 79; // backslash
+constexpr int KEY_GRAVE = 80; // ` or ù on AZERTY
+constexpr int KEY_RIGHTPAREN = 81; // )
 
 // Function keys
 constexpr int KEY_F11 = 9;

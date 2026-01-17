@@ -46,6 +46,7 @@ public:
   void stop() override;
   bool poll(NetworkPacket &msg) override;
   std::unordered_map<std::uint32_t, asio::ip::udp::endpoint> getClients() const override;
+  void disconnect(std::uint32_t clientId) override { (void)clientId; } // No-op for client
 
   float getLatency() const override;
   bool isConnected() const override;

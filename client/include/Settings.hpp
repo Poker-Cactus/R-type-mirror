@@ -8,6 +8,7 @@
 
 #include "../../common/include/Common.hpp"
 #include "../interface/KeyCodes.hpp"
+#include "ColorBlindFilter.hpp"
 #include <string>
 
 /**
@@ -51,6 +52,7 @@ public:
 
   // GRAPHIC Settings
   bool fullScreen = true; ///< Fullscreen mode toggle
+  ColorBlindMode colorBlindMode = ColorBlindMode::NONE; ///< Color blindness filter
 
   // DEBUG Settings
   bool showInfoMode = true; ///< Show debug info overlay

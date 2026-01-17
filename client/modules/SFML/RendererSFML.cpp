@@ -122,6 +122,38 @@ static int mapSFMLKeyToGeneric(sf::Keyboard::Key sfmlKey)
   case sf::Keyboard::Num9:
     return KeyCode::KEY_9;
 
+  case sf::Keyboard::Slash:
+    return KeyCode::KEY_SLASH;
+  case sf::Keyboard::Period:
+    return KeyCode::KEY_PERIOD;
+  case sf::Keyboard::Comma:
+    return KeyCode::KEY_COMMA;
+  case sf::Keyboard::Semicolon:
+    return KeyCode::KEY_SEMICOLON;
+  case sf::Keyboard::Quote:
+    return KeyCode::KEY_APOSTROPHE;
+  case sf::Keyboard::Hyphen:
+    return KeyCode::KEY_MINUS;
+  case sf::Keyboard::Equal:
+    return KeyCode::KEY_EQUALS;
+  case sf::Keyboard::LBracket:
+    return KeyCode::KEY_LEFTBRACKET;
+  case sf::Keyboard::RBracket:
+    return KeyCode::KEY_RIGHTBRACKET;
+  case sf::Keyboard::Backslash:
+    return KeyCode::KEY_BACKSLASH;
+  case sf::Keyboard::Tilde:
+    return KeyCode::KEY_GRAVE;
+
+  case sf::Keyboard::LControl:
+    return KeyCode::KEY_LCTRL;
+  case sf::Keyboard::RControl:
+    return KeyCode::KEY_RCTRL;
+  case sf::Keyboard::LShift:
+    return KeyCode::KEY_LSHIFT;
+  case sf::Keyboard::RShift:
+    return KeyCode::KEY_RSHIFT;
+
   default:
     return KeyCode::KEY_UNKNOWN;
   }
@@ -226,6 +258,10 @@ static sf::Keyboard::Key mapGenericKeyToSFML(int genericKey)
     return sf::Keyboard::Num8;
   case KeyCode::KEY_9:
     return sf::Keyboard::Num9;
+  case KeyCode::KEY_LCTRL:
+    return sf::Keyboard::LControl;
+  case KeyCode::KEY_RCTRL:
+    return sf::Keyboard::RControl;
 
     return sf::Keyboard::F12;
 
@@ -330,9 +366,7 @@ bool RendererSFML::pollEvents()
     } else if (event.type == sf::Event::KeyPressed) {
       int key = mapSFMLKeyToGeneric(event.key.code);
       keyStates[key] = true;
-      if (event.key.code == sf::Keyboard::Escape) {
-        return false; // ESC pressed, stop the game loop
-      }
+      // ESC handling moved to Game.cpp to allow chat to intercept it
     } else if (event.type == sf::Event::KeyReleased) {
       int key = mapSFMLKeyToGeneric(event.key.code);
       keyStates[key] = false;
