@@ -144,8 +144,8 @@ void Lobby::startGame()
     }
   }
 
-  // Spawn ally entity if this is solo mode
-  if (m_isSolo) {
+  // Spawn ally entity if this is solo mode and AI is enabled
+  if (m_isSolo && m_aiDifficulty != AIDifficulty::NO_ALLY) {
     spawnAlly();
   }
 
@@ -403,6 +403,10 @@ void Lobby::spawnAlly()
       break;
     case AIDifficulty::STRONG:
       allyStrength = server::ai::AIStrength::STRONG;
+      break;
+    case AIDifficulty::NO_ALLY:
+      // Should not reach here, but just in case
+      allyStrength = server::ai::AIStrength::MEDIUM;
       break;
     default:
       allyStrength = server::ai::AIStrength::MEDIUM;

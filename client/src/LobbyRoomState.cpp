@@ -265,6 +265,7 @@ void LobbyRoomState::requestLobby()
     if (m_isSolo) {
       message["solo"] = true;
     }
+    std::cout << "[LobbyRoomState] Creating lobby with AI difficulty: " << static_cast<int>(m_aiDifficulty) << '\n';
   } else {
     message["type"] = "request_lobby";
     message["action"] = "join";

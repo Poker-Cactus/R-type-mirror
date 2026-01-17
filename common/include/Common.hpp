@@ -13,7 +13,7 @@
 constexpr std::size_t BUFFER_SIZE = 65535;
 
 enum class Difficulty { EASY, MEDIUM, EXPERT };
-enum class AIDifficulty { WEAK, MEDIUM, STRONG };
+enum class AIDifficulty { WEAK, MEDIUM, STRONG, NO_ALLY };
 
 
 // JSON serialization for Difficulty enum
@@ -22,6 +22,6 @@ NLOHMANN_JSON_SERIALIZE_ENUM(
 
 // JSON serialization for AIDifficulty enum
 NLOHMANN_JSON_SERIALIZE_ENUM(
-  AIDifficulty, {{AIDifficulty::WEAK, "WEAK"}, {AIDifficulty::MEDIUM, "MEDIUM"}, {AIDifficulty::STRONG, "STRONG"}})
+  AIDifficulty, {{AIDifficulty::WEAK, "WEAK"}, {AIDifficulty::MEDIUM, "MEDIUM"}, {AIDifficulty::STRONG, "STRONG"}, {AIDifficulty::NO_ALLY, "NO_ALLY"}})
 
 #endif // COMMON_HPP_

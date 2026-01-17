@@ -56,7 +56,7 @@ private:
   std::shared_ptr<IRenderer> m_renderer;
   void *font;
 
-  std::array<std::string, 4> aiDifficultyItems = {"Weak", "Medium", "Strong", "Back"};
+  std::array<std::string, 5> aiDifficultyItems = {"Weak", "Medium", "Strong", "No Ally", "Back"};
   int currentMenuIndex = 0;
 
   std::function<void(AIDifficulty)> m_onDifficultySelected;

@@ -320,16 +320,19 @@ void NetworkReceiveSystem::handleRequestLobby(const nlohmann::json &json, std::u
         std::cout << " (MEDIUM)";
       else if (aiDiffInt == 2)
         std::cout << " (STRONG)";
+      else if (aiDiffInt == 3)
+        std::cout << " (NO_ALLY)";
       else
         std::cout << " (INVALID)";
       std::cout << " <<<" << '\n';
 
-      if (aiDiffInt >= 0 && aiDiffInt <= 2) {
+      if (aiDiffInt >= 0 && aiDiffInt <= 3) {
         aiDifficulty = static_cast<AIDifficulty>(aiDiffInt);
         std::cout << "[Server] Parsed AI difficulty as: " << static_cast<int>(aiDifficulty) << " ("
                   << (aiDifficulty == AIDifficulty::WEAK     ? "WEAK"
                         : aiDifficulty == AIDifficulty::MEDIUM ? "MEDIUM"
-                                                               : "STRONG")
+                        : aiDifficulty == AIDifficulty::STRONG ? "STRONG"
+                                                               : "NO_ALLY")
                   << ")" << '\n';
       } else {
         std::cout << "[Server] Invalid AI difficulty value: " << aiDiffInt << ", using default MEDIUM" << '\n';
@@ -346,7 +349,8 @@ void NetworkReceiveSystem::handleRequestLobby(const nlohmann::json &json, std::u
               << " ("
               << (aiDifficulty == AIDifficulty::WEAK     ? "WEAK"
                     : aiDifficulty == AIDifficulty::MEDIUM ? "MEDIUM"
-                                                           : "STRONG")
+                    : aiDifficulty == AIDifficulty::STRONG ? "STRONG"
+                                                           : "NO_ALLY")
               << ")" << '\n';
 
     // Actually create the lobby

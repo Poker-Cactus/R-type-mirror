@@ -108,6 +108,13 @@ void AIDifficultyMenu::process(MenuState *currentState, Settings &settings)
         m_onDifficultySelected(AIDifficulty::STRONG);
       }
       *currentState = MenuState::LOBBY;
+    } else if (selectedButton == "No Ally") {
+      settings.aiDifficulty = AIDifficulty::NO_ALLY;
+      std::cout << "[AIDifficultyMenu] AI difficulty set to NO_ALLY" << '\n';
+      if (m_onDifficultySelected) {
+        m_onDifficultySelected(AIDifficulty::NO_ALLY);
+      }
+      *currentState = MenuState::LOBBY;
     } else if (selectedButton == "Back") {
       std::cout << "[AIDifficultyMenu] Going back to LOBBY" << '\n';
       *currentState = MenuState::LOBBY;
