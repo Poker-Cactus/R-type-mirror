@@ -82,6 +82,7 @@ void LobbyMenu::startDifficultySelection()
 {
   m_isSelectingDifficulty = true;
   m_difficultyIndex = 1; // Default to Medium
+  m_isSelectingMode = false;
 }
 
 void LobbyMenu::render(const WindowDimensions &windowDims)
@@ -131,6 +132,8 @@ void LobbyMenu::render(const WindowDimensions &windowDims)
     renderLobbyCodeInput(windowDims);
   } else if (m_isSelectingDifficulty) {
     renderDifficultySelection(windowDims);
+  } else if (m_isSelectingMode) {
+    renderModeSelection(windowDims);
   } else {
     renderMenuOptions(windowDims);
   }
@@ -331,7 +334,55 @@ void LobbyMenu::renderDifficultySelection(const WindowDimensions &windowDims)
   }
 
   // Draw instructions
-  const std::string instructions = m_isSolo ? "ENTER to Start, BACKSPACE to Go Back" : "ENTER to Create, BACKSPACE to Cancel";
+  const std::string instructions =
+    m_isSolo ? "ENTER to Start, BACKSPACE to Go Back" : "ENTER to Create, BACKSPACE to Cancel";
+  int instrWidth = 0;
+  int instrHeight = 0;
+  m_renderer->getTextSize(m_font, instructions, instrWidth, instrHeight);
+
+  const int instrX = (windowDims.width - instrWidth) / 2;
+  const int instrY = windowDims.height - 80;
+  const Color instrColor = {.r = 150, .g = 150, .b = 150, .a = 255};
+
+  m_renderer->drawText(m_font, instructions, instrX, instrY, instrColor);
+}
+
+void LobbyMenu::renderModeSelection(const WindowDimensions &windowDims)
+{
+  if (m_font == nullptr) {
+    return;
+  }
+
+  const std::string prompt = "Select Game Mode";
+  int promptWidth = 0;
+  int promptHeight = 0;
+  m_renderer->getTextSize(m_font, prompt, promptWidth, promptHeight);
+
+  const int promptX = (windowDims.width - promptWidth) / 2;
+  const int promptY = ((windowDims.height - promptHeight) / 2) - 100;
+  const Color promptColor = {.r = 255, .g = 255, .b = 255, .a = 255};
+
+  m_renderer->drawText(m_font, prompt, promptX, promptY, promptColor);
+
+  constexpr int ITEM_SPACING = 50;
+  const int startY = ((windowDims.height - promptHeight) / 2) - 20;
+
+  for (std::size_t i = 0; i < m_modeItems.size(); ++i) {
+    int textWidth = 0;
+    int textHeight = 0;
+    m_renderer->getTextSize(m_font, m_modeItems[i], textWidth, textHeight);
+
+    const int pos_x = (windowDims.width - textWidth) / 2;
+    const int pos_y = startY + (static_cast<int>(i) * ITEM_SPACING);
+
+    const Color color =
+      (i == m_modeIndex) ? Color{.r = 4, .g = 196, .b = 199, .a = 255} : Color{.r = 255, .g = 255, .b = 255, .a = 255};
+
+    m_renderer->drawText(m_font, m_modeItems[i], pos_x, pos_y, color);
+  }
+
+  const std::string instructions =
+    m_isSolo ? "ENTER to Start, BACKSPACE to Go Back" : "ENTER to Create, BACKSPACE to Go Back";
   int instrWidth = 0;
   int instrHeight = 0;
   m_renderer->getTextSize(m_font, instructions, instrWidth, instrHeight);
@@ -357,6 +408,15 @@ void LobbyMenu::process(MenuState *currentState, Settings &settings)
         *currentState = MenuState::AI_DIFFICULTY;
       }
       m_isSelectingDifficulty = false;
+    }
+  } else if (m_isSelectingMode) {
+    handleModeNavigation();
+    if (m_renderer->isKeyJustPressed(KeyCode::KEY_RETURN)) {
+      selectModeOption();
+    }
+    if (m_renderer->isKeyJustPressed(KeyCode::KEY_BACKSPACE)) {
+      m_isSelectingMode = false;
+      m_isSelectingDifficulty = true;
     }
   } else {
     handleMenuNavigation(settings);
@@ -390,6 +450,17 @@ void LobbyMenu::handleDifficultyNavigation()
 
   if (m_renderer->isKeyJustPressed(KeyCode::KEY_UP)) {
     m_difficultyIndex = (m_difficultyIndex - 1 + m_difficultyItems.size()) % m_difficultyItems.size();
+  }
+}
+
+void LobbyMenu::handleModeNavigation()
+{
+  if (m_renderer->isKeyJustPressed(KeyCode::KEY_DOWN)) {
+    m_modeIndex = (m_modeIndex + 1) % m_modeItems.size();
+  }
+
+  if (m_renderer->isKeyJustPressed(KeyCode::KEY_UP)) {
+    m_modeIndex = (m_modeIndex - 1 + m_modeItems.size()) % m_modeItems.size();
   }
 }
 
@@ -510,6 +581,7 @@ void LobbyMenu::selectCurrentOption(MenuState *currentState)
     std::cout << "[LobbyMenu] Select difficulty for new lobby" << '\n';
     m_isSelectingDifficulty = true;
     m_difficultyIndex = 1; // Reset to Medium
+    m_isSelectingMode = false;
     break;
 
   case 1: // Join Lobby
@@ -551,14 +623,33 @@ void LobbyMenu::selectDifficultyOption()
     break;
   }
 
-  std::cout << "[LobbyMenu] Creating new lobby with difficulty: "
+  std::cout << "[LobbyMenu] Selected difficulty: "
             << (m_selectedDifficulty == Difficulty::EASY
                   ? "EASY"
                   : (m_selectedDifficulty == Difficulty::MEDIUM ? "MEDIUM" : "EXPERT"))
             << " (value: " << static_cast<int>(m_selectedDifficulty) << ")" << '\n';
 
+  m_isSelectingDifficulty = false;
+  m_isSelectingMode = true;
+  m_modeIndex = 0; // Default to Classic
+}
+
+void LobbyMenu::selectModeOption()
+{
+  switch (m_modeIndex) {
+  case 0:
+    m_selectedGameMode = GameMode::CLASSIC;
+    break;
+  case 1:
+    m_selectedGameMode = GameMode::INFINITE;
+    break;
+  }
+
+  std::cout << "[LobbyMenu] Creating new lobby with mode: "
+            << (m_selectedGameMode == GameMode::CLASSIC ? "CLASSIC" : "INFINITE") << '\n';
+
   m_isCreatingLobby = true;
   m_lobbyCodeInput.clear();
   m_shouldEnterLobbyRoom = true;
-  m_isSelectingDifficulty = false;
+  m_isSelectingMode = false;
 }

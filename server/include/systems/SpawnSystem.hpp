@@ -81,6 +81,20 @@ public:
   }
 
   /**
+   * @brief Set the current game mode for spawning
+   * @param mode Game mode
+   */
+  void setGameMode(GameMode mode)
+  {
+    m_gameMode = mode;
+    if (mode == GameMode::INFINITE) {
+      enableInfiniteMode();
+    } else {
+      disableInfiniteMode();
+    }
+  }
+
+  /**
    * @brief Start a level by ID
    * @param levelId Level ID from configuration
    */
@@ -127,6 +141,18 @@ public:
     (void)world;
     m_spawnTimer += deltaTime;
     m_powerupSpawnTimer += deltaTime;
+
+    // Priority - Infinite mode
+    if (m_isInfiniteMode) {
+      updateInfiniteSpawning(world, deltaTime);
+      processSpawnQueue(world, deltaTime);
+
+      if (m_powerupSpawnTimer >= POWERUP_SPAWN_INTERVAL) {
+        spawnPowerupRandom(world);
+        m_powerupSpawnTimer = 0.0F;
+      }
+      return;
+    }
 
     // Priority 0: Level-based spawning (highest priority)
     if (m_isLevelActive && m_currentLevel) {
@@ -282,6 +308,84 @@ public:
   }
 
   /**
+   * @brief Update function for infinite mode spawning
+   */
+  void updateInfiniteSpawning(ecs::World &world, float deltaTime)
+  {
+    if (!m_enemyConfigManager)
+      return;
+
+    m_infiniteElapsed += deltaTime;
+
+    if (m_infiniteEnemyTypes.empty()) {
+      m_infiniteEnemyTypes = m_enemyConfigManager->getEnemyIds();
+      if (!m_infiniteEnemyTypes.empty()) {
+        m_infiniteUnlockedCount = 1;
+        m_infiniteEnemyTimers[m_infiniteEnemyTypes[0]] = 0.0F;
+      }
+    }
+
+    if (m_infiniteUnlockedCount < m_infiniteEnemyTypes.size()) {
+      m_infiniteUnlockTimer += deltaTime;
+      if (m_infiniteUnlockTimer >= INFINITE_UNLOCK_INTERVAL) {
+        m_infiniteUnlockTimer = 0.0F;
+        const auto &newType = m_infiniteEnemyTypes[m_infiniteUnlockedCount];
+        m_infiniteEnemyTimers[newType] = 0.0F;
+        m_infiniteUnlockedCount++;
+        std::cout << "[SpawnSystem] Infinite mode unlocked enemy type: " << newType << std::endl;
+      }
+    }
+
+    const float ramp = 1.0f + (m_infiniteElapsed / INFINITE_RAMP_INTERVAL);
+    int extraGroups = static_cast<int>(m_infiniteElapsed / INFINITE_EXTRA_GROUP_INTERVAL);
+    if (extraGroups > INFINITE_MAX_EXTRA_GROUPS)
+      extraGroups = INFINITE_MAX_EXTRA_GROUPS;
+
+    for (auto &[enemyType, timer] : m_infiniteEnemyTimers) {
+      timer += deltaTime;
+
+      const EnemyConfig *config = m_enemyConfigManager->getConfig(enemyType);
+      if (!config)
+        continue;
+
+      const float effectiveInterval = std::max(config->spawn.spawnInterval / ramp, INFINITE_MIN_INTERVAL);
+
+      if (timer >= effectiveInterval) {
+        spawnEnemyGroup(world, enemyType);
+        for (int i = 0; i < extraGroups; ++i) {
+          spawnEnemyGroup(world, enemyType);
+        }
+        timer = 0.0F;
+      }
+    }
+  }
+
+  void enableInfiniteMode()
+  {
+    m_isInfiniteMode = true;
+    m_infiniteElapsed = 0.0F;
+    m_infiniteUnlockTimer = 0.0F;
+    m_infiniteUnlockedCount = 0;
+    m_infiniteEnemyTimers.clear();
+    m_infiniteEnemyTypes.clear();
+    m_spawnQueue.clear();
+    m_spawnQueueTimer = 0.0F;
+    m_isLevelActive = false;
+    m_currentLevel = nullptr;
+    m_enemyTypeTimers.clear();
+  }
+
+  void disableInfiniteMode()
+  {
+    m_isInfiniteMode = false;
+    m_infiniteElapsed = 0.0F;
+    m_infiniteUnlockTimer = 0.0F;
+    m_infiniteUnlockedCount = 0;
+    m_infiniteEnemyTimers.clear();
+    m_infiniteEnemyTypes.clear();
+  }
+
+  /**
    * @brief Process the spawn queue for delayed spawns
    */
   void processSpawnQueue(ecs::World &world, float deltaTime)
@@ -399,6 +503,14 @@ private:
   std::shared_ptr<LevelConfigManager> m_levelConfigManager;
   std::string m_currentEnemyType = "enemy_red"; // Default enemy type
 
+  GameMode m_gameMode = GameMode::CLASSIC;
+  bool m_isInfiniteMode = false;
+  float m_infiniteElapsed = 0.0F;
+  float m_infiniteUnlockTimer = 0.0F;
+  size_t m_infiniteUnlockedCount = 0;
+  std::vector<std::string> m_infiniteEnemyTypes;
+  std::unordered_map<std::string, float> m_infiniteEnemyTimers;
+
   // Level-based spawning state
   const LevelConfig *m_currentLevel = nullptr;
   float m_levelTime = 0.0F;
@@ -429,6 +541,13 @@ private:
   static constexpr int ENEMY_HEALTH = 30;
   static constexpr float ENEMY_COLLIDER_SIZE = 48.0F;
   static constexpr unsigned int ENEMY_SPRITE_SIZE = 96;
+
+  // Infinite mode tuning
+  static constexpr float INFINITE_UNLOCK_INTERVAL = 25.0F;
+  static constexpr float INFINITE_RAMP_INTERVAL = 60.0F;
+  static constexpr float INFINITE_MIN_INTERVAL = 0.7F;
+  static constexpr float INFINITE_EXTRA_GROUP_INTERVAL = 45.0F;
+  static constexpr int INFINITE_MAX_EXTRA_GROUPS = 2;
 
   // Enemy Red configuration
   static constexpr float ENEMY_RED_AMPLITUDE = 40.0F;

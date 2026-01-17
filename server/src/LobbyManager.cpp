@@ -8,17 +8,19 @@
 #include "LobbyManager.hpp"
 #include <iostream>
 
-bool LobbyManager::createLobby(const std::string &code, GameConfig::Difficulty difficulty, bool isSolo, AIDifficulty aiDifficulty)
+bool LobbyManager::createLobby(const std::string &code, GameConfig::Difficulty difficulty, bool isSolo,
+                               AIDifficulty aiDifficulty, GameMode mode)
 {
   if (m_lobbies.find(code) != m_lobbies.end()) {
     return false;
   }
 
-  std::cout << "[LobbyManager] Creating " << (isSolo ? "SOLO " : "") << "lobby '" << code << "' with difficulty " << static_cast<int>(difficulty)
-            << " and AI difficulty " << static_cast<int>(aiDifficulty) << '\n';
+  std::cout << "[LobbyManager] Creating " << (isSolo ? "SOLO " : "") << "lobby '" << code << "' with difficulty "
+            << static_cast<int>(difficulty) << " and AI difficulty " << static_cast<int>(aiDifficulty)
+            << " and game mode " << (mode == GameMode::CLASSIC ? "CLASSIC" : "INFINITE") << '\n';
 
   // Pass the network manager (if any) to the lobby so it can send direct messages
-  m_lobbies[code] = std::make_unique<Lobby>(code, m_networkManager, isSolo, aiDifficulty);
+  m_lobbies[code] = std::make_unique<Lobby>(code, m_networkManager, isSolo, aiDifficulty, mode);
 
   // Pass enemy config manager to the lobby
   if (m_enemyConfigManager) {
@@ -32,6 +34,7 @@ bool LobbyManager::createLobby(const std::string &code, GameConfig::Difficulty d
 
   // Set the difficulty before the game starts
   m_lobbies[code]->setDifficulty(difficulty);
+  m_lobbies[code]->setGameMode(mode);
 
   std::cout << "[LobbyManager] Created lobby: " << code << '\n';
   return true;

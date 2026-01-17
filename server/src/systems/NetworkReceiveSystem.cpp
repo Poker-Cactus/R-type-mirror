@@ -379,7 +379,30 @@ void NetworkReceiveSystem::handleRequestLobby(const nlohmann::json &json, std::u
     } else {
       std::cout << "[Server] >>> NO AI DIFFICULTY FIELD IN MESSAGE, USING DEFAULT MEDIUM <<<" << '\n';
     }
-    std::cout << "[Server] Created " << (isSolo ? "SOLO " : "") << "lobby '" << lobbyCode << "' with final difficulty: " << static_cast<int>(difficulty)
+    // Parse game mode
+    GameMode gameMode = GameMode::CLASSIC;
+    if (json.contains("mode")) {
+      int modeInt = json["mode"];
+      std::cout << "[Server] >>> GAME MODE RECEIVED: " << modeInt;
+      if (modeInt == 0)
+        std::cout << " (CLASSIC)";
+      else if (modeInt == 1)
+        std::cout << " (INFINITE)";
+      else
+        std::cout << " (INVALID)";
+      std::cout << " <<<" << '\n';
+
+      if (modeInt >= 0 && modeInt <= 1) {
+        gameMode = static_cast<GameMode>(modeInt);
+        std::cout << "[Server] Parsed game mode as: " << static_cast<int>(gameMode) << " ("
+                  << (gameMode == GameMode::CLASSIC ? "CLASSIC" : "INFINITE") << ")" << '\n';
+      } else {
+        std::cout << "[Server] Invalid game mode value: " << modeInt << ", using default CLASSIC" << '\n';
+      }
+    } else {
+      std::cout << "[Server] >>> NO GAME MODE FIELD IN MESSAGE, USING DEFAULT CLASSIC <<<" << '\n';
+    }
+        std::cout << "[Server] Created " << (isSolo ? "SOLO " : "") << "lobby '" << lobbyCode << "' with final difficulty: " << static_cast<int>(difficulty)
               << " ("
               << (difficulty == GameConfig::Difficulty::EASY       ? "EASY"
                     : difficulty == GameConfig::Difficulty::MEDIUM ? "MEDIUM"
@@ -390,10 +413,10 @@ void NetworkReceiveSystem::handleRequestLobby(const nlohmann::json &json, std::u
                     : aiDifficulty == AIDifficulty::MEDIUM ? "MEDIUM"
                     : aiDifficulty == AIDifficulty::STRONG ? "STRONG"
                                                            : "NO_ALLY")
-              << ")" << '\n';
+          << ") and game mode: " << (gameMode == GameMode::CLASSIC ? "CLASSIC" : "INFINITE") << '\n';
 
     // Actually create the lobby
-    if (!lobbyManager.createLobby(lobbyCode, difficulty, isSolo, aiDifficulty)) {
+    if (!lobbyManager.createLobby(lobbyCode, difficulty, isSolo, aiDifficulty, gameMode)) {
       std::cerr << "[Server] Failed to create lobby: " << lobbyCode << '\n';
       sendErrorResponse(clientId, "Failed to create lobby");
       return;

@@ -52,7 +52,9 @@ public:
    * @param difficulty The game difficulty
    * @return true if lobby was created, false if code already exists
    */
-  bool createLobby(const std::string &code, GameConfig::Difficulty difficulty = GameConfig::Difficulty::MEDIUM, bool isSolo = false, AIDifficulty aiDifficulty = AIDifficulty::MEDIUM);
+  bool createLobby(const std::string &code, GameConfig::Difficulty difficulty = GameConfig::Difficulty::MEDIUM,
+                   bool isSolo = false, AIDifficulty aiDifficulty = AIDifficulty::MEDIUM,
+                   GameMode mode = GameMode::CLASSIC);
 
   /**
    * @brief Add a client to a lobby

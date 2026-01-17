@@ -33,7 +33,8 @@ class Lobby
 {
 public:
   explicit Lobby(const std::string &code, std::shared_ptr<INetworkManager> networkManager = nullptr,
-                 bool isSolo = false, AIDifficulty aiDifficulty = AIDifficulty::MEDIUM);
+                 bool isSolo = false, AIDifficulty aiDifficulty = AIDifficulty::MEDIUM,
+                 GameMode mode = GameMode::CLASSIC);
   ~Lobby();
 
   // Disable copy and move to prevent issues with unique resources
@@ -167,6 +168,19 @@ public:
   [[nodiscard]] GameConfig::Difficulty getDifficulty() const;
 
   /**
+   * @brief Set the game mode for this lobby
+   * @param mode The game mode
+   * @note Must be called before startGame() to take effect
+   */
+  void setGameMode(GameMode mode);
+
+  /**
+   * @brief Get the game mode for this lobby
+   * @return The game mode
+   */
+  [[nodiscard]] GameMode getGameMode() const;
+
+  /**
    * @brief Convert a player to spectator after death
    * @param clientId The client identifier
    */
@@ -208,6 +222,9 @@ private:
 
   // Game difficulty setting
   GameConfig::Difficulty m_difficulty = GameConfig::Difficulty::MEDIUM;
+
+  // Game mode setting
+  GameMode m_gameMode = GameMode::CLASSIC;
 
   // AI difficulty setting
   AIDifficulty m_aiDifficulty = AIDifficulty::MEDIUM;

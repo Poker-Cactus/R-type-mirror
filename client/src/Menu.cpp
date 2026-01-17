@@ -43,9 +43,8 @@ void Menu::init()
     m_lobbyMenu = std::make_shared<LobbyMenu>(m_renderer);
     m_lobbyMenu->init(settings);
 
-    m_aiDifficultyMenu = std::make_shared<AIDifficultyMenu>(m_renderer, [this](AIDifficulty) {
-      this->startSoloDifficultySelection();
-    });
+    m_aiDifficultyMenu =
+      std::make_shared<AIDifficultyMenu>(m_renderer, [this](AIDifficulty) { this->startSoloDifficultySelection(); });
     m_aiDifficultyMenu->init();
 
     m_profileMenu = std::make_shared<ProfileMenu>(m_renderer);
@@ -230,6 +229,7 @@ void Menu::resetLobbySelection()
   if (m_lobbyMenu != nullptr) {
     // Cache the current difficulty before resetting
     currentDifficulty = m_lobbyMenu->getSelectedDifficulty();
+    currentGameMode = m_lobbyMenu->getSelectedGameMode();
     m_lobbyMenu->resetLobbyRoomFlag();
   }
 }
@@ -241,6 +241,14 @@ Difficulty Menu::getCurrentDifficulty() const
     return m_lobbyMenu->getSelectedDifficulty();
   }
   return currentDifficulty;
+}
+
+GameMode Menu::getCurrentGameMode() const
+{
+  if (m_lobbyMenu != nullptr) {
+    return m_lobbyMenu->getSelectedGameMode();
+  }
+  return currentGameMode;
 }
 
 void Menu::renderMoonParalax(int winWidth, int winHeight)
