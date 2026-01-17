@@ -4,7 +4,42 @@
 
 The ally AI system has been comprehensively refactored to be **modular**, **readable**, and **maintainable**. The logic is now split into focused, single-responsibility components with clear interfaces and well-documented behavior.
 
+The AI supports different strength levels (WEAK, MEDIUM, STRONG) that affect behavior parameters and capabilities. Additionally, a NO_ALLY option exists that completely disables ally spawning for solo mode without AI assistance.
+
 ---
+
+## AI Strength Levels
+
+The ally AI behavior varies based on the selected difficulty level:
+
+### WEAK AI
+- **Speed**: 70% of normal speed (140.0f units/second)
+- **Shooting**: Standard shooting interval (0.5s)
+- **Special Behavior**: 30% chance to enter idle state for 2-4 seconds every 3 seconds
+- **Purpose**: Easier gameplay, less aggressive ally
+
+### MEDIUM AI (Default)
+- **Speed**: Normal speed (200.0f units/second)
+- **Shooting**: Standard shooting interval (0.5s)
+- **Special Behavior**: None
+- **Purpose**: Balanced gameplay experience
+
+### STRONG AI
+- **Speed**: 120% of normal speed (240.0f units/second)
+- **Shooting**: 40% faster shooting interval (0.2s)
+- **Special Behavior**: Uses charge shots when 2+ enemies are clustered within 50 pixels vertically
+- **Purpose**: Challenging gameplay, very aggressive ally
+
+### NO_ALLY
+- **Behavior**: No ally entity is spawned at all
+- **Purpose**: Pure solo play without AI assistance
+- **Implementation**: Lobby skips ally spawning when `AIDifficulty::NO_ALLY` is selected
+
+**Note**: The client sends `AIDifficulty` (WEAK, MEDIUM, STRONG, NO_ALLY) to the server, which maps WEAK/MEDIUM/STRONG to the corresponding `AIStrength` values. NO_ALLY results in no ally being spawned.
+
+---
+
+## Architecture
 
 ## Architecture
 
@@ -63,10 +98,11 @@ Perception    Behavior      Constraints
 #### 4. **`include/ai/AllyAIUtility.hpp`** - Utilities & Constants
 - **Purpose**: Shared math functions and configuration constants
 - **Sections**:
-  - **CONSTANTS**: All configurable parameters in one place
+  - **AIStrength enum**: Defines WEAK, MEDIUM, STRONG difficulty levels
+  - **CONSTANTS**: All configurable parameters in one place, with multipliers for different AI strengths
   - **MATH_UTILITIES**: Distance, direction, vector operations
   - **COMPONENT_QUERIES**: Efficient entity component access
-- **Benefits**: Easy tuning, no magic numbers, reusable math
+- **Benefits**: Easy tuning, no magic numbers, reusable math, difficulty-based behavior
 
 ### Implementation Files
 
@@ -321,16 +357,28 @@ All behavior parameters are centralized in `AllyAIUtility.hpp`:
 ```cpp
 // Movement
 ALLY_SPEED = 200.0f
+ALLY_SPEED_WEAK_MULTIPLIER = 0.7f      // 70% speed for WEAK AI
+ALLY_SPEED_STRONG_MULTIPLIER = 1.2f    // 120% speed for STRONG AI
 VERTICAL_ALIGNMENT_THRESHOLD = 50.0f
 HORIZONTAL_CHANGE_INTERVAL = 2.0f
 HORIZONTAL_SPEED_MULTIPLIER = 0.5f
 
 // Shooting
 SHOOTING_INTERVAL = 0.5f
+SHOOTING_INTERVAL_STRONG_MULTIPLIER = 0.4f  // 40% of interval for STRONG AI
+
+// Idle behavior (WEAK AI only)
+IDLE_DURATION_MIN = 2.0f
+IDLE_DURATION_MAX = 4.0f
+IDLE_CHANCE = 0.3f  // 30% chance to idle
+
+// Charge shots (STRONG AI only)
+CHARGE_SHOT_ENEMY_Y_THRESHOLD = 50.0f
+CHARGE_SHOT_MIN_ENEMIES = 2
 
 // Avoidance
-ENEMY_AVOID_RADIUS = 180.0f
-PROJECTILE_AVOID_RADIUS = 120.0f
+ENEMY_AVOID_RADIUS = 100.0f
+PROJECTILE_AVOID_RADIUS = 100.0f
 EMERGENCY_RADIUS = 60.0f
 PREDICTION_TIME = 0.5f
 AVOID_FORCE_MULTIPLIER = 2.0f
@@ -523,7 +571,8 @@ class AllySystem : public ecs::ISystem {
   
   // Creates/updates one AI controller per ally
   // Cleans up controllers for dead allies
-  // Only processes in solo mode
+  // Only processes in solo mode when allies are present
+  // NO_ALLY difficulty prevents ally spawning entirely
 };
 ```
 
@@ -531,6 +580,7 @@ class AllySystem : public ecs::ISystem {
 - Lazy initialization (creates AI on first update)
 - Automatic cleanup (removes AI for dead allies)
 - Solo-mode checking (only updates when 1 player)
+- Difficulty-aware (respects NO_ALLY setting by not spawning allies)
 
 ---
 
@@ -616,5 +666,7 @@ The refactored ally AI is now:
 ✅ **Well-Documented** - Comprehensive inline and header comments  
 ✅ **Configurable** - All parameters in one place  
 ✅ **Performance** - Efficient predictive calculations  
+✅ **Difficulty-Aware** - Supports WEAK/MEDIUM/STRONG AI with different behaviors  
+✅ **Optional** - NO_ALLY mode completely disables AI ally spawning  
 
-The behavior remains **identical to the original**, preserving all decision priorities and functionalities while providing a much cleaner, more understandable codebase.
+The behavior remains **identical to the original** for MEDIUM difficulty, preserving all decision priorities and functionalities while providing a much cleaner, more understandable codebase with additional difficulty options.
