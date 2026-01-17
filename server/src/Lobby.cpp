@@ -15,7 +15,8 @@
 #include <iostream>
 #include <nlohmann/json.hpp>
 
-Lobby::Lobby(const std::string &code, std::shared_ptr<INetworkManager> networkManager, bool isSolo, AIDifficulty aiDifficulty)
+Lobby::Lobby(const std::string &code, std::shared_ptr<INetworkManager> networkManager, bool isSolo,
+             AIDifficulty aiDifficulty)
     : m_code(code), m_networkManager(std::move(networkManager)), m_isSolo(isSolo), m_aiDifficulty(aiDifficulty)
 {
   // Create isolated world for this lobby
@@ -149,8 +150,8 @@ void Lobby::startGame()
     spawnAlly();
   }
 
-  std::cout << "[Lobby:" << m_code << "] Game started with " << playerCount << " players" << (m_isSolo ? " + ally" : "") << " and " << m_spectators.size()
-            << " spectators" << '\n';
+  std::cout << "[Lobby:" << m_code << "] Game started with " << playerCount << " players" << (m_isSolo ? " + ally" : "")
+            << " and " << m_spectators.size() << " spectators" << '\n';
 }
 
 void Lobby::stopGame()
@@ -391,28 +392,28 @@ void Lobby::spawnAlly()
 
   // Ally has same HP as player, but stronger allies get bonus HP
   int startingHP = GameConfig::getPlayerHPForDifficulty(m_difficulty);
-  
+
   // Map AI difficulty to AI strength (only in solo mode)
   server::ai::AIStrength allyStrength;
   switch (m_aiDifficulty) {
-    case AIDifficulty::WEAK:
-      allyStrength = server::ai::AIStrength::WEAK;
-      break;
-    case AIDifficulty::MEDIUM:
-      allyStrength = server::ai::AIStrength::MEDIUM;
-      break;
-    case AIDifficulty::STRONG:
-      allyStrength = server::ai::AIStrength::STRONG;
-      break;
-    case AIDifficulty::NO_ALLY:
-      // Should not reach here, but just in case
-      allyStrength = server::ai::AIStrength::MEDIUM;
-      break;
-    default:
-      allyStrength = server::ai::AIStrength::MEDIUM;
-      break;
+  case AIDifficulty::WEAK:
+    allyStrength = server::ai::AIStrength::WEAK;
+    break;
+  case AIDifficulty::MEDIUM:
+    allyStrength = server::ai::AIStrength::MEDIUM;
+    break;
+  case AIDifficulty::STRONG:
+    allyStrength = server::ai::AIStrength::STRONG;
+    break;
+  case AIDifficulty::NO_ALLY:
+    // Should not reach here, but just in case
+    allyStrength = server::ai::AIStrength::MEDIUM;
+    break;
+  default:
+    allyStrength = server::ai::AIStrength::MEDIUM;
+    break;
   }
-  
+
   if (allyStrength == server::ai::AIStrength::STRONG) {
     startingHP *= 2; // Double HP for strong AI
   }
@@ -516,6 +517,33 @@ void Lobby::setDifficulty(GameConfig::Difficulty difficulty)
 GameConfig::Difficulty Lobby::getDifficulty() const
 {
   return m_difficulty;
+}
+
+void Lobby::convertToSpectator(std::uint32_t clientId)
+{
+  // Check if client is already a spectator
+  if (isSpectator(clientId)) {
+    return;
+  }
+
+  // Destroy the player entity (they're dead)
+  destroyPlayerEntity(clientId);
+
+  m_spectators.insert(clientId);
+
+  std::cout << "[Lobby:" << m_code << "] Client " << clientId << " converted to spectator after death ("
+            << m_spectators.size() << " spectators)" << '\n';
+
+  // Notify all clients about the change
+  nlohmann::json notification;
+  notification["type"] = "lobby_state";
+  notification["code"] = m_code;
+  notification["player_count"] = getClientCount();
+  notification["spectator_count"] = m_spectators.size();
+
+  for (const auto &playerId : m_clients) {
+    sendJsonToClient(playerId, notification);
+  }
 }
 
 AIDifficulty Lobby::getAIDifficulty() const

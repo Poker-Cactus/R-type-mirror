@@ -73,9 +73,9 @@ public:
 
   /**
    * @brief Check if player is dead and should return to menu
-   * @return true if player health is zero or below
+   * @return true if player health is zero or below AND not in spectator mode
    */
-  bool shouldReturnToMenu() const { return m_playerHealth <= 0; }
+  bool shouldReturnToMenu() const { return m_playerHealth <= 0 && !m_isSpectator; }
 
   /**
    * @brief Update player animation based on movement input
@@ -87,6 +87,18 @@ public:
    * @brief Reset player animation to idle state
    */
   void resetPlayerAnimation();
+
+  /**
+   * @brief Enable/disable spectator mode
+   * @param enabled true to enable spectator mode
+   */
+  void setSpectatorMode(bool enabled) { m_isSpectator = enabled; }
+
+  /**
+   * @brief Check if in spectator mode
+   * @return true if spectating
+   */
+  bool isSpectator() const { return m_isSpectator; }
 
 private:
   std::shared_ptr<IRenderer> renderer; ///< Renderer interface
@@ -156,4 +168,6 @@ private:
 
   std::shared_ptr<INetworkManager> m_networkManager; ///< Network manager for stats
   float m_pingTimer = 0.0f; ///< Timer for sending pings
+
+  bool m_isSpectator = false; ///< Spectator mode flag
 };
