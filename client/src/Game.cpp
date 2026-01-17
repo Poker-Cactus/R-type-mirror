@@ -163,6 +163,10 @@ bool Game::init()
               this->menu->setState(MenuState::MAIN_MENU);
             return;
           }
+          // Set solo mode if lobby room state exists
+          if (this->lobbyRoomState) {
+            this->playingState->setSoloMode(this->lobbyRoomState->isSolo());
+          }
         }
 
         this->currentState = GameState::PLAYING;
@@ -609,6 +613,23 @@ void Game::handlePlayingStateInput()
 
   if (playingState && playingState->shouldReturnToMenu()) {
     std::cout << "[Game] Player died - returning to menu" << '\n';
+
+    // Save highscore if in solo mode
+    if (playingState->isSolo() && lobbyRoomState) {
+      int finalScore = playingState->getPlayerScore();
+      Difficulty gameDifficulty = lobbyRoomState->getCreationDifficulty();
+      std::string playerName = settings.username;
+
+      HighscoreEntry entry{playerName, finalScore, gameDifficulty};
+      if (highscoreManager.addHighscore(entry)) {
+        std::cout << "[Game] New highscore saved: " << playerName << " - " << finalScore << " points ("
+                  << (gameDifficulty == Difficulty::EASY       ? "Easy"
+                        : gameDifficulty == Difficulty::MEDIUM ? "Medium"
+                                                               : "Expert")
+                  << ")" << std::endl;
+      }
+    }
+
     // Notify server that we're leaving the lobby/game
     sendLeaveToServer();
 

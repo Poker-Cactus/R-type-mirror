@@ -49,6 +49,7 @@ public:
   int shoot = KeyCode::KEY_SPACE; ///< Key binding for shooting
   int chargedShoot = KeyCode::KEY_E; ///< Key binding for charged shot
   int detach = KeyCode::KEY_X; ///< Key binding for detaching powerup
+  int toggleInfoMode = KeyCode::KEY_I; ///< Key binding for toggling info mode
 
   // GRAPHIC Settings
   bool fullScreen = true; ///< Fullscreen mode toggle

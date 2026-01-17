@@ -72,10 +72,22 @@ public:
   void setSoloMode(bool isSolo);
 
   /**
+   * @brief Check if this is solo mode
+   * @return true if solo mode
+   */
+  [[nodiscard]] bool isSolo() const { return m_isSolo; }
+
+  /**
    * @brief Check if player is dead and should return to menu
    * @return true if player health is zero or below
    */
   bool shouldReturnToMenu() const { return m_playerHealth <= 0; }
+
+  /**
+   * @brief Get the current player score
+   * @return the player score
+   */
+  [[nodiscard]] int getPlayerScore() const { return m_playerScore; }
 
   /**
    * @brief Update player animation based on movement input
