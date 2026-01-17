@@ -30,7 +30,7 @@ void NetworkReceiveSystem::setGame(Game *game)
 {
   m_game = game;
   if (m_networkManager) {
-    m_chat = std::make_unique<Server::Chat>(m_networkManager);
+    m_chat = std::make_unique<server::Chat>(m_networkManager);
 
     // Set disconnect callback to properly handle kick command
     m_chat->setDisconnectCallback([this](std::uint32_t clientId) {

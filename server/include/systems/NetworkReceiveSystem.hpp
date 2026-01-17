@@ -32,7 +32,7 @@ public:
 private:
   std::shared_ptr<INetworkManager> m_networkManager;
   Game *m_game = nullptr;
-  std::unique_ptr<Server::Chat> m_chat; ///< Chat system with command handling
+  std::unique_ptr<server::Chat> m_chat; ///< Chat system with command handling
 
   // Message handling
   void handleMessage(ecs::World &world, const std::string &message, std::uint32_t clientId);

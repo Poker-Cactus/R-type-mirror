@@ -5,7 +5,8 @@
 ** Chat.hpp - Server-side chat management with commands
 */
 
-#pragma once
+#ifndef CHAT_HPP_
+#define CHAT_HPP_
 
 #include "../../../network/include/INetworkManager.hpp"
 #include <functional>
@@ -14,7 +15,7 @@
 #include <unordered_map>
 #include <unordered_set>
 
-namespace Server
+namespace server
 {
 
 /**
@@ -76,4 +77,5 @@ private:
   std::function<void(std::uint32_t)> m_disconnectCallback; ///< Callback to disconnect/remove a player
 };
 
-} // namespace Server
+} // namespace server
+#endif // CHAT_HPP_

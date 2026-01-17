@@ -10,7 +10,7 @@
 #include <nlohmann/json.hpp>
 #include <sstream>
 
-namespace Server
+namespace server
 {
 
 Chat::Chat(std::shared_ptr<INetworkManager> networkManager) : m_networkManager(std::move(networkManager))
@@ -230,4 +230,4 @@ void Chat::kickUserCommand(std::uint32_t senderId, const std::string &args)
   std::cout << "[Chat] Client " << senderId << " kicked client " << targetClientId << std::endl;
 }
 
-} // namespace Server
+} // namespace server

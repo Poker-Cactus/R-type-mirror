@@ -5,7 +5,8 @@
 ** ChatUI.hpp - In-game chat interface
 */
 
-#pragma once
+#ifndef CHATUI_HPP_
+#define CHATUI_HPP_
 
 #include "../interface/IRenderer.hpp"
 #include <deque>
@@ -160,3 +161,5 @@ private:
   static constexpr size_t MAX_INPUT_LENGTH = 200;
   static constexpr float MESSAGE_FADE_TIME = 10.0F; ///< Messages fade after this time when chat is closed
 };
+
+#endif // CHATUI_HPP_
