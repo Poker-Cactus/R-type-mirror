@@ -44,7 +44,7 @@ void Menu::init()
     m_lobbyMenu->init(settings);
 
     m_aiDifficultyMenu = std::make_shared<AIDifficultyMenu>(m_renderer, [this](AIDifficulty) {
-      this->setSoloMode();
+      this->startSoloDifficultySelection();
     });
     m_aiDifficultyMenu->init();
 
@@ -305,5 +305,14 @@ void Menu::setSoloMode()
     m_lobbyMenu->setShouldEnterLobbyRoom(true);
     m_lobbyMenu->setIsCreatingLobby(true);
     m_lobbyMenu->setSelectedDifficulty(Difficulty::MEDIUM);
+  }
+}
+
+void Menu::startSoloDifficultySelection()
+{
+  if (m_lobbyMenu != nullptr) {
+    m_lobbyMenu->setSolo(true);
+    m_lobbyMenu->setIsCreatingLobby(true);
+    m_lobbyMenu->startDifficultySelection();
   }
 }

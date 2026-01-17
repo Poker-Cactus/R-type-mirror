@@ -105,6 +105,11 @@ public:
   void setSoloMode();
 
   /**
+   * @brief Start difficulty selection for solo mode
+   */
+  void startSoloDifficultySelection();
+
+  /**
    * @brief Reset highscore refresh flag in lobby menu
    */
   void resetLobbyHighscoresRefresh();

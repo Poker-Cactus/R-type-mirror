@@ -78,6 +78,12 @@ void LobbyMenu::setNetworkManager(std::shared_ptr<INetworkManager> networkManage
   m_networkManager = std::move(networkManager);
 }
 
+void LobbyMenu::startDifficultySelection()
+{
+  m_isSelectingDifficulty = true;
+  m_difficultyIndex = 1; // Default to Medium
+}
+
 void LobbyMenu::render(const WindowDimensions &windowDims)
 {
   // Update highscore refresh timer
@@ -325,7 +331,7 @@ void LobbyMenu::renderDifficultySelection(const WindowDimensions &windowDims)
   }
 
   // Draw instructions
-  const std::string instructions = "ENTER to Create, BACKSPACE to Cancel";
+  const std::string instructions = m_isSolo ? "ENTER to Start, BACKSPACE to Go Back" : "ENTER to Create, BACKSPACE to Cancel";
   int instrWidth = 0;
   int instrHeight = 0;
   m_renderer->getTextSize(m_font, instructions, instrWidth, instrHeight);
@@ -347,6 +353,9 @@ void LobbyMenu::process(MenuState *currentState, Settings &settings)
       selectDifficultyOption();
     }
     if (m_renderer->isKeyJustPressed(KeyCode::KEY_BACKSPACE)) {
+      if (m_isSolo) {
+        *currentState = MenuState::AI_DIFFICULTY;
+      }
       m_isSelectingDifficulty = false;
     }
   } else {
