@@ -31,6 +31,40 @@ void NetworkReceiveSystem::setGame(Game *game)
   m_game = game;
   if (m_networkManager) {
     m_chat = std::make_unique<Server::Chat>(m_networkManager);
+
+    // Set disconnect callback to properly handle kick command
+    m_chat->setDisconnectCallback([this](std::uint32_t clientId) {
+      if (!m_game) {
+        return;
+      }
+
+      // Get lobby manager from game
+      auto &lobbyManager = m_game->getLobbyManager();
+      Lobby *lobby = lobbyManager.getClientLobby(clientId);
+
+      if (lobby) {
+        // Remove client from lobby (this destroys the player entity)
+        lobby->removeClient(clientId);
+
+        // Remove from lobby manager tracking
+        lobbyManager.leaveLobby(clientId);
+
+        // Notify remaining players
+        if (!lobby->isEmpty()) {
+          nlohmann::json lobbyState;
+          lobbyState["type"] = "lobby_state";
+          lobbyState["code"] = lobby->getCode();
+          lobbyState["player_count"] = lobby->getClientCount();
+
+          for (const auto &playerId : lobby->getClients()) {
+            sendJsonMessage(playerId, lobbyState);
+          }
+        }
+      }
+
+      // Disconnect from network
+      m_networkManager->disconnect(clientId);
+    });
   }
 }
 

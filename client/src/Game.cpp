@@ -342,6 +342,11 @@ void Game::handleChatInput()
       input.chargedShoot = false;
       input.detach = false;
     }
+
+    // Reset player animation to idle
+    if (playingState) {
+      playingState->resetPlayerAnimation();
+    }
     return;
   }
 

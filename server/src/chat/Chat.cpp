@@ -204,10 +204,24 @@ void Chat::kickUserCommand(std::uint32_t senderId, const std::string &args)
   }
 
   // Notify the kicked player before disconnecting
+  nlohmann::json kickMsg;
+  kickMsg["type"] = "player_kicked";
+  kickMsg["reason"] = "You have been kicked from the game.";
+  std::string kickJsonStr = kickMsg.dump();
+  auto kickSerialized = m_networkManager->getPacketHandler()->serialize(kickJsonStr);
+  m_networkManager->send(
+    std::span<const std::byte>(reinterpret_cast<const std::byte *>(kickSerialized.data()), kickSerialized.size()),
+    targetClientId);
+
   sendSystemMessage(targetClientId, "You have been kicked from the game.");
 
-  // Disconnect the target client
-  m_networkManager->disconnect(targetClientId);
+  // Use callback to properly disconnect and cleanup (removes from lobby and destroys entity)
+  if (m_disconnectCallback) {
+    m_disconnectCallback(targetClientId);
+  } else {
+    // Fallback: just disconnect from network
+    m_networkManager->disconnect(targetClientId);
+  }
 
   // Notify the sender and broadcast
   sendSystemMessage(senderId, "Player " + args + " has been kicked.");

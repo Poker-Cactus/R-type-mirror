@@ -73,14 +73,15 @@ bool PlayingState::init()
 #ifdef __APPLE__
     // macOS system font path
     constexpr int HUD_FONT_SIZE = 18;
-    void* rawFont = renderer->loadFont("/System/Library/Fonts/Helvetica.ttc", HUD_FONT_SIZE);
+    void *rawFont = renderer->loadFont("/System/Library/Fonts/Helvetica.ttc", HUD_FONT_SIZE);
 #else
     constexpr int HUD_FONT_SIZE = 18;
-    void* rawFont = renderer->loadFont("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", HUD_FONT_SIZE);
+    void *rawFont = renderer->loadFont("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", HUD_FONT_SIZE);
 #endif
     // Wrap in shared_ptr with custom deleter
-    auto fontDeleter = [r = renderer](void* font) {
-      if (font && r) r->freeFont(font);
+    auto fontDeleter = [r = renderer](void *font) {
+      if (font && r)
+        r->freeFont(font);
     };
     m_hudFont = std::shared_ptr<void>(rawFont, fontDeleter);
   } catch (const std::exception &e) {
@@ -817,6 +818,17 @@ void PlayingState::processInput()
   if (m_infoMode) {
     m_infoMode->processInput();
   }
+}
+
+void PlayingState::resetPlayerAnimation()
+{
+  m_returnUp = false;
+  m_returnDown = false;
+  m_playerAnimTimer = 0.f;
+  m_playerFrameIndex = 2;
+  m_playerAnimDirection = PlayerAnimDirection::None;
+  m_playerAnimPlayingOnce = false;
+  m_playerAnimPhase = 0;
 }
 
 void PlayingState::changeAnimationPlayers(float delta_time)

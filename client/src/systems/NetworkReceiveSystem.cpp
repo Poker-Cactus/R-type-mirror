@@ -79,6 +79,17 @@ void ClientNetworkReceiveSystem::update(ecs::World &world, float deltaTime)
         continue;
       }
 
+      // Server told us we've been kicked
+      if (type == "player_kicked") {
+        std::cout << "[Client] Received player_kicked from server" << std::endl;
+        // Stop accepting snapshots immediately
+        g_acceptSnapshots = false;
+        if (m_playerDeadCallback) {
+          m_playerDeadCallback(json);
+        }
+        continue;
+      }
+
       // Lobby left acknowledgement from server
       if (type == "lobby_left") {
         std::cout << "[Client] Received lobby_left from server" << std::endl;

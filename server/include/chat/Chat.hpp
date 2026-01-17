@@ -58,6 +58,12 @@ public:
    */
   void broadcastSystemMessage(const std::string &message);
 
+  /**
+   * @brief Set callback for when a player needs to be disconnected
+   * @param callback Function to call when kicking a player
+   */
+  void setDisconnectCallback(std::function<void(std::uint32_t)> callback) { m_disconnectCallback = callback; }
+
 private:
   void muteUserCommand(std::uint32_t senderId, const std::string &args);
   void unmuteUserCommand(std::uint32_t senderId, const std::string &args);
@@ -67,6 +73,7 @@ private:
   std::unordered_map<std::string, CommandHandler> m_commandHandlers;
   std::unordered_set<std::uint32_t> m_mutedUsers; ///< Set of muted user IDs
   std::shared_ptr<INetworkManager> m_networkManager;
+  std::function<void(std::uint32_t)> m_disconnectCallback; ///< Callback to disconnect/remove a player
 };
 
 } // namespace Server
