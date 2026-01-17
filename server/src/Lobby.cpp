@@ -412,3 +412,31 @@ GameConfig::Difficulty Lobby::getDifficulty() const
 {
   return m_difficulty;
 }
+
+void Lobby::convertToSpectator(std::uint32_t clientId)
+{
+  // Check if client is already a spectator
+  if (isSpectator(clientId)) {
+    return;
+  }
+  
+  // Destroy the player entity (they're dead)
+  destroyPlayerEntity(clientId);
+  
+  m_spectators.insert(clientId);
+  
+  std::cout << "[Lobby:" << m_code << "] Client " << clientId 
+            << " converted to spectator after death (" 
+            << m_spectators.size() << " spectators)" << '\n';
+  
+  // Notify all clients about the change
+  nlohmann::json notification;
+  notification["type"] = "lobby_state";
+  notification["code"] = m_code;
+  notification["player_count"] = getClientCount();
+  notification["spectator_count"] = m_spectators.size();
+  
+  for (const auto &playerId : m_clients) {
+    sendJsonToClient(playerId, notification);
+  }
+}

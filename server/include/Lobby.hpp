@@ -158,6 +158,12 @@ public:
    */
   [[nodiscard]] GameConfig::Difficulty getDifficulty() const;
 
+  /**
+   * @brief Convert a player to spectator (after death)
+   * @param clientId The client identifier
+   */
+  void convertToSpectator(std::uint32_t clientId);
+
 private:
   void initializeSystems();
   void spawnPlayer(std::uint32_t clientId);

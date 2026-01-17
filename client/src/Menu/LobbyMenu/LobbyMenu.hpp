@@ -109,6 +109,12 @@ public:
   [[nodiscard]] bool isCreatingLobby() const { return m_isCreatingLobby; }
   [[nodiscard]] Difficulty getSelectedDifficulty() const { return m_selectedDifficulty; }
 
+  /**
+   * @brief Get highscore manager for adding/reading scores
+   * @return Reference to the highscore manager
+   */
+  [[nodiscard]] HighscoreManager &getHighscoreManager() { return m_highscoreManager; }
+
 private:
   std::shared_ptr<IRenderer> m_renderer;
 
