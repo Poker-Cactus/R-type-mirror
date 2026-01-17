@@ -139,6 +139,7 @@ constexpr std::uint32_t BUBBLE = 41;
 constexpr std::uint32_t CHARGED_PROJECTILE = 42;
 constexpr std::uint32_t LOADING_SHOT = 43;
 constexpr std::uint32_t BOSS_DOBKERATOP = 44;
+constexpr std::uint32_t BOSS_DOBKERATOP_SHOOT = 45;
 // constexpr std::uint32_t BOSS_DOBKERATOP_LEFT_UP = 45;
 // constexpr std::uint32_t BOSS_DOBKERATOP_UP = 46;
 // constexpr std::uint32_t BOSS_DOBKERATOP_DOWN = 47;

@@ -225,6 +225,7 @@ void Lobby::initializeSystems()
   auto *powerupSystem = &m_world->registerSystem<server::PowerupSystem>();
 
   m_world->registerSystem<server::EnemyAISystem>();
+  m_world->registerSystem<server::AttractionSystem>();
   m_world->registerSystem<server::FollowerSystem>();
   m_world->registerSystem<server::RubanAnimationSystem>();
 

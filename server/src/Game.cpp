@@ -40,6 +40,7 @@ Game::Game()
   powerupSystem = &world->registerSystem<server::PowerupSystem>();
 
   world->registerSystem<server::EnemyAISystem>();
+  world->registerSystem<server::AttractionSystem>();
   world->registerSystem<server::FollowerSystem>();
   world->registerSystem<server::RubanAnimationSystem>();
 
