@@ -66,6 +66,12 @@ public:
   void cleanup();
 
   /**
+   * @brief Set solo mode (no network multiplayer)
+   * @param isSolo true for solo gameplay
+   */
+  void setSoloMode(bool isSolo);
+
+  /**
    * @brief Check if player is dead and should return to menu
    * @return true if player health is zero or below AND not in spectator mode
    */
@@ -153,6 +159,7 @@ private:
 
   Settings &settings; ///< Game settings reference
   std::shared_ptr<SettingsMenu> settingsMenu; ///< Settings menu
+  bool m_isSolo = false; ///< Solo mode flag
 
   // FPS tracking
   float m_fpsAccumulator = 0.0f; ///< Time accumulator for FPS calculation

@@ -476,13 +476,15 @@ void Game::handleLobbyRoomTransition()
   const bool isCreating = menu->isCreatingLobby();
   const std::string lobbyCode = menu->getLobbyCodeToJoin();
   const Difficulty diff = menu->getLobbyMenu()->getSelectedDifficulty();
+  const AIDifficulty aiDiff = settings.aiDifficulty;
+  const bool isSolo = menu->isSolo();
 
   std::cout << "[Game] Transitioning from MENU to LOBBY_ROOM" << '\n';
   std::cout << "[Game] Creating: " << (isCreating ? "yes" : "no");
   if (!isCreating) {
     std::cout << ", Code: " << lobbyCode;
   } else {
-    std::cout << ", Difficulty: " << static_cast<int>(diff);
+    std::cout << ", Difficulty: " << static_cast<int>(diff) << ", AI: " << static_cast<int>(aiDiff);
   }
   std::cout << '\n';
 
@@ -504,7 +506,7 @@ void Game::handleLobbyRoomTransition()
   }
 
   // Set the lobby mode (create or join)
-  lobbyRoomState->setLobbyMode(isCreating, lobbyCode, diff);
+  lobbyRoomState->setLobbyMode(isCreating, lobbyCode, diff, isSolo, aiDiff);
 
   // Connect network callbacks to lobby state
   if (auto *networkReceiveSystem = m_world->getSystem<ClientNetworkReceiveSystem>()) {
@@ -525,6 +527,7 @@ void Game::handleLobbyRoomTransition()
         lobbyRoomState->onError(errorMsg);
       }
     });
+
     // Player-dead: server told us our player is dead and we should return to menu
     networkReceiveSystem->setPlayerDeadCallback([this](const nlohmann::json &msg) {
       std::string msgType = msg.value("type", "");

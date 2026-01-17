@@ -11,11 +11,13 @@
 #include "../../../engineCore/include/ecs/Entity.hpp"
 #include "../../../engineCore/include/ecs/ISystem.hpp"
 #include "../../../engineCore/include/ecs/World.hpp"
+#include "../../../engineCore/include/ecs/components/Ally.hpp"
 #include "../../../engineCore/include/ecs/components/Follower.hpp"
 #include "../../../engineCore/include/ecs/components/Health.hpp"
 #include "../../../engineCore/include/ecs/components/Immortal.hpp"
 #include "../../../engineCore/include/ecs/components/Input.hpp"
 #include "../../../engineCore/include/ecs/components/Owner.hpp"
+#include "../../../engineCore/include/ecs/components/Pattern.hpp"
 #include "../../../engineCore/include/ecs/components/Sprite.hpp"
 #include "../../../engineCore/include/ecs/components/Velocity.hpp"
 #include "../../../engineCore/include/ecs/events/EventListenerHandle.hpp"
@@ -130,6 +132,15 @@ private:
         return;
       }
 
+      // Also prevent damage when player collides with ally
+      bool aIsAlly = world.hasComponent<ecs::Ally>(entityA);
+      bool bIsAlly = world.hasComponent<ecs::Ally>(entityB);
+
+      if ((aIsPlayer && bIsAlly) || (aIsAlly && bIsPlayer)) {
+        // Do not apply damage when player collides with ally
+        return;
+      }
+
       // Otherwise apply mutual damage (e.g., enemy vs player)
       applyDamage(world, entityA, entityB, damageFromEntityCollision);
       applyDamage(world, entityB, entityA, damageFromEntityCollision);
@@ -147,10 +158,18 @@ private:
       if (world.hasComponent<ecs::Owner>(entityB)) {
         const auto &owner = world.getComponent<ecs::Owner>(entityB);
         if (world.isAlive(owner.ownerId)) {
-          bool projectileOwnerIsEnemy = !world.hasComponent<ecs::Input>(owner.ownerId);
-          bool targetIsEnemy = !world.hasComponent<ecs::Input>(entityA);
+          bool projectileOwnerIsEnemy = world.hasComponent<ecs::Pattern>(owner.ownerId);
+          bool targetIsEnemy = world.hasComponent<ecs::Pattern>(entityA);
           if (projectileOwnerIsEnemy && targetIsEnemy) {
             shouldDestroyProjectile = false; // Enemy projectile passes through enemies
+          }
+          // Prevent destruction in friendly fire between allies and players
+          bool ownerIsAlly = world.hasComponent<ecs::Ally>(owner.ownerId);
+          bool targetIsPlayer = world.hasComponent<ecs::Input>(entityA);
+          bool ownerIsPlayer = world.hasComponent<ecs::Input>(owner.ownerId);
+          bool targetIsAlly = world.hasComponent<ecs::Ally>(entityA);
+          if ((ownerIsAlly && targetIsPlayer) || (ownerIsPlayer && targetIsAlly)) {
+            shouldDestroyProjectile = false; // Don't destroy in friendly fire
           }
         }
       }
@@ -171,10 +190,18 @@ private:
       if (world.hasComponent<ecs::Owner>(entityA)) {
         const auto &owner = world.getComponent<ecs::Owner>(entityA);
         if (world.isAlive(owner.ownerId)) {
-          bool projectileOwnerIsEnemy = !world.hasComponent<ecs::Input>(owner.ownerId);
-          bool targetIsEnemy = !world.hasComponent<ecs::Input>(entityB);
+          bool projectileOwnerIsEnemy = world.hasComponent<ecs::Pattern>(owner.ownerId);
+          bool targetIsEnemy = world.hasComponent<ecs::Pattern>(entityB);
           if (projectileOwnerIsEnemy && targetIsEnemy) {
             shouldDestroyProjectile = false; // Enemy projectile passes through enemies
+          }
+          // Prevent destruction in friendly fire between allies and players
+          bool ownerIsAlly = world.hasComponent<ecs::Ally>(owner.ownerId);
+          bool targetIsPlayer = world.hasComponent<ecs::Input>(entityB);
+          bool ownerIsPlayer = world.hasComponent<ecs::Input>(owner.ownerId);
+          bool targetIsAlly = world.hasComponent<ecs::Ally>(entityB);
+          if ((ownerIsAlly && targetIsPlayer) || (ownerIsPlayer && targetIsAlly)) {
+            shouldDestroyProjectile = false; // Don't destroy in friendly fire
           }
         }
       }
@@ -204,6 +231,14 @@ private:
       return;
     }
 
+    // Prevent friendly fire between allies and players
+    if (realSource != 0 && world.hasComponent<ecs::Ally>(realSource) && world.hasComponent<ecs::Input>(target)) {
+      return; // Ally can't damage player
+    }
+    if (realSource != 0 && world.hasComponent<ecs::Input>(realSource) && world.hasComponent<ecs::Ally>(target)) {
+      return; // Player can't damage ally
+    }
+
     // Check immortality first
     if (world.hasComponent<ecs::Immortal>(target)) {
       const auto &immortal = world.getComponent<ecs::Immortal>(target);
@@ -212,10 +247,9 @@ private:
       }
     }
 
-    // Prevent enemy friendly fire: if source is an enemy (no Input) and target is also an enemy (no Input), skip
-    bool sourceIsEnemy = realSource != 0 && world.isAlive(realSource) && world.hasComponent<ecs::Health>(realSource) &&
-      !world.hasComponent<ecs::Input>(realSource);
-    bool targetIsEnemy = !world.hasComponent<ecs::Input>(target);
+    // Prevent enemy friendly fire: if source is an enemy (has Pattern) and target is also an enemy (has Pattern), skip
+    bool sourceIsEnemy = realSource != 0 && world.isAlive(realSource) && world.hasComponent<ecs::Pattern>(realSource);
+    bool targetIsEnemy = world.hasComponent<ecs::Pattern>(target);
 
     if (sourceIsEnemy && targetIsEnemy) {
       return;

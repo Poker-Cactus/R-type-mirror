@@ -373,7 +373,8 @@ void PlayingState::render()
         // Draw using actual texture
         if (sprite.spriteId == ecs::SpriteId::PLAYER_SHIP) {
           // Player ship is a spritesheet with player animation
-          int srcX = m_playerFrameIndex * PLAYER_FRAME_WIDTH;
+          int frameIndex = sprite.animated ? sprite.currentFrame : m_playerFrameIndex;
+          int srcX = frameIndex * PLAYER_FRAME_WIDTH;
           int srcY = 0; // première ligne seulement
           int scaledWidth = static_cast<int>(sprite.width * transformComponent.scale);
           int scaledHeight = static_cast<int>(sprite.height * transformComponent.scale);
@@ -933,6 +934,11 @@ void PlayingState::cleanup()
   m_hudFont.reset();
 
   std::cout << "PlayingState: Cleaned up" << '\n';
+}
+
+void PlayingState::setSoloMode(bool isSolo)
+{
+  m_isSolo = isSolo;
 }
 
 void PlayingState::loadSpriteTextures()

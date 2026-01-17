@@ -217,16 +217,19 @@ void LobbyRoomState::processInput()
   }
 }
 
-void LobbyRoomState::setLobbyMode(bool isCreating, const std::string &lobbyCode, Difficulty difficulty)
+void LobbyRoomState::setLobbyMode(bool isCreating, const std::string &lobbyCode, Difficulty difficulty, bool isSolo, AIDifficulty aiDifficulty)
 {
   m_isCreatingLobby = isCreating;
+  m_isSolo = isSolo;
   m_targetLobbyCode = lobbyCode;
   m_creationDifficulty = difficulty;
+  m_aiDifficulty = aiDifficulty;
   m_lobbyRequested = false; // Reset so we can request again
   m_connectionState = LobbyConnectionState::CONNECTING;
   m_returnToMenuRequested = false;
   std::cout << "[LobbyRoomState] Mode set: " << (isCreating ? "CREATE" : "JOIN")
-            << (lobbyCode.empty() ? "" : " code=" + lobbyCode) << '\n';
+            << (lobbyCode.empty() ? "" : " code=" + lobbyCode) << (isSolo ? " SOLO" : "") 
+            << " AI Difficulty: " << static_cast<int>(aiDifficulty) << '\n';
 }
 
 void LobbyRoomState::sendLeaveLobby()
@@ -257,7 +260,12 @@ void LobbyRoomState::requestLobby()
     message["type"] = "request_lobby";
     message["action"] = "create";
     message["difficulty"] = static_cast<int>(m_creationDifficulty);
+    message["ai_difficulty"] = static_cast<int>(m_aiDifficulty);
     message["spectator"] = m_joinAsSpectator;
+    if (m_isSolo) {
+      message["solo"] = true;
+    }
+    std::cout << "[LobbyRoomState] Creating lobby with AI difficulty: " << static_cast<int>(m_aiDifficulty) << '\n';
   } else {
     message["type"] = "request_lobby";
     message["action"] = "join";

@@ -16,7 +16,7 @@ LobbyMenu::LobbyMenu(std::shared_ptr<IRenderer> renderer)
       m_moonMid(nullptr), m_moonFront(nullptr), m_moonFloor(nullptr), m_parallaxOffsetSky(0.0F),
       m_parallaxOffsetBack(0.0F), m_parallaxOffsetMid(0.0F), m_parallaxOffsetFront(0.0F), m_parallaxOffsetFloor(0.0F),
       m_currentIndex(0), m_isEnteringCode(false), m_lobbyCodeInput(""), m_shouldEnterLobbyRoom(false),
-      m_isCreatingLobby(false), m_networkManager(nullptr)
+      m_isCreatingLobby(false), m_isSolo(false), m_networkManager(nullptr)
 {
 }
 
@@ -76,6 +76,12 @@ void LobbyMenu::cleanup()
 void LobbyMenu::setNetworkManager(std::shared_ptr<INetworkManager> networkManager)
 {
   m_networkManager = std::move(networkManager);
+}
+
+void LobbyMenu::startDifficultySelection()
+{
+  m_isSelectingDifficulty = true;
+  m_difficultyIndex = 1; // Default to Medium
 }
 
 void LobbyMenu::render(const WindowDimensions &windowDims)
@@ -325,7 +331,7 @@ void LobbyMenu::renderDifficultySelection(const WindowDimensions &windowDims)
   }
 
   // Draw instructions
-  const std::string instructions = "ENTER to Create, BACKSPACE to Cancel";
+  const std::string instructions = m_isSolo ? "ENTER to Start, BACKSPACE to Go Back" : "ENTER to Create, BACKSPACE to Cancel";
   int instrWidth = 0;
   int instrHeight = 0;
   m_renderer->getTextSize(m_font, instructions, instrWidth, instrHeight);
@@ -347,6 +353,9 @@ void LobbyMenu::process(MenuState *currentState, Settings &settings)
       selectDifficultyOption();
     }
     if (m_renderer->isKeyJustPressed(KeyCode::KEY_BACKSPACE)) {
+      if (m_isSolo) {
+        *currentState = MenuState::AI_DIFFICULTY;
+      }
       m_isSelectingDifficulty = false;
     }
   } else {
@@ -509,12 +518,17 @@ void LobbyMenu::selectCurrentOption(MenuState *currentState)
     m_lobbyCodeInput.clear();
     break;
 
-  case 2: // Clear Highscores
+  case 2: // Solo
+    std::cout << "[LobbyMenu] Going to AI difficulty selection" << '\n';
+    *currentState = MenuState::AI_DIFFICULTY;
+    break;
+
+  case 3: // Clear Highscores
     std::cout << "[LobbyMenu] Clearing highscores" << '\n';
     m_highscoreManager.clearHighscores();
     break;
 
-  case 3: // Back
+  case 4: // Back
     *currentState = MenuState::MAIN_MENU;
     break;
 
