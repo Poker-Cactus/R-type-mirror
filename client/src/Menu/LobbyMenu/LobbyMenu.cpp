@@ -98,7 +98,7 @@ void LobbyMenu::render(const WindowDimensions &windowDims)
 
   // Draw title
   if (m_titleFont != nullptr) {
-    const std::string title = "MULTIPLAYER";
+    const std::string title = "R TYPE";
     int titleWidth = 0;
     int titleHeight = 0;
     m_renderer->getTextSize(m_titleFont, title, titleWidth, titleHeight);
