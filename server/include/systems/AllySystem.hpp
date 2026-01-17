@@ -13,6 +13,8 @@
 #include "../../../engineCore/include/ecs/World.hpp"
 #include "../../../engineCore/include/ecs/components/Ally.hpp"
 #include "../../../engineCore/include/ecs/components/Charging.hpp"
+#include "../../../engineCore/include/ecs/components/PlayerId.hpp"
+#include "../../../engineCore/include/ecs/events/GameEvents.hpp"
 #include "../ai/AllyAI.hpp"
 #include "ecs/ComponentSignature.hpp"
 #include <map>
