@@ -431,6 +431,7 @@ void Lobby::spawnAlly()
   sprite.endFrame = 2; // Stay at idle frame
   sprite.loop = false; // Don't loop, stay at idle
   sprite.frameTime = 1.0f; // Not used since no animation
+  sprite.offsetY = 34.4f; // Take sprite sheet from this point
   m_world->addComponent(ally, sprite);
 
   ecs::Networked networked;
