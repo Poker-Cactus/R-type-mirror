@@ -11,7 +11,10 @@
 #include "../../../engineCore/include/ecs/Entity.hpp"
 #include "../../../engineCore/include/ecs/ISystem.hpp"
 #include "../../../engineCore/include/ecs/World.hpp"
+#include "../../../engineCore/include/ecs/components/Ally.hpp"
 #include "../../../engineCore/include/ecs/components/Collider.hpp"
+#include "../../../engineCore/include/ecs/components/Input.hpp"
+#include "../../../engineCore/include/ecs/components/Owner.hpp"
 #include "../../../engineCore/include/ecs/components/Sprite.hpp"
 #include "../../../engineCore/include/ecs/components/Transform.hpp"
 #include "../../../engineCore/include/ecs/events/GameEvents.hpp"
@@ -67,6 +70,11 @@ public:
         }
 
         if (checkCollision(transformA, colliderA, transformB, colliderB)) {
+          // Skip collision for friendly fire between player projectiles and allies
+          if (shouldSkipCollisionForFriendlyFire(world, entityA, entityB)) {
+            continue;
+          }
+
           // Emit collision event
           ecs::CollisionEvent event(entityA, entityB);
           world.emitEvent(event);
@@ -84,6 +92,28 @@ public:
   }
 
 private:
+  /**
+   * @brief Check if collision should be skipped for friendly fire between player projectiles and allies
+   */
+  static bool shouldSkipCollisionForFriendlyFire(ecs::World &world, ecs::Entity entityA, ecs::Entity entityB)
+  {
+    // Check if entityA is a player-owned projectile and entityB is an ally
+    if (world.hasComponent<ecs::Owner>(entityA)) {
+      const auto &ownerA = world.getComponent<ecs::Owner>(entityA);
+      if (world.isAlive(ownerA.ownerId) && world.hasComponent<ecs::Input>(ownerA.ownerId) && world.hasComponent<ecs::Ally>(entityB)) {
+        return true;
+      }
+    }
+    // Check if entityB is a player-owned projectile and entityA is an ally
+    if (world.hasComponent<ecs::Owner>(entityB)) {
+      const auto &ownerB = world.getComponent<ecs::Owner>(entityB);
+      if (world.isAlive(ownerB.ownerId) && world.hasComponent<ecs::Input>(ownerB.ownerId) && world.hasComponent<ecs::Ally>(entityA)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   /**
    * @brief Check if an entity is an enemy based on its sprite ID
    */
