@@ -138,6 +138,10 @@ constexpr std::uint32_t DRONE = 40;
 constexpr std::uint32_t BUBBLE = 41;
 constexpr std::uint32_t CHARGED_PROJECTILE = 42;
 constexpr std::uint32_t LOADING_SHOT = 43;
+constexpr std::uint32_t BOSS_DOBKERATOP = 44;
+// constexpr std::uint32_t BOSS_DOBKERATOP_LEFT_UP = 45;
+// constexpr std::uint32_t BOSS_DOBKERATOP_UP = 46;
+// constexpr std::uint32_t BOSS_DOBKERATOP_DOWN = 47;
 
 // Bubble Ruban individual frames (4 frames each for back/middle/front)
 // Back (compressed) frames 1-4

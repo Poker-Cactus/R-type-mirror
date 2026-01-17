@@ -363,6 +363,7 @@ public:
             // Spawn just outside the right edge of screen (worldWidth + 100px)
             // Don't add offsetX here - let the delay create natural spacing
             float spawnX = worldWidth + 100.0f;
+            // float spawnX = (spawn.x > 0.0f) ? spawn.x : (worldWidth + 100.0f);
 
             m_spawnQueue.push_back({spawnX, spawn.y + offsetY, individualDelay, spawn.enemyType,
                                     1, // Spawn only 1 enemy per queue entry

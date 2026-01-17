@@ -257,6 +257,49 @@
         "dx": -300.0,
         "dy": 200.0
       }
+    },
+    {
+      "collider": {
+        "height": 100.0,
+        "width": 100.0
+      },
+      "description": "BOSS Dobkeratops",
+      "health": {
+        "hp": 40,
+        "maxHp": 40
+      },
+      "id": "boss_dobkeratops",
+      "name": "boss_dobkeratops",
+      "pattern": {
+        "amplitude": 0.0,
+        "frequency": 0.0,
+        "type": "bounds"
+      },
+      "spawn": {
+        "groupSizeMax": 1,
+        "groupSizeMin": 1,
+        "spawnDelay": 0.0,
+        "spawnInterval": 0.0
+      },
+      "sprite": {
+        "animated": true,
+        "endFrame": 3,
+        "frameCount": 4,
+        "frameTime": 0.3,
+        "height": 146,
+        "loop": true,
+        "reverseAnimation": false,
+        "spriteId": 44,
+        "startFrame": 0,
+        "width": 182
+      },
+      "transform": {
+        "scale": 2.0
+      },
+      "velocity": {
+        "dx": -200.0,
+        "dy": 0.0
+      }
     }
   ]
 }

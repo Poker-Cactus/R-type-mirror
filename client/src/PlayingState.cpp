@@ -218,6 +218,22 @@ void PlayingState::render()
           frameWidth = 549 / 7; // 78px per frame
           frameHeight = 72;
           break;
+        // case ecs::SpriteId::BOSS_DOBKERATOP_UP:
+        //   frameWidth = 195 / 2;
+        //   frameHeight = 82;
+        //   break;
+        // case ecs::SpriteId::BOSS_DOBKERATOP_LEFT_UP:
+        //   frameWidth = 227 / 2;
+        //   frameHeight = 66;
+        //   break;
+        case ecs::SpriteId::BOSS_DOBKERATOP:
+          frameWidth = 182; // 155 pixels / 4 frames, arrondi supérieur pour éviter débordement
+          frameHeight = 146;
+          break;
+        // case ecs::SpriteId::BOSS_DOBKERATOP_DOWN:
+        //   frameWidth = 196 / 2;
+        //   frameHeight = 98;
+        //   break;
         case ecs::SpriteId::DRONE:
         case ecs::SpriteId::BUBBLE:
         case ecs::SpriteId::BUBBLE_TRIPLE:
@@ -333,6 +349,10 @@ void PlayingState::render()
                      sprite.spriteId <= ecs::SpriteId::TRIPLE_PROJECTILE_DOWN) {
             // Triple projectile direction sprites: single image per file
             srcX = 0;
+            srcY = 0;
+          } else if (sprite.spriteId >= ecs::SpriteId::BOSS_DOBKERATOP) {
+            // For player ship and other standard sprites: use currentFrame
+            srcX = sprite.currentFrame * frameWidth;
             srcY = 0;
           } else {
             // For Ruban and other sprites: use offsetX/offsetY/row if present
@@ -472,6 +492,10 @@ void PlayingState::render()
         color = COLOR_PROJECTILE_YELLOW;
         break;
       case ecs::SpriteId::ENEMY_ROBOT:
+      case ecs::SpriteId::BOSS_DOBKERATOP:
+        // case ecs::SpriteId::BOSS_DOBKERATOP_LEFT_UP:
+        // case ecs::SpriteId::BOSS_DOBKERATOP_HEAD:
+        // case ecs::SpriteId::BOSS_DOBKERATOP_DOWN:
         color = COLOR_ENEMY_YELLOW;
         break;
       case ecs::SpriteId::ROBOT_PROJECTILE:
@@ -1309,6 +1333,58 @@ void PlayingState::loadSpriteTextures()
   } catch (const std::exception &e) {
     std::cerr << "[PlayingState] ✗ Failed to load death_anim.png: " << e.what() << '\n';
   }
+
+  // BOSS_ANIM = 65 (spritesheet: 586x94, 6 frames)
+  try {
+    void *boss_anim_tex = renderer->loadTexture("client/assets/boss/boss_dobkeratops.png");
+    if (boss_anim_tex != nullptr) {
+      m_spriteTextures[ecs::SpriteId::BOSS_DOBKERATOP] = boss_anim_tex;
+      std::cout << "[PlayingState] ✓ Loaded BOSS_anim.png" << '\n';
+    } else {
+      std::cerr << "[PlayingState] ✗ Failed to load BOSS_anim.png (returned null)" << '\n';
+    }
+  } catch (const std::exception &e) {
+    std::cerr << "[PlayingState] ✗ Failed to load BOSS_anim.png: " << e.what() << '\n';
+  }
+
+  //   // BOSS_ANIM = 65 (spritesheet: 586x94, 6 frames)
+  //   try {
+  //     void *boss_anim_tex = renderer->loadTexture("client/assets/boss/boss_dobkeratops_up.png");
+  //     if (boss_anim_tex != nullptr) {
+  //       m_spriteTextures[ecs::SpriteId::BOSS_DOBKERATOP_UP] = boss_anim_tex;
+  //       std::cout << "[PlayingState] ✓ Loaded BOSS_anim.png" << '\n';
+  //     } else {
+  //       std::cerr << "[PlayingState] ✗ Failed to load BOSS_anim.png (returned null)" << '\n';
+  //     }
+  //   } catch (const std::exception &e) {
+  //     std::cerr << "[PlayingState] ✗ Failed to load BOSS_anim.png: " << e.what() << '\n';
+  //   }
+
+  //   // BOSS_ANIM = 65 (spritesheet: 586x94, 6 frames)
+  //   try {
+  //     void *boss_anim_tex = renderer->loadTexture("client/assets/boss/boss_dobkeratops_left_up.png");
+  //     if (boss_anim_tex != nullptr) {
+  //       m_spriteTextures[ecs::SpriteId::BOSS_DOBKERATOP_LEFT_UP] = boss_anim_tex;
+  //       std::cout << "[PlayingState] ✓ Loaded BOSS_anim.png" << '\n';
+  //     } else {
+  //       std::cerr << "[PlayingState] ✗ Failed to load BOSS_anim.png (returned null)" << '\n';
+  //     }
+  //   } catch (const std::exception &e) {
+  //     std::cerr << "[PlayingState] ✗ Failed to load BOSS_anim.png: " << e.what() << '\n';
+  //   }
+
+  //   // BOSS_ANIM = 65 (spritesheet: 586x94, 6 frames)
+  //   try {
+  //     void *boss_anim_tex = renderer->loadTexture("client/assets/boss/head_dobkeratops.png");
+  //     if (boss_anim_tex != nullptr) {
+  //       m_spriteTextures[ecs::SpriteId::BOSS_DOBKERATOP_HEAD] = boss_anim_tex;
+  //       std::cout << "[PlayingState] ✓ Loaded BOSS_anim.png" << '\n';
+  //     } else {
+  //       std::cerr << "[PlayingState] ✗ Failed to load BOSS_anim.png (returned null)" << '\n';
+  //     }
+  //   } catch (const std::exception &e) {
+  //     std::cerr << "[PlayingState] ✗ Failed to load BOSS_anim.png: " << e.what() << '\n';
+  //   }
 }
 
 void PlayingState::freeSpriteTextures()

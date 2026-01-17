@@ -376,6 +376,16 @@ public:
           velocity.dx = 0.0F;
           velocity.dy = 0.0F;
         }
+      } else if (pattern.patternType == "boss_pattern") {
+        // Boss enemy pattern: slow horizontal movement with slight vertical oscillation
+        velocity.dx = ENEMY_MOVE_SPEED * 0.3F; // Slower horizontal speed
+
+        // Update phase based on deltaTime and frequency
+        pattern.phase += deltaTime * pattern.frequency;
+
+        // Calculate slight vertical oscillation using sine wave
+        velocity.dy = (pattern.amplitude * 0.5F) * pattern.frequency * std::cos(pattern.phase);
+
       } else {
         // Default or "none" pattern: keep velocity as configured
         // velocity.dx and velocity.dy are already set from config

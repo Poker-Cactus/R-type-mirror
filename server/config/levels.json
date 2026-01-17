@@ -6,6 +6,21 @@
       "name": "First Contact",
       "waves": [
         {
+          "id": "wave_boss",
+          "name": "BOSS FIGHT - Dobkeratops",
+          "spawns": [
+            {
+              "count": 1,
+              "delay": 0.0,
+              "enemyType": "boss_dobkeratops",
+              "spacing": 0.0,
+              "x": 1500.0,
+              "y": 200.0
+            }
+          ],
+          "startTime": 1.0
+        },
+        {
           "id": "wave_1",
           "name": "Opening Wave",
           "spawns": [
