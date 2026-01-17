@@ -93,6 +93,18 @@ public:
   [[nodiscard]] bool shouldReturnToMenu() const { return m_returnToMenuRequested; }
 
   /**
+   * @brief Check if this is solo mode
+   * @return true if solo mode
+   */
+  [[nodiscard]] bool isSolo() const { return m_isSolo; }
+
+  /**
+   * @brief Get the creation difficulty
+   * @return the difficulty
+   */
+  [[nodiscard]] Difficulty getCreationDifficulty() const { return m_creationDifficulty; }
+
+  /**
    * @brief Set lobby mode before connection
    * @param isCreating Whether creating new lobby
    * @param lobbyCode Lobby code (for joining)
