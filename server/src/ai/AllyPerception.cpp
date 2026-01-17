@@ -6,13 +6,13 @@
 */
 
 #include "../../include/ai/AllyPerception.hpp"
-#include "../../include/ai/AllyAIUtility.hpp"
 #include "../../../engineCore/include/ecs/components/Ally.hpp"
 #include "../../../engineCore/include/ecs/components/Collider.hpp"
 #include "../../../engineCore/include/ecs/components/Owner.hpp"
 #include "../../../engineCore/include/ecs/components/Pattern.hpp"
 #include "../../../engineCore/include/ecs/components/PlayerId.hpp"
 #include "../../../engineCore/include/ecs/components/Viewport.hpp"
+#include "../../include/ai/AllyAIUtility.hpp"
 #include "ecs/ComponentSignature.hpp"
 #include <algorithm>
 #include <cmath>
@@ -90,9 +90,7 @@ void EnemyPerception::getViewportBounds(const ecs::World &world, ecs::Entity pla
 // ObstacleAvoidance
 // ============================================================================
 
-ObstacleAvoidance::ObstacleAvoidance()
-{
-}
+ObstacleAvoidance::ObstacleAvoidance() {}
 
 void ObstacleAvoidance::update(ecs::World &world, ecs::Entity allyEntity, ecs::Velocity &allyVelocity,
                                const ecs::Transform &allyTransform, float avoidanceRadiusMultiplier,
@@ -109,8 +107,10 @@ void ObstacleAvoidance::update(ecs::World &world, ecs::Entity allyEntity, ecs::V
   float adjustedEmergencyRadius = utility::EMERGENCY_RADIUS * avoidanceRadiusMultiplier;
 
   // Evaluate threats from enemies and projectiles
-  evaluateEnemyThreats(world, allyEntity, allyTransform, allyRadius, state, adjustedEnemyAvoidRadius, adjustedEmergencyRadius);
-  evaluateProjectileThreats(world, allyEntity, allyTransform, allyRadius, state, adjustedProjectileAvoidRadius, adjustedEmergencyRadius);
+  evaluateEnemyThreats(world, allyEntity, allyTransform, allyRadius, state, adjustedEnemyAvoidRadius,
+                       adjustedEmergencyRadius);
+  evaluateProjectileThreats(world, allyEntity, allyTransform, allyRadius, state, adjustedProjectileAvoidRadius,
+                            adjustedEmergencyRadius);
 
   // Apply avoidance if threats detected
   if (state.needsAvoidance) {
@@ -126,7 +126,7 @@ void ObstacleAvoidance::update(ecs::World &world, ecs::Entity allyEntity, ecs::V
     // Pass allyEntity to calculate accurate center position
     float allyCenterX, allyCenterY;
     utility::getEntityCenter(world, allyEntity, allyTransform.x, allyTransform.y, allyCenterX, allyCenterY);
-    
+
     // Create a temporary transform with center coordinates for force application
     ecs::Transform centerTransform = allyTransform;
     centerTransform.x = allyCenterX;
@@ -136,9 +136,7 @@ void ObstacleAvoidance::update(ecs::World &world, ecs::Entity allyEntity, ecs::V
   }
 }
 
-void ObstacleAvoidance::reset()
-{
-}
+void ObstacleAvoidance::reset() {}
 
 void ObstacleAvoidance::evaluateEnemyThreats(ecs::World &world, ecs::Entity allyEntity,
                                              const ecs::Transform &allyTransform, float allyRadius,
@@ -181,12 +179,12 @@ void ObstacleAvoidance::evaluateEnemyThreats(ecs::World &world, ecs::Entity ally
 
     // Calculate threat using CENTERS
     float dirX, dirY, distance;
-    
+
     // Create temp transform for center-based calculation
     ecs::Transform allyCenterTransform = allyTransform;
     allyCenterTransform.x = allyCenterX;
     allyCenterTransform.y = allyCenterY;
-    
+
     calculateAvoidanceDirection(enemyCenterX, enemyCenterY, allyCenterTransform, dirX, dirY, distance);
 
     float effectiveRadius = allyRadius + enemyRadius;
@@ -195,10 +193,10 @@ void ObstacleAvoidance::evaluateEnemyThreats(ecs::World &world, ecs::Entity ally
     if (distance <= enemyAvoidRadius + effectiveRadius && distance > 0.0f) {
       bool isEmergency = distance <= emergencyRadius + effectiveRadius;
       float baseWeight = calculateThreatWeight(distance, enemyAvoidRadius, effectiveRadius, false, isEmergency);
-      
+
       // Update closest distance tracking
       state.closestDistance = std::min(state.closestDistance, distance);
-      
+
       // Apply priority weighting: closer threats get higher priority
       // Threats within 25% of closest distance get full weight, others get reduced weight
       float priorityWeight = 1.0f;
@@ -206,7 +204,7 @@ void ObstacleAvoidance::evaluateEnemyThreats(ecs::World &world, ecs::Entity ally
         // This threat is significantly farther than the closest one
         priorityWeight = 0.3f; // Reduce influence of distant threats
       }
-      
+
       float finalWeight = baseWeight * priorityWeight;
 
       state.totalX += dirX * finalWeight;
@@ -220,7 +218,8 @@ void ObstacleAvoidance::evaluateEnemyThreats(ecs::World &world, ecs::Entity ally
 
 void ObstacleAvoidance::evaluateProjectileThreats(ecs::World &world, ecs::Entity allyEntity,
                                                   const ecs::Transform &allyTransform, float allyRadius,
-                                                  AvoidanceState &state, float projectileAvoidRadius, float emergencyRadius)
+                                                  AvoidanceState &state, float projectileAvoidRadius,
+                                                  float emergencyRadius)
 {
   // Calculate ally center once
   float allyCenterX, allyCenterY;
@@ -257,7 +256,7 @@ void ObstacleAvoidance::evaluateProjectileThreats(ecs::World &world, ecs::Entity
       predictedY += projVel.dy * utility::PREDICTION_TIME;
     }
 
-    // Get projectile center 
+    // Get projectile center
     float projCenterX, projCenterY;
     utility::getEntityCenter(world, projectile, predictedX, predictedY, projCenterX, projCenterY);
 
@@ -266,12 +265,12 @@ void ObstacleAvoidance::evaluateProjectileThreats(ecs::World &world, ecs::Entity
 
     // Calculate threat using CENTERS
     float dirX, dirY, distance;
-    
+
     // Create temp transform for center-based calculation
     ecs::Transform allyCenterTransform = allyTransform;
     allyCenterTransform.x = allyCenterX;
     allyCenterTransform.y = allyCenterY;
-    
+
     calculateAvoidanceDirection(projCenterX, projCenterY, allyCenterTransform, dirX, dirY, distance);
 
     float effectiveRadius = allyRadius + projRadius;
@@ -280,10 +279,10 @@ void ObstacleAvoidance::evaluateProjectileThreats(ecs::World &world, ecs::Entity
     if (distance <= projectileAvoidRadius + effectiveRadius && distance > 0.0f) {
       bool isEmergency = distance <= emergencyRadius + effectiveRadius;
       float baseWeight = calculateThreatWeight(distance, projectileAvoidRadius, effectiveRadius, true, isEmergency);
-      
+
       // Update closest distance tracking (projectiles can be closer than enemies)
       state.closestDistance = std::min(state.closestDistance, distance);
-      
+
       // Apply priority weighting: closer threats get higher priority
       // For projectiles, use a slightly tighter threshold since they're more dangerous
       float priorityWeight = 1.0f;
@@ -291,7 +290,7 @@ void ObstacleAvoidance::evaluateProjectileThreats(ecs::World &world, ecs::Entity
         // This projectile threat is significantly farther than the closest threat
         priorityWeight = 0.4f; // Reduce influence but keep higher than enemy secondary threats
       }
-      
+
       float finalWeight = baseWeight * priorityWeight;
 
       state.totalX += dirX * finalWeight;
@@ -354,7 +353,7 @@ void ObstacleAvoidance::calculateAvoidanceDirection(float threatX, float threatY
 {
   // Direction away from threat
   outDistance = utility::calculateDirection(threatX, threatY, allyTransform.x, allyTransform.y, outDirX, outDirY);
-  
+
   // Bias avoidance towards Y axis (strafing is safer than backing up in R-Type)
   // Multiply Y component to encourage vertical dodging
   if (outDirY != 0.0f) {
@@ -447,15 +446,15 @@ void ObstacleAvoidance::applyCenterPreference(float &avoidX, float &avoidY, floa
 
     // SITUATION: Trapped / Deadlock (weak avoidance despite multiple threats)
     if (avoidMagnitude < utility::MULTI_THREAT_DEADZONE && threatCount > 1) {
-       // ESCAPE STRATEGY: 
-       // Instead of just going to center (which might be where threats are),
-       // default to a strong VERTICAL escape if center is ambiguous.
-       if (std::abs(centerDirY) < 0.5f) {
-           // If center is mostly horizontal, force vertical escape (Up or Down depending on screen half)
-           centerDirY = (allyY > viewportHeight / 2.0f) ? -1.0f : 1.0f;
-           centerDirX = 0.0f;
-       }
-       weight = 0.9f; // Almost purely escape vector
+      // ESCAPE STRATEGY:
+      // Instead of just going to center (which might be where threats are),
+      // default to a strong VERTICAL escape if center is ambiguous.
+      if (std::abs(centerDirY) < 0.5f) {
+        // If center is mostly horizontal, force vertical escape (Up or Down depending on screen half)
+        centerDirY = (allyY > viewportHeight / 2.0f) ? -1.0f : 1.0f;
+        centerDirX = 0.0f;
+      }
+      weight = 0.9f; // Almost purely escape vector
     }
     // SITUATION: Weak avoidance (single threat or far)
     else if (avoidMagnitude < utility::MULTI_THREAT_DEADZONE) {

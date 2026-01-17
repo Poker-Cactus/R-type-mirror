@@ -589,14 +589,15 @@ void PlayingState::renderHUD()
   // Show spectator indicator if in spectator mode
   if (m_isSpectator) {
     const int winWidth = renderer->getWindowWidth();
-    
+
     constexpr std::uint8_t TEXT_WHITE = 255;
     constexpr std::uint8_t TEXT_ALPHA = 255;
     const Color spectatorColor = {TEXT_WHITE, TEXT_WHITE, TEXT_WHITE, TEXT_ALPHA};
-    
+
     // Use the HUD font like the score display
     if (m_hudFont) {
-      renderer->drawText(m_hudFont.get(), "you died, you are in SPECTATOR MODE", winWidth / 2 - 100, 50, spectatorColor);
+      renderer->drawText(m_hudFont.get(), "you died, you are in SPECTATOR MODE", winWidth / 2 - 100, 50,
+                         spectatorColor);
     } else {
       std::cout << "[PlayingState] Warning: m_hudFont is null, cannot render spectator text" << std::endl;
     }
@@ -831,7 +832,7 @@ void PlayingState::processInput()
   if (m_isSpectator) {
     return;
   }
-  
+
   if (renderer == nullptr) {
     return;
   }

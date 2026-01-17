@@ -6,21 +6,19 @@
 */
 
 #include "../../include/ai/AllyAI.hpp"
-#include "../../include/ai/AllyAIUtility.hpp"
-#include "../../include/ai/AllyBehavior.hpp"
-#include "../../include/ai/AllyPerception.hpp"
 #include "../../../engineCore/include/ecs/components/Ally.hpp"
 #include "../../../engineCore/include/ecs/components/PlayerId.hpp"
 #include "../../../engineCore/include/ecs/components/Transform.hpp"
 #include "../../../engineCore/include/ecs/components/Velocity.hpp"
+#include "../../include/ai/AllyAIUtility.hpp"
+#include "../../include/ai/AllyBehavior.hpp"
+#include "../../include/ai/AllyPerception.hpp"
 #include "ecs/ComponentSignature.hpp"
 
 namespace server::ai
 {
 
-AllyAI::AllyAI(AIStrength strength) : m_strength(strength)
-{
-}
+AllyAI::AllyAI(AIStrength strength) : m_strength(strength) {}
 
 void AllyAI::update(ecs::World &world, ecs::Entity allyEntity, float deltaTime)
 {
@@ -75,11 +73,12 @@ void AllyAI::updateBehaviors(ecs::World &world, ecs::Entity allyEntity, float de
   auto &playerTransform = world.getComponent<ecs::Transform>(playerEntity);
 
   // STEP 1: Detect nearest enemy
-  ecs::Entity targetEntity = perception::EnemyPerception::findNearestEnemy(world, allyTransform.x, allyTransform.y, playerEntity);
+  ecs::Entity targetEntity =
+    perception::EnemyPerception::findNearestEnemy(world, allyTransform.x, allyTransform.y, playerEntity);
 
   // Use enemy as target, or player if no enemy
-  const ecs::Transform &targetTransform = (targetEntity != 0) ? world.getComponent<ecs::Transform>(targetEntity)
-                                                               : playerTransform;
+  const ecs::Transform &targetTransform =
+    (targetEntity != 0) ? world.getComponent<ecs::Transform>(targetEntity) : playerTransform;
 
   // STEP 2: Update movement toward target
   m_movement.update(deltaTime, allyVelocity, allyTransform, targetTransform, m_strength);

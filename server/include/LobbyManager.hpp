@@ -8,8 +8,8 @@
 #ifndef LOBBY_MANAGER_HPP_
 #define LOBBY_MANAGER_HPP_
 
-#include "Lobby.hpp"
 #include "../../common/include/Common.hpp"
+#include "Lobby.hpp"
 #include <memory>
 #include <string>
 #include <unordered_map>

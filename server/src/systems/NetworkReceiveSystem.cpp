@@ -368,7 +368,7 @@ void NetworkReceiveSystem::handleRequestLobby(const nlohmann::json &json, std::u
       if (aiDiffInt >= 0 && aiDiffInt <= 3) {
         aiDifficulty = static_cast<AIDifficulty>(aiDiffInt);
         std::cout << "[Server] Parsed AI difficulty as: " << static_cast<int>(aiDifficulty) << " ("
-                  << (aiDifficulty == AIDifficulty::WEAK     ? "WEAK"
+                  << (aiDifficulty == AIDifficulty::WEAK       ? "WEAK"
                         : aiDifficulty == AIDifficulty::MEDIUM ? "MEDIUM"
                         : aiDifficulty == AIDifficulty::STRONG ? "STRONG"
                                                                : "NO_ALLY")
@@ -402,14 +402,13 @@ void NetworkReceiveSystem::handleRequestLobby(const nlohmann::json &json, std::u
     } else {
       std::cout << "[Server] >>> NO GAME MODE FIELD IN MESSAGE, USING DEFAULT CLASSIC <<<" << '\n';
     }
-        std::cout << "[Server] Created " << (isSolo ? "SOLO " : "") << "lobby '" << lobbyCode << "' with final difficulty: " << static_cast<int>(difficulty)
-              << " ("
+    std::cout << "[Server] Created " << (isSolo ? "SOLO " : "") << "lobby '" << lobbyCode
+              << "' with final difficulty: " << static_cast<int>(difficulty) << " ("
               << (difficulty == GameConfig::Difficulty::EASY       ? "EASY"
                     : difficulty == GameConfig::Difficulty::MEDIUM ? "MEDIUM"
                                                                    : "EXPERT")
-              << ") and AI difficulty: " << static_cast<int>(aiDifficulty)
-              << " ("
-              << (aiDifficulty == AIDifficulty::WEAK     ? "WEAK"
+              << ") and AI difficulty: " << static_cast<int>(aiDifficulty) << " ("
+              << (aiDifficulty == AIDifficulty::WEAK       ? "WEAK"
                     : aiDifficulty == AIDifficulty::MEDIUM ? "MEDIUM"
                     : aiDifficulty == AIDifficulty::STRONG ? "STRONG"
                                                            : "NO_ALLY")

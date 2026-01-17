@@ -9,11 +9,11 @@
 #define SERVERSYSTEMS_HPP_
 
 // IWYU pragma: begin_exports
+#include "systems/AllySystem.hpp"
 #include "systems/CollisionSystem.hpp"
 #include "systems/DamageSystem.hpp"
 #include "systems/DeathSystem.hpp"
 #include "systems/EnemyAISystem.hpp"
-#include "systems/AllySystem.hpp"
 #include "systems/EntityLifetimeSystem.hpp"
 #include "systems/FollowerSystem.hpp"
 #include "systems/InputMovementSystem.hpp"

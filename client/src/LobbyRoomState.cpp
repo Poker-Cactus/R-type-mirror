@@ -118,7 +118,8 @@ void LobbyRoomState::renderLobbyText()
         std::to_string(elapsedSeconds) + "s)";
       line2 = "Timeout in " + std::to_string(std::max(0, remainingSeconds)) + "s";
     } else {
-      line1 = m_isSolo ? "Solo Mode" : "Spectator mode: " + std::string(m_joinAsSpectator ? "ON" : "OFF") + " (Press R to toggle)";
+      line1 = m_isSolo ? "Solo Mode"
+                       : "Spectator mode: " + std::string(m_joinAsSpectator ? "ON" : "OFF") + " (Press R to toggle)";
       line2 = "Press ENTER to join lobby";
     }
     break;
@@ -180,8 +181,8 @@ void LobbyRoomState::processInput()
   }
 
   // R to toggle spectator mode before joining
-  if (m_connectionState == LobbyConnectionState::CONNECTING && !m_lobbyRequested &&
-      !m_isSolo && renderer->isKeyJustPressed(KeyCode::KEY_R)) {
+  if (m_connectionState == LobbyConnectionState::CONNECTING && !m_lobbyRequested && !m_isSolo &&
+      renderer->isKeyJustPressed(KeyCode::KEY_R)) {
     m_joinAsSpectator = !m_joinAsSpectator;
     std::cout << "[LobbyRoomState] Spectator mode: " << (m_joinAsSpectator ? "ON" : "OFF") << '\n';
   }
