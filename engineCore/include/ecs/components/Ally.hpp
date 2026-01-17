@@ -8,8 +8,8 @@
 #ifndef ENGINECORE_ECS_COMPONENTS_ALLY_HPP
 #define ENGINECORE_ECS_COMPONENTS_ALLY_HPP
 
-#include "IComponent.hpp"
 #include "../../../server/include/ai/AllyAIUtility.hpp"
+#include "IComponent.hpp"
 
 namespace ecs
 {
@@ -25,10 +25,7 @@ struct Ally : public IComponent {
   Ally() : strength(server::ai::AIStrength::MEDIUM) {}
   Ally(server::ai::AIStrength s) : strength(s) {}
 
-  [[nodiscard]] nlohmann::json toJson() const override
-  {
-    return {{"strength", static_cast<int>(strength)}};
-  }
+  [[nodiscard]] nlohmann::json toJson() const override { return {{"strength", static_cast<int>(strength)}}; }
 };
 } // namespace ecs
 

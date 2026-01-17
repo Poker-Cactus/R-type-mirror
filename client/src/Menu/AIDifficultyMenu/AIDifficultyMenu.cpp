@@ -11,7 +11,8 @@
 #include "../../../interface/KeyCodes.hpp"
 #include <iostream>
 
-AIDifficultyMenu::AIDifficultyMenu(std::shared_ptr<IRenderer> renderer, std::function<void(AIDifficulty)> onDifficultySelected)
+AIDifficultyMenu::AIDifficultyMenu(std::shared_ptr<IRenderer> renderer,
+                                   std::function<void(AIDifficulty)> onDifficultySelected)
     : m_renderer(renderer), font(nullptr), currentMenuIndex(0), m_onDifficultySelected(std::move(onDifficultySelected))
 {
   // aiDifficultyItems is initialized in the header

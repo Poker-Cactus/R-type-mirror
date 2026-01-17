@@ -6,16 +6,16 @@
 */
 
 #include "../../include/ai/AllyBehavior.hpp"
-#include "../../include/ai/AllyAIUtility.hpp"
-#include "../../../engineCore/include/ecs/components/Sprite.hpp"
-#include "../../../engineCore/include/ecs/components/PlayerId.hpp"
-#include "../../../engineCore/include/ecs/components/Pattern.hpp"
 #include "../../../engineCore/include/ecs/components/Charging.hpp"
-#include "../../../engineCore/include/ecs/components/Owner.hpp"
 #include "../../../engineCore/include/ecs/components/Follower.hpp"
+#include "../../../engineCore/include/ecs/components/Owner.hpp"
+#include "../../../engineCore/include/ecs/components/Pattern.hpp"
+#include "../../../engineCore/include/ecs/components/PlayerId.hpp"
+#include "../../../engineCore/include/ecs/components/Sprite.hpp"
 #include "../../../engineCore/include/ecs/events/GameEvents.hpp"
-#include <cstdlib>
+#include "../../include/ai/AllyAIUtility.hpp"
 #include <cmath>
+#include <cstdlib>
 
 namespace server::ai::behavior
 {
@@ -24,12 +24,13 @@ namespace server::ai::behavior
 // MovementBehavior
 // ============================================================================
 
-MovementBehavior::MovementBehavior() : m_horizontalTimer(0.0f), m_currentXDirection(0.0f), m_idleTimer(0.0f), m_idleDuration(0.0f), m_isIdling(false)
+MovementBehavior::MovementBehavior()
+    : m_horizontalTimer(0.0f), m_currentXDirection(0.0f), m_idleTimer(0.0f), m_idleDuration(0.0f), m_isIdling(false)
 {
 }
 
 void MovementBehavior::update(float deltaTime, ecs::Velocity &allyVelocity, const ecs::Transform &allyTransform,
-                               const ecs::Transform &targetTransform, AIStrength strength)
+                              const ecs::Transform &targetTransform, AIStrength strength)
 {
   // Update idle state (only for weak AI)
   updateIdleState(deltaTime, strength);
@@ -70,34 +71,34 @@ void MovementBehavior::updateHorizontalDirection()
   // Pick random direction: -1 (left), 0 (still), or 1 (right)
   int randomChoice = rand() % 3;
   switch (randomChoice) {
-    case 0:
-      m_currentXDirection = -1.0f; // Move left
-      break;
-    case 1:
-      m_currentXDirection = 1.0f; // Move right
-      break;
-    default:
-      m_currentXDirection = 0.0f; // Stay still
+  case 0:
+    m_currentXDirection = -1.0f; // Move left
+    break;
+  case 1:
+    m_currentXDirection = 1.0f; // Move right
+    break;
+  default:
+    m_currentXDirection = 0.0f; // Stay still
   }
 }
 
 float MovementBehavior::calculateVerticalVelocity(const ecs::Transform &allyTransform,
-                                                   const ecs::Transform &targetTransform, AIStrength strength)
+                                                  const ecs::Transform &targetTransform, AIStrength strength)
 {
   float baseSpeed = utility::ALLY_SPEED;
 
   // Apply strength multiplier
   switch (strength) {
-    case AIStrength::WEAK:
-      baseSpeed *= utility::ALLY_SPEED_WEAK_MULTIPLIER;
-      break;
-    case AIStrength::STRONG:
-      baseSpeed *= utility::ALLY_SPEED_STRONG_MULTIPLIER;
-      break;
-    case AIStrength::MEDIUM:
-    default:
-      // No change for medium
-      break;
+  case AIStrength::WEAK:
+    baseSpeed *= utility::ALLY_SPEED_WEAK_MULTIPLIER;
+    break;
+  case AIStrength::STRONG:
+    baseSpeed *= utility::ALLY_SPEED_STRONG_MULTIPLIER;
+    break;
+  case AIStrength::MEDIUM:
+  default:
+    // No change for medium
+    break;
   }
 
   float dy = targetTransform.y - allyTransform.y;
@@ -116,16 +117,16 @@ float MovementBehavior::calculateHorizontalVelocity(AIStrength strength)
 
   // Apply strength multiplier
   switch (strength) {
-    case AIStrength::WEAK:
-      baseSpeed *= utility::ALLY_SPEED_WEAK_MULTIPLIER;
-      break;
-    case AIStrength::STRONG:
-      baseSpeed *= utility::ALLY_SPEED_STRONG_MULTIPLIER;
-      break;
-    case AIStrength::MEDIUM:
-    default:
-      // No change for medium
-      break;
+  case AIStrength::WEAK:
+    baseSpeed *= utility::ALLY_SPEED_WEAK_MULTIPLIER;
+    break;
+  case AIStrength::STRONG:
+    baseSpeed *= utility::ALLY_SPEED_STRONG_MULTIPLIER;
+    break;
+  case AIStrength::MEDIUM:
+  default:
+    // No change for medium
+    break;
   }
 
   return m_currentXDirection * baseSpeed;
@@ -172,16 +173,16 @@ float MovementBehavior::generateIdleDuration() const
 // ShootingBehavior
 // ============================================================================
 
-ShootingBehavior::ShootingBehavior() : m_shootingTimer(0.0f)
-{
-}
+ShootingBehavior::ShootingBehavior() : m_shootingTimer(0.0f) {}
 
 void ShootingBehavior::update(float deltaTime, ecs::World &world, ecs::Entity allyEntity,
-                               const ecs::Transform &allyTransform, const ecs::Transform &targetTransform, AIStrength strength)
+                              const ecs::Transform &allyTransform, const ecs::Transform &targetTransform,
+                              AIStrength strength)
 {
   m_shootingTimer += deltaTime;
 
-  if (isAlignedForShooting(allyTransform, targetTransform, strength) && shouldShoot(strength) && m_shootingTimer >= getShootingInterval(strength)) {
+  if (isAlignedForShooting(allyTransform, targetTransform, strength) && shouldShoot(strength) &&
+      m_shootingTimer >= getShootingInterval(strength)) {
     // Check if strong AI should use charge shot
     if (shouldUseChargeShot(world, allyTransform, strength)) {
       chargeShoot(world, allyEntity);
@@ -197,24 +198,24 @@ void ShootingBehavior::reset()
   m_shootingTimer = 0.0f;
 }
 
-bool ShootingBehavior::isAlignedForShooting(const ecs::Transform &allyTransform,
-                                            const ecs::Transform &targetTransform, AIStrength strength)
+bool ShootingBehavior::isAlignedForShooting(const ecs::Transform &allyTransform, const ecs::Transform &targetTransform,
+                                            AIStrength strength)
 {
   float dy = targetTransform.y - allyTransform.y;
   float threshold;
   switch (strength) {
-    case AIStrength::WEAK:
-      threshold = utility::VERTICAL_ALIGNMENT_THRESHOLD * 0.6f; // Smaller range for weak AI
-      break;
-    case AIStrength::MEDIUM:
-      threshold = utility::VERTICAL_ALIGNMENT_THRESHOLD; // Normal range
-      break;
-    case AIStrength::STRONG:
-      threshold = utility::VERTICAL_ALIGNMENT_THRESHOLD * 1.4f; // Larger range for strong AI
-      break;
-    default:
-      threshold = utility::VERTICAL_ALIGNMENT_THRESHOLD;
-      break;
+  case AIStrength::WEAK:
+    threshold = utility::VERTICAL_ALIGNMENT_THRESHOLD * 0.6f; // Smaller range for weak AI
+    break;
+  case AIStrength::MEDIUM:
+    threshold = utility::VERTICAL_ALIGNMENT_THRESHOLD; // Normal range
+    break;
+  case AIStrength::STRONG:
+    threshold = utility::VERTICAL_ALIGNMENT_THRESHOLD * 1.4f; // Larger range for strong AI
+    break;
+  default:
+    threshold = utility::VERTICAL_ALIGNMENT_THRESHOLD;
+    break;
   }
   return std::abs(dy) <= threshold;
 }
@@ -327,13 +328,13 @@ float ShootingBehavior::getShootingInterval(AIStrength strength) const
   float baseInterval = utility::SHOOTING_INTERVAL;
 
   switch (strength) {
-    case AIStrength::WEAK:
-      return baseInterval * 2.0f; // Slower shooting
-    case AIStrength::STRONG:
-      return baseInterval * utility::SHOOTING_INTERVAL_STRONG_MULTIPLIER; // Faster shooting
-    case AIStrength::MEDIUM:
-    default:
-      return baseInterval; // Normal
+  case AIStrength::WEAK:
+    return baseInterval * 2.0f; // Slower shooting
+  case AIStrength::STRONG:
+    return baseInterval * utility::SHOOTING_INTERVAL_STRONG_MULTIPLIER; // Faster shooting
+  case AIStrength::MEDIUM:
+  default:
+    return baseInterval; // Normal
   }
 }
 

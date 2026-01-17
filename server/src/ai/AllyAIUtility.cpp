@@ -74,7 +74,7 @@ void predictEntityPosition(ecs::World &world, ecs::Entity entity, float predicti
 bool isEntityValid(ecs::World &world, ecs::Entity entity)
 {
   return world.isAlive(entity) && world.hasComponent<ecs::Transform>(entity) &&
-         world.hasComponent<ecs::Velocity>(entity);
+    world.hasComponent<ecs::Velocity>(entity);
 }
 
 } // namespace server::ai::utility

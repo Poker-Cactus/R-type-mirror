@@ -8,10 +8,10 @@
 #ifndef SERVER_ALLY_AI_HPP_
 #define SERVER_ALLY_AI_HPP_
 
-#include "AllyBehavior.hpp"
-#include "AllyPerception.hpp"
 #include "../../../engineCore/include/ecs/Entity.hpp"
 #include "../../../engineCore/include/ecs/World.hpp"
+#include "AllyBehavior.hpp"
+#include "AllyPerception.hpp"
 
 namespace server::ai
 {

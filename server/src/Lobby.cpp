@@ -16,8 +16,9 @@
 #include <nlohmann/json.hpp>
 
 Lobby::Lobby(const std::string &code, std::shared_ptr<INetworkManager> networkManager, bool isSolo,
-             AIDifficulty aiDifficulty)
-    : m_code(code), m_networkManager(std::move(networkManager)), m_isSolo(isSolo), m_aiDifficulty(aiDifficulty)
+             AIDifficulty aiDifficulty, GameMode mode)
+    : m_code(code), m_networkManager(std::move(networkManager)), m_isSolo(isSolo), m_aiDifficulty(aiDifficulty),
+      m_gameMode(mode)
 {
   // Create isolated world for this lobby
   m_world = std::make_shared<ecs::World>();
@@ -274,9 +275,17 @@ void Lobby::initializeSystems()
       spawnSystem->setEnemyConfigManager(m_enemyConfigManager);
     }
 
-    // Set level config manager if available and start level
+    // Set level config manager if available
     if (m_levelConfigManager) {
       spawnSystem->setLevelConfigManager(m_levelConfigManager);
+    }
+
+    // Apply game mode
+    spawnSystem->setGameMode(m_gameMode);
+
+    if (m_gameMode == GameMode::ENDLESS) {
+      std::cout << "[Lobby:" << m_code << "] Infinite mode enabled" << std::endl;
+    } else if (m_levelConfigManager) {
       spawnSystem->startLevel("level_1");
       std::cout << "[Lobby:" << m_code << "] Level config manager set, started level_1" << std::endl;
     } else if (m_enemyConfigManager) {
@@ -517,6 +526,20 @@ void Lobby::setDifficulty(GameConfig::Difficulty difficulty)
 GameConfig::Difficulty Lobby::getDifficulty() const
 {
   return m_difficulty;
+}
+
+void Lobby::setGameMode(GameMode mode)
+{
+  if (m_gameStarted) {
+    std::cerr << "[Lobby:" << m_code << "] Cannot change game mode after game has started" << '\n';
+    return;
+  }
+  m_gameMode = mode;
+}
+
+GameMode Lobby::getGameMode() const
+{
+  return m_gameMode;
 }
 
 void Lobby::convertToSpectator(std::uint32_t clientId)

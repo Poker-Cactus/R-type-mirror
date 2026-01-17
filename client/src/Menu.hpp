@@ -11,12 +11,12 @@
 
 #pragma once
 #include "../../common/include/Common.hpp"
+#include "Menu/AIDifficultyMenu/AIDifficultyMenu.hpp"
 #include "Menu/IntroScreen/IntroScreen.hpp"
 #include "Menu/LobbyMenu/LobbyMenu.hpp"
 #include "Menu/MainMenu/MainMenu.hpp"
 #include "Menu/ProfileMenu/ProfileMenu.hpp"
 #include "Menu/SettingsMenu/SettingsMenu.hpp"
-#include "Menu/AIDifficultyMenu/AIDifficultyMenu.hpp"
 #include <memory>
 #include <string>
 
@@ -97,6 +97,7 @@ public:
    */
   void resetLobbySelection();
   [[nodiscard]] Difficulty getCurrentDifficulty() const;
+  [[nodiscard]] GameMode getCurrentGameMode() const;
   [[nodiscard]] LobbyMenu *getLobbyMenu() const { return m_lobbyMenu.get(); }
 
   /**
@@ -197,5 +198,6 @@ private:
   void *menu_font = nullptr;
   void *menuMusic;
   Difficulty currentDifficulty = Difficulty::MEDIUM;
+  GameMode currentGameMode = GameMode::CLASSIC;
   MenuState currentState = MenuState::INTRO; ///< Current menu state
 };

@@ -154,33 +154,34 @@ private:
     if (lobby != nullptr) {
       if (world.isAlive(event.entity) && world.hasComponent<ecs::PlayerId>(event.entity)) {
         const auto &pid = world.getComponent<ecs::PlayerId>(event.entity);
-        
-        std::cout << "[DeathSystem] Player " << pid.clientId << " died. Counting remaining alive players..." << std::endl;
-        
+
+        std::cout << "[DeathSystem] Player " << pid.clientId << " died. Counting remaining alive players..."
+                  << std::endl;
+
         // Count remaining alive players (non-spectators), excluding the current dying player
         int alivePlayerCount = 0;
         int totalClients = 0;
         int spectatorCount = 0;
-        
+
         for (const auto &clientId : lobby->getClients()) {
           totalClients++;
-          
+
           // Skip spectators
           if (lobby->isSpectator(clientId)) {
             spectatorCount++;
             std::cout << "[DeathSystem]   Client " << clientId << ": SPECTATOR (skipping)" << std::endl;
             continue;
           }
-          
+
           // Skip the player who is dying
           if (clientId == pid.clientId) {
             std::cout << "[DeathSystem]   Client " << clientId << ": DYING PLAYER (skipping)" << std::endl;
             continue;
           }
-          
+
           ecs::Entity playerEntity = lobby->getPlayerEntity(clientId);
           std::cout << "[DeathSystem]   Client " << clientId << ": entity=" << playerEntity;
-          
+
           // Check if entity is alive (don't check != 0 because entity 0 is valid)
           if (world.isAlive(playerEntity) && world.hasComponent<ecs::Health>(playerEntity)) {
             const auto &health = world.getComponent<ecs::Health>(playerEntity);
@@ -195,30 +196,29 @@ private:
             std::cout << " -> NO VALID ENTITY (not alive or no health)" << std::endl;
           }
         }
-        
-        std::cout << "[DeathSystem] Summary: totalClients=" << totalClients 
-                  << " spectators=" << spectatorCount 
+
+        std::cout << "[DeathSystem] Summary: totalClients=" << totalClients << " spectators=" << spectatorCount
                   << " alive=" << alivePlayerCount << std::endl;
-        
+
         nlohmann::json msg;
-        
+
         // If there are still alive players, convert dead player to spectator
         if (alivePlayerCount > 0) {
           std::cout << "[DeathSystem] -> Sending player_died_spectate" << std::endl;
           msg["type"] = "player_died_spectate";
           msg["reason"] = "killed";
           msg["alive_players"] = alivePlayerCount;
-          
+
           // Convert player to spectator in the lobby
           lobby->convertToSpectator(pid.clientId);
-          
+
         } else {
           std::cout << "[DeathSystem] -> Sending player_dead (game over)" << std::endl;
           // Last player died - game over for everyone
           msg["type"] = "player_dead";
           msg["reason"] = "game_over";
         }
-          if (world.hasComponent<ecs::Health>(event.entity)) {
+        if (world.hasComponent<ecs::Health>(event.entity)) {
           const auto &health = world.getComponent<ecs::Health>(event.entity);
           msg["hp"] = health.hp;
         }

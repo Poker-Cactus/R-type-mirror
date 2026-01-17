@@ -17,8 +17,7 @@ namespace server::ai::perception
 {
 
 // Avoidance weights and behavior
-struct AvoidanceState
-{
+struct AvoidanceState {
   float totalX = 0.0f;
   float totalY = 0.0f;
   float maxWeight = 0.0f;
@@ -99,15 +98,16 @@ private:
    * @param emergencyRadius Adjusted emergency radius
    */
   void evaluateProjectileThreats(ecs::World &world, ecs::Entity allyEntity, const ecs::Transform &allyTransform,
-                                 float allyRadius, AvoidanceState &state, float projectileAvoidRadius, float emergencyRadius);
+                                 float allyRadius, AvoidanceState &state, float projectileAvoidRadius,
+                                 float emergencyRadius);
 
   /**
    * @brief Apply calculated avoidance to velocity
    * @param emergencyMultiplier Emergency speed boost multiplier
    */
   void applyAvoidanceForce(ecs::Velocity &allyVelocity, const AvoidanceState &state,
-                          const ecs::Transform &allyTransform, float viewportWidth, float viewportHeight,
-                          float emergencyMultiplier);
+                           const ecs::Transform &allyTransform, float viewportWidth, float viewportHeight,
+                           float emergencyMultiplier);
 
   /**
    * @brief Calculate weight for obstacle based on distance and threat level
@@ -118,15 +118,15 @@ private:
   /**
    * @brief Calculate avoidance direction away from threat
    */
-  void calculateAvoidanceDirection(float threatX, float threatY, const ecs::Transform &allyTransform,
-                                   float &outDirX, float &outDirY, float &outDistance);
+  void calculateAvoidanceDirection(float threatX, float threatY, const ecs::Transform &allyTransform, float &outDirX,
+                                   float &outDirY, float &outDistance);
 
   /**
    * @brief Apply center preference to avoidance vector
    * Blends avoidance direction with center movement to prevent edge-pinning
    */
-  void applyCenterPreference(float &avoidX, float &avoidY, float allyX, float allyY,
-                            float viewportWidth, float viewportHeight, int threatCount);
+  void applyCenterPreference(float &avoidX, float &avoidY, float allyX, float allyY, float viewportWidth,
+                             float viewportHeight, int threatCount);
 };
 
 /**

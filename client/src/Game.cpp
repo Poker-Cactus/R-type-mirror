@@ -480,6 +480,7 @@ void Game::handleLobbyRoomTransition()
   const bool isCreating = menu->isCreatingLobby();
   const std::string lobbyCode = menu->getLobbyCodeToJoin();
   const Difficulty diff = menu->getLobbyMenu()->getSelectedDifficulty();
+  const GameMode mode = menu->getLobbyMenu()->getSelectedGameMode();
   const AIDifficulty aiDiff = settings.aiDifficulty;
   const bool isSolo = menu->isSolo();
 
@@ -510,7 +511,7 @@ void Game::handleLobbyRoomTransition()
   }
 
   // Set the lobby mode (create or join)
-  lobbyRoomState->setLobbyMode(isCreating, lobbyCode, diff, isSolo, aiDiff);
+  lobbyRoomState->setLobbyMode(isCreating, lobbyCode, diff, isSolo, aiDiff, mode);
 
   // Connect network callbacks to lobby state
   if (auto *networkReceiveSystem = m_world->getSystem<ClientNetworkReceiveSystem>()) {
@@ -535,14 +536,14 @@ void Game::handleLobbyRoomTransition()
     // Player-dead: server told us our player is dead and we should return to menu
     networkReceiveSystem->setPlayerDeadCallback([this](const nlohmann::json &msg) {
       std::string msgType = msg.value("type", "");
-      
+
       if (msgType == "player_died_spectate") {
         // Player died but game continues - become spectator
         std::cout << "[Game] Player died - switching to spectator mode" << std::endl;
-        
+
         int aliveCount = msg.value("alive_players", 0);
         std::cout << "[Game] " << aliveCount << " player(s) still alive" << std::endl;
-        
+
         // Save highscore
         if (msg.contains("score") && menu != nullptr) {
           int finalScore = msg.value("score", 0);
@@ -551,7 +552,7 @@ void Game::handleLobbyRoomTransition()
           HighscoreEntry entry{playerName, finalScore, gameDifficulty};
           menu->getLobbyMenu()->getHighscoreManager().addHighscore(entry);
         }
-        
+
         if (playingState) {
           std::cout << "[Game] Setting spectator mode to TRUE" << std::endl;
           playingState->setSpectatorMode(true);
@@ -559,10 +560,10 @@ void Game::handleLobbyRoomTransition()
         } else {
           std::cerr << "[Game] ERROR: playingState is null, cannot set spectator mode!" << std::endl;
         }
-        
+
       } else if (msgType == "player_dead") {
         std::cout << "[Game] Game over - returning to menu" << std::endl;
-        
+
         if (msg.contains("score") && menu != nullptr) {
           int finalScore = msg.value("score", 0);
           Difficulty gameDifficulty = menu->getCurrentDifficulty();
@@ -570,7 +571,7 @@ void Game::handleLobbyRoomTransition()
           HighscoreEntry entry{playerName, finalScore, gameDifficulty};
           menu->getLobbyMenu()->getHighscoreManager().addHighscore(entry);
         }
-        
+
         if (m_world) {
           try {
             ecs::ComponentSignature emptySig;
@@ -585,7 +586,7 @@ void Game::handleLobbyRoomTransition()
             std::cerr << "[Game] Error clearing world: " << e.what() << '\n';
           }
         }
-        
+
         currentState = GameState::MENU;
         if (menu) {
           menu->setState(MenuState::MAIN_MENU);

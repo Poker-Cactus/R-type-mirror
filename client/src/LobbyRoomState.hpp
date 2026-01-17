@@ -112,7 +112,9 @@ public:
    * @param aiDifficulty AI difficulty level
    * @param isSolo Whether this is a solo game
    */
-  void setLobbyMode(bool isCreating, const std::string &lobbyCode = "", Difficulty difficulty = Difficulty::MEDIUM, bool isSolo = false, AIDifficulty aiDifficulty = AIDifficulty::MEDIUM);
+  void setLobbyMode(bool isCreating, const std::string &lobbyCode = "", Difficulty difficulty = Difficulty::MEDIUM,
+                    bool isSolo = false, AIDifficulty aiDifficulty = AIDifficulty::MEDIUM,
+                    GameMode mode = GameMode::CLASSIC);
 
   /**
    * @brief Send leave lobby message to server
@@ -164,6 +166,7 @@ private:
   float m_timeSinceLobbyRequest = 0.0F;
   Difficulty m_creationDifficulty = Difficulty::MEDIUM;
   AIDifficulty m_aiDifficulty = AIDifficulty::MEDIUM;
+  GameMode m_gameMode = GameMode::CLASSIC;
 
   // Lobby mode
   bool m_isCreatingLobby = true;

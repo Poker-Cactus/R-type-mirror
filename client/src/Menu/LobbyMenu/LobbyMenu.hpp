@@ -6,8 +6,8 @@
 #pragma once
 #include "../../../../common/include/Common.hpp"
 #include "../../../../common/include/Highscore.hpp"
-#include "../../../include/MenuCommon.hpp"
 #include "../../../../network/include/INetworkManager.hpp"
+#include "../../../include/MenuCommon.hpp"
 #include "../../../include/Settings.hpp"
 #include "../../../interface/IRenderer.hpp"
 #include "../MenuState.hpp"
@@ -136,6 +136,7 @@ public:
    */
   [[nodiscard]] bool isSolo() const { return m_isSolo; }
   [[nodiscard]] Difficulty getSelectedDifficulty() const { return m_selectedDifficulty; }
+  [[nodiscard]] GameMode getSelectedGameMode() const { return m_selectedGameMode; }
 
   /**
    * @brief Get highscore manager for adding/reading scores
@@ -150,12 +151,15 @@ private:
   void renderMenuOptions(const WindowDimensions &windowDims);
   void renderLobbyCodeInput(const WindowDimensions &windowDims);
   void renderDifficultySelection(const WindowDimensions &windowDims);
+  void renderModeSelection(const WindowDimensions &windowDims);
   void renderHighscores(const WindowDimensions &windowDims);
   void handleMenuNavigation(Settings &settings);
   void handleDifficultyNavigation();
+  void handleModeNavigation();
   void handleTextInput();
   void selectCurrentOption(MenuState *currentState);
   void selectDifficultyOption();
+  void selectModeOption();
 
   // Settings
   Settings *m_settings = nullptr;
@@ -188,6 +192,12 @@ private:
   std::vector<std::string> m_difficultyItems = {"Easy", "Medium", "Expert"};
   std::size_t m_difficultyIndex = 1; // Default to Medium
   Difficulty m_selectedDifficulty = Difficulty::MEDIUM;
+
+  // Game mode selection
+  bool m_isSelectingMode = false;
+  std::vector<std::string> m_modeItems = {"Classic", "Endless"};
+  std::size_t m_modeIndex = 0; // Default to Classic
+  GameMode m_selectedGameMode = GameMode::CLASSIC;
 
   // Transition flags
   bool m_shouldEnterLobbyRoom;

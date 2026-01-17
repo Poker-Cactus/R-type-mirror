@@ -8,11 +8,11 @@
 #ifndef SERVER_ALLY_BEHAVIOR_HPP_
 #define SERVER_ALLY_BEHAVIOR_HPP_
 
-#include "AllyAIUtility.hpp"
 #include "../../../engineCore/include/ecs/Entity.hpp"
 #include "../../../engineCore/include/ecs/World.hpp"
 #include "../../../engineCore/include/ecs/components/Transform.hpp"
 #include "../../../engineCore/include/ecs/components/Velocity.hpp"
+#include "AllyAIUtility.hpp"
 
 namespace server::ai::behavior
 {
@@ -58,7 +58,8 @@ private:
   /**
    * @brief Calculate vertical velocity to align with target
    */
-  float calculateVerticalVelocity(const ecs::Transform &allyTransform, const ecs::Transform &targetTransform, AIStrength strength);
+  float calculateVerticalVelocity(const ecs::Transform &allyTransform, const ecs::Transform &targetTransform,
+                                  AIStrength strength);
 
   /**
    * @brief Calculate horizontal velocity
@@ -107,7 +108,8 @@ private:
   /**
    * @brief Check if ally is aligned vertically with target for shooting
    */
-  bool isAlignedForShooting(const ecs::Transform &allyTransform, const ecs::Transform &targetTransform, AIStrength strength);
+  bool isAlignedForShooting(const ecs::Transform &allyTransform, const ecs::Transform &targetTransform,
+                            AIStrength strength);
 
   /**
    * @brief Emit a shoot event in the direction of target

@@ -9,9 +9,9 @@
 #include "../../engineCore/include/ecs/EngineComponents.hpp"
 #include "../include/config/EnemyConfig.hpp"
 #include "../include/config/LevelConfig.hpp"
+#include "systems/AllySystem.hpp"
 #include "systems/ChargeSystem.hpp"
 #include "systems/SpawnSystem.hpp"
-#include "systems/AllySystem.hpp"
 #include <chrono>
 #include <cstdint>
 #include <memory>

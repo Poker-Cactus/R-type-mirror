@@ -8,12 +8,14 @@
 #ifndef SERVER_ALLY_SYSTEM_HPP_
 #define SERVER_ALLY_SYSTEM_HPP_
 
-#include "../ai/AllyAI.hpp"
 #include "../../../engineCore/include/ecs/Entity.hpp"
 #include "../../../engineCore/include/ecs/ISystem.hpp"
 #include "../../../engineCore/include/ecs/World.hpp"
 #include "../../../engineCore/include/ecs/components/Ally.hpp"
 #include "../../../engineCore/include/ecs/components/Charging.hpp"
+#include "../../../engineCore/include/ecs/components/PlayerId.hpp"
+#include "../../../engineCore/include/ecs/events/GameEvents.hpp"
+#include "../ai/AllyAI.hpp"
 #include "ecs/ComponentSignature.hpp"
 #include <map>
 

@@ -118,7 +118,8 @@ void LobbyRoomState::renderLobbyText()
         std::to_string(elapsedSeconds) + "s)";
       line2 = "Timeout in " + std::to_string(std::max(0, remainingSeconds)) + "s";
     } else {
-      line1 = m_isSolo ? "Solo Mode" : "Spectator mode: " + std::string(m_joinAsSpectator ? "ON" : "OFF") + " (Press R to toggle)";
+      line1 = m_isSolo ? "Solo Mode"
+                       : "Spectator mode: " + std::string(m_joinAsSpectator ? "ON" : "OFF") + " (Press R to toggle)";
       line2 = "Press ENTER to join lobby";
     }
     break;
@@ -180,8 +181,8 @@ void LobbyRoomState::processInput()
   }
 
   // R to toggle spectator mode before joining
-  if (m_connectionState == LobbyConnectionState::CONNECTING && !m_lobbyRequested &&
-      !m_isSolo && renderer->isKeyJustPressed(KeyCode::KEY_R)) {
+  if (m_connectionState == LobbyConnectionState::CONNECTING && !m_lobbyRequested && !m_isSolo &&
+      renderer->isKeyJustPressed(KeyCode::KEY_R)) {
     m_joinAsSpectator = !m_joinAsSpectator;
     std::cout << "[LobbyRoomState] Spectator mode: " << (m_joinAsSpectator ? "ON" : "OFF") << '\n';
   }
@@ -217,20 +218,23 @@ void LobbyRoomState::processInput()
   }
 }
 
-void LobbyRoomState::setLobbyMode(bool isCreating, const std::string &lobbyCode, Difficulty difficulty, bool isSolo, AIDifficulty aiDifficulty)
+void LobbyRoomState::setLobbyMode(bool isCreating, const std::string &lobbyCode, Difficulty difficulty, bool isSolo,
+                                  AIDifficulty aiDifficulty, GameMode mode)
 {
   m_isCreatingLobby = isCreating;
   m_isSolo = isSolo;
   m_targetLobbyCode = lobbyCode;
   m_creationDifficulty = difficulty;
   m_aiDifficulty = aiDifficulty;
+  m_gameMode = mode;
   m_lobbyRequested = false; // Reset so we can request again
   m_connectionState = LobbyConnectionState::CONNECTING;
   m_returnToMenuRequested = false;
   m_joinAsSpectator = false; // Reset spectator mode
   std::cout << "[LobbyRoomState] Mode set: " << (isCreating ? "CREATE" : "JOIN")
-            << (lobbyCode.empty() ? "" : " code=" + lobbyCode) << (isSolo ? " SOLO" : "") 
-            << " AI Difficulty: " << static_cast<int>(aiDifficulty) << '\n';
+            << (lobbyCode.empty() ? "" : " code=" + lobbyCode) << (isSolo ? " SOLO" : "")
+            << " AI Difficulty: " << static_cast<int>(aiDifficulty)
+            << " Game Mode: " << (mode == GameMode::CLASSIC ? "CLASSIC" : "ENDLESS") << '\n';
 }
 
 void LobbyRoomState::sendLeaveLobby()
@@ -262,6 +266,7 @@ void LobbyRoomState::requestLobby()
     message["action"] = "create";
     message["difficulty"] = static_cast<int>(m_creationDifficulty);
     message["ai_difficulty"] = static_cast<int>(m_aiDifficulty);
+    message["mode"] = static_cast<int>(m_gameMode);
     message["spectator"] = m_joinAsSpectator;
     if (m_isSolo) {
       message["solo"] = true;

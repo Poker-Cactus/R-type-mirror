@@ -31,8 +31,8 @@ namespace server::ai::utility
 // ============================================================================
 
 constexpr float ALLY_SPEED = 200.0f;
-constexpr float ALLY_SPEED_WEAK_MULTIPLIER = 0.7f;    // 70% of normal speed for weak AI
-constexpr float ALLY_SPEED_STRONG_MULTIPLIER = 1.2f;  // 120% of normal speed for strong AI
+constexpr float ALLY_SPEED_WEAK_MULTIPLIER = 0.7f; // 70% of normal speed for weak AI
+constexpr float ALLY_SPEED_STRONG_MULTIPLIER = 1.2f; // 120% of normal speed for strong AI
 constexpr float VERTICAL_ALIGNMENT_THRESHOLD = 50.0f;
 
 // Shooting behavior
@@ -42,11 +42,11 @@ constexpr float SHOOTING_INTERVAL_STRONG_MULTIPLIER = 0.4f; // 40% of interval (
 // Idle behavior for weak AI
 constexpr float IDLE_DURATION_MIN = 2.0f; // Minimum idle time in seconds
 constexpr float IDLE_DURATION_MAX = 4.0f; // Maximum idle time in seconds
-constexpr float IDLE_CHANCE = 0.3f;       // 30% chance to enter idle state
+constexpr float IDLE_CHANCE = 0.3f; // 30% chance to enter idle state
 
 // Charge shot detection for strong AI
 constexpr float CHARGE_SHOT_ENEMY_Y_THRESHOLD = 50.0f; // ±50 pixels for enemy clustering
-constexpr int CHARGE_SHOT_MIN_ENEMIES = 2;             // Minimum enemies for charge shot
+constexpr int CHARGE_SHOT_MIN_ENEMIES = 2; // Minimum enemies for charge shot
 
 // Horizontal movement
 constexpr float HORIZONTAL_CHANGE_INTERVAL = 2.0f; // Change direction every 2 seconds
@@ -63,7 +63,7 @@ constexpr float HIGH_THREAT_THRESHOLD = 1.5f;
 
 // Center preference for avoiding walls
 constexpr float CENTER_PREFERENCE_WEIGHT = 0.3f; // How much to prefer center movement
-constexpr float MULTI_THREAT_DEADZONE = 0.2f;   // If threats cancel out, move toward center
+constexpr float MULTI_THREAT_DEADZONE = 0.2f; // If threats cancel out, move toward center
 
 // Viewport behavior
 constexpr float VIEWPORT_USAGE_RATIO = 1.0f / 2.0f; // Ally stays in left 1/3 of screen
@@ -132,8 +132,8 @@ inline void normalizeVector(float &x, float &y)
  * @param outX, outY Output direction components (normalized)
  * @return Distance to center
  */
-inline float calculateCenterDirection(float allyX, float allyY, float viewportWidth, float viewportHeight,
-                                       float &outX, float &outY)
+inline float calculateCenterDirection(float allyX, float allyY, float viewportWidth, float viewportHeight, float &outX,
+                                      float &outY)
 {
   float centerX = viewportWidth / 2.0f;
   float centerY = viewportHeight / 2.0f;
