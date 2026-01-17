@@ -231,7 +231,7 @@ void InfoMode::processInput()
   if (!m_renderer)
     return;
 
-  bool keyPressed = m_renderer->isKeyPressed(KeyCode::KEY_I);
+  bool keyPressed = m_renderer->isKeyPressed(m_settings.toggleInfoMode);
   if (keyPressed && !m_keyWasPressed) {
     m_isActive = !m_isActive;
     m_settings.showInfoMode = m_isActive;
