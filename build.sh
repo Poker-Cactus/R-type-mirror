@@ -152,15 +152,21 @@ configure_cmake() {
     print_step "Configuring CMake..."
     
     local log_file="/tmp/cmake_config_$$.log"
+    local cmake_args=("-S" "." "-B" "$BUILD_DIR" "-DCMAKE_BUILD_TYPE=$BUILD_TYPE")
     
-    if ! cmake --preset conan-release > "$log_file" 2>&1; then
+    # Add toolchain file if it exists (from Conan)
+    if [ -f "$BUILD_DIR/conan_toolchain.cmake" ]; then
+        cmake_args+=("-DCMAKE_TOOLCHAIN_FILE=$BUILD_DIR/conan_toolchain.cmake")
+    fi
+    
+    if ! cmake "${cmake_args[@]}" > "$log_file" 2>&1; then
         # Check for generator mismatch
         if grep -q "Does not match the generator used previously" "$log_file"; then
             print_warning "CMake cache mismatch, cleaning..."
             rm -f "$BUILD_DIR/CMakeCache.txt"
             rm -rf "$BUILD_DIR/CMakeFiles"
             
-            if ! cmake --preset conan-release > "$log_file" 2>&1; then
+            if ! cmake "${cmake_args[@]}" > "$log_file" 2>&1; then
                 print_error "CMake configuration failed!"
                 cat "$log_file"
                 rm -f "$log_file"
@@ -198,7 +204,10 @@ compile_editor() {
     print_step "Compiling Asset Editor..."
     
     # Configure with editor flag
-    cmake --preset conan-release -DBUILD_ASSET_EDITOR=ON > /dev/null 2>&1 || {
+    local cmake_args=("-S" "." "-B" "$BUILD_DIR" "-DCMAKE_BUILD_TYPE=$BUILD_TYPE" "-DBUILD_ASSET_EDITOR=ON")
+    [ -f "$BUILD_DIR/conan_toolchain.cmake" ] && cmake_args+=("-DCMAKE_TOOLCHAIN_FILE=$BUILD_DIR/conan_toolchain.cmake")
+    
+    cmake "${cmake_args[@]}" > /dev/null 2>&1 || {
         print_error "CMake configuration failed!"
         return 1
     }
@@ -220,7 +229,10 @@ compile_editor() {
     print_step "Compiling Asset Editor..."
     
     # Configure with editor flag
-    cmake --preset conan-release -DBUILD_ASSET_EDITOR=ON > /dev/null 2>&1 || {
+    local cmake_args=("-S" "." "-B" "$BUILD_DIR" "-DCMAKE_BUILD_TYPE=$BUILD_TYPE" "-DBUILD_ASSET_EDITOR=ON")
+    [ -f "$BUILD_DIR/conan_toolchain.cmake" ] && cmake_args+=("-DCMAKE_TOOLCHAIN_FILE=$BUILD_DIR/conan_toolchain.cmake")
+    
+    cmake "${cmake_args[@]}" > /dev/null 2>&1 || {
         print_error "CMake configuration failed!"
         return 1
     }

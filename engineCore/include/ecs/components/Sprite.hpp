@@ -160,6 +160,9 @@ constexpr std::uint32_t BUBBLE_RUBAN_FRONT4 = 61;
 constexpr std::uint32_t TRIPLE_PROJECTILE_RIGHT = 62;
 constexpr std::uint32_t TRIPLE_PROJECTILE_UP = 63;
 constexpr std::uint32_t TRIPLE_PROJECTILE_DOWN = 64;
+
+// Death animation
+constexpr std::uint32_t DEATH_ANIM = 65;
 } // namespace SpriteId
 
 } // namespace ecs

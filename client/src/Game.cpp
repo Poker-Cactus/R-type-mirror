@@ -6,6 +6,7 @@
 */
 
 #include "Game.hpp"
+#include "../interface/IColorBlindSupport.hpp"
 #include "../interface/KeyCodes.hpp"
 #include "Menu/MenuState.hpp"
 #include "Settings.hpp"
@@ -220,6 +221,14 @@ void Game::run()
 
 void Game::shutdown()
 {
+  // Reset color blind mode to normal when shutting down (only if renderer supports it)
+  if (renderer) {
+    auto *colorBlindSupport = dynamic_cast<IColorBlindSupport *>(renderer.get());
+    if (colorBlindSupport) {
+      colorBlindSupport->setColorBlindMode(ColorBlindMode::NONE);
+    }
+  }
+
   // Save settings before shutting down
   settings.saveToFile();
 
@@ -716,6 +725,15 @@ void Game::update(float deltaTime)
   if (settings.fullScreen != fullScreen) {
     renderer->setFullscreen(settings.fullScreen);
     fullScreen = settings.fullScreen;
+  }
+
+  // Update color blind filter if changed (only if renderer supports it)
+  if (settings.colorBlindMode != currentColorBlindMode) {
+    auto *colorBlindSupport = dynamic_cast<IColorBlindSupport *>(renderer.get());
+    if (colorBlindSupport) {
+      colorBlindSupport->setColorBlindMode(settings.colorBlindMode);
+      currentColorBlindMode = settings.colorBlindMode;
+    }
   }
 
   if (m_world) {
