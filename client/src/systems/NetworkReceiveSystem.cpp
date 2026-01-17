@@ -79,6 +79,17 @@ void ClientNetworkReceiveSystem::update(ecs::World &world, float deltaTime)
         continue;
       }
 
+      // Server told us we've been kicked
+      if (type == "player_kicked") {
+        std::cout << "[Client] Received player_kicked from server" << std::endl;
+        // Stop accepting snapshots immediately
+        g_acceptSnapshots = false;
+        if (m_playerDeadCallback) {
+          m_playerDeadCallback(json);
+        }
+        continue;
+      }
+
       // Lobby left acknowledgement from server
       if (type == "lobby_left") {
         std::cout << "[Client] Received lobby_left from server" << std::endl;
@@ -146,6 +157,15 @@ void ClientNetworkReceiveSystem::update(ecs::World &world, float deltaTime)
         std::cerr << "[Client] Server error: " << errorMsg << std::endl;
         if (m_errorCallback) {
           m_errorCallback(errorMsg);
+        }
+      } else if (type == "chat_broadcast") {
+        // Handle incoming chat message from server
+        std::string sender = json.value("sender", "Unknown");
+        std::string content = json.value("content", "");
+        std::uint32_t senderId = json.value("senderId", 0);
+        std::cout << "[Client] Chat from " << sender << ": " << content << std::endl;
+        if (m_chatMessageCallback) {
+          m_chatMessageCallback(sender, content, senderId);
         }
       }
 
@@ -501,6 +521,12 @@ void ClientNetworkReceiveSystem::setLobbyLeftCallback(std::function<void()> call
 void ClientNetworkReceiveSystem::setPlayerDeadCallback(std::function<void(const nlohmann::json &)> callback)
 {
   m_playerDeadCallback = std::move(callback);
+}
+
+void ClientNetworkReceiveSystem::setChatMessageCallback(
+  std::function<void(const std::string &, const std::string &, std::uint32_t)> callback)
+{
+  m_chatMessageCallback = std::move(callback);
 }
 
 ecs::ComponentSignature ClientNetworkReceiveSystem::getSignature() const

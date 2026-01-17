@@ -170,6 +170,14 @@ bool Game::init()
         // so the server records the correct client viewport for the playing session.
         this->sendViewportToServer();
       });
+
+      // Set chat message callback to display incoming messages
+      networkReceiveSystem->setChatMessageCallback(
+        [this](const std::string &sender, const std::string &content, std::uint32_t senderId) {
+          if (this->m_chatUI) {
+            this->m_chatUI->addMessage(sender, content, false, senderId);
+          }
+        });
     }
 
     playingState = std::make_unique<PlayingState>(renderer, m_world, settings, m_networkManager);
@@ -177,6 +185,16 @@ bool Game::init()
       std::cerr << "Failed to initialize playing state" << '\n';
       return false;
     }
+
+    // Initialize chat UI
+    m_chatUI = std::make_unique<ChatUI>(renderer);
+    if (!m_chatUI->init()) {
+      std::cerr << "[Game] Warning: Failed to initialize chat UI - disabling chat" << '\n';
+      m_chatUI.reset(); // Disable chat completely if init fails
+    } else {
+      m_chatUI->setLocalUsername(settings.username);
+    }
+
     isRunning = true;
     return true;
   } catch (const std::exception &e) {
@@ -283,6 +301,82 @@ void Game::sendViewportToServer()
   std::cout << "[Game] Sent viewport update: " << viewport["width"] << "x" << viewport["height"] << '\n';
 }
 
+void Game::sendChatMessage(const std::string &message)
+{
+  if (!m_networkManager || message.empty()) {
+    return;
+  }
+
+  nlohmann::json chatMsg;
+  chatMsg["type"] = "chat_message";
+  chatMsg["content"] = message;
+  chatMsg["sender"] = settings.username;
+
+  std::string jsonStr = chatMsg.dump();
+  auto serialized = m_networkManager->getPacketHandler()->serialize(jsonStr);
+
+  m_networkManager->send(
+    std::span<const std::byte>(reinterpret_cast<const std::byte *>(serialized.data()), serialized.size()), 0);
+
+  std::cout << "[Game] Sent chat message: " << message << '\n';
+
+  // Add to local chat UI immediately with client ID
+  if (m_chatUI && m_world) {
+    std::uint32_t localClientId = 0;
+    if (auto *sendSys = m_world->getSystem<NetworkSendSystem>()) {
+      localClientId = sendSys->getClientId();
+    }
+    m_chatUI->addMessage(settings.username, message, false, localClientId);
+  }
+}
+
+void Game::handleChatInput()
+{
+  if (!renderer || !m_chatUI) {
+    return;
+  }
+
+  // Open chat with T key (only if not already open)
+  if (renderer->isKeyJustPressed(KeyCode::KEY_T) && !m_chatUI->isVisible()) {
+    m_chatUI->open();
+
+    // Reset player input when opening chat to prevent unwanted movement
+    if (m_world && m_inputEntity != 0 && m_world->hasComponent<ecs::Input>(m_inputEntity)) {
+      auto &input = m_world->getComponent<ecs::Input>(m_inputEntity);
+      input.up = false;
+      input.down = false;
+      input.left = false;
+      input.right = false;
+      input.shoot = false;
+      input.chargedShoot = false;
+      input.detach = false;
+    }
+
+    // Reset player animation to idle
+    if (playingState) {
+      playingState->resetPlayerAnimation();
+    }
+    return;
+  }
+
+  // Close chat with Escape key
+  if (renderer->isKeyJustPressed(KeyCode::KEY_ESCAPE) && m_chatUI->isVisible()) {
+    m_chatUI->close();
+    return;
+  }
+
+  // Process chat input if visible
+  if (m_chatUI->isVisible()) {
+    m_chatUI->processInput();
+
+    // Check if user wants to send a message
+    if (m_chatUI->hasMessageToSend()) {
+      std::string message = m_chatUI->consumeMessage();
+      sendChatMessage(message);
+    }
+  }
+}
+
 void Game::processInput()
 {
   if (renderer != nullptr && !renderer->pollEvents()) {
@@ -296,17 +390,33 @@ void Game::processInput()
     return;
   }
 
-  // Ignore ESC in lobby room to prevent accidental closures
-  if (currentState == GameState::LOBBY_ROOM && renderer != nullptr && renderer->isKeyJustPressed(KeyCode::KEY_ESCAPE)) {
-    std::cout << "[Game] ESC pressed in lobby - ignoring (use quit from menu to exit)" << '\n';
-    return;
+  // Handle ESC key - close chat if open, otherwise handle normally
+  if (renderer != nullptr && renderer->isKeyJustPressed(KeyCode::KEY_ESCAPE)) {
+    if (m_chatUI && m_chatUI->isVisible()) {
+      // Close chat instead of quitting
+      m_chatUI->close();
+      return;
+    }
+    // In menu, ESC can be used for navigation (handled by menu)
+    if (currentState == GameState::MENU) {
+      // Let menu handle ESC
+    } else if (currentState == GameState::LOBBY_ROOM) {
+      std::cout << "[Game] ESC pressed in lobby - ignoring (use quit from menu to exit)" << '\n';
+      return;
+    } else {
+      // In other states, ESC quits the game
+      std::cout << "[Game] ESC pressed - shutting down" << '\n';
+      isRunning = false;
+      return;
+    }
   }
 
   // Toggle fullscreen with M key (but not when editing profile)
   if (renderer != nullptr && renderer->isKeyJustPressed(KeyCode::KEY_M)) {
-    // Don't toggle fullscreen if we're editing a username in the profile menu
+    // Don't toggle fullscreen if we're editing a username in the profile menu or chat is open
     if (!(currentState == GameState::MENU && menu && menu->getState() == MenuState::PROFILE &&
-          menu->isProfileEditing())) {
+          menu->isProfileEditing()) &&
+        !(m_chatUI && m_chatUI->isInputFocused())) {
       bool currentFullscreen = renderer->isFullscreen();
       renderer->setFullscreen(!currentFullscreen);
       std::cout << "[Game] Toggled fullscreen: " << (!currentFullscreen ? "ON" : "OFF") << '\n';
@@ -315,6 +425,9 @@ void Game::processInput()
       sendViewportToServer();
     }
   }
+
+  // Toggle chat with Ctrl+T
+  handleChatInput();
 
   handleMenuStateInput();
   handleLobbyRoomTransition();
@@ -550,6 +663,11 @@ void Game::updatePlayerInput()
     return;
   }
 
+  // Don't update player input if chat input is focused
+  if (m_chatUI && m_chatUI->isInputFocused()) {
+    return;
+  }
+
   auto &input = m_world->getComponent<ecs::Input>(m_inputEntity);
   input.up = renderer->isKeyPressed(settings.up);
   input.down = renderer->isKeyPressed(settings.down);
@@ -574,7 +692,8 @@ void Game::delegateInputToCurrentState()
     }
     break;
   case GameState::PLAYING:
-    if (playingState) {
+    // Don't process playing state input if chat is focused
+    if (playingState && !(m_chatUI && m_chatUI->isInputFocused())) {
       playingState->processInput();
     }
     break;
@@ -619,6 +738,11 @@ void Game::update(float deltaTime)
 
   if (m_world) {
     m_world->update(deltaTime);
+  }
+
+  // Update chat UI
+  if (m_chatUI) {
+    m_chatUI->update(deltaTime);
   }
 
   // Track time in lobby state
@@ -666,6 +790,11 @@ void Game::render()
       playingState->render();
     }
     break;
+  }
+
+  // Render chat UI overlay (on top of everything)
+  if (m_chatUI) {
+    m_chatUI->render();
   }
 
   renderer->present();

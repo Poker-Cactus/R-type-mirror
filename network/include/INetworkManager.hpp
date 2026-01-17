@@ -77,6 +77,12 @@ public:
   virtual std::unordered_map<std::uint32_t, asio::ip::udp::endpoint> getClients() const = 0;
 
   /**
+   * @brief Disconnect a client by ID (server only)
+   * @param clientId The client ID to disconnect
+   */
+  virtual void disconnect(std::uint32_t clientId) = 0;
+
+  /**
    * @brief Get current network latency in milliseconds
    * @return Latency in ms, or -1 if not available
    */

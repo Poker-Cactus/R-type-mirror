@@ -29,6 +29,43 @@ NetworkReceiveSystem::~NetworkReceiveSystem() {}
 void NetworkReceiveSystem::setGame(Game *game)
 {
   m_game = game;
+  if (m_networkManager) {
+    m_chat = std::make_unique<server::Chat>(m_networkManager);
+
+    // Set disconnect callback to properly handle kick command
+    m_chat->setDisconnectCallback([this](std::uint32_t clientId) {
+      if (!m_game) {
+        return;
+      }
+
+      // Get lobby manager from game
+      auto &lobbyManager = m_game->getLobbyManager();
+      Lobby *lobby = lobbyManager.getClientLobby(clientId);
+
+      if (lobby) {
+        // Remove client from lobby (this destroys the player entity)
+        lobby->removeClient(clientId);
+
+        // Remove from lobby manager tracking
+        lobbyManager.leaveLobby(clientId);
+
+        // Notify remaining players
+        if (!lobby->isEmpty()) {
+          nlohmann::json lobbyState;
+          lobbyState["type"] = "lobby_state";
+          lobbyState["code"] = lobby->getCode();
+          lobbyState["player_count"] = lobby->getClientCount();
+
+          for (const auto &playerId : lobby->getClients()) {
+            sendJsonMessage(playerId, lobbyState);
+          }
+        }
+      }
+
+      // Disconnect from network
+      m_networkManager->disconnect(clientId);
+    });
+  }
 }
 
 void NetworkReceiveSystem::update(ecs::World &world, [[maybe_unused]] float deltaTime)
@@ -91,6 +128,8 @@ void NetworkReceiveSystem::handleMessage(ecs::World &world, const std::string &m
       handleViewport(world, json, clientId);
     } else if (type == "set_difficulty") {
       handleSetDifficulty(json, clientId);
+    } else if (type == "chat_message") {
+      handleChatMessage(json, clientId);
     } else {
       std::cerr << "[Server] Unknown message type from client " << clientId << ": " << type << '\n';
     }
@@ -495,4 +534,59 @@ void NetworkReceiveSystem::handleSetDifficulty(const nlohmann::json &json, std::
   }
 
   lobby->setDifficulty(gameConfigDiff);
+}
+
+void NetworkReceiveSystem::handleChatMessage(const nlohmann::json &json, std::uint32_t clientId)
+{
+  if (!json.contains("content") || !json.contains("sender")) {
+    std::cerr << "[Server] chat_message from client " << clientId << " missing required fields" << '\n';
+    return;
+  }
+
+  std::string content = json["content"].get<std::string>();
+  std::string sender = json["sender"].get<std::string>();
+
+  // Sanitize message (limit length, remove control chars)
+  constexpr size_t MAX_MESSAGE_LENGTH = 500;
+  if (content.length() > MAX_MESSAGE_LENGTH) {
+    content = content.substr(0, MAX_MESSAGE_LENGTH);
+  }
+
+  // Check if user is muted
+  if (m_chat && m_chat->isMuted(clientId)) {
+    m_chat->sendSystemMessage(clientId, "You are muted and cannot send messages.");
+    std::cout << "[Server] Blocked message from muted user " << sender << " (client " << clientId << ")" << '\n';
+    return;
+  }
+
+  // Check if message is a command
+  if (m_chat && m_chat->processMessage(clientId, sender, content)) {
+    // Command was processed, don't broadcast
+    std::cout << "[Server] Command from " << sender << " (client " << clientId << "): " << content << '\n';
+    return;
+  }
+
+  std::cout << "[Server] Chat from " << sender << " (client " << clientId << "): " << content << '\n';
+
+  // Broadcast to all connected clients
+  nlohmann::json broadcastMsg;
+  broadcastMsg["type"] = "chat_broadcast";
+  broadcastMsg["sender"] = sender;
+  broadcastMsg["content"] = content;
+  broadcastMsg["senderId"] = clientId;
+
+  std::string jsonStr = broadcastMsg.dump();
+  auto serialized = m_networkManager->getPacketHandler()->serialize(jsonStr);
+
+  // Get all connected clients and broadcast
+  auto clients = m_networkManager->getClients();
+  for (const auto &[targetClientId, endpoint] : clients) {
+    // Don't send back to the sender (they already added it locally)
+    if (targetClientId == clientId) {
+      continue;
+    }
+    m_networkManager->send(
+      std::span<const std::byte>(reinterpret_cast<const std::byte *>(serialized.data()), serialized.size()),
+      targetClientId);
+  }
 }

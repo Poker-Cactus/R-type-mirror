@@ -77,6 +77,11 @@ public:
    */
   void changeAnimationPlayers(float delta_time);
 
+  /**
+   * @brief Reset player animation to idle state
+   */
+  void resetPlayerAnimation();
+
 private:
   std::shared_ptr<IRenderer> renderer; ///< Renderer interface
   std::shared_ptr<ecs::World> world; ///< ECS world

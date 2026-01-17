@@ -41,7 +41,7 @@ public:
    * @param senderEndpointId ID of the sending endpoint
    * @param bytesTransferred Number of bytes transferred
    */
-  NetworkPacket(const std::array<char, BUFFER_SIZE> &data, std::uint32_t senderEndpointId,
+  NetworkPacket(const std::array<char, BUFFER_SIZE> &data, std::uint32_t senderEndpointId,  
                 std::uint32_t bytesTransferred)
       : m_data(data), m_senderEndpointId(senderEndpointId), m_bytesTransferred(bytesTransferred)
   {
