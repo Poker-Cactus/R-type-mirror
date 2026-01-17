@@ -222,12 +222,12 @@ void PlayingState::render()
           frameWidth = 34;
           frameHeight = 34;
           break;
-        // case ecs::SpriteId::BOSS_DOBKERATOP_LEFT_UP:
-        //   frameWidth = 227 / 2;
-        //   frameHeight = 66;
-        //   break;
+        case ecs::SpriteId::BOSS_BROCOLIS:
+          frameWidth = 33;
+          frameHeight = 34;
+          break;
         case ecs::SpriteId::BOSS_DOBKERATOP:
-          frameWidth = 182; // 155 pixels / 4 frames, arrondi supérieur pour éviter débordement
+          frameWidth = 184; // 155 pixels / 4 frames, arrondi supérieur pour éviter débordement
           frameHeight = 146;
           break;
         // case ecs::SpriteId::BOSS_DOBKERATOP_DOWN:
@@ -355,6 +355,10 @@ void PlayingState::render()
             srcX = sprite.currentFrame * frameWidth;
             srcY = 0;
           } else if (sprite.spriteId >= ecs::SpriteId::BOSS_DOBKERATOP_SHOOT) {
+            // For player ship and other standard sprites: use currentFrame
+            srcX = sprite.currentFrame * frameWidth;
+            srcY = 0;
+          } else if (sprite.spriteId >= ecs::SpriteId::BOSS_BROCOLIS) {
             // For player ship and other standard sprites: use currentFrame
             srcX = sprite.currentFrame * frameWidth;
             srcY = 0;
@@ -498,6 +502,7 @@ void PlayingState::render()
       case ecs::SpriteId::ENEMY_ROBOT:
       case ecs::SpriteId::BOSS_DOBKERATOP:
       case ecs::SpriteId::BOSS_DOBKERATOP_SHOOT:
+      case ecs::SpriteId::BOSS_BROCOLIS:
         // case ecs::SpriteId::BOSS_DOBKERATOP_HEAD:
         // case ecs::SpriteId::BOSS_DOBKERATOP_DOWN:
         color = COLOR_ENEMY_YELLOW;
@@ -1364,18 +1369,18 @@ void PlayingState::loadSpriteTextures()
     std::cerr << "[PlayingState] ✗ Failed to load BOSS_anim.png: " << e.what() << '\n';
   }
 
-  //   // BOSS_ANIM = 65 (spritesheet: 586x94, 6 frames)
-  //   try {
-  //     void *boss_anim_tex = renderer->loadTexture("client/assets/boss/boss_dobkeratops_left_up.png");
-  //     if (boss_anim_tex != nullptr) {
-  //       m_spriteTextures[ecs::SpriteId::BOSS_DOBKERATOP_LEFT_UP] = boss_anim_tex;
-  //       std::cout << "[PlayingState] ✓ Loaded BOSS_anim.png" << '\n';
-  //     } else {
-  //       std::cerr << "[PlayingState] ✗ Failed to load BOSS_anim.png (returned null)" << '\n';
-  //     }
-  //   } catch (const std::exception &e) {
-  //     std::cerr << "[PlayingState] ✗ Failed to load BOSS_anim.png: " << e.what() << '\n';
-  //   }
+  // BOSS_ANIM = 65 (spritesheet: 586x94, 6 frames)
+  try {
+    void *boss_anim_tex = renderer->loadTexture("client/assets/boss/boss_brocolis.png");
+    if (boss_anim_tex != nullptr) {
+      m_spriteTextures[ecs::SpriteId::BOSS_BROCOLIS] = boss_anim_tex;
+      std::cout << "[PlayingState] ✓ Loaded BOSS_anim.png" << '\n';
+    } else {
+      std::cerr << "[PlayingState] ✗ Failed to load BOSS_anim.png (returned null)" << '\n';
+    }
+  } catch (const std::exception &e) {
+    std::cerr << "[PlayingState] ✗ Failed to load BOSS_anim.png: " << e.what() << '\n';
+  }
 
   //   // BOSS_ANIM = 65 (spritesheet: 586x94, 6 frames)
   //   try {

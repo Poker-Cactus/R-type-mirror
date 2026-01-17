@@ -20,8 +20,10 @@
 #include "../../../engineCore/include/ecs/components/Sprite.hpp"
 #include "../../../engineCore/include/ecs/events/GameEvents.hpp"
 #include "ecs/ComponentSignature.hpp"
+#include <algorithm>
 #include <cmath>
 #include <random>
+#include <unordered_map>
 #include <vector>
 
 namespace server
@@ -376,52 +378,114 @@ public:
           velocity.dy = 0.0F;
         }
       } else if (pattern.patternType == "boss_pattern") {
-        // Bounce pattern: diagonal movement that bounces off screen boundaries
-        // The robot moves diagonally and bounces when hitting top, bottom, or sides
+        // Boss behavior:
+        // 1) Enter from the right with horizontal velocity.
+        // 2) Once fully on-screen -> stop horizontal movement and switch to vertical-only
+        //    allers-retours with variable speed (randomized interval + smooth lerp).
+        // 3) Keep existing shooting behavior intact.
 
         constexpr float SCREEN_TOP_BOUNDARY = 0.0F;
         constexpr float SCREEN_BOTTOM_BOUNDARY = 1080.0F;
         constexpr float SCREEN_LEFT_BOUNDARY = 0.0F;
         constexpr float SCREEN_RIGHT_BOUNDARY = 1920.0F;
+        constexpr float DEFAULT_ENTRY_MARGIN = 400.0F; // fallback if sprite info missing
 
-        // Initialize random direction on first frame (use phase to track if initialized)
+        // per-boss runtime state (created lazily)
+        struct BossState {
+          bool verticalMode = false; // true once boss finished entering
+          float speedChangeTimer = 0.0F; // accumulates time until next speed change
+          float nextChangeInterval = 1.0F; // randomized interval between speed changes
+          float targetSpeed = 150.0F; // current target vertical speed magnitude
+        };
+
+        static std::unordered_map<ecs::Entity, BossState> s_bossStates;
+        auto &state = s_bossStates[entity];
+
+        // Initialization (only used to pick an initial vertical direction if needed)
         if (pattern.phase == 0.0F) {
-          // Mark as initialized by setting phase to 1.0
           pattern.phase = 1.0F;
 
-          // Randomize initial vertical direction (50% up, 50% down)
-          // Use entity ID + position as seed for truly varied behavior per individual
           std::mt19937 rng(static_cast<unsigned int>(entity) + static_cast<unsigned int>(transform.x * 100.0F) +
                            static_cast<unsigned int>(transform.y * 100.0F));
           std::uniform_int_distribution<int> dist(0, 1);
+          velocity.dy = (dist(rng) == 0 ? std::abs(velocity.dy) : -std::abs(velocity.dy));
 
-          if (dist(rng) == 0) {
-            velocity.dy = std::abs(velocity.dy); // Go up
+          // seed initial randomized interval and speed
+          std::uniform_real_distribution<float> ivar(0.8F, 2.0F);
+          std::uniform_real_distribution<float> speedVar(100.0F, 280.0F);
+          state.nextChangeInterval = ivar(rng);
+          state.targetSpeed = speedVar(rng);
+          state.speedChangeTimer = 0.0F;
+        }
+
+        // Determine X position at which the boss is "fully on-screen".
+        float entryX = SCREEN_RIGHT_BOUNDARY - DEFAULT_ENTRY_MARGIN;
+        if (world.hasComponent<ecs::Sprite>(entity)) {
+          auto &sprite = world.getComponent<ecs::Sprite>(entity);
+          float halfWidth = (sprite.width * (world.getComponent<ecs::Transform>(entity).scale));
+          // assume transform.x is centered; subtract halfWidth to ensure fully visible
+          entryX = SCREEN_RIGHT_BOUNDARY - halfWidth;
+        }
+
+        // If not yet in vertical mode, check for transition condition
+        if (!state.verticalMode) {
+          // Still entering: keep horizontal movement
+          // If the boss has reached the entry X, switch to vertical movement
+          if (transform.x <= entryX) {
+            state.verticalMode = true;
+            // lock X so boss doesn't drift
+            transform.x = entryX;
+            velocity.dx = 0.0F;
+
+            // ensure we have a sensible starting vertical speed (preserve sign)
+            float sign = (velocity.dy < 0.0F ? -1.0F : 1.0F);
+            velocity.dy = sign * state.targetSpeed;
+
+            // small safety clamp to keep boss away from exact borders
+            transform.y = std::clamp(transform.y, SCREEN_TOP_BOUNDARY + 20.0F, SCREEN_BOTTOM_BOUNDARY - 20.0F);
           } else {
-            velocity.dy = -std::abs(velocity.dy); // Go down
+            // keep moving left while entering
+            // (leave dx as configured in spawn/velocity)
           }
+        } else {
+          // VERTICAL MODE: boss performs allers-retours (up/down) with variable speed
+
+          // Lock horizontal position
+          transform.x = entryX;
+          velocity.dx = 0.0F;
+
+          // Update speed-change timer and pick a new target speed when interval elapsed
+          state.speedChangeTimer += deltaTime;
+          if (state.speedChangeTimer >= state.nextChangeInterval) {
+            // randomize next interval and target speed
+            std::mt19937 rng(static_cast<unsigned int>(entity) + static_cast<unsigned int>(transform.y * 100.0F) +
+                             static_cast<unsigned int>(state.speedChangeTimer * 1000.0F));
+            std::uniform_real_distribution<float> ivar(0.6F, 2.2F);
+            std::uniform_real_distribution<float> speedVar(90.0F, 340.0F);
+            state.nextChangeInterval = ivar(rng);
+            state.targetSpeed = speedVar(rng);
+            state.speedChangeTimer = 0.0F;
+          }
+
+          // Smoothly approach the target speed (lerp) to avoid instant jumps
+          constexpr float SPEED_LERP = 4.0F; // higher = faster interpolation
+          float curSpeed = std::abs(velocity.dy);
+          float newSpeed = curSpeed + (state.targetSpeed - curSpeed) * std::min(1.0F, SPEED_LERP * deltaTime);
+          velocity.dy = (velocity.dy < 0.0F ? -newSpeed : newSpeed);
+
+          // Reverse direction on top/bottom hit (classic allers-retours)
+          if (transform.y <= SCREEN_TOP_BOUNDARY + 10.0F && velocity.dy < 0.0F) {
+            velocity.dy = -velocity.dy;
+          }
+          if (transform.y >= SCREEN_BOTTOM_BOUNDARY - 10.0F && velocity.dy > 0.0F) {
+            velocity.dy = -velocity.dy;
+          }
+
+          // Optional: small positional clamp to avoid sticking out
+          transform.y = std::clamp(transform.y, SCREEN_TOP_BOUNDARY + 1.0F, SCREEN_BOTTOM_BOUNDARY - 1.0F);
         }
 
-        // Check boundaries and reverse direction if needed
-        // Top boundary
-        if (transform.y <= SCREEN_TOP_BOUNDARY && velocity.dy < 0.0F) {
-          velocity.dy = -velocity.dy; // Bounce down
-        }
-        // Bottom boundary
-        if (transform.y >= SCREEN_BOTTOM_BOUNDARY && velocity.dy > 0.0F) {
-          velocity.dy = -velocity.dy; // Bounce up
-        }
-        // Right boundary (less common but possible)
-        if (transform.x >= SCREEN_RIGHT_BOUNDARY && velocity.dx > 0.0F) {
-          velocity.dx = -velocity.dx; // Bounce left
-        }
-        // Left boundary (will be destroyed before hitting it usually)
-        if (transform.x <= SCREEN_LEFT_BOUNDARY && velocity.dx < 0.0F) {
-          velocity.dx = -velocity.dx; // Bounce right
-        }
-
-        // Shooting behavior: robots shoot periodically toward the player
-        // Use pattern.amplitude to track shooting timer (repurposed since not used for bounce)
+        // --- Keep existing shooting behavior intact (unchanged) ---
         pattern.amplitude += deltaTime;
         constexpr float ROBOT_SHOOT_INTERVAL = 2.5F; // Shoot every 2.5 seconds
 
@@ -492,16 +556,16 @@ public:
               projOwner.ownerId = entity; // The robot is the owner
               world.addComponent(projectile, projOwner);
 
-              // Add networked component
-              ecs::Networked net;
-              net.networkId = projectile;
-              world.addComponent(projectile, net);
-
               // Add attraction component
               ecs::Attraction projAttraction;
               projAttraction.force = 500.0F;
               projAttraction.radius = 300.0F;
               world.addComponent(projectile, projAttraction);
+
+              // Add networked component
+              ecs::Networked net;
+              net.networkId = projectile;
+              world.addComponent(projectile, net);
             }
           }
         }

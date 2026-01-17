@@ -283,18 +283,18 @@
       },
       "sprite": {
         "animated": true,
-        "endFrame": 3,
-        "frameCount": 4,
+        "endFrame": 5,
+        "frameCount": 6,
         "frameTime": 0.3,
         "height": 146,
         "loop": true,
         "reverseAnimation": false,
         "spriteId": 44,
         "startFrame": 0,
-        "width": 182
+        "width": 184
       },
       "transform": {
-        "scale": 2.0
+        "scale": 4.0
       },
       "velocity": {
         "dx": -200.0,
