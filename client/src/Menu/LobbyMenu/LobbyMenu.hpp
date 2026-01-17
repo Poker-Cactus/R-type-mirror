@@ -104,6 +104,11 @@ public:
   void setSelectedDifficulty(Difficulty diff) { m_selectedDifficulty = diff; }
 
   /**
+   * @brief Start difficulty selection mode
+   */
+  void startDifficultySelection();
+
+  /**
    * @brief Reset lobby room transition flag
    */
   void resetLobbyRoomFlag() { m_shouldEnterLobbyRoom = false; }
