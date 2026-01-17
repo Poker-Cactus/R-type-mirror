@@ -69,10 +69,13 @@ void ClientNetworkReceiveSystem::update(ecs::World &world, float deltaTime)
       }
 
       // Server told us that this player is dead
-      if (type == "player_dead") {
-        std::cout << "[Client] Received player_dead from server" << std::endl;
-        // Stop accepting snapshots immediately
-        g_acceptSnapshots = false;
+      if (type == "player_dead" || type == "player_died_spectate") {
+        std::cout << "[Client] Received " << type << " from server" << std::endl;
+        // Only stop accepting snapshots for full game over (player_dead)
+        if (type == "player_dead") {
+          g_acceptSnapshots = false;
+        }
+        // For player_died_spectate, we continue receiving snapshots as spectator
         if (m_playerDeadCallback) {
           m_playerDeadCallback(json);
         }

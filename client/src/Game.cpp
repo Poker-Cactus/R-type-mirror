@@ -533,61 +533,64 @@ void Game::handleLobbyRoomTransition()
     });
 
     // Player-dead: server told us our player is dead and we should return to menu
-    networkReceiveSystem->setPlayerDeadCallback([this](UNUSED const nlohmann::json &msg) {
-      std::cout << "[Game] Received player_dead from server - returning to menu" << std::endl;
-
-      // Save highscore if we have the necessary information
-      if (msg.contains("score") && menu != nullptr) {
-        int finalScore = msg.value("score", 0);
-        Difficulty gameDifficulty = menu->getCurrentDifficulty();
-        std::string playerName = settings.username;
-
-        HighscoreEntry entry{playerName, finalScore, gameDifficulty};
-        if (highscoreManager.addHighscore(entry)) {
-          std::cout << "[Game] New highscore saved: " << playerName << " - " << finalScore << " points ("
-                    << (gameDifficulty == Difficulty::EASY       ? "Easy"
-                          : gameDifficulty == Difficulty::MEDIUM ? "Medium"
-                                                                 : "Expert")
-                    << ")" << std::endl;
+    networkReceiveSystem->setPlayerDeadCallback([this](const nlohmann::json &msg) {
+      std::string msgType = msg.value("type", "");
+      
+      if (msgType == "player_died_spectate") {
+        // Player died but game continues - become spectator
+        std::cout << "[Game] Player died - switching to spectator mode" << std::endl;
+        
+        int aliveCount = msg.value("alive_players", 0);
+        std::cout << "[Game] " << aliveCount << " player(s) still alive" << std::endl;
+        
+        // Save highscore
+        if (msg.contains("score") && menu != nullptr) {
+          int finalScore = msg.value("score", 0);
+          Difficulty gameDifficulty = menu->getCurrentDifficulty();
+          std::string playerName = settings.username;
+          HighscoreEntry entry{playerName, finalScore, gameDifficulty};
+          menu->getLobbyMenu()->getHighscoreManager().addHighscore(entry);
         }
-      }
-
-      // Stop accepting snapshots
-      if (auto *netRec = m_world->getSystem<ClientNetworkReceiveSystem>()) {
-        netRec->setAcceptSnapshots(false);
-      }
-
-      // Inform server we're leaving (best effort)
-      sendLeaveToServer();
-
-      // Clean up playing state
-      if (playingState) {
-        playingState->cleanup();
-        playingState.reset();
-      }
-
-      // Clear world entities to stop any further rendering or AI
-      if (m_world) {
-        try {
-          ecs::ComponentSignature emptySig; // matches all
-          std::vector<ecs::Entity> allEntities;
-          m_world->getEntitiesWithSignature(emptySig, allEntities);
-          for (auto e : allEntities) {
-            if (m_world->isAlive(e)) {
-              m_world->destroyEntity(e);
+        
+        if (playingState) {
+          std::cout << "[Game] Setting spectator mode to TRUE" << std::endl;
+          playingState->setSpectatorMode(true);
+          std::cout << "[Game] Spectator mode is now: " << playingState->isSpectator() << std::endl;
+        } else {
+          std::cerr << "[Game] ERROR: playingState is null, cannot set spectator mode!" << std::endl;
+        }
+        
+      } else if (msgType == "player_dead") {
+        std::cout << "[Game] Game over - returning to menu" << std::endl;
+        
+        if (msg.contains("score") && menu != nullptr) {
+          int finalScore = msg.value("score", 0);
+          Difficulty gameDifficulty = menu->getCurrentDifficulty();
+          std::string playerName = settings.username;
+          HighscoreEntry entry{playerName, finalScore, gameDifficulty};
+          menu->getLobbyMenu()->getHighscoreManager().addHighscore(entry);
+        }
+        
+        if (m_world) {
+          try {
+            ecs::ComponentSignature emptySig;
+            std::vector<ecs::Entity> allEntities;
+            m_world->getEntitiesWithSignature(emptySig, allEntities);
+            for (auto e : allEntities) {
+              if (m_world->isAlive(e)) {
+                m_world->destroyEntity(e);
+              }
             }
+          } catch (const std::exception &e) {
+            std::cerr << "[Game] Error clearing world: " << e.what() << '\n';
           }
-        } catch (const std::exception &e) {
-          std::cerr << "[Game] Error clearing world on player_dead: " << e.what() << '\n';
         }
-      }
-
-      // Transition to main menu
-      currentState = GameState::MENU;
-      if (menu) {
-        menu->setState(MenuState::MAIN_MENU);
-        // Refresh highscores for when player returns to lobby menu
-        menu->refreshHighscoresIfInLobby();
+        
+        currentState = GameState::MENU;
+        if (menu) {
+          menu->setState(MenuState::MAIN_MENU);
+          menu->refreshHighscoresIfInLobby();
+        }
       }
     });
 
