@@ -7,6 +7,8 @@
 
 #include "Game.hpp"
 #include "../../engineCore/include/ecs/EngineComponents.hpp"
+#include "../../engineCore/include/ecs/components/Immortal.hpp"
+#include "../include/TestMode.hpp"
 #include "../include/config/EnemyConfig.hpp"
 #include "../include/config/LevelConfig.hpp"
 #include "systems/AllySystem.hpp"
@@ -192,6 +194,11 @@ void Game::spawnPlayer()
   ecs::Score score;
   score.points = 0;
   world->addComponent(player, score);
+
+  if (TestMode::ENABLE_IMMORTAL_MODE) {
+    world->addComponent(player, ecs::Immortal{true});
+    std::cout << "[Server] ✓ IMMORTAL MODE: Player is invincible!" << std::endl;
+  }
 }
 
 /**
@@ -273,6 +280,11 @@ void Game::spawnPlayer(std::uint32_t networkId)
   ecs::PlayerId playerId;
   playerId.clientId = networkId;
   world->addComponent(player, playerId);
+
+  if (TestMode::ENABLE_IMMORTAL_MODE) {
+    world->addComponent(player, ecs::Immortal{true});
+    std::cout << "[Server] ✓ IMMORTAL MODE: Player is invincible!" << std::endl;
+  }
 
   std::cout << "[Server] Spawned player entity " << player << " for client " << networkId << '\n';
 }

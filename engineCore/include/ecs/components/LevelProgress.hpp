@@ -13,7 +13,7 @@ namespace ecs
 
 /**
  * @brief Component that tracks how far a player has progressed through a level
- * 
+ *
  * This tracks the automatic scrolling distance, not the player's screen position.
  * The world scrolls at a constant speed, and this accumulates the total distance.
  */

@@ -8,9 +8,9 @@
 #ifndef SERVER_LEVEL_CONFIG_HPP_
 #define SERVER_LEVEL_CONFIG_HPP_
 
+#include <map>
 #include <nlohmann/json.hpp>
 #include <string>
-#include <map>
 #include <unordered_map>
 #include <vector>
 
@@ -155,7 +155,7 @@ public:
   std::vector<std::string> getLevelIds() const;
 
 private:
-  std::map<std::string, LevelConfig> m_configs;  // Use std::map to maintain order
+  std::map<std::string, LevelConfig> m_configs; // Use std::map to maintain order
 };
 
 } // namespace server

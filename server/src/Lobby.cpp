@@ -7,9 +7,11 @@
 
 #include "Lobby.hpp"
 #include "../../engineCore/include/ecs/EngineComponents.hpp"
+#include "../../engineCore/include/ecs/components/Immortal.hpp"
 #include "../../network/include/INetworkManager.hpp"
 #include "../include/Game.hpp"
 #include "../include/ServerSystems.hpp"
+#include "../include/TestMode.hpp"
 #include "../include/config/EnemyConfig.hpp"
 #include "WorldLobbyRegistry.hpp"
 #include "systems/InvulnerabilitySystem.hpp"
@@ -328,21 +330,22 @@ void Lobby::initializeSystems()
 
   // Listen for level complete events to notify clients
   // Store the handle to keep the listener alive!
-  m_levelCompleteListener = m_world->getEventBus().subscribe<ecs::LevelCompleteEvent>([this](const ecs::LevelCompleteEvent &event) {
-    std::cout << "[Lobby:" << m_code << "] ✓ Level complete: " << event.levelId 
-              << " → " << event.nextLevelId << std::endl;
-    
-    // Send level complete message to all clients in this lobby
-    nlohmann::json message;
-    message["type"] = "level_complete";
-    message["current_level"] = event.levelId;
-    message["next_level"] = event.nextLevelId;
-    
-    for (const auto &clientId : m_clients) {
-      sendJsonToClient(clientId, message);
-    }
-    std::cout << "[Lobby:" << m_code << "] → Sent level_complete to " << m_clients.size() << " clients" << std::endl;
-  });
+  m_levelCompleteListener =
+    m_world->getEventBus().subscribe<ecs::LevelCompleteEvent>([this](const ecs::LevelCompleteEvent &event) {
+      std::cout << "[Lobby:" << m_code << "] ✓ Level complete: " << event.levelId << " → " << event.nextLevelId
+                << std::endl;
+
+      // Send level complete message to all clients in this lobby
+      nlohmann::json message;
+      message["type"] = "level_complete";
+      message["current_level"] = event.levelId;
+      message["next_level"] = event.nextLevelId;
+
+      for (const auto &clientId : m_clients) {
+        sendJsonToClient(clientId, message);
+      }
+      std::cout << "[Lobby:" << m_code << "] → Sent level_complete to " << m_clients.size() << " clients" << std::endl;
+    });
 
   std::cout << "[Lobby:" << m_code << "] Initialized game systems" << '\n';
 }
@@ -433,6 +436,11 @@ void Lobby::spawnPlayer(std::uint32_t clientId)
   ecs::PlayerId playerId;
   playerId.clientId = clientId;
   m_world->addComponent(player, playerId);
+
+  if (TestMode::ENABLE_IMMORTAL_MODE) {
+    m_world->addComponent(player, ecs::Immortal{true});
+    std::cout << "[Lobby:" << m_code << "] ✓ IMMORTAL MODE: Player is invincible!" << std::endl;
+  }
 
   // Add LevelProgress to track distance traveled through the level
   ecs::LevelProgress levelProgress;

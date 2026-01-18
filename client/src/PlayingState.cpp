@@ -72,10 +72,10 @@ bool PlayingState::init()
     return false;
   }
 
-  // Load level map texture
-  // Default to ruins_map.png but try to read first level from server/config/levels.json
-  std::string mapPath = "client/assets/ruins_map.png";
-  std::string collisionPath = "client/assets/collisions/ruins_map.png";
+  // Load level map texture for the first level
+  // Default to no map; read server/config/levels.json to check if level_1 defines one
+  std::string mapPath;
+  std::string collisionPath;
   try {
     std::ifstream cfg("server/config/levels.json");
     if (cfg) {
@@ -112,13 +112,21 @@ bool PlayingState::init()
     std::cerr << "PlayingState: Warning - Failed to parse levels.json: " << e.what() << std::endl;
   }
 
-  m_mapTexture = renderer->loadTexture(mapPath);
-  if (m_mapTexture) {
-    renderer->getTextureSize(m_mapTexture, m_mapWidth, m_mapHeight);
-    std::cout << "PlayingState: Loaded map texture (" << m_mapWidth << "x" << m_mapHeight << ") from " << mapPath
-              << std::endl;
+  if (!mapPath.empty()) {
+    m_mapTexture = renderer->loadTexture(mapPath);
+    if (m_mapTexture) {
+      renderer->getTextureSize(m_mapTexture, m_mapWidth, m_mapHeight);
+      std::cout << "PlayingState: Loaded map texture (" << m_mapWidth << "x" << m_mapHeight << ") from " << mapPath
+                << std::endl;
+    } else {
+      std::cerr << "PlayingState: Warning - Failed to load map texture from " << mapPath << std::endl;
+    }
   } else {
-    std::cerr << "PlayingState: Warning - Failed to load map texture from " << mapPath << std::endl;
+    // No map for this level (e.g., level_1) — keep texture null
+    m_mapTexture = nullptr;
+    m_mapWidth = 0;
+    m_mapHeight = 0;
+    std::cout << "PlayingState: No map for current level; map rendering disabled" << std::endl;
   }
 
   // Map collision support removed from client; no TMX loading here
@@ -1839,13 +1847,13 @@ void PlayingState::startLevelTransition(const std::string &nextLevelId)
 {
   std::cout << "[PlayingState] ✓ Starting level transition to: " << nextLevelId << std::endl;
   std::cout << "[PlayingState] Current music should fade out, preparing for: " << nextLevelId << std::endl;
-  
+
   m_isTransitioning = true;
   m_transitionPhase = TransitionPhase::FADE_OUT;
   m_transitionTimer = 0.0f;
   m_fadeAlpha = 0.0f;
   m_nextLevelId = nextLevelId;
-  
+
   // Play stage clear sound
   if (m_audioManager) {
     std::cout << "[PlayingState] → Playing stage_clear sound" << std::endl;
@@ -1858,75 +1866,150 @@ void PlayingState::startLevelTransition(const std::string &nextLevelId)
 
 void PlayingState::updateLevelTransition(float deltaTime)
 {
-  constexpr float FADE_OUT_DURATION = 1.0f;  // 1 second to fade to black
-  constexpr float WAIT_DURATION = 4.0f;      // 4 seconds wait at black (with sound)
-  constexpr float FADE_IN_DURATION = 1.0f;   // 1 second to fade from black
-  
+  constexpr float FADE_OUT_DURATION = 1.0f; // 1 second to fade to black
+  constexpr float WAIT_DURATION = 4.0f; // 4 seconds wait at black (with sound)
+  constexpr float FADE_IN_DURATION = 1.0f; // 1 second to fade from black
+
   m_transitionTimer += deltaTime;
-  
+
   switch (m_transitionPhase) {
-    case TransitionPhase::FADE_OUT:
-      // Fade to black
-      m_fadeAlpha = std::min(1.0f, m_transitionTimer / FADE_OUT_DURATION);
-      if (m_transitionTimer >= FADE_OUT_DURATION) {
-        m_transitionPhase = TransitionPhase::WAITING;
-        m_transitionTimer = 0.0f;
-        std::cout << "[PlayingState] Fade out complete, waiting..." << std::endl;
+  case TransitionPhase::FADE_OUT:
+    // Fade to black
+    m_fadeAlpha = std::min(1.0f, m_transitionTimer / FADE_OUT_DURATION);
+    if (m_transitionTimer >= FADE_OUT_DURATION) {
+      m_transitionPhase = TransitionPhase::WAITING;
+      m_transitionTimer = 0.0f;
+      std::cout << "[PlayingState] Fade out complete, waiting..." << std::endl;
+    }
+    break;
+
+  case TransitionPhase::WAITING:
+    // Wait at black screen
+    m_fadeAlpha = 1.0f;
+    if (m_transitionTimer >= WAIT_DURATION) {
+      m_transitionPhase = TransitionPhase::FADE_IN;
+      m_transitionTimer = 0.0f;
+      std::cout << "[PlayingState] Wait complete, fading in..." << std::endl;
+
+      // Update map based on next level id while screen is black
+      if (!m_nextLevelId.empty()) {
+        updateMapForLevel(m_nextLevelId);
+        // Reset map offset so new map starts from origin
+        m_mapOffsetX = 0.0f;
       }
-      break;
-      
-    case TransitionPhase::WAITING:
-      // Wait at black screen
-      m_fadeAlpha = 1.0f;
-      if (m_transitionTimer >= WAIT_DURATION) {
-        m_transitionPhase = TransitionPhase::FADE_IN;
-        m_transitionTimer = 0.0f;
-        std::cout << "[PlayingState] Wait complete, fading in..." << std::endl;
-        
-        // Change music based on level
-        std::cout << "[PlayingState] === CHANGING MUSIC ===" << std::endl;
-        std::cout << "[PlayingState] Next level ID: '" << m_nextLevelId << "'" << std::endl;
-        
-        if (m_audioManager) {
-          // Map level ID to music name
-          // Supports: "level_1", "level_2", "level1", "level2" etc.
-          std::string musicName = m_nextLevelId;
-          
-          // Remove all underscores
-          musicName.erase(std::remove(musicName.begin(), musicName.end(), '_'), musicName.end());
-          
-          // Ensure it ends with "_music"
-          if (musicName.find("_music") == std::string::npos) {
-            musicName += "_music";
+
+      // Change music based on level
+      std::cout << "[PlayingState] === CHANGING MUSIC ===" << std::endl;
+      std::cout << "[PlayingState] Next level ID: '" << m_nextLevelId << "'" << std::endl;
+
+      if (m_audioManager) {
+        // Map level ID to music name
+        // Supports: "level_1", "level_2", "level1", "level2" etc.
+        std::string musicName = m_nextLevelId;
+
+        // Remove all underscores
+        musicName.erase(std::remove(musicName.begin(), musicName.end(), '_'), musicName.end());
+
+        // Ensure it ends with "_music"
+        if (musicName.find("_music") == std::string::npos) {
+          musicName += "_music";
+        }
+
+        std::cout << "[PlayingState] Computed music name: '" << musicName << "'" << std::endl;
+        std::cout << "[PlayingState] → Stopping current music and playing " << musicName << std::endl;
+
+        m_audioManager->stopMusic();
+        m_audioManager->playMusic(musicName, true);
+        std::cout << "[PlayingState] ✓ Music change requested" << std::endl;
+      } else {
+        std::cout << "[PlayingState] ✗ AudioManager is null!" << std::endl;
+      }
+    }
+    break;
+
+  case TransitionPhase::FADE_IN:
+    // Fade from black
+    m_fadeAlpha = std::max(0.0f, 1.0f - (m_transitionTimer / FADE_IN_DURATION));
+    if (m_transitionTimer >= FADE_IN_DURATION) {
+      m_transitionPhase = TransitionPhase::NONE;
+      m_isTransitioning = false;
+      m_fadeAlpha = 0.0f;
+      std::cout << "[PlayingState] ✓ Transition complete!" << std::endl;
+    }
+    break;
+
+  case TransitionPhase::NONE:
+    // Should not happen
+    m_isTransitioning = false;
+    break;
+  }
+}
+
+void PlayingState::updateMapForLevel(const std::string &levelId)
+{
+  // Free previous map texture if any
+  if (m_mapTexture && renderer) {
+    renderer->freeTexture(m_mapTexture);
+    m_mapTexture = nullptr;
+  }
+
+  std::string mapPath;
+  float nextMapSpeed = MAP_SCROLL_SPEED;
+
+  try {
+    std::ifstream cfg("server/config/levels.json");
+    if (cfg) {
+      nlohmann::json j;
+      cfg >> j;
+      if (j.contains("levels") && j["levels"].is_array()) {
+        for (const auto &lvl : j["levels"]) {
+          if (lvl.contains("id") && lvl["id"].is_string() && lvl["id"].get<std::string>() == levelId) {
+            if (lvl.contains("map")) {
+              if (lvl["map"].is_string()) {
+                mapPath = lvl["map"].get<std::string>();
+              } else if (lvl["map"].is_object()) {
+                const auto &m = lvl["map"];
+                if (m.contains("path") && m["path"].is_string()) {
+                  mapPath = m["path"].get<std::string>();
+                }
+                if (m.contains("speed") && (m["speed"].is_number_float() || m["speed"].is_number())) {
+                  try {
+                    nextMapSpeed = static_cast<float>(m["speed"].get<double>());
+                  } catch (...) {
+                    // keep default
+                  }
+                }
+              }
+            }
+            break;
           }
-          
-          std::cout << "[PlayingState] Computed music name: '" << musicName << "'" << std::endl;
-          std::cout << "[PlayingState] → Stopping current music and playing " << musicName << std::endl;
-          
-          m_audioManager->stopMusic();
-          m_audioManager->playMusic(musicName, true);
-          std::cout << "[PlayingState] ✓ Music change requested" << std::endl;
-        } else {
-          std::cout << "[PlayingState] ✗ AudioManager is null!" << std::endl;
         }
       }
-      break;
-      
-    case TransitionPhase::FADE_IN:
-      // Fade from black
-      m_fadeAlpha = std::max(0.0f, 1.0f - (m_transitionTimer / FADE_IN_DURATION));
-      if (m_transitionTimer >= FADE_IN_DURATION) {
-        m_transitionPhase = TransitionPhase::NONE;
-        m_isTransitioning = false;
-        m_fadeAlpha = 0.0f;
-        std::cout << "[PlayingState] ✓ Transition complete!" << std::endl;
+    }
+  } catch (const std::exception &e) {
+    std::cerr << "PlayingState: Failed to update map for level '" << levelId << "': " << e.what() << std::endl;
+  }
+
+  m_mapScrollSpeed = nextMapSpeed;
+
+  if (!mapPath.empty()) {
+    if (renderer) {
+      m_mapTexture = renderer->loadTexture(mapPath);
+      if (m_mapTexture) {
+        renderer->getTextureSize(m_mapTexture, m_mapWidth, m_mapHeight);
+        std::cout << "PlayingState: Loaded map for level '" << levelId << "' from " << mapPath << std::endl;
+      } else {
+        std::cerr << "PlayingState: Warning - failed to load map texture from " << mapPath << std::endl;
+        m_mapWidth = 0;
+        m_mapHeight = 0;
       }
-      break;
-      
-    case TransitionPhase::NONE:
-      // Should not happen
-      m_isTransitioning = false;
-      break;
+    }
+  } else {
+    // Level has no map: clear to render nothing
+    m_mapTexture = nullptr;
+    m_mapWidth = 0;
+    m_mapHeight = 0;
+    std::cout << "PlayingState: Level '" << levelId << "' has no map; map rendering disabled" << std::endl;
   }
 }
 
@@ -1935,17 +2018,17 @@ void PlayingState::renderFadeOverlay()
   if (renderer == nullptr || m_fadeAlpha <= 0.0f) {
     return;
   }
-  
+
   // Calculate alpha value (0-255)
   int alpha = static_cast<int>(m_fadeAlpha * 255.0f);
-  
+
   // Get actual window dimensions from renderer
   int viewportWidth = renderer->getWindowWidth();
   int viewportHeight = renderer->getWindowHeight();
-  
+
   // Draw a black rectangle covering the entire screen with alpha
   // RGB(0, 0, 0) = black, with alpha for transparency
   Color fadeColor = {0, 0, 0, static_cast<unsigned char>(alpha)};
-  
+
   renderer->drawRect(0, 0, viewportWidth, viewportHeight, fadeColor);
 }

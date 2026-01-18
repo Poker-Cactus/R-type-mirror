@@ -257,9 +257,9 @@ private:
   float m_fadeAlpha = 0.0f; ///< Current fade alpha (0.0 = transparent, 1.0 = black)
   enum class TransitionPhase {
     NONE,
-    FADE_OUT,    // Fade to black
-    WAITING,     // Brief pause at black
-    FADE_IN      // Fade from black
+    FADE_OUT, // Fade to black
+    WAITING, // Brief pause at black
+    FADE_IN // Fade from black
   };
   TransitionPhase m_transitionPhase = TransitionPhase::NONE;
   std::string m_nextLevelId; ///< ID of the next level to transition to
@@ -288,4 +288,11 @@ private:
    * @brief Update sound effects based on game events
    */
   void updateSounds();
+
+  /**
+   * @brief Load or clear the map texture for a given level id
+   * If the level has a `map` entry, loads its texture and updates scroll speed.
+   * If no map is defined, clears the current map texture so nothing is drawn.
+   */
+  void updateMapForLevel(const std::string &levelId);
 };

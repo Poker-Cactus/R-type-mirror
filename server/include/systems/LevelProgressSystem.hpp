@@ -24,7 +24,7 @@ namespace server
 
 /**
  * @brief System that tracks player progression through a level
- * 
+ *
  * This system accumulates the distance traveled based on automatic scrolling,
  * similar to the parallax background. The world scrolls at a constant speed,
  * independent of player movement.
@@ -34,7 +34,7 @@ class LevelProgressSystem : public ecs::ISystem
 public:
   // Scroll speed in pixels per second (matching the parallax fast layer)
   static constexpr float SCROLL_SPEED = 100.0f;
-  
+
   LevelProgressSystem() = default;
 
   void update(ecs::World &world, float deltaTime) override
@@ -43,26 +43,26 @@ public:
     ecs::ComponentSignature playerSig;
     playerSig.set(ecs::getComponentId<ecs::PlayerId>());
     playerSig.set(ecs::getComponentId<ecs::LevelProgress>());
-    
+
     std::vector<ecs::Entity> players;
     world.getEntitiesWithSignature(playerSig, players);
-    
+
     if (players.empty()) {
       return;
     }
-    
+
     // Calculate distance traveled this frame based on automatic scrolling
     float distanceThisFrame = SCROLL_SPEED * deltaTime;
-    
+
     // Update all players' progress (they all progress at the same rate)
     for (auto player : players) {
       auto &progress = world.getComponent<ecs::LevelProgress>(player);
       progress.distanceTraveled += distanceThisFrame;
-      
+
       // Log every 500 units for visibility
       static float lastLoggedDistance = 0;
       if (progress.distanceTraveled - lastLoggedDistance >= 500) {
-        std::cout << "[LevelProgress] Distance traveled: " << progress.distanceTraveled 
+        std::cout << "[LevelProgress] Distance traveled: " << progress.distanceTraveled
                   << " px (scroll speed: " << SCROLL_SPEED << " px/s)" << std::endl;
         lastLoggedDistance = progress.distanceTraveled;
       }

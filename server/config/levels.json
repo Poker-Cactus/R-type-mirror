@@ -1,10 +1,203 @@
 {
   "levels": [
     {
-      "description": "Introductory level with basic enemy wave",
+      "description": "Tutorial level - learn the basics",
       "id": "level_1",
       "name": "First Contact",
-      "levelLength": 10000.0,
+      "levelLength": 7900.0,
+      "waves": [
+        {
+          "id": "wave_1",
+          "name": "Opening Wave",
+          "triggerX": 500.0,
+          "spawns": [
+            {
+              "count": 3,
+              "delay": 0.0,
+              "enemyType": "enemy_blue",
+              "spacing": 80.0,
+              "x": 1200.0,
+              "y": 200.0
+            },
+            {
+              "count": 3,
+              "delay": 2.0,
+              "enemyType": "enemy_blue",
+              "spacing": 80.0,
+              "x": 1200.0,
+              "y": 500.0
+            }
+          ]
+        },
+        {
+          "id": "wave_2",
+          "name": "Red Squadron",
+          "triggerX": 1500.0,
+          "spawns": [
+            {
+              "count": 4,
+              "delay": 0.0,
+              "enemyType": "enemy_red",
+              "spacing": 90.0,
+              "x": 1400.0,
+              "y": 250.0
+            },
+            {
+              "count": 2,
+              "delay": 1.5,
+              "enemyType": "enemy_red",
+              "spacing": 120.0,
+              "x": 1400.0,
+              "y": 450.0
+            },
+            {
+              "count": 1,
+              "delay": 2.5,
+              "enemyType": "enemy_elite_green",
+              "spacing": 0.0,
+              "x": 1500.0,
+              "y": 350.0
+            }
+          ]
+        },
+        {
+          "id": "wave_3",
+          "name": "Fast Scouts",
+          "triggerX": 2500.0,
+          "spawns": [
+            {
+              "count": 5,
+              "delay": 0.0,
+              "enemyType": "enemy_fast",
+              "spacing": 70.0,
+              "x": 1300.0,
+              "y": 150.0
+            },
+            {
+              "count": 5,
+              "delay": 1.0,
+              "enemyType": "enemy_fast",
+              "spacing": 70.0,
+              "x": 1300.0,
+              "y": 550.0
+            }
+          ]
+        },
+        {
+          "id": "wave_4",
+          "name": "Mixed Formation",
+          "triggerX": 3800.0,
+          "spawns": [
+            {
+              "count": 6,
+              "delay": 0.0,
+              "enemyType": "enemy_blue",
+              "spacing": 60.0,
+              "x": 1400.0,
+              "y": 180.0
+            },
+            {
+              "count": 3,
+              "delay": 0.5,
+              "enemyType": "enemy_red",
+              "spacing": 100.0,
+              "x": 1500.0,
+              "y": 350.0
+            },
+            {
+              "count": 4,
+              "delay": 2.0,
+              "enemyType": "enemy_fast",
+              "spacing": 80.0,
+              "x": 1300.0,
+              "y": 500.0
+            }
+          ]
+        },
+        {
+          "id": "wave_5",
+          "name": "Tank Introduction",
+          "triggerX": 5200.0,
+          "spawns": [
+            {
+              "count": 1,
+              "delay": 0.0,
+              "enemyType": "enemy_tank",
+              "spacing": 0.0,
+              "x": 1500.0,
+              "y": 300.0
+            },
+            {
+              "count": 4,
+              "delay": 1.0,
+              "enemyType": "enemy_blue",
+              "spacing": 70.0,
+              "x": 1600.0,
+              "y": 150.0
+            },
+            {
+              "count": 4,
+              "delay": 1.0,
+              "enemyType": "enemy_blue",
+              "spacing": 70.0,
+              "x": 1600.0,
+              "y": 550.0
+            }
+          ]
+        },
+        {
+          "id": "wave_6",
+          "name": "Final Rush",
+          "triggerX": 6500.0,
+          "spawns": [
+            {
+              "count": 5,
+              "delay": 0.0,
+              "enemyType": "enemy_red",
+              "spacing": 80.0,
+              "x": 1400.0,
+              "y": 200.0
+            },
+            {
+              "count": 8,
+              "delay": 0.5,
+              "enemyType": "enemy_blue",
+              "spacing": 50.0,
+              "x": 1500.0,
+              "y": 350.0
+            },
+            {
+              "count": 3,
+              "delay": 1.5,
+              "enemyType": "enemy_fast",
+              "spacing": 90.0,
+              "x": 1300.0,
+              "y": 500.0
+            }
+          ]
+        },
+        {
+          "id": "wave_boss",
+          "name": "BOSS - Dobkeratops",
+          "triggerX": 7900.0,
+          "spawns": [
+            {
+              "count": 1,
+              "delay": 0.0,
+              "enemyType": "boss_dobkeratops",
+              "spacing": 0.0,
+              "x": 1500.0,
+              "y": 350.0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Ancient ruins with increased difficulty",
+      "id": "level_2",
+      "name": "Ruins Assault",
+      "levelLength": 13900.0,
       "map": {
         "path": "client/assets/ruins_map.png",
         "scale": "fit-height",
@@ -12,199 +205,156 @@
       },
       "waves": [
         {
-          "id": "wave_boss",
-          "name": "BOSS FIGHT",
-          "spawns": [
-            {
-              "count": 1,
-              "delay": 0.0,
-              "enemyType": "boss_evangelic",
-              "spacing": 0.0,
-              "x": 1500.0,
-              "y": 200.0
-            }
-          ],
-          "startTime": 1.0
-        },
-        {
           "id": "wave_1",
-          "name": "Opening Wave",
-          "triggerX": 500.0,
+          "name": "Bee Swarm",
+          "triggerX": 800.0,
           "spawns": [
             {
-              "count": 2,
+              "count": 12,
               "delay": 0.0,
-              "enemyType": "enemy_elite_green",
-              "spacing": 80.0,
-              "x": 1200.0,
-              "y": 200.0
+              "enemyType": "enemy_blue",
+              "spacing": 55.0,
+              "x": 1400.0,
+              "y": 120.0
             },
             {
-              "count": 5,
+              "count": 12,
               "delay": 1.5,
-              "enemyType": "enemy_red",
-              "spacing": 80.0,
-              "x": 1200.0,
-              "y": 400.0
-            },
-            {
-              "count": 3,
-              "delay": 3.0,
-              "enemyType": "enemy_red",
-              "spacing": 80.0,
-              "x": 1200.0,
-              "y": 600.0
+              "enemyType": "enemy_blue",
+              "spacing": 55.0,
+              "x": 1400.0,
+              "y": 500.0
             }
           ]
         },
         {
           "id": "wave_2",
-          "name": "Yellow Bee Swarm",
-          "triggerX": 3000.0,
+          "name": "Ground Forces",
+          "triggerX": 2200.0,
           "spawns": [
             {
-              "count": 10,
+              "count": 1,
               "delay": 0.0,
-              "enemyType": "enemy_blue",
-              "spacing": 60.0,
-              "x": 3000.0,
-              "y": 150.0
+              "enemyType": "enemy_walker",
+              "spacing": 110.0,
+              "x": 1500.0,
+              "y": 980.0
             },
             {
-              "count": 10,
-              "delay": 2.0,
-              "enemyType": "enemy_blue",
-              "spacing": 60.0,
-              "x": 3000.0,
-              "y": 450.0
+              "count": 5,
+              "delay": 1.0,
+              "enemyType": "enemy_red",
+              "spacing": 90.0,
+              "x": 1400.0,
+              "y": 250.0
             }
           ]
         },
         {
           "id": "wave_3",
-          "name": "Mixed Formation",
-          "triggerX": 6000.0,
+          "name": "Elite Green Tracker",
+          "triggerX": 3800.0,
           "spawns": [
             {
-              "count": 2,
+              "count": 1,
               "delay": 0.0,
-              "enemyType": "enemy_red",
-              "spacing": 80.0,
-              "x": 6000.0,
+              "enemyType": "enemy_elite_green",
+              "spacing": 0.0,
+              "x": 1500.0,
               "y": 300.0
             },
             {
-              "count": 5,
+              "count": 6,
               "delay": 0.5,
-              "enemyType": "enemy_blue",
-              "spacing": 40.0,
-              "x": 6200.0,
-              "y": 200.0
+              "enemyType": "enemy_fast",
+              "spacing": 70.0,
+              "x": 1600.0,
+              "y": 150.0
             },
             {
-              "count": 5,
-              "delay": 1.0,
-              "enemyType": "enemy_blue",
-              "spacing": 40.0,
-              "x": 6200.0,
-              "y": 400.0
+              "count": 6,
+              "delay": 0.5,
+              "enemyType": "enemy_fast",
+              "spacing": 70.0,
+              "x": 1600.0,
+              "y": 550.0
             },
             {
-              "count": 2,
-              "delay": 1.5,
-              "enemyType": "enemy_red",
-              "spacing": 40.0,
-              "x": 6000.0,
+              "count": 1,
+              "delay": 2.0,
+              "enemyType": "enemy_elite_blue",
+              "spacing": 0.0,
+              "x": 1500.0,
               "y": 500.0
             }
           ]
         },
         {
           "id": "wave_4",
-          "name": "Ground Walkers",
-          "triggerX": 9000.0,
+          "name": "Robot Invasion",
+          "triggerX": 5500.0,
           "spawns": [
             {
-              "count": 3,
+              "count": 8,
               "delay": 0.0,
-              "enemyType": "enemy_walker",
-              "spacing": 120.0,
-              "x": 9000.0,
-              "y": 980.0
-            },
-            {
-              "count": 3,
-              "delay": 1.0,
-              "enemyType": "enemy_red",
-              "spacing": 80.0,
-              "x": 9000.0,
+              "enemyType": "enemy_robot",
+              "spacing": 90.0,
+              "x": 1500.0,
               "y": 200.0
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "description": "Increased difficulty with faster waves",
-      "id": "level_2",
-      "name": "Escalation",
-      "levelLength": 13000.0,
-      "map": {
-        "path": "client/assets/forest_map.png",
-        "scale": "fit-height",
-        "speed": 1.5
-      },
-      "waves": [
-        {
-          "id": "wave_1",
-          "name": "Quick Start",
-          "triggerX": 500.0,
-          "spawns": [
-            {
-              "count": 15,
-              "delay": 0.0,
-              "enemyType": "enemy_blue",
-              "spacing": 50.0,
-              "x": 1500.0,
-              "y": 100.0
             },
             {
-              "count": 15,
+              "count": 2,
               "delay": 1.5,
-              "enemyType": "enemy_blue",
-              "spacing": 50.0,
-              "x": 1500.0,
-              "y": 500.0
+              "enemyType": "enemy_tank",
+              "spacing": 200.0,
+              "x": 1600.0,
+              "y": 400.0
             }
           ]
         },
         {
-          "id": "wave_2",
-          "name": "Heavy Assault",
-          "triggerX": 7000.0,
+          "id": "wave_5",
+          "name": "Heavy Artillery",
+          "triggerX": 7200.0,
           "spawns": [
             {
-              "count": 5,
+              "count": 2,
               "delay": 0.0,
-              "enemyType": "enemy_red",
-              "spacing": 90.0,
-              "x": 5000.0,
+              "enemyType": "enemy_tank",
+              "spacing": 180.0,
+              "x": 1500.0,
+              "y": 250.0
+            },
+            {
+              "count": 10,
+              "delay": 0.5,
+              "enemyType": "enemy_blue",
+              "spacing": 50.0,
+              "x": 1700.0,
               "y": 150.0
             },
             {
               "count": 5,
-              "delay": 1.0,
+              "delay": 2.0,
               "enemyType": "enemy_red",
-              "spacing": 90.0,
-              "x": 5000.0,
-              "y": 450.0
+              "spacing": 80.0,
+              "x": 1400.0,
+              "y": 500.0
+            },
+            {
+              "count": 1,
+              "delay": 2.0,
+              "enemyType": "enemy_elite_green",
+              "spacing": 0.0,
+              "x": 1500.0,
+              "y": 300.0
             }
           ]
         },
         {
-          "id": "wave_3",
-          "name": "Elite Arrival",
-          "triggerX": 10000.0,
+          "id": "wave_6",
+          "name": "Elite Blue Shield",
+          "triggerX": 9000.0,
           "spawns": [
             {
               "count": 1,
@@ -212,7 +362,739 @@
               "enemyType": "enemy_elite_blue",
               "spacing": 0.0,
               "x": 1500.0,
+              "y": 350.0
+            },
+            {
+              "count": 6,
+              "delay": 1.0,
+              "enemyType": "enemy_robot",
+              "spacing": 70.0,
+              "x": 1600.0,
+              "y": 200.0
+            }
+          ]
+        },
+        {
+          "id": "wave_7",
+          "name": "Final Onslaught",
+          "triggerX": 10800.0,
+          "spawns": [
+            {
+              "count": 1,
+              "delay": 0.0,
+              "enemyType": "enemy_walker",
+              "spacing": 100.0,
+              "x": 1500.0,
+              "y": 980.0
+            },
+            {
+              "count": 8,
+              "delay": 0.5,
+              "enemyType": "enemy_fast",
+              "spacing": 60.0,
+              "x": 1400.0,
+              "y": 180.0
+            },
+            {
+              "count": 6,
+              "delay": 1.5,
+              "enemyType": "enemy_red",
+              "spacing": 80.0,
+              "x": 1500.0,
+              "y": 400.0
+            },
+            {
+              "count": 1,
+              "delay": 3.0,
+              "enemyType": "enemy_tank",
+              "spacing": 0.0,
+              "x": 1600.0,
               "y": 300.0
+            }
+          ]
+        },
+        {
+          "id": "wave_boss",
+          "name": "BOSS - Evangelic",
+          "triggerX": 13900.0,
+          "spawns": [
+            {
+              "count": 1,
+              "delay": 0.0,
+              "enemyType": "boss_evangelic",
+              "spacing": 0.0,
+              "x": 1500.0,
+              "y": 350.0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Industrial complex - prepare for chaos",
+      "id": "level_3",
+      "name": "Factory Mayhem",
+      "levelLength": 13900.0,
+      "map": {
+        "path": "client/assets/factory_map.png",
+        "scale": "fit-height",
+        "speed": 120.0
+      },
+      "waves": [
+        {
+          "id": "wave_1",
+          "name": "Factory Workers",
+          "triggerX": 600.0,
+          "spawns": [
+            {
+              "count": 10,
+              "delay": 0.0,
+              "enemyType": "enemy_robot",
+              "spacing": 80.0,
+              "x": 1500.0,
+              "y": 150.0
+            },
+            {
+              "count": 5,
+              "delay": 1.0,
+              "enemyType": "enemy_fast",
+              "spacing": 90.0,
+              "x": 1400.0,
+              "y": 450.0
+            },
+            {
+              "count": 1,
+              "delay": 1.5,
+              "enemyType": "enemy_elite_blue",
+              "spacing": 0.0,
+              "x": 1500.0,
+              "y": 400.0
+            }
+          ]
+        },
+        {
+          "id": "wave_2",
+          "name": "Double Elite Threat",
+          "triggerX": 2000.0,
+          "spawns": [
+            {
+              "count": 1,
+              "delay": 0.0,
+              "enemyType": "enemy_elite_green",
+              "spacing": 0.0,
+              "x": 1500.0,
+              "y": 250.0
+            },
+            {
+              "count": 1,
+              "delay": 2.0,
+              "enemyType": "enemy_elite_blue",
+              "spacing": 0.0,
+              "x": 1500.0,
+              "y": 450.0
+            },
+            {
+              "count": 8,
+              "delay": 1.0,
+              "enemyType": "enemy_blue",
+              "spacing": 60.0,
+              "x": 1600.0,
+              "y": 350.0
+            }
+          ]
+        },
+        {
+          "id": "wave_3",
+          "name": "Ground Assault",
+          "triggerX": 3800.0,
+          "spawns": [
+            {
+              "count": 1,
+              "delay": 0.0,
+              "enemyType": "enemy_walker",
+              "spacing": 95.0,
+              "x": 1500.0,
+              "y": 980.0
+            },
+            {
+              "count": 3,
+              "delay": 0.5,
+              "enemyType": "enemy_tank",
+              "spacing": 150.0,
+              "x": 1600.0,
+              "y": 300.0
+            },
+            {
+              "count": 1,
+              "delay": 1.5,
+              "enemyType": "enemy_elite_green",
+              "spacing": 0.0,
+              "x": 1500.0,
+              "y": 350.0
+            }
+          ]
+        },
+        {
+          "id": "wave_4",
+          "name": "Speed Demons",
+          "triggerX": 5400.0,
+          "spawns": [
+            {
+              "count": 10,
+              "delay": 0.0,
+              "enemyType": "enemy_fast",
+              "spacing": 55.0,
+              "x": 1350.0,
+              "y": 150.0
+            },
+            {
+              "count": 10,
+              "delay": 1.0,
+              "enemyType": "enemy_fast",
+              "spacing": 55.0,
+              "x": 1350.0,
+              "y": 550.0
+            },
+            {
+              "count": 6,
+              "delay": 2.0,
+              "enemyType": "enemy_robot",
+              "spacing": 80.0,
+              "x": 1500.0,
+              "y": 350.0
+            },
+            {
+              "count": 1,
+              "delay": 1.5,
+              "enemyType": "enemy_elite_blue",
+              "spacing": 0.0,
+              "x": 1500.0,
+              "y": 300.0
+            }
+          ]
+        },
+        {
+          "id": "wave_5",
+          "name": "Chaos Formation",
+          "triggerX": 7200.0,
+          "spawns": [
+            {
+              "count": 2,
+              "delay": 0.0,
+              "enemyType": "enemy_tank",
+              "spacing": 200.0,
+              "x": 1550.0,
+              "y": 200.0
+            },
+            {
+              "count": 12,
+              "delay": 0.5,
+              "enemyType": "enemy_blue",
+              "spacing": 50.0,
+              "x": 1450.0,
+              "y": 120.0
+            },
+            {
+              "count": 6,
+              "delay": 1.5,
+              "enemyType": "enemy_red",
+              "spacing": 75.0,
+              "x": 1400.0,
+              "y": 450.0
+            },
+            {
+              "count": 1,
+              "delay": 2.5,
+              "enemyType": "enemy_walker",
+              "spacing": 100.0,
+              "x": 1500.0,
+              "y": 980.0
+            }
+          ]
+        },
+        {
+          "id": "wave_6",
+          "name": "Elite Squadron",
+          "triggerX": 9200.0,
+          "spawns": [
+            {
+              "count": 1,
+              "delay": 0.0,
+              "enemyType": "enemy_elite_green",
+              "spacing": 0.0,
+              "x": 1500.0,
+              "y": 280.0
+            },
+            {
+              "count": 1,
+              "delay": 1.5,
+              "enemyType": "enemy_elite_blue",
+              "spacing": 0.0,
+              "x": 1500.0,
+              "y": 420.0
+            },
+            {
+              "count": 8,
+              "delay": 1.0,
+              "enemyType": "enemy_robot",
+              "spacing": 70.0,
+              "x": 1600.0,
+              "y": 200.0
+            }
+          ]
+        },
+        {
+          "id": "wave_7",
+          "name": "Final Defense",
+          "triggerX": 11000.0,
+          "spawns": [
+            {
+              "count": 3,
+              "delay": 0.0,
+              "enemyType": "enemy_tank",
+              "spacing": 160.0,
+              "x": 1550.0,
+              "y": 250.0
+            },
+            {
+              "count": 10,
+              "delay": 1.0,
+              "enemyType": "enemy_fast",
+              "spacing": 60.0,
+              "x": 1400.0,
+              "y": 150.0
+            },
+            {
+              "count": 8,
+              "delay": 2.0,
+              "enemyType": "enemy_robot",
+              "spacing": 70.0,
+              "x": 1500.0,
+              "y": 500.0
+            }
+          ]
+        },
+        {
+          "id": "wave_8",
+          "name": "Last Stand",
+          "triggerX": 12500.0,
+          "spawns": [
+            {
+              "count": 1,
+              "delay": 0.0,
+              "enemyType": "enemy_walker",
+              "spacing": 90.0,
+              "x": 1500.0,
+              "y": 980.0
+            },
+            {
+              "count": 15,
+              "delay": 0.5,
+              "enemyType": "enemy_blue",
+              "spacing": 45.0,
+              "x": 1450.0,
+              "y": 180.0
+            },
+            {
+              "count": 8,
+              "delay": 1.5,
+              "enemyType": "enemy_red",
+              "spacing": 65.0,
+              "x": 1400.0,
+              "y": 400.0
+            }
+          ]
+        },
+        {
+          "id": "wave_boss",
+          "name": "BOSS - Brocolis",
+          "triggerX": 13900.0,
+          "spawns": [
+            {
+              "count": 1,
+              "delay": 0.0,
+              "enemyType": "boss_brocolis",
+              "spacing": 0.0,
+              "x": 1500.0,
+              "y": 350.0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Deep caves - ultimate challenge awaits",
+      "id": "level_4",
+      "name": "Cave of Despair",
+      "levelLength": 17900.0,
+      "map": {
+        "path": "client/assets/cave_map.png",
+        "scale": "fit-height",
+        "speed": 110.0
+      },
+      "waves": [
+        {
+          "id": "wave_1",
+          "name": "Cave Entrance",
+          "triggerX": 700.0,
+          "spawns": [
+            {
+              "count": 15,
+              "delay": 0.0,
+              "enemyType": "enemy_blue",
+              "spacing": 50.0,
+              "x": 1400.0,
+              "y": 150.0
+            },
+            {
+              "count": 8,
+              "delay": 1.5,
+              "enemyType": "enemy_red",
+              "spacing": 70.0,
+              "x": 1450.0,
+              "y": 450.0
+            },
+            {
+              "count": 1,
+              "delay": 1.5,
+              "enemyType": "enemy_elite_blue",
+              "spacing": 0.0,
+              "x": 1500.0,
+              "y": 380.0
+            }
+          ]
+        },
+        {
+          "id": "wave_2",
+          "name": "Narrow Passage",
+          "triggerX": 2200.0,
+          "spawns": [
+            {
+              "count": 1,
+              "delay": 0.0,
+              "enemyType": "enemy_elite_green",
+              "spacing": 0.0,
+              "x": 1500.0,
+              "y": 280.0
+            },
+            {
+              "count": 10,
+              "delay": 0.5,
+              "enemyType": "enemy_fast",
+              "spacing": 60.0,
+              "x": 1400.0,
+              "y": 180.0
+            },
+            {
+              "count": 1,
+              "delay": 2.0,
+              "enemyType": "enemy_walker",
+              "spacing": 85.0,
+              "x": 1500.0,
+              "y": 980.0
+            }
+          ]
+        },
+        {
+          "id": "wave_3",
+          "name": "Robot Swarm",
+          "triggerX": 4000.0,
+          "spawns": [
+            {
+              "count": 12,
+              "delay": 0.0,
+              "enemyType": "enemy_robot",
+              "spacing": 75.0,
+              "x": 1500.0,
+              "y": 200.0
+            },
+            {
+              "count": 2,
+              "delay": 1.5,
+              "enemyType": "enemy_tank",
+              "spacing": 180.0,
+              "x": 1550.0,
+              "y": 350.0
+            },
+            {
+              "count": 1,
+              "delay": 1.5,
+              "enemyType": "enemy_elite_green",
+              "spacing": 0.0,
+              "x": 1500.0,
+              "y": 320.0
+            }
+          ]
+        },
+        {
+          "id": "wave_4",
+          "name": "Elite Duo",
+          "triggerX": 6000.0,
+          "spawns": [
+            {
+              "count": 1,
+              "delay": 0.0,
+              "enemyType": "enemy_elite_blue",
+              "spacing": 0.0,
+              "x": 1500.0,
+              "y": 250.0
+            },
+            {
+              "count": 1,
+              "delay": 2.5,
+              "enemyType": "enemy_elite_green",
+              "spacing": 0.0,
+              "x": 1500.0,
+              "y": 450.0
+            },
+            {
+              "count": 10,
+              "delay": 1.0,
+              "enemyType": "enemy_blue",
+              "spacing": 55.0,
+              "x": 1600.0,
+              "y": 350.0
+            }
+          ]
+        },
+        {
+          "id": "wave_5",
+          "name": "Tank Brigade",
+          "triggerX": 8200.0,
+          "spawns": [
+            {
+              "count": 3,
+              "delay": 0.0,
+              "enemyType": "enemy_tank",
+              "spacing": 150.0,
+              "x": 1550.0,
+              "y": 280.0
+            },
+            {
+              "count": 8,
+              "delay": 1.0,
+              "enemyType": "enemy_robot",
+              "spacing": 70.0,
+              "x": 1500.0,
+              "y": 150.0
+            },
+            {
+              "count": 8,
+              "delay": 1.0,
+              "enemyType": "enemy_robot",
+              "spacing": 70.0,
+              "x": 1500.0,
+              "y": 550.0
+            },
+            {
+              "count": 1,
+              "delay": 2.0,
+              "enemyType": "enemy_elite_blue",
+              "spacing": 0.0,
+              "x": 1500.0,
+              "y": 350.0
+            }
+          ]
+        },
+        {
+          "id": "wave_6",
+          "name": "Speed Chaos",
+          "triggerX": 10200.0,
+          "spawns": [
+            {
+              "count": 12,
+              "delay": 0.0,
+              "enemyType": "enemy_fast",
+              "spacing": 50.0,
+              "x": 1350.0,
+              "y": 180.0
+            },
+            {
+              "count": 12,
+              "delay": 1.5,
+              "enemyType": "enemy_fast",
+              "spacing": 50.0,
+              "x": 1350.0,
+              "y": 520.0
+            },
+            {
+              "count": 6,
+              "delay": 2.5,
+              "enemyType": "enemy_red",
+              "spacing": 80.0,
+              "x": 1450.0,
+              "y": 350.0
+            }
+          ]
+        },
+        {
+          "id": "wave_7",
+          "name": "Ground Forces",
+          "triggerX": 12000.0,
+          "spawns": [
+            {
+              "count": 1,
+              "delay": 0.0,
+              "enemyType": "enemy_walker",
+              "spacing": 80.0,
+              "x": 1500.0,
+              "y": 980.0
+            },
+            {
+              "count": 10,
+              "delay": 1.0,
+              "enemyType": "enemy_blue",
+              "spacing": 60.0,
+              "x": 1450.0,
+              "y": 200.0
+            },
+            {
+              "count": 1,
+              "delay": 2.0,
+              "enemyType": "enemy_elite_blue",
+              "spacing": 0.0,
+              "x": 1500.0,
+              "y": 400.0
+            },
+            {
+              "count": 1,
+              "delay": 2.0,
+              "enemyType": "enemy_elite_green",
+              "spacing": 0.0,
+              "x": 1500.0,
+              "y": 400.0
+            }
+          ]
+        },
+        {
+          "id": "wave_8",
+          "name": "Everything at Once",
+          "triggerX": 13800.0,
+          "spawns": [
+            {
+              "count": 2,
+              "delay": 0.0,
+              "enemyType": "enemy_tank",
+              "spacing": 200.0,
+              "x": 1550.0,
+              "y": 250.0
+            },
+            {
+              "count": 10,
+              "delay": 0.5,
+              "enemyType": "enemy_robot",
+              "spacing": 65.0,
+              "x": 1500.0,
+              "y": 180.0
+            },
+            {
+              "count": 8,
+              "delay": 1.5,
+              "enemyType": "enemy_red",
+              "spacing": 70.0,
+              "x": 1450.0,
+              "y": 450.0
+            },
+            {
+              "count": 1,
+              "delay": 2.5,
+              "enemyType": "enemy_walker",
+              "spacing": 90.0,
+              "x": 1500.0,
+              "y": 980.0
+            }
+          ]
+        },
+        {
+          "id": "wave_9",
+          "name": "Elite Final Test",
+          "triggerX": 15500.0,
+          "spawns": [
+            {
+              "count": 1,
+              "delay": 0.0,
+              "enemyType": "enemy_elite_green",
+              "spacing": 0.0,
+              "x": 1500.0,
+              "y": 250.0
+            },
+            {
+              "count": 1,
+              "delay": 2.0,
+              "enemyType": "enemy_elite_blue",
+              "spacing": 0.0,
+              "x": 1500.0,
+              "y": 450.0
+            },
+            {
+              "count": 3,
+              "delay": 1.0,
+              "enemyType": "enemy_tank",
+              "spacing": 140.0,
+              "x": 1600.0,
+              "y": 350.0
+            },
+            {
+              "count": 12,
+              "delay": 3.0,
+              "enemyType": "enemy_fast",
+              "spacing": 55.0,
+              "x": 1400.0,
+              "y": 180.0
+            }
+          ]
+        },
+        {
+          "id": "wave_10",
+          "name": "The Gauntlet",
+          "triggerX": 16800.0,
+          "spawns": [
+            {
+              "count": 15,
+              "delay": 0.0,
+              "enemyType": "enemy_blue",
+              "spacing": 45.0,
+              "x": 1450.0,
+              "y": 150.0
+            },
+            {
+              "count": 10,
+              "delay": 1.0,
+              "enemyType": "enemy_red",
+              "spacing": 60.0,
+              "x": 1400.0,
+              "y": 350.0
+            },
+            {
+              "count": 8,
+              "delay": 2.0,
+              "enemyType": "enemy_robot",
+              "spacing": 70.0,
+              "x": 1500.0,
+              "y": 500.0
+            },
+            {
+              "count": 1,
+              "delay": 3.0,
+              "enemyType": "enemy_walker",
+              "spacing": 80.0,
+              "x": 1500.0,
+              "y": 980.0
+            }
+          ]
+        },
+        {
+          "id": "wave_boss",
+          "name": "BOSS - All Three!",
+          "triggerX": 17900.0,
+          "spawns": [
+            {
+              "count": 1,
+              "delay": 0.0,
+              "enemyType": "boss_dobkeratops",
+              "spacing": 0.0,
+              "x": 1500.0,
+              "y": 350.0
             }
           ]
         }

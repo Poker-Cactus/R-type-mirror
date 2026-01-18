@@ -152,8 +152,7 @@ struct LevelCompleteEvent : public IEvent {
   std::string levelId;
   std::string nextLevelId;
 
-  LevelCompleteEvent(const std::string &current, const std::string &next = "") 
-    : levelId(current), nextLevelId(next) {}
+  LevelCompleteEvent(const std::string &current, const std::string &next = "") : levelId(current), nextLevelId(next) {}
 };
 
 } // namespace ecs

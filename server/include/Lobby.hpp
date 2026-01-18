@@ -261,7 +261,7 @@ private:
 
   // AI difficulty setting
   AIDifficulty m_aiDifficulty = AIDifficulty::MEDIUM;
-  
+
   // Event listener handles (must be kept alive for the duration of the lobby)
   ecs::EventListenerHandle m_levelCompleteListener;
 

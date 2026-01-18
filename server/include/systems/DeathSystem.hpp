@@ -314,13 +314,13 @@ private:
         } else {
           std::cout << "[DeathSystem] -> Last player died, stopping spawn and triggering end-screen" << std::endl;
           // Last player died - game over for everyone
-          
+
           // Stop level spawning when game is over
           if (auto *spawnSystem = world.getSystem<server::SpawnSystem>()) {
             std::cout << "[DeathSystem] -> Stopping spawn system (game over)" << std::endl;
             spawnSystem->stopLevel();
           }
-          
+
           // Trigger lobby end-screen to send scores
           if (lobby != nullptr) {
             try {

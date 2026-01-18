@@ -118,18 +118,19 @@ public:
     m_maxPlayerDistance = 0.0F;
     m_nextWaveIndex = 0;
     m_isLevelActive = true;
-    m_levelEnding = false;  // Reset ending flag for new level
-    m_transitionState = TransitionState::NONE;  // Reset transition state
+    m_levelEnding = false; // Reset ending flag for new level
+    m_transitionState = TransitionState::NONE; // Reset transition state
     m_transitionTimer = 0.0f;
 
     // Clear existing spawn modes
     m_enemyTypeTimers.clear();
     m_spawnQueue.clear();
 
-    std::cout << "[SpawnSystem] *** STARTED LEVEL: " << config->name << " (" << config->waves.size() << " waves) ***" << std::endl;
+    std::cout << "[SpawnSystem] *** STARTED LEVEL: " << config->name << " (" << config->waves.size() << " waves) ***"
+              << std::endl;
     std::cout << "[SpawnSystem] Level length: " << config->levelLength << std::endl;
     for (size_t i = 0; i < config->waves.size(); ++i) {
-      std::cout << "[SpawnSystem]   Wave " << i << ": " << config->waves[i].name 
+      std::cout << "[SpawnSystem]   Wave " << i << ": " << config->waves[i].name
                 << " (triggerX=" << config->waves[i].triggerX << ")" << std::endl;
     }
   }
@@ -144,10 +145,10 @@ public:
     // Count entities with Pattern component (enemies have Pattern component for AI)
     ecs::ComponentSignature enemySig;
     enemySig.set(ecs::getComponentId<ecs::Pattern>());
-    
+
     std::vector<ecs::Entity> enemies;
     world.getEntitiesWithSignature(enemySig, enemies);
-    
+
     return enemies.size();
   }
 
@@ -160,10 +161,10 @@ public:
     ecs::ComponentSignature playerSig;
     playerSig.set(ecs::getComponentId<ecs::PlayerId>());
     playerSig.set(ecs::getComponentId<ecs::LevelProgress>());
-    
+
     std::vector<ecs::Entity> players;
     world.getEntitiesWithSignature(playerSig, players);
-    
+
     for (auto player : players) {
       auto &progress = world.getComponent<ecs::LevelProgress>(player);
       progress.distanceTraveled = 0.0f;
@@ -200,11 +201,11 @@ public:
     m_currentLevel = nullptr;
     m_maxPlayerDistance = 0.0F;
     m_nextWaveIndex = 0;
-    
+
     // Clear spawn queue to prevent spawning enemies after death
     m_spawnQueue.clear();
     m_spawnQueueTimer = 0.0F;
-    
+
     std::cout << "[SpawnSystem] Level stopped (cleared spawn queue)" << std::endl;
   }
 
@@ -470,7 +471,7 @@ public:
     // Don't process spawn queue if level is not active (e.g., after player death)
     if (!m_isLevelActive && !m_isInfiniteMode)
       return;
-      
+
     if (m_spawnQueue.empty())
       return;
 
@@ -508,23 +509,24 @@ public:
     // Handle level transition state
     if (m_transitionState == TransitionState::TRANSITIONING) {
       m_transitionTimer += deltaTime;
-      std::cout << "[SpawnSystem] Transition in progress: " << m_transitionTimer << " / " << TRANSITION_DURATION << " seconds" << std::endl;
-      
+      std::cout << "[SpawnSystem] Transition in progress: " << m_transitionTimer << " / " << TRANSITION_DURATION
+                << " seconds" << std::endl;
+
       if (m_transitionTimer >= TRANSITION_DURATION) {
         std::cout << "[SpawnSystem] ✓ Transition complete! Loading next level..." << std::endl;
         m_transitionState = TransitionState::NONE;
         m_transitionTimer = 0.0f;
-        
+
         if (!m_nextLevelIdToLoad.empty()) {
           std::cout << "[SpawnSystem] Starting level: " << m_nextLevelIdToLoad << std::endl;
           startLevel(m_nextLevelIdToLoad);
-          resetPlayersLevelProgress(world);  // Reset distance to 0 for new level
+          resetPlayersLevelProgress(world); // Reset distance to 0 for new level
         } else {
           std::cout << "[SpawnSystem] No more levels, game complete!" << std::endl;
           stopLevel();
         }
       }
-      return;  // Skip normal spawning during transition
+      return; // Skip normal spawning during transition
     }
 
     // Update max player distance traveled
@@ -533,13 +535,13 @@ public:
     playerSig.set(ecs::getComponentId<ecs::LevelProgress>());
     std::vector<ecs::Entity> players;
     world.getEntitiesWithSignature(playerSig, players);
-    
+
     float previousMaxDistance = m_maxPlayerDistance;
     for (const auto &player : players) {
       const auto &progress = world.getComponent<ecs::LevelProgress>(player);
       m_maxPlayerDistance = std::max(m_maxPlayerDistance, progress.distanceTraveled);
     }
-    
+
     // Debug log when player distance changes significantly
     if (std::abs(m_maxPlayerDistance - previousMaxDistance) > 100.0f) {
       std::cout << "[SpawnSystem] Player distance traveled: " << m_maxPlayerDistance << std::endl;
@@ -553,72 +555,74 @@ public:
 
         if (m_maxPlayerDistance >= wave.triggerX) {
           std::cout << "[SpawnSystem] *** Triggering wave " << m_nextWaveIndex << ": " << wave.name
-                  << " (distance=" << m_maxPlayerDistance << ", triggerX=" << wave.triggerX << ") ***" << std::endl;
+                    << " (distance=" << m_maxPlayerDistance << ", triggerX=" << wave.triggerX << ") ***" << std::endl;
 
-        // Get viewport width to spawn just outside screen
-        float worldWidth = DEFAULT_VIEWPORT_WIDTH;
-        ecs::ComponentSignature vpSig;
-        vpSig.set(ecs::getComponentId<ecs::PlayerId>());
-        vpSig.set(ecs::getComponentId<ecs::Viewport>());
-        std::vector<ecs::Entity> vpPlayers;
-        world.getEntitiesWithSignature(vpSig, vpPlayers);
-        for (const auto &player : vpPlayers) {
-          const auto &viewport = world.getComponent<ecs::Viewport>(player);
-          if (viewport.width > 0) {
-            worldWidth = std::max(worldWidth, static_cast<float>(viewport.width));
+          // Get viewport width to spawn just outside screen
+          float worldWidth = DEFAULT_VIEWPORT_WIDTH;
+          ecs::ComponentSignature vpSig;
+          vpSig.set(ecs::getComponentId<ecs::PlayerId>());
+          vpSig.set(ecs::getComponentId<ecs::Viewport>());
+          std::vector<ecs::Entity> vpPlayers;
+          world.getEntitiesWithSignature(vpSig, vpPlayers);
+          for (const auto &player : vpPlayers) {
+            const auto &viewport = world.getComponent<ecs::Viewport>(player);
+            if (viewport.width > 0) {
+              worldWidth = std::max(worldWidth, static_cast<float>(viewport.width));
+            }
           }
+
+          // Queue all spawns in this wave
+          for (const auto &spawn : wave.spawns) {
+            // Calculate delay to maintain spacing if count > 1
+            float spawnDelayPerEnemy = 0.0f;
+            if (spawn.count > 1 && spawn.spacing > 0.0f) {
+              // Get enemy config to calculate proper delay based on velocity
+              const EnemyConfig *enemyConfig =
+                m_enemyConfigManager ? m_enemyConfigManager->getConfig(spawn.enemyType) : nullptr;
+              float enemyVelocity = enemyConfig ? std::abs(enemyConfig->velocity.dx) : 384.0f;
+              spawnDelayPerEnemy = (enemyVelocity > 0.0f) ? (spawn.spacing / enemyVelocity) : 0.08f;
+            }
+
+            std::uniform_real_distribution<float> yVariation(-30.0f, 30.0f);
+            for (int i = 0; i < spawn.count; ++i) {
+              float offsetY = yVariation(m_rng);
+              float individualDelay = spawn.delay + i * spawnDelayPerEnemy;
+
+              // Spawn just outside the right edge of screen
+              float spawnX = worldWidth + 100.0f;
+              // float spawnX = (spawn.x > 0.0f) ? spawn.x : (worldWidth + 100.0f);
+
+              m_spawnQueue.push_back({spawnX, spawn.y + offsetY, individualDelay, spawn.enemyType,
+                                      1, // Spawn only 1 enemy per queue entry
+                                      0.0f});
+            }
+          }
+
+          std::cout << "[SpawnSystem] Queued " << wave.spawns.size() << " spawn groups for wave " << wave.name
+                    << std::endl;
+          std::cout << "[SpawnSystem] → Wave triggered at distance: " << m_maxPlayerDistance
+                    << " (triggerX: " << wave.triggerX << ")" << std::endl;
+
+          // Sort spawn queue by delay
+          std::sort(m_spawnQueue.begin(), m_spawnQueue.end(),
+                    [](const QueuedSpawn &a, const QueuedSpawn &b) { return a.delay < b.delay; });
+
+          m_spawnQueueTimer = 0.0F;
+          m_nextWaveIndex++;
+        } else {
+          break; // No more waves to trigger yet
         }
-
-        // Queue all spawns in this wave
-        for (const auto &spawn : wave.spawns) {
-          // Calculate delay to maintain spacing if count > 1
-          float spawnDelayPerEnemy = 0.0f;
-          if (spawn.count > 1 && spawn.spacing > 0.0f) {
-            // Get enemy config to calculate proper delay based on velocity
-            const EnemyConfig *enemyConfig =
-              m_enemyConfigManager ? m_enemyConfigManager->getConfig(spawn.enemyType) : nullptr;
-            float enemyVelocity = enemyConfig ? std::abs(enemyConfig->velocity.dx) : 384.0f;
-            spawnDelayPerEnemy = (enemyVelocity > 0.0f) ? (spawn.spacing / enemyVelocity) : 0.08f;
-          }
-
-          std::uniform_real_distribution<float> yVariation(-30.0f, 30.0f);
-          for (int i = 0; i < spawn.count; ++i) {
-            float offsetY = yVariation(m_rng);
-            float individualDelay = spawn.delay + i * spawnDelayPerEnemy;
-
-            // Spawn just outside the right edge of screen
-            float spawnX = worldWidth + 100.0f;
-            // float spawnX = (spawn.x > 0.0f) ? spawn.x : (worldWidth + 100.0f);
-
-            m_spawnQueue.push_back({spawnX, spawn.y + offsetY, individualDelay, spawn.enemyType,
-                                    1, // Spawn only 1 enemy per queue entry
-                                    0.0f});
-          }
-        }
-
-        std::cout << "[SpawnSystem] Queued " << wave.spawns.size() << " spawn groups for wave " << wave.name << std::endl;
-        std::cout << "[SpawnSystem] → Wave triggered at distance: " << m_maxPlayerDistance << " (triggerX: " << wave.triggerX << ")" << std::endl;
-
-        // Sort spawn queue by delay
-        std::sort(m_spawnQueue.begin(), m_spawnQueue.end(),
-                  [](const QueuedSpawn &a, const QueuedSpawn &b) { return a.delay < b.delay; });
-
-        m_spawnQueueTimer = 0.0F;
-        m_nextWaveIndex++;
-      } else {
-        break; // No more waves to trigger yet
       }
-    }
-    }  // Close the if (!m_levelEnding) block
+    } // Close the if (!m_levelEnding) block
 
     // Check if level is complete
     if (m_nextWaveIndex >= m_currentLevel->waves.size()) {
       // Log status every frame for debugging
       static float debugLogTimer = 0;
       debugLogTimer += deltaTime;
-      
+
       size_t aliveEnemies = countAliveEnemies(world);
-      
+
       if (debugLogTimer >= 1.0f) {
         std::cout << "[SpawnSystem] Level completion check:" << std::endl;
         std::cout << "  - Wave index: " << m_nextWaveIndex << " / " << m_currentLevel->waves.size() << std::endl;
@@ -633,20 +637,21 @@ public:
         std::cout << "[SpawnSystem] ✓✓✓ LEVEL COMPLETE ✓✓✓" << std::endl;
         std::cout << "[SpawnSystem] Level: " << m_currentLevel->name << std::endl;
         std::cout << "[SpawnSystem] Distance: " << m_maxPlayerDistance << std::endl;
-        
+
         // Mark level as ending to block new wave triggers
         m_levelEnding = true;
-        
+
         // Get the next level ID
         std::string currentLevelId = m_currentLevel->id;
         std::string nextLevelId = getNextLevelId(currentLevelId);
-        
+
         // Start transition state (do NOT load next level yet)
         m_transitionState = TransitionState::TRANSITIONING;
         m_transitionTimer = 0.0f;
         m_nextLevelIdToLoad = nextLevelId;
-        
-        std::cout << "[SpawnSystem] → Emitting LevelCompleteEvent: " << currentLevelId << " → " << nextLevelId << std::endl;
+
+        std::cout << "[SpawnSystem] → Emitting LevelCompleteEvent: " << currentLevelId << " → " << nextLevelId
+                  << std::endl;
         std::cout << "[SpawnSystem] → Entering transition state (6 seconds)" << std::endl;
         world.getEventBus().emit(ecs::LevelCompleteEvent{currentLevelId, nextLevelId});
       }
@@ -677,17 +682,17 @@ private:
   float m_maxPlayerDistance = 0.0F; // Distance maximale parcourue par les joueurs dans le niveau
   size_t m_nextWaveIndex = 0;
   bool m_isLevelActive = false;
-  bool m_levelEnding = false;  // Flag to block new waves during transition
-  
+  bool m_levelEnding = false; // Flag to block new waves during transition
+
   // Transition state management
   enum class TransitionState {
-    NONE,        // Normal gameplay
+    NONE, // Normal gameplay
     TRANSITIONING // Level transition in progress
   };
   TransitionState m_transitionState = TransitionState::NONE;
-  float m_transitionTimer = 0.0f;  // Timer for transition (6 seconds)
+  float m_transitionTimer = 0.0f; // Timer for transition (6 seconds)
   std::string m_nextLevelIdToLoad; // Level to load after transition
-  static constexpr float TRANSITION_DURATION = 6.0f;  // Must match client transition time
+  static constexpr float TRANSITION_DURATION = 6.0f; // Must match client transition time
 
   // Timers individuels pour chaque type d'ennemi
   std::unordered_map<std::string, float> m_enemyTypeTimers;
