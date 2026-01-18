@@ -82,6 +82,15 @@ void ClientNetworkReceiveSystem::update(ecs::World &world, float deltaTime)
         continue;
       }
 
+      // Lobby end: show end-screen with scores
+      if (type == "lobby_end") {
+        std::cout << "[Client] Received lobby_end from server" << std::endl;
+        if (m_lobbyEndCallback) {
+          m_lobbyEndCallback(json);
+        }
+        continue;
+      }
+
       // Server told us we've been kicked
       if (type == "player_kicked") {
         std::cout << "[Client] Received player_kicked from server" << std::endl;
@@ -99,8 +108,8 @@ void ClientNetworkReceiveSystem::update(ecs::World &world, float deltaTime)
         // Stop accepting snapshots immediately
         g_acceptSnapshots = false;
         if (m_lobbyStateCallback) {
-          // Notify any lobby UI about the updated state (0 players)
-          m_lobbyStateCallback(json.value("code", ""), 0);
+          // Notify any lobby UI about the updated state (0 players, 0 spectators)
+          m_lobbyStateCallback(json.value("code", ""), 0, 0);
         }
         // Call optional lobby-left callback
         if (m_lobbyLeftCallback) {
@@ -151,9 +160,18 @@ void ClientNetworkReceiveSystem::update(ecs::World &world, float deltaTime)
       } else if (type == "lobby_state") {
         std::string code = json.value("code", "");
         int playerCount = json.value("player_count", 0);
-        std::cout << "[Client] Lobby " << code << " has " << playerCount << " players" << std::endl;
+        int spectatorCount = json.value("spectator_count", 0);
+        std::cout << "[Client] Lobby " << code << " has " << playerCount << " players and " << spectatorCount
+                  << " spectators" << std::endl;
         if (m_lobbyStateCallback) {
-          m_lobbyStateCallback(code, playerCount);
+          m_lobbyStateCallback(code, playerCount, spectatorCount);
+        }
+      } else if (type == "lobby_message") {
+        std::string msg = json.value("message", "");
+        int dur = json.value("duration", 3);
+        std::cout << "[Client] Lobby message: '" << msg << "' (" << dur << "s)" << std::endl;
+        if (m_lobbyMessageCallback) {
+          m_lobbyMessageCallback(msg, dur);
         }
       } else if (type == "error") {
         std::string errorMsg = json.value("message", "Unknown error");
@@ -489,7 +507,7 @@ void ClientNetworkReceiveSystem::setLobbyJoinedCallback(std::function<void(const
   m_lobbyJoinedCallback = std::move(callback);
 }
 
-void ClientNetworkReceiveSystem::setLobbyStateCallback(std::function<void(const std::string &, int)> callback)
+void ClientNetworkReceiveSystem::setLobbyStateCallback(std::function<void(const std::string &, int, int)> callback)
 {
   m_lobbyStateCallback = std::move(callback);
 }
@@ -521,6 +539,11 @@ void ClientNetworkReceiveSystem::setLobbyLeftCallback(std::function<void()> call
   m_lobbyLeftCallback = std::move(callback);
 }
 
+void ClientNetworkReceiveSystem::setLobbyMessageCallback(std::function<void(const std::string &, int)> callback)
+{
+  m_lobbyMessageCallback = std::move(callback);
+}
+
 void ClientNetworkReceiveSystem::setPlayerDeadCallback(std::function<void(const nlohmann::json &)> callback)
 {
   m_playerDeadCallback = std::move(callback);
@@ -530,6 +553,11 @@ void ClientNetworkReceiveSystem::setChatMessageCallback(
   std::function<void(const std::string &, const std::string &, std::uint32_t)> callback)
 {
   m_chatMessageCallback = std::move(callback);
+}
+
+void ClientNetworkReceiveSystem::setLobbyEndCallback(std::function<void(const nlohmann::json &)> callback)
+{
+  m_lobbyEndCallback = std::move(callback);
 }
 
 ecs::ComponentSignature ClientNetworkReceiveSystem::getSignature() const

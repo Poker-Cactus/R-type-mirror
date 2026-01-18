@@ -61,7 +61,7 @@ public:
    * @brief Set callback for lobby state updates
    * @param callback Function to call on lobby state change
    */
-  void setLobbyStateCallback(std::function<void(const std::string &, int)> callback);
+  void setLobbyStateCallback(std::function<void(const std::string &, int, int)> callback);
 
   /**
    * @brief Set callback for error events
@@ -80,6 +80,11 @@ public:
    * @param callback Function to call when leaving lobby
    */
   void setLobbyLeftCallback(std::function<void()> callback);
+  /**
+   * @brief Set callback for lobby messages (temporary notices)
+   * @param callback Function to call when a lobby message is received (message, durationSeconds)
+   */
+  void setLobbyMessageCallback(std::function<void(const std::string &, int)> callback);
 
   /**
    * @brief Set callback for player death event
@@ -92,16 +97,22 @@ public:
    * @param callback Function to call when chat message received (sender, content, senderId)
    */
   void setChatMessageCallback(std::function<void(const std::string &, const std::string &, std::uint32_t)> callback);
+  /**
+   * @brief Set callback for lobby end event (scores)
+   */
+  void setLobbyEndCallback(std::function<void(const nlohmann::json &)> callback);
 
 private:
   std::shared_ptr<INetworkManager> m_networkManager;
   std::function<void()> m_gameStartedCallback;
   std::function<void(const std::string &)> m_lobbyJoinedCallback;
-  std::function<void(const std::string &, int)> m_lobbyStateCallback;
+  std::function<void(const std::string &, int, int)> m_lobbyStateCallback;
   std::function<void(const std::string &)> m_errorCallback;
   std::function<void()> m_lobbyLeftCallback;
   std::function<void(const nlohmann::json &)> m_playerDeadCallback;
   std::function<void(const std::string &, const std::string &, std::uint32_t)> m_chatMessageCallback;
+  std::function<void(const std::string &, int)> m_lobbyMessageCallback;
+  std::function<void(const nlohmann::json &)> m_lobbyEndCallback;
 
   void handleEntityCreated(ecs::World &world, const nlohmann::json &json);
   void handleEntityUpdate(ecs::World &world, const nlohmann::json &json);

@@ -4,6 +4,11 @@
       "description": "Introductory level with basic enemy wave",
       "id": "level_1",
       "name": "First Contact",
+      "map": {
+        "path": "client/assets/ruins_map.png",
+        "scale": "fit-height",
+        "speed": 100.0
+      },
       "waves": [
         {
           "id": "wave_boss",
@@ -142,6 +147,11 @@
       "description": "Increased difficulty with faster waves",
       "id": "level_2",
       "name": "Escalation",
+      "map": {
+        "path": "client/assets/forest_map.png",
+        "scale": "fit-height",
+        "speed": 1.5
+      },
       "waves": [
         {
           "id": "wave_1",

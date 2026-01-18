@@ -299,10 +299,17 @@ private:
           lobby->convertToSpectator(pid.clientId);
 
         } else {
-          std::cout << "[DeathSystem] -> Sending player_dead (game over)" << std::endl;
-          // Last player died - game over for everyone
-          msg["type"] = "player_dead";
-          msg["reason"] = "game_over";
+          std::cout << "[DeathSystem] -> Last player died, triggering end-screen (no player_dead message)" << std::endl;
+          // Last player died - trigger lobby end-screen (stop spawning and send scores)
+          // Do NOT send player_dead message - endGameShowScores will send lobby_end instead
+          if (lobby != nullptr) {
+            try {
+              lobby->endGameShowScores();
+            } catch (const std::exception &e) {
+              std::cerr << "[DeathSystem] Exception while triggering end-screen: " << e.what() << std::endl;
+            }
+          }
+          return; // Don't send any message - endGameShowScores handles it
         }
         if (world.hasComponent<ecs::Health>(event.entity)) {
           const auto &health = world.getComponent<ecs::Health>(event.entity);

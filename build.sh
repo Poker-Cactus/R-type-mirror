@@ -395,26 +395,74 @@ cmd_test() {
 }
 
 cmd_run_server() {
-    if [ ! -f "$BUILD_DIR/server/server" ]; then
-        print_error "Server not built. Run './build.sh' first."
+    # Ensure build directory and configuration exist
+    if [ ! -d "$BUILD_DIR" ] || [ ! -f "$BUILD_DIR/CMakeCache.txt" ]; then
+        install_dependencies || exit 1
+        echo ""
+        configure_cmake || exit 1
+        echo ""
+    fi
+
+    print_step "Building Server..."
+    cmake --build "$BUILD_DIR" --target server --config "$BUILD_TYPE" -j8 2>&1 | format_build_output
+    if [ ${PIPESTATUS[0]} -ne 0 ]; then
+        print_error "Server build failed"
         exit 1
     fi
+
+    if [ ! -f "$BUILD_DIR/server/server" ]; then
+        print_error "Server binary not found after build."
+        exit 1
+    fi
+
     exec "$BUILD_DIR/server/server" "$@"
 }
 
 cmd_run_client() {
-    if [ ! -f "$BUILD_DIR/client/client" ]; then
-        print_error "Client not built. Run './build.sh' first."
+    # Ensure build directory and configuration exist
+    if [ ! -d "$BUILD_DIR" ] || [ ! -f "$BUILD_DIR/CMakeCache.txt" ]; then
+        install_dependencies || exit 1
+        echo ""
+        configure_cmake || exit 1
+        echo ""
+    fi
+
+    print_step "Building Client..."
+    cmake --build "$BUILD_DIR" --target client --config "$BUILD_TYPE" -j8 2>&1 | format_build_output
+    if [ ${PIPESTATUS[0]} -ne 0 ]; then
+        print_error "Client build failed"
         exit 1
     fi
+
+    if [ ! -f "$BUILD_DIR/client/client" ]; then
+        print_error "Client binary not found after build."
+        exit 1
+    fi
+
     exec "$BUILD_DIR/client/client" "$@"
 }
 
 cmd_run_editor() {
-    if [ ! -f "$BUILD_DIR/assetEditor/assetEditor" ]; then
-        print_error "Asset Editor not built. Run './build.sh' first."
+    # Ensure build directory and configuration exist
+    if [ ! -d "$BUILD_DIR" ] || [ ! -f "$BUILD_DIR/CMakeCache.txt" ]; then
+        install_dependencies || exit 1
+        echo ""
+        configure_cmake || exit 1
+        echo ""
+    fi
+
+    print_step "Building Asset Editor..."
+    cmake --build "$BUILD_DIR" --target assetEditor --config "$BUILD_TYPE" -j8 2>&1 | format_build_output
+    if [ ${PIPESTATUS[0]} -ne 0 ]; then
+        print_error "Asset Editor build failed"
         exit 1
     fi
+
+    if [ ! -f "$BUILD_DIR/assetEditor/assetEditor" ]; then
+        print_error "Asset Editor binary not found after build."
+        exit 1
+    fi
+
     exec "$BUILD_DIR/assetEditor/assetEditor" "$@"
 }
 

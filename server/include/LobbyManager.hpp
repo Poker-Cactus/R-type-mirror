@@ -91,6 +91,11 @@ public:
   void cleanupEmptyLobbies();
 
   /**
+   * @brief Force remove a lobby by code (stop game and erase)
+   */
+  void removeLobby(const std::string &code);
+
+  /**
    * @brief Get all active lobbies
    * @return Map of lobby codes to lobby instances
    */

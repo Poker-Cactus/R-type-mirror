@@ -25,6 +25,7 @@
 #include "systems/ScoreSystem.hpp"
 #include "systems/ShootingSystem.hpp"
 #include "systems/SpawnSystem.hpp"
+#include "systems/InvulnerabilitySystem.hpp"
 #include "systems/AttractionSystem.hpp"
 // IWYU pragma: end_exports
 

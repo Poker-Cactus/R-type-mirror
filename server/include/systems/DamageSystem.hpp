@@ -15,6 +15,7 @@
 #include "../../../engineCore/include/ecs/components/Follower.hpp"
 #include "../../../engineCore/include/ecs/components/Health.hpp"
 #include "../../../engineCore/include/ecs/components/Immortal.hpp"
+#include "../../../engineCore/include/ecs/components/Invulnerable.hpp"
 #include "../../../engineCore/include/ecs/components/Input.hpp"
 #include "../../../engineCore/include/ecs/components/Owner.hpp"
 #include "../../../engineCore/include/ecs/components/Pattern.hpp"
@@ -144,6 +145,17 @@ private:
       // Otherwise apply mutual damage (e.g., enemy vs player)
       applyDamage(world, entityA, entityB, damageFromEntityCollision);
       applyDamage(world, entityB, entityA, damageFromEntityCollision);
+
+      // If collision is between player and enemy, destroy the enemy immediately (player loses one life)
+      bool aIsEnemy = world.hasComponent<ecs::Pattern>(entityA) && !aIsPlayer;
+      bool bIsEnemy = world.hasComponent<ecs::Pattern>(entityB) && !bIsPlayer;
+
+      if (aIsEnemy && bIsPlayer && world.isAlive(entityA)) {
+        world.destroyEntity(entityA);
+      }
+      if (bIsEnemy && aIsPlayer && world.isAlive(entityB)) {
+        world.destroyEntity(entityB);
+      }
     } else if (aHasHealth && !bHasHealth) {
       // Only A has health - projectile B hitting entity A
       applyDamage(world, entityA, entityB, damageFromProjectile);
@@ -213,6 +225,7 @@ private:
 
   static void applyDamage(ecs::World &world, ecs::Entity target, ecs::Entity source, int damage)
   {
+    (void)damage; // We use fixed 1 life per hit; keep parameter for compatibility
     if (!world.isAlive(target) || !world.hasComponent<ecs::Health>(target)) {
       return;
     }
@@ -255,12 +268,36 @@ private:
       return;
     }
 
-    // Emit damage event
-    ecs::DamageEvent damageEvent(target, realSource, damage);
+    // Skip if target is currently invulnerable
+    if (world.hasComponent<ecs::Invulnerable>(target)) {
+      const auto &inv = world.getComponent<ecs::Invulnerable>(target);
+      if (inv.remaining > 0.0F) {
+        return; // ignore repeated collision while invulnerable
+      }
+    }
+
+    // Decide applied damage: players lose exactly 1 life per hit; other entities take full damage value
+    int appliedDamage = damage;
+    if (world.hasComponent<ecs::Input>(target)) {
+      appliedDamage = 1; // players lose one life per hit
+    }
+    // Emit damage event with applied damage
+    ecs::DamageEvent damageEvent(target, realSource, appliedDamage);
     world.emitEvent(damageEvent);
 
     auto &health = world.getComponent<ecs::Health>(target);
-    health.hp -= damage;
+    health.hp -= appliedDamage;
+
+    // If target is a player, give a short invulnerability window to avoid multi-hits while overlapping
+    if (world.hasComponent<ecs::Input>(target)) {
+      constexpr float INVULNERABILITY_SECONDS = 0.6F;
+      if (world.hasComponent<ecs::Invulnerable>(target)) {
+        auto &inv = world.getComponent<ecs::Invulnerable>(target);
+        inv.remaining = INVULNERABILITY_SECONDS;
+      } else {
+        world.addComponent<ecs::Invulnerable>(target, ecs::Invulnerable{INVULNERABILITY_SECONDS});
+      }
+    }
 
     if (health.hp <= 0) {
       health.hp = 0;
