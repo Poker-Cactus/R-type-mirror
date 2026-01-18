@@ -178,13 +178,13 @@
         },
         {
           "id": "wave_boss",
-          "name": "BOSS - Dobkeratops",
+          "name": "BOSS - Elite Green",
           "triggerX": 7900.0,
           "spawns": [
             {
               "count": 1,
               "delay": 0.0,
-              "enemyType": "boss_dobkeratops",
+              "enemyType": "boss_elite_green",
               "spacing": 0.0,
               "x": 1500.0,
               "y": 350.0
