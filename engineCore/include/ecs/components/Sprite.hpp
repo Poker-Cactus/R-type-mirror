@@ -173,6 +173,7 @@ constexpr std::uint32_t BOSS_GREEN_MOTHERSHIP_SHOOT = 68;
 constexpr std::uint32_t BOSS_GREEN_MOTHERSHIP_ECLOSION = 69;
 constexpr std::uint32_t BOSS_GREEN_MOTHERSHIP_TURRET = 70;
 constexpr std::uint32_t BOSS_GREEN_MOTHERSHIP_TURRET_SHOT = 71;
+constexpr std::uint32_t BOSS_GREEN_MOTHERSHIP_BOOSTER = 72;
 } // namespace SpriteId
 
 } // namespace ecs

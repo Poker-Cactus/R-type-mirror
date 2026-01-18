@@ -262,6 +262,10 @@ void PlayingState::render()
           frameWidth = 34;
           frameHeight = 28;
           break;
+        case ecs::SpriteId::BOSS_GREEN_MOTHERSHIP_BOOSTER:
+          frameWidth = 32;
+          frameHeight = 32;
+          break;
         case ecs::SpriteId::DRONE:
         case ecs::SpriteId::BUBBLE:
         case ecs::SpriteId::BUBBLE_TRIPLE:
@@ -415,6 +419,10 @@ void PlayingState::render()
           } else if (sprite.spriteId == ecs::SpriteId::BOSS_GREEN_MOTHERSHIP_TURRET) {
             // Turret: animated with different orientations
             srcX = sprite.currentFrame * frameWidth;
+            srcY = 0;
+          } else if (sprite.spriteId == ecs::SpriteId::BOSS_GREEN_MOTHERSHIP_BOOSTER) {
+            // Booster: static image, no animation
+            srcX = 0;
             srcY = 0;
           } else {
             // For Ruban and other sprites: use offsetX/offsetY/row if present
@@ -1595,6 +1603,19 @@ void PlayingState::loadSpriteTextures()
     }
   } catch (const std::exception &e) {
     std::cerr << "[PlayingState] ✗ Failed to load green-mothership turret texture: " << e.what() << '\n';
+  }
+
+  // BOSS_GREEN_MOTHERSHIP_BOOSTER = 72
+  try {
+    void *booster_tex = renderer->loadTexture(resolveAssetPath("client/assets/boss/green-mothership/booster.gif"));
+    if (booster_tex != nullptr) {
+      m_spriteTextures[ecs::SpriteId::BOSS_GREEN_MOTHERSHIP_BOOSTER] = booster_tex;
+      std::cout << "[PlayingState] ✓ Loaded green-mothership booster texture" << '\n';
+    } else {
+      std::cerr << "[PlayingState] ✗ Failed to load green-mothership booster texture (returned null)" << '\n';
+    }
+  } catch (const std::exception &e) {
+    std::cerr << "[PlayingState] ✗ Failed to load green-mothership booster texture: " << e.what() << '\n';
   }
 }
 

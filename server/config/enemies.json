@@ -468,6 +468,14 @@
       "transform": {
         "scale": 1.0
       },
+      "collider": {
+        "height": 16.0,
+        "width": 16.0
+      },
+      "health": {
+        "hp": 50,
+        "maxHp": 50
+      },
       "velocity": {
         "dx": 0.0,
         "dy": 0.0
@@ -510,6 +518,49 @@
       },
       "transform": {
         "scale": 1.0
+      },
+      "velocity": {
+        "dx": 0.0,
+        "dy": 0.0
+      }
+    },
+    {
+      "collider": {
+        "height": 32.0,
+        "width": 32.0
+      },
+      "description": "Booster attached to green mothership",
+      "health": {
+        "hp": 80,
+        "maxHp": 80
+      },
+      "id": "boss_green_mothership_booster",
+      "name": "boss_green_mothership_booster",
+      "pattern": {
+        "amplitude": 0.0,
+        "frequency": 0.0,
+        "type": "none"
+      },
+      "spawn": {
+        "groupSizeMax": 1,
+        "groupSizeMin": 1,
+        "spawnDelay": 0.0,
+        "spawnInterval": 0.0
+      },
+      "sprite": {
+        "animated": false,
+        "endFrame": 0,
+        "frameCount": 1,
+        "frameTime": 0.0,
+        "height": 32,
+        "loop": false,
+        "reverseAnimation": false,
+        "spriteId": 72,
+        "startFrame": 0,
+        "width": 32
+      },
+      "transform": {
+        "scale": 1.5
       },
       "velocity": {
         "dx": 0.0,

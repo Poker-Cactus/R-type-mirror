@@ -59,6 +59,11 @@ public:
     std::vector<ecs::Entity> toDestroy;
 
     for (auto entity : entities) {
+      // Skip entities that are attached to other entities (like turrets/boosters to mothership)
+      if (world.hasComponent<ecs::Attachment>(entity)) {
+        continue;
+      }
+
       // Players are authoritative and must not disappear; keep them in bounds.
       if (world.hasComponent<ecs::PlayerId>(entity)) {
         auto &t = world.getComponent<ecs::Transform>(entity);

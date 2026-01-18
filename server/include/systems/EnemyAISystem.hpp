@@ -12,6 +12,7 @@
 #include "../../../engineCore/include/ecs/Entity.hpp"
 #include "../../../engineCore/include/ecs/ISystem.hpp"
 #include "../../../engineCore/include/ecs/World.hpp"
+#include "../../../engineCore/include/ecs/components/Attachment.hpp"
 #include "../../../engineCore/include/ecs/components/Attraction.hpp"
 #include "../../../engineCore/include/ecs/components/Collider.hpp"
 #include "../../../engineCore/include/ecs/components/Lifetime.hpp"
@@ -996,7 +997,9 @@ public:
       if (world.hasComponent<ecs::Sprite>(entity)) {
         auto &sprite = world.getComponent<ecs::Sprite>(entity);
         if (sprite.spriteId == ecs::SpriteId::BOSS_GREEN_MOTHERSHIP_TURRET) {
-          // Turret aiming cooldown - can only change direction every 1.0 seconds
+          // flipY is set at spawn time based on Y offset relative to mothership center
+
+          // Turret aiming cooldown - can only change direction every 0.25 seconds
           static std::unordered_map<ecs::Entity, float> s_turretCooldownTimer;
           auto timerIt = s_turretCooldownTimer.find(entity);
           if (timerIt == s_turretCooldownTimer.end()) {
@@ -1007,8 +1010,8 @@ public:
           // Update cooldown timer
           timerIt->second += deltaTime;
           
-          // Check if cooldown has passed (1.0 seconds)
-          if (timerIt->second >= 1.0F) {
+          // Check if cooldown has passed (0.25 seconds)
+          if (timerIt->second >= 0.25F) {
             // Find player position
             std::vector<ecs::Entity> allEntities;
             world.getEntitiesWithSignature(ecs::ComponentSignature(), allEntities);
@@ -1175,7 +1178,7 @@ public:
                 world.addComponent(shot, shotNetworked);
                 
                 ecs::Lifetime shotLifetime;
-                shotLifetime.remaining = 10.0F; // Auto-destroy after 10 seconds
+                shotLifetime.remaining = 5.0F; // Auto-destroy after 5 seconds (fallback for off-screen cleanup)
                 world.addComponent(shot, shotLifetime);
                 
                 // Reset shooting timer

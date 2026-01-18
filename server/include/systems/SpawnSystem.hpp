@@ -697,9 +697,10 @@ private:
     std::cout << "[SpawnSystem] Spawned enemy '" << enemyType << "' (spriteId=" << config->sprite.spriteId
               << ", pattern=" << config->pattern.type << ") at (" << posX << ", " << posY << ")" << std::endl;
 
-    // Special handling for boss with turrets
+    // Special handling for boss with turrets and boosters
     if (enemyType == "boss_green_mothership") {
       spawnMothershipTurrets(world, enemy, posX, posY);
+      spawnMothershipBoosters(world, enemy, posX, posY);
     }
 
     // Networked component
@@ -727,28 +728,18 @@ private:
     // X: negative = left, positive = right
     // Y: negative = above center, positive = below center
     std::vector<std::pair<float, float>> turretOffsets = {
-      {-495.0f, -85.0f},  // Top-left turret
-      {-550.0f, -65.0f},  // Top-left turret
-      {-605.0f, -45.0f},  // Top-left turret
-      {-660.0f, -25.0f},  // Top-left turret
-      {-600.0f, -150.0f},  // Top-left turret
-      {-600.0f, 550.0f},  // Top-left turret
-
-
-
-
-
-
-
-
-      // {0.0f, -120.0f},     // Top-center turret  
-      // {400.0f, -100.0f},   // Top-right turret
-      // // Bottom turrets facing down
-      // {0.0f, 120.0f},      // Bottom-center turret
-      // {-400.0f, 100.0f},   // Bottom-left turret
-      // {400.0f, 100.0f},    // Bottom-right turret
+      // Top turrets (above center, facing up)
+      {-495.0f, -85.0f},
+      {-550.0f, -65.0f},
+      {-605.0f, -45.0f},
+      {-660.0f, -25.0f},
+      // Bottom turrets (below center, facing down - flipY=true)
+      // {-495.0f, 200.0f},
+      // {-495.0f, 150.0f},
+      // {-550.0f, 65.0f},
+      // {-605.0f, 45.0f},
+      // {-660.0f, 25.0f},
     };
-
     for (size_t i = 0; i < turretOffsets.size(); ++i) {
       const auto &offset = turretOffsets[i];
       
@@ -799,7 +790,8 @@ private:
       sprite.currentFrame = turretConfig->sprite.startFrame;
       sprite.frameTime = turretConfig->sprite.frameTime;
       sprite.reverseAnimation = turretConfig->sprite.reverseAnimation;
-      sprite.flipY = (offset.second > 0.0f); // Flip bottom turrets vertically
+      // Set flipY based on Y offset relative to center (positive Y = below center = flipped)
+      sprite.flipY = (offset.second > 0.0f);
       world.addComponent(turret, sprite);
 
       // Attachment component - links turret to mothership
@@ -816,7 +808,105 @@ private:
       world.addComponent(turret, net);
 
       std::cout << "[SpawnSystem] Spawned turret " << i + 1 << " for mothership at offset (" 
-                << offset.first << ", " << offset.second << ")" << std::endl;
+                << offset.first << ", " << offset.second << "), flipY=" << sprite.flipY 
+                << ", position=(" << (centerX + offset.first) << ", " << (centerY + offset.second) << ")" << std::endl;
+    }
+  }
+
+  void spawnMothershipBoosters(ecs::World &world, ecs::Entity mothership, float mothershipX, float mothershipY)
+  {
+    // Get mothership config to calculate center
+    const EnemyConfig *mothershipConfig = m_enemyConfigManager->getConfig("boss_green_mothership");
+    if (!mothershipConfig) {
+      std::cerr << "[SpawnSystem] ERROR: Mothership config not found!" << std::endl;
+      return;
+    }
+
+    // Calculate mothership center position
+    float mothershipWidth = mothershipConfig->sprite.width * mothershipConfig->transform.scale;
+    float mothershipHeight = mothershipConfig->sprite.height * mothershipConfig->transform.scale;
+    float centerX = mothershipX + (mothershipWidth / 2.0f);
+    float centerY = mothershipY + (mothershipHeight / 2.0f);
+
+    // Define booster positions relative to mothership center
+    // Boosters are at the rear/back of the ship (left side in game coordinates)
+    std::vector<std::pair<float, float>> boosterOffsets = {
+      // Rear boosters - positioned at back/left of mothership
+      // {-100.0f, 180.0f},
+      // {-150.0f, 180.0f},
+
+
+
+    };
+
+    for (size_t i = 0; i < boosterOffsets.size(); ++i) {
+      const auto &offset = boosterOffsets[i];
+      
+      // Spawn booster using config
+      const EnemyConfig *boosterConfig = m_enemyConfigManager->getConfig("boss_green_mothership_booster");
+      if (!boosterConfig) {
+        std::cerr << "[SpawnSystem] ERROR: Booster config not found! Creating booster without config." << std::endl;
+        continue;
+      }
+
+      ecs::Entity booster = world.createEntity();
+
+      // Pattern component
+      world.addComponent(booster, ecs::Pattern{boosterConfig->pattern.type, boosterConfig->pattern.amplitude, boosterConfig->pattern.frequency});
+
+      // Transform component - position relative to mothership center
+      ecs::Transform transform;
+      transform.x = centerX + offset.first;
+      transform.y = centerY + offset.second;
+      transform.rotation = 0.0F;
+      transform.scale = boosterConfig->transform.scale;
+      world.addComponent(booster, transform);
+
+      // Velocity component
+      ecs::Velocity velocity;
+      velocity.dx = boosterConfig->velocity.dx;
+      velocity.dy = boosterConfig->velocity.dy;
+      world.addComponent(booster, velocity);
+
+      // Health component - boosters can take damage
+      ecs::Health health;
+      health.hp = boosterConfig->health.hp;
+      health.maxHp = boosterConfig->health.maxHp;
+      world.addComponent(booster, health);
+
+      // Collider component
+      world.addComponent(booster, ecs::Collider{boosterConfig->collider.width, boosterConfig->collider.height});
+
+      // Sprite component - uses booster.gif asset
+      ecs::Sprite sprite;
+      sprite.spriteId = boosterConfig->sprite.spriteId;
+      sprite.width = boosterConfig->sprite.width;
+      sprite.height = boosterConfig->sprite.height;
+      sprite.animated = boosterConfig->sprite.animated;
+      sprite.frameCount = boosterConfig->sprite.frameCount;
+      sprite.startFrame = boosterConfig->sprite.startFrame;
+      sprite.endFrame = boosterConfig->sprite.endFrame;
+      sprite.currentFrame = boosterConfig->sprite.startFrame;
+      sprite.frameTime = boosterConfig->sprite.frameTime;
+      sprite.reverseAnimation = boosterConfig->sprite.reverseAnimation;
+      world.addComponent(booster, sprite);
+
+      // Attachment component - links booster to mothership
+      // Convert center-relative offsets to top-left relative for AttachmentSystem
+      ecs::Attachment attachment;
+      attachment.parentId = mothership;
+      attachment.offsetX = (mothershipWidth / 2.0f) + offset.first;
+      attachment.offsetY = (mothershipHeight / 2.0f) + offset.second;
+      world.addComponent(booster, attachment);
+
+      // Networked component
+      ecs::Networked net;
+      net.networkId = booster;
+      world.addComponent(booster, net);
+
+      std::cout << "[SpawnSystem] Spawned booster " << i + 1 << " for mothership at offset (" 
+                << offset.first << ", " << offset.second << "), position=(" 
+                << (centerX + offset.first) << ", " << (centerY + offset.second) << ")" << std::endl;
     }
   }
 
