@@ -1,9 +1,7 @@
-/*
-** EPITECH PROJECT, 2025
-** R-type-mirror
-** File description:
-** NetworkSendSystem
-*/
+/**
+ * @file NetworkSendSystem.hpp
+ * @brief Server-side network send system.
+ */
 
 #ifndef NETWORKSENDSYSTEM_HPP_
 #define NETWORKSENDSYSTEM_HPP_
@@ -16,12 +14,20 @@
 
 class LobbyManager;
 
+/**
+ * @class NetworkSendSystem
+ * @brief Server system that broadcasts world state to clients.
+ */
 class NetworkSendSystem : public ecs::ISystem
 {
 public:
+  /** @brief Construct the send system. */
   NetworkSendSystem(std::shared_ptr<INetworkManager> networkManager);
+  /** @brief Destroy the send system. */
   ~NetworkSendSystem();
+  /** @brief Send snapshots and events for this frame. */
   void update(ecs::World &world, float deltaTime) override;
+  /** @brief Get the component signature for this system. */
   [[nodiscard]] ecs::ComponentSignature getSignature() const override;
 
   /**

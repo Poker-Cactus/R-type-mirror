@@ -1,9 +1,7 @@
-/*
-** EPITECH PROJECT, 2025
-** R-type-mirror
-** File description:
-** NetworkSendSystem
-*/
+/**
+ * @file NetworkSendSystem.cpp
+ * @brief Server-side network send system implementation.
+ */
 
 #include "systems/NetworkSendSystem.hpp"
 #include "../../engineCore/include/ecs/World.hpp"

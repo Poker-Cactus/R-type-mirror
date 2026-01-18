@@ -1,9 +1,7 @@
-/*
-** EPITECH PROJECT, 2025
-** R-type-mirror
-** File description:
-** main.cpp
-*/
+/**
+ * @file main.cpp
+ * @brief Server application entry point.
+ */
 
 #include "../../network/include/AsioServer.hpp"
 #include "Game.hpp"

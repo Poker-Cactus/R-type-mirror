@@ -1,9 +1,7 @@
-/*
-** EPITECH PROJECT, 2025
-** R-type-mirror
-** File description:
-** Game - Server-side game logic and ECS system management
-*/
+/**
+ * @file Game.cpp
+ * @brief Server-side game logic and ECS system management.
+ */
 
 #include "Game.hpp"
 #include "../../engineCore/include/ecs/EngineComponents.hpp"
