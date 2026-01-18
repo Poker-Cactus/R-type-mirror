@@ -160,6 +160,9 @@ constexpr std::uint32_t TRIPLE_PROJECTILE_UP = 63;
 constexpr std::uint32_t TRIPLE_PROJECTILE_DOWN = 64;
 constexpr std::uint32_t BOSS_GOBLINS_BABY = 65;
 constexpr std::uint32_t DEATH_ANIM = 66; // previously collided with BOSS_GOBLINS_BABY, assign unique id
+constexpr std::uint32_t BOSS_GREEN_MOTHERSHIP = 67;
+constexpr std::uint32_t BOSS_GREEN_MOTHERSHIP_SHOOT = 68;
+constexpr std::uint32_t BOSS_GREEN_MOTHERSHIP_ECLOSION = 69;
 } // namespace SpriteId
 
 } // namespace ecs

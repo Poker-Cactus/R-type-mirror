@@ -386,6 +386,49 @@
         "dx": -200.0,
         "dy": 0.0
       }
+    },
+    {
+      "collider": {
+        "height": 181.0,
+        "width": 594.0
+      },
+      "description": "BOSS green mothership",
+      "health": {
+        "hp": 50,
+        "maxHp": 50
+      },
+      "id": "boss_green_mothership",
+      "name": "boss_green_mothership",
+      "pattern": {
+        "amplitude": 0.0,
+        "frequency": 0.0,
+        "type": "boss_green_mothership_pattern"
+      },
+      "spawn": {
+        "groupSizeMax": 1,
+        "groupSizeMin": 1,
+        "spawnDelay": 0.0,
+        "spawnInterval": 0.0
+      },
+      "sprite": {
+        "animated": false,
+        "endFrame": 0,
+        "frameCount": 1,
+        "frameTime": 0.0,
+        "height": 52,
+        "loop": false,
+        "reverseAnimation": false,
+        "spriteId": 67,
+        "startFrame": 45,
+        "width": 170
+      },
+      "transform": {
+        "scale": 8.0
+      },
+      "velocity": {
+        "dx": -200.0,
+        "dy": 0.0
+      }
     }
   ]
 }

@@ -260,7 +260,7 @@ void Lobby::initializeSystems()
     // Set level config manager if available and start level
     if (m_levelConfigManager) {
       spawnSystem->setLevelConfigManager(m_levelConfigManager);
-      spawnSystem->startLevel("level_1");
+      spawnSystem->startLevel("level_1", *m_world);
       std::cout << "[Lobby:" << m_code << "] Level config manager set, started level_1" << std::endl;
     } else if (m_enemyConfigManager) {
       // Fallback to multi-type spawning if no level config

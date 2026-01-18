@@ -84,8 +84,9 @@ public:
   /**
    * @brief Start a level by ID
    * @param levelId Level ID from configuration
+   * @param world ECS world reference for spawning
    */
-  void startLevel(const std::string &levelId)
+  void startLevel(const std::string &levelId, ecs::World &world)
   {
     if (!m_levelConfigManager) {
       std::cerr << "[SpawnSystem] ERROR: No level config manager set!" << std::endl;
@@ -109,6 +110,9 @@ public:
 
     std::cout << "[SpawnSystem] Started level: " << config->name << " (" << config->waves.size() << " waves)"
               << std::endl;
+
+    // DEBUG: Spawn all bosses immediately for testing
+    spawnAllBossesForDebug(world);
   }
 
   /**
@@ -1098,6 +1102,21 @@ private:
     const char *typeNames[] = {"DRONE", "BUBBLE", "BUBBLE_TRIPLE", "BUBBLE_RUBAN"};
     std::cout << "[SpawnSystem] Spawned " << typeNames[static_cast<int>(powerupType)] << " powerup at (" << posX << ", "
               << posY << ")\n";
+  }
+
+  /**
+   * @brief DEBUG: Spawn all bosses immediately for testing
+   * @param world ECS world
+   */
+  void spawnAllBossesForDebug(ecs::World &world)
+  {
+    std::cout << "[SpawnSystem] DEBUG: Spawning green mothership boss for testing" << std::endl;
+
+    // Spawn Green Mothership boss at center (visible from start)
+    std::cout << "[SpawnSystem] DEBUG: Spawning boss_green_mothership at (400, 300)" << std::endl;
+    spawnEnemyFromConfig(world, 400.0f, 300.0f, "boss_green_mothership");
+
+    std::cout << "[SpawnSystem] DEBUG: Green mothership boss spawned!" << std::endl;
   }
 
   static void spawnExplosion(ecs::World &world, float posX, float posY)

@@ -246,6 +246,18 @@ void PlayingState::render()
           frameWidth = 262; // a voir car sprite sheet
           frameHeight = 261;
           break;
+        case ecs::SpriteId::BOSS_GREEN_MOTHERSHIP:
+          frameWidth = 100;
+          frameHeight = 50;
+          break;
+        case ecs::SpriteId::BOSS_GREEN_MOTHERSHIP_SHOOT:
+          frameWidth = 100;
+          frameHeight = 50;
+          break;
+        case ecs::SpriteId::BOSS_GREEN_MOTHERSHIP_ECLOSION:
+          frameWidth = 100;
+          frameHeight = 50;
+          break;
         case ecs::SpriteId::DRONE:
         case ecs::SpriteId::BUBBLE:
         case ecs::SpriteId::BUBBLE_TRIPLE:
@@ -389,6 +401,12 @@ void PlayingState::render()
           } else if (sprite.spriteId >= ecs::SpriteId::BOSS_BROCOLIS_ECLOSION) {
             // For player ship and other standard sprites: use currentFrame
             srcX = sprite.currentFrame * frameWidth;
+            srcY = 0;
+          } else if (sprite.spriteId == ecs::SpriteId::BOSS_GREEN_MOTHERSHIP ||
+                     sprite.spriteId == ecs::SpriteId::BOSS_GREEN_MOTHERSHIP_SHOOT ||
+                     sprite.spriteId == ecs::SpriteId::BOSS_GREEN_MOTHERSHIP_ECLOSION) {
+            // Green mothership boss sprites: static image, no animation
+            srcX = 0;
             srcY = 0;
           } else {
             // For Ruban and other sprites: use offsetX/offsetY/row if present
@@ -540,12 +558,14 @@ void PlayingState::render()
       case ecs::SpriteId::BOSS_GOBLINS:
       case ecs::SpriteId::BOSS_BROCOLIS_ECLOSION:
       case ecs::SpriteId::BOSS_BROCOLIS:
+      case ecs::SpriteId::BOSS_GREEN_MOTHERSHIP:
         color = COLOR_ENEMY_YELLOW;
         break;
       case ecs::SpriteId::BOSS_DOBKERATOP_SHOOT:
       case ecs::SpriteId::ROBOT_PROJECTILE:
       case ecs::SpriteId::BOSS_GOBLINS_BABY:
       case ecs::SpriteId::BOSS_BROCOLIS_SHOOT:
+      case ecs::SpriteId::BOSS_GREEN_MOTHERSHIP_SHOOT:
         color = COLOR_PROJECTILE_YELLOW;
         break;
       case ecs::SpriteId::PROJECTILE:
@@ -1500,6 +1520,45 @@ void PlayingState::loadSpriteTextures()
     }
   } catch (const std::exception &e) {
     std::cerr << "[PlayingState] ✗ Failed to load BOSS_anim.png: " << e.what() << '\n';
+  }
+
+  // BOSS_GREEN_MOTHERSHIP = 67
+  try {
+    void *boss_tex = renderer->loadTexture(resolveAssetPath("client/assets/boss/green-mothership/body.gif"));
+    if (boss_tex != nullptr) {
+      m_spriteTextures[ecs::SpriteId::BOSS_GREEN_MOTHERSHIP] = boss_tex;
+      std::cout << "[PlayingState] ✓ Loaded green-mothership body.gif" << '\n';
+    } else {
+      std::cerr << "[PlayingState] ✗ Failed to load green-mothership body.gif (returned null)" << '\n';
+    }
+  } catch (const std::exception &e) {
+    std::cerr << "[PlayingState] ✗ Failed to load green-mothership body.gif: " << e.what() << '\n';
+  }
+
+  // BOSS_GREEN_MOTHERSHIP_SHOOT = 68 (reuse body texture for now)
+  try {
+    void *boss_shoot_tex = renderer->loadTexture(resolveAssetPath("client/assets/boss/green-mothership/body.gif"));
+    if (boss_shoot_tex != nullptr) {
+      m_spriteTextures[ecs::SpriteId::BOSS_GREEN_MOTHERSHIP_SHOOT] = boss_shoot_tex;
+      std::cout << "[PlayingState] ✓ Loaded green-mothership shoot texture" << '\n';
+    } else {
+      std::cerr << "[PlayingState] ✗ Failed to load green-mothership shoot texture (returned null)" << '\n';
+    }
+  } catch (const std::exception &e) {
+    std::cerr << "[PlayingState] ✗ Failed to load green-mothership shoot texture: " << e.what() << '\n';
+  }
+
+  // BOSS_GREEN_MOTHERSHIP_ECLOSION = 69 (reuse body texture for now)
+  try {
+    void *boss_eclosion_tex = renderer->loadTexture(resolveAssetPath("client/assets/boss/green-mothership/body.gif"));
+    if (boss_eclosion_tex != nullptr) {
+      m_spriteTextures[ecs::SpriteId::BOSS_GREEN_MOTHERSHIP_ECLOSION] = boss_eclosion_tex;
+      std::cout << "[PlayingState] ✓ Loaded green-mothership eclosion texture" << '\n';
+    } else {
+      std::cerr << "[PlayingState] ✗ Failed to load green-mothership eclosion texture (returned null)" << '\n';
+    }
+  } catch (const std::exception &e) {
+    std::cerr << "[PlayingState] ✗ Failed to load green-mothership eclosion texture: " << e.what() << '\n';
   }
 }
 

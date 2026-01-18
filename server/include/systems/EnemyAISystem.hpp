@@ -964,6 +964,114 @@ public:
             }
           }
         }
+      } else if (pattern.patternType == "boss_green_mothership_pattern") {
+        // Green Mothership Boss Logic
+        // This boss moves in a circular pattern around the screen and shoots homing projectiles
+
+        struct MothershipState {
+          bool hasEntered = false;
+          float orbitAngle = 0.0F;
+          float shootTimer = 0.0F;
+        };
+        static std::unordered_map<ecs::Entity, MothershipState> s_mothershipStates;
+        auto &state = s_mothershipStates[entity];
+
+        constexpr float CENTER_X = 960.0F;
+        constexpr float CENTER_Y = 300.0F;
+        constexpr float ORBIT_RADIUS = 300.0F;
+        constexpr float ORBIT_SPEED = 1.0F; // radians per second
+        constexpr float ENTER_SPEED = 200.0F;
+        constexpr float SHOOT_INTERVAL = 3.0F;
+
+        if (!state.hasEntered) {
+          // Enter phase: move to orbit center
+          float dx = CENTER_X - transform.x;
+          float dy = CENTER_Y - transform.y;
+          float dist = std::sqrt(dx * dx + dy * dy);
+
+          if (dist < 10.0F) {
+            state.hasEntered = true;
+            velocity.dx = 0.0F;
+            velocity.dy = 0.0F;
+          } else {
+            velocity.dx = (dx / dist) * ENTER_SPEED;
+            velocity.dy = (dy / dist) * ENTER_SPEED;
+          }
+        } else {
+          // Orbit phase
+          state.orbitAngle += ORBIT_SPEED * deltaTime;
+          transform.x = CENTER_X + std::cos(state.orbitAngle) * ORBIT_RADIUS;
+          transform.y = CENTER_Y + std::sin(state.orbitAngle) * ORBIT_RADIUS;
+
+          // Shooting
+          state.shootTimer += deltaTime;
+          if (state.shootTimer >= SHOOT_INTERVAL) {
+            state.shootTimer = 0.0F;
+
+            // Find player to shoot at
+            std::vector<ecs::Entity> players;
+            ecs::ComponentSignature playerSig;
+            playerSig.set(ecs::getComponentId<ecs::PlayerId>());
+            world.getEntitiesWithSignature(playerSig, players);
+
+            if (!players.empty()) {
+              auto &playerPos = world.getComponent<ecs::Transform>(players[0]);
+
+              // Create homing projectile
+              ecs::Entity proj = world.createEntity();
+
+              ecs::Transform projTrans;
+              projTrans.x = transform.x;
+              projTrans.y = transform.y;
+              projTrans.scale = 1.0F;
+              world.addComponent(proj, projTrans);
+
+              ecs::Sprite projSprite;
+              projSprite.spriteId = ecs::SpriteId::BOSS_GREEN_MOTHERSHIP_SHOOT;
+              projSprite.width = 20;
+              projSprite.height = 20;
+              projSprite.animated = true;
+              projSprite.frameCount = 4;
+              projSprite.startFrame = 0;
+              projSprite.endFrame = 3;
+              projSprite.frameTime = 0.1F;
+              projSprite.loop = true;
+              world.addComponent(proj, projSprite);
+
+              // Calculate direction to player
+              float dx = playerPos.x - transform.x;
+              float dy = playerPos.y - transform.y;
+              float dist = std::sqrt(dx * dx + dy * dy);
+              if (dist > 0) {
+                dx /= dist;
+                dy /= dist;
+              }
+
+              ecs::Velocity projVel;
+              projVel.dx = dx * 300.0F; // projectile speed
+              projVel.dy = dy * 300.0F;
+              world.addComponent(proj, projVel);
+
+              ecs::Health projHp;
+              projHp.maxHp = 5;
+              projHp.hp = 5;
+              world.addComponent(proj, projHp);
+
+              ecs::Collider projCol;
+              projCol.width = 20.0F;
+              projCol.height = 20.0F;
+              world.addComponent(proj, projCol);
+
+              ecs::Owner owner;
+              owner.ownerId = entity;
+              world.addComponent(proj, owner);
+
+              ecs::Networked net;
+              net.networkId = proj;
+              world.addComponent(proj, net);
+            }
+          }
+        }
       } else if (pattern.patternType == "boss_goblins") {
       } else {
         // Default or "none" pattern: keep velocity as configured

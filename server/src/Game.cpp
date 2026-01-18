@@ -73,7 +73,7 @@ Game::Game()
     m_lobbyManager.setLevelConfigManager(m_levelConfigManager);
 
     // Start level 1
-    spawnSystem->startLevel("level_1");
+    spawnSystem->startLevel("level_1", *world);
 
     std::cout << "[Game] Level configurations loaded successfully" << std::endl;
   } else {

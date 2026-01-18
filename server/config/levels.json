@@ -12,7 +12,7 @@
             {
               "count": 1,
               "delay": 0.0,
-              "enemyType": "boss_brocolis",
+              "enemyType": "boss_green_mothership",
               "spacing": 0.0,
               "x": 1500.0,
               "y": 200.0

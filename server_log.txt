@@ -1,0 +1,23 @@
+🎮 R-Type Server Starting...
+[Game] SpawnSystem initialized
+[EnemyConfig] Loaded enemy: enemy_red (Red Oscillator)
+[EnemyConfig] Loaded enemy: enemy_blue (Yellow Bee Zigzag)
+[EnemyConfig] Loaded enemy: enemy_fast (Fast Scout)
+[EnemyConfig] Loaded enemy: enemy_tank (Heavy Tank)
+[EnemyConfig] Loaded enemy: enemy_walker (Ground Walker)
+[EnemyConfig] Loaded enemy: enemy_robot (Flying Robot)
+[EnemyConfig] Loaded enemy: boss_dobkeratops (boss_dobkeratops)
+[EnemyConfig] Loaded enemy: boss_brocolis (boss_brocolis)
+[EnemyConfig] Loaded enemy: boss_goblins (boss_goblins)
+[EnemyConfig] Successfully loaded 9 enemy types from server/config/enemies.json
+[Game] Enemy configurations loaded successfully
+[LevelConfig] Loaded level: level_1 (First Contact) with 5 waves
+[LevelConfig] Loaded level: level_2 (Escalation) with 2 waves
+[LevelConfig] Successfully loaded 2 levels from server/config/levels.json
+[SpawnSystem] Started level: First Contact (5 waves)
+[SpawnSystem] DEBUG: Spawning all bosses immediately for testing
+[SpawnSystem] Spawned enemy 'boss_dobkeratops' (spriteId=44, pattern=boss_pattern) at (1200, 100)
+[SpawnSystem] Spawned enemy 'boss_brocolis' (spriteId=46, pattern=boss_brocolis_pattern) at (1200, 300)
+[SpawnSystem] Spawned enemy 'boss_goblins' (spriteId=49, pattern=boss_goblins_pattern) at (1200, 500)
+[SpawnSystem] DEBUG: All bosses spawned!
+[Game] Level configurations loaded successfully
