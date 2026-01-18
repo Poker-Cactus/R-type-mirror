@@ -1,9 +1,7 @@
-/*
-** EPITECH PROJECT, 2025
-** R-type-mirror
-** File description:
-** Client.cpp
-*/
+/**
+ * @file Client.cpp
+ * @brief Client loop implementation.
+ */
 
 #include "../include/Client.hpp"
 #include "../../engineCore/include/ecs/components/Input.hpp"
@@ -41,8 +39,8 @@ void Client::initializeSystems()
   m_world->registerSystem<NetworkSendSystem>(m_networkManager);
   m_world->registerSystem<ClientNetworkReceiveSystem>(m_networkManager);
 
-  std::cout << "✓ Client: Systèmes réseau initialisés" << std::endl;
-  std::cout << "⏳ Client: En attente des entités du serveur..." << std::endl;
+  std::cout << "✓ Client: Network systems initialized" << std::endl;
+  std::cout << "⏳ Client: Waiting for server entities..." << std::endl;
 
   // send packet to the server to notify client is ready
   auto serialized = m_networkManager->getPacketHandler()->serialize("PING");
@@ -57,7 +55,7 @@ void Client::loop()
 
   auto lastTime = std::chrono::high_resolution_clock::now();
 
-  std::cout << "🎮 Client: Boucle de jeu démarrée (60 FPS)" << std::endl;
+  std::cout << "🎮 Client: Game loop started (60 FPS)" << std::endl;
 
   while (g_running) {
     auto currentTime = std::chrono::high_resolution_clock::now();
@@ -78,7 +76,7 @@ void Client::loop()
     }
   }
 
-  std::cout << "🛑 Client: Arrêt de la boucle de jeu" << std::endl;
+  std::cout << "🛑 Client: Game loop stopped" << std::endl;
 }
 
 void Client::signalHandler(int signum)

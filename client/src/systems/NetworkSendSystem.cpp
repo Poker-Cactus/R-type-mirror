@@ -1,9 +1,7 @@
-/*
-** EPITECH PROJECT, 2025
-** R-type-mirror
-** File description:
-** NetworkSendSystem - Client-side input transmission
-*/
+/**
+ * @file NetworkSendSystem.cpp
+ * @brief Client-side input transmission system implementation.
+ */
 
 #include "../../include/systems/NetworkSendSystem.hpp"
 #include "../../engineCore/include/ecs/World.hpp"

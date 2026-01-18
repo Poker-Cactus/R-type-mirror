@@ -121,9 +121,13 @@ private:
   std::function<void(const std::string &, int)> m_lobbyMessageCallback;
   std::function<void(const nlohmann::json &)> m_lobbyEndCallback;
 
+  /** @brief Handle entity creation from a network message. */
   void handleEntityCreated(ecs::World &world, const nlohmann::json &json);
+  /** @brief Handle entity update from a network message. */
   void handleEntityUpdate(ecs::World &world, const nlohmann::json &json);
+  /** @brief Handle a snapshot update from the server. */
   void handleSnapshot(ecs::World &world, const nlohmann::json &json);
+  /** @brief Trigger the game-start callback. */
   void handleGameStarted();
 };
 

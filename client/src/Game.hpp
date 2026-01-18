@@ -96,23 +96,40 @@ public:
   [[nodiscard]] GameState getState() const;
 
 private:
+  /** @brief Poll input and update input state. */
   void processInput();
+  /** @brief Update game logic for the current state. */
   void update(float deltaTime);
+  /** @brief Render the current state and overlays. */
   void render();
+  /** @brief Ensure the input entity exists in the ECS world. */
   void ensureInputEntity();
+  /** @brief Notify the server that the client is leaving. */
   void sendLeaveToServer();
+  /** @brief Send the current viewport size to the server. */
   void sendViewportToServer();
+  /** @brief Send a chat message to the server. */
   void sendChatMessage(const std::string &message);
+  /** @brief Handle chat input state and message submission. */
   void handleChatInput();
 
+  /** @brief Process input when in the menu state. */
   void handleMenuStateInput();
+  /** @brief Transition from lobby menu to lobby room. */
   void handleLobbyRoomTransition();
+  /** @brief Process input when in the lobby room state. */
   void handleLobbyRoomStateInput();
+  /** @brief Process input when in the playing state. */
   void handlePlayingStateInput();
+  /** @brief Process input on the victory screen. */
   void handleVictoryInput();
+  /** @brief Update the player input component. */
   void updatePlayerInput();
+  /** @brief Delegate input to the currently active state. */
   void delegateInputToCurrentState();
+  /** @brief Render the end screen based on payload. */
   void renderEndScreen();
+  /** @brief Render the victory screen. */
   void renderVictoryScreen();
 
   std::unique_ptr<Module<IRenderer>> module;

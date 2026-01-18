@@ -1,9 +1,7 @@
-/*
-** EPITECH PROJECT, 2025
-** R-Type
-** File description:
-** PlayingState.cpp
-*/
+/**
+ * @file PlayingState.cpp
+ * @brief Active gameplay state implementation.
+ */
 
 #include "PlayingState.hpp"
 #include "../../engineCore/include/ecs/components/Collider.hpp"
@@ -65,7 +63,7 @@ bool PlayingState::init()
 
   settingsMenu = std::make_shared<SettingsMenu>(renderer);
 
-  // Initialiser le background parallaxe
+  // Initialize the parallax background
   background = std::make_unique<ParallaxBackground>(renderer);
   if (!background->init()) {
     std::cerr << "PlayingState: Failed to initialize parallax background" << '\n';
@@ -199,7 +197,7 @@ void PlayingState::update(float delta_time)
     m_fpsFrameCount = 0;
   }
 
-  // Mettre à jour le background
+  // Update the background
   if (background) {
     background->update(delta_time);
   }
@@ -304,7 +302,7 @@ void PlayingState::render()
   // Set viewport to game area (clip everything to top area)
   renderer->setViewport(0, 0, windowWidth, m_gameHeight);
 
-  // Dessiner le background en premier
+  // Draw the background first
   if (background) {
     background->render();
   }
@@ -420,7 +418,7 @@ void PlayingState::render()
           frameHeight = 74;
           break;
         case ecs::SpriteId::BOSS_EVANGELIC_SHOOT:
-          frameWidth = 32; // 197 / 6 frames ≈ 32.83, arrondi à 32
+          frameWidth = 32; // 197 / 6 frames ≈ 32.83, rounded to 32
           frameHeight = 30;
           break;
         case ecs::SpriteId::BOSS_BROCOLIS:
@@ -428,7 +426,7 @@ void PlayingState::render()
           frameHeight = 34;
           break;
         case ecs::SpriteId::BOSS_DOBKERATOP:
-          frameWidth = 184; // 155 pixels / 4 frames, arrondi supérieur pour éviter débordement
+          frameWidth = 184; // 155 pixels / 4 frames, rounded up to avoid overflow
           frameHeight = 146;
           break;
         case ecs::SpriteId::BOSS_BROCOLIS_SHOOT:
@@ -647,7 +645,7 @@ void PlayingState::render()
           // Player ship is a spritesheet with player animation
           int frameIndex = sprite.animated ? sprite.currentFrame : m_playerFrameIndex;
           int srcX = frameIndex * PLAYER_FRAME_WIDTH;
-          int srcY = 0; // première ligne seulement
+          int srcY = 0; // first row only
           int scaledWidth = static_cast<int>(sprite.width * transformComponent.scale * m_scaleX);
           int scaledHeight = static_cast<int>(sprite.height * transformComponent.scale * m_scaleY);
           renderer->drawTextureRegion(

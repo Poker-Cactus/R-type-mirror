@@ -1,9 +1,7 @@
-/*
-** EPITECH PROJECT, 2025
-** rtype
-** File description:
-** RendererSFML.cpp
-*/
+/**
+ * @file RendererSFML.cpp
+ * @brief SFML renderer implementation.
+ */
 
 #include "RendererSFML.hpp"
 #include "../../interface/Color.hpp"
@@ -22,7 +20,9 @@ constexpr float kMillisecondsPerSecond = 1000.0F;
 constexpr float kGamepadAxisMax = 100.0F; // SFML uses -100 to 100 range
 } // anonymous namespace
 
-// Map SFML keycodes to generic keycodes
+/**
+ * @brief Map SFML key codes to generic key codes.
+ */
 static int mapSFMLKeyToGeneric(sf::Keyboard::Key sfmlKey)
 {
   switch (sfmlKey) {
@@ -159,7 +159,9 @@ static int mapSFMLKeyToGeneric(sf::Keyboard::Key sfmlKey)
   }
 }
 
-// Map generic keycodes to SFML keycodes
+/**
+ * @brief Map generic key codes to SFML key codes.
+ */
 static sf::Keyboard::Key mapGenericKeyToSFML(int genericKey)
 {
   switch (genericKey) {

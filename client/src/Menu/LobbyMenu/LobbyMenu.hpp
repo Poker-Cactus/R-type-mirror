@@ -135,7 +135,15 @@ public:
    * @return true if solo mode
    */
   [[nodiscard]] bool isSolo() const { return m_isSolo; }
+  /**
+   * @brief Get the selected lobby difficulty.
+   * @return Selected difficulty value.
+   */
   [[nodiscard]] Difficulty getSelectedDifficulty() const { return m_selectedDifficulty; }
+  /**
+   * @brief Get the selected game mode.
+   * @return Selected game mode.
+   */
   [[nodiscard]] GameMode getSelectedGameMode() const { return m_selectedGameMode; }
 
   /**
@@ -147,18 +155,31 @@ public:
 private:
   std::shared_ptr<IRenderer> m_renderer;
 
+  /** @brief Render the parallax background layers. */
   void renderBackground(const WindowDimensions &windowDims);
+  /** @brief Render the main menu options. */
   void renderMenuOptions(const WindowDimensions &windowDims);
+  /** @brief Render the lobby code entry prompt. */
   void renderLobbyCodeInput(const WindowDimensions &windowDims);
+  /** @brief Render the difficulty selection UI. */
   void renderDifficultySelection(const WindowDimensions &windowDims);
+  /** @brief Render the game mode selection UI. */
   void renderModeSelection(const WindowDimensions &windowDims);
+  /** @brief Render the highscores panel. */
   void renderHighscores(const WindowDimensions &windowDims);
+  /** @brief Handle navigation in the main menu options. */
   void handleMenuNavigation(Settings &settings);
+  /** @brief Handle navigation in the difficulty selection menu. */
   void handleDifficultyNavigation();
+  /** @brief Handle navigation in the game mode selection menu. */
   void handleModeNavigation();
+  /** @brief Handle text input for lobby code entry. */
   void handleTextInput();
+  /** @brief Apply the currently selected menu option. */
   void selectCurrentOption(MenuState *currentState);
+  /** @brief Apply the selected difficulty option. */
   void selectDifficultyOption();
+  /** @brief Apply the selected game mode option. */
   void selectModeOption();
 
   // Settings

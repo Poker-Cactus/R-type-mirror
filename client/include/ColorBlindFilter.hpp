@@ -1,26 +1,37 @@
-/*
-** EPITECH PROJECT, 2025
-** rtype
-** File description:
-** ColorBlindFilter.hpp
-*/
+/**
+ * @file ColorBlindFilter.hpp
+ * @brief Color-blind filter matrices and helpers.
+ */
 
 #ifndef COLOR_BLIND_FILTER_HPP
 #define COLOR_BLIND_FILTER_HPP
 
 #include <cstdint>
 
+/**
+ * @enum ColorBlindMode
+ * @brief Supported color-blind filter modes.
+ */
 enum class ColorBlindMode : std::uint8_t {
-  NONE = 0,
-  PROTANOPIA = 1,
-  DEUTERANOPIA = 2,
-  TRITANOPIA = 3,
+  NONE = 0, ///< No filter applied.
+  PROTANOPIA = 1, ///< Red-blindness simulation.
+  DEUTERANOPIA = 2, ///< Green-blindness simulation.
+  TRITANOPIA = 3, ///< Blue-blindness simulation.
 };
 
+/**
+ * @struct ColorMatrix
+ * @brief 3x3 RGB color transform matrix.
+ */
 struct ColorMatrix {
-  float m[3][3];
+  float m[3][3]; ///< Matrix values in row-major order.
 };
 
+/**
+ * @brief Get the color transform matrix for a given mode.
+ * @param mode Color-blind mode.
+ * @return RGB transformation matrix.
+ */
 inline ColorMatrix getColorBlindMatrix(ColorBlindMode mode)
 {
   ColorMatrix matrix;
@@ -78,6 +89,13 @@ inline ColorMatrix getColorBlindMatrix(ColorBlindMode mode)
   return matrix;
 }
 
+/**
+ * @brief Apply a color-blind filter matrix to an RGB triplet.
+ * @param r Red channel (in/out).
+ * @param g Green channel (in/out).
+ * @param b Blue channel (in/out).
+ * @param matrix Color transformation matrix.
+ */
 inline void applyColorBlindFilter(std::uint8_t &r, std::uint8_t &g, std::uint8_t &b, const ColorMatrix &matrix)
 {
   float fr = static_cast<float>(r) / 255.0f;
@@ -97,6 +115,11 @@ inline void applyColorBlindFilter(std::uint8_t &r, std::uint8_t &g, std::uint8_t
   b = static_cast<std::uint8_t>(newB * 255.0f);
 }
 
+/**
+ * @brief Get a human-readable name for a color-blind mode.
+ * @param mode Color-blind mode.
+ * @return Constant string name.
+ */
 inline const char *getColorBlindModeName(ColorBlindMode mode)
 {
   switch (mode) {

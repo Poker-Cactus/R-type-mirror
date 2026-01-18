@@ -1,9 +1,7 @@
-/*
-** EPITECH PROJECT, 2025
-** rtype
-** File description:
-** RendererSDL2.cpp
-*/
+/**
+ * @file RendererSDL2.cpp
+ * @brief SDL2 renderer implementation.
+ */
 
 #include "RendererSDL2.hpp"
 #include "../../interface/Color.hpp"
@@ -36,7 +34,9 @@ constexpr float kMillisecondsPerSecond = 1000.0F;
 constexpr float kGamepadAxisMax = 32767.0F;
 } // anonymous namespace
 
-// Map SDL keycodes to generic keycodes
+/**
+ * @brief Map SDL key codes to generic key codes.
+ */
 static int mapSDLKeyToGeneric(int sdlKey)
 {
   switch (sdlKey) {
@@ -310,8 +310,8 @@ void RendererSDL2::setFullscreen(bool fullscreen)
   this->fullscreen = fullscreen;
   SDL_SetWindowFullscreen(window, fullscreen ? SDL_WINDOW_FULLSCREEN_DESKTOP : 0);
 
-  // Mettre à jour les dimensions en utilisant la taille de sortie du renderer
-  // pour obtenir la taille réelle en pixels (corrige Retina / HiDPI).
+  // Update dimensions using renderer output size
+  // to get the real pixel size (fixes Retina / HiDPI).
   if (renderer != nullptr) {
     int outW = 0;
     int outH = 0;
@@ -444,7 +444,7 @@ void *RendererSDL2::loadTexture(const std::string &filepath)
     throw std::runtime_error("Failed to create texture from surface");
   }
 
-  // Activer le filtrage linéaire pour un meilleur scaling
+  // Enable linear filtering for better scaling
   SDL_SetTextureScaleMode(texture, SDL_ScaleModeLinear);
 
   return texture;

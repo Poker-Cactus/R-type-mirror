@@ -1,9 +1,7 @@
-/*
-** EPITECH PROJECT, 2025
-** TypeMirror
-** File description:
-** LobbyMenu.cpp
-*/
+/**
+ * @file SettingsMenu.cpp
+ * @brief Settings menu implementation.
+ */
 
 #include "SettingsMenu.hpp"
 #include "../../../include/ColorBlindFilter.hpp"
@@ -43,6 +41,13 @@ SettingsMenu::~SettingsMenu()
   }
 }
 
+/**
+ * @brief Clamp an integer value between bounds.
+ * @param value Value to clamp.
+ * @param minValue Minimum allowed value.
+ * @param maxValue Maximum allowed value.
+ * @return Clamped value.
+ */
 static int clampInt(int value, int minValue, int maxValue)
 {
   if (value < minValue) {

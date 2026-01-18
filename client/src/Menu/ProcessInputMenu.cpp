@@ -1,9 +1,7 @@
-/*
-** EPITECH PROJECT, 2025
-** TypeMirror
-** File description:
-** ProcessInputMenu.cpp
-*/
+/**
+ * @file ProcessInputMenu.cpp
+ * @brief Menu input processing helpers.
+ */
 
 #include "../../interface/KeyCodes.hpp"
 #include "../Menu.hpp"

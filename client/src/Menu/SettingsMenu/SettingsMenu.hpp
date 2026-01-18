@@ -108,7 +108,7 @@ private:
   void *titleFont;
   void *helpFont;
 
-  // Catégories
+  // Categories
   std::array<Component, 4> categoryTabs;
   SettingsCategory currentCategory;
 
@@ -121,13 +121,20 @@ private:
   bool isCapturingKey = false;
   bool isEditing = false;
 
+  /** @brief Return the active list of setting items for the current category. */
   std::vector<SettingItem> &activeItems();
+  /** @brief Build the display string for a setting item value. */
   std::string itemValueText(const SettingItem &item) const;
+  /** @brief Apply a left/right delta to the active setting item. */
   void applyDelta(SettingItem &item, int direction);
+  /** @brief Capture the next key that was just pressed. */
   int captureKeyJustPressed() const;
 
+  /** @brief Render a settings row. */
   void renderRow(const Component &rowRect, const SettingItem &item, bool selected);
+  /** @brief Render a category tab. */
   void renderCategoryTab(const Component &tab, bool isActive);
+  /** @brief Check if a key is already bound to a setting. */
   bool keyAlreadyInUse(int key);
   void *clickedSound;
   void *hoverSound;

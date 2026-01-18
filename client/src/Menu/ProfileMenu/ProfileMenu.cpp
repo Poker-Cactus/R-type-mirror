@@ -1,9 +1,7 @@
-/*
-** EPITECH PROJECT, 2025
-** TypeMirror
-** File description:
-** ProfileMenu.cpp
-*/
+/**
+ * @file ProfileMenu.cpp
+ * @brief Profile menu implementation.
+ */
 
 #include "ProfileMenu.hpp"
 #include "../../../../common/include/Common.hpp"

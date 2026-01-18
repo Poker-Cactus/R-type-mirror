@@ -1,9 +1,7 @@
-/*
-** EPITECH PROJECT, 2025
-** R-Type
-** File description:
-** Settings implementation
-*/
+/**
+ * @file Settings.cpp
+ * @brief Settings serialization and deserialization.
+ */
 
 #include "Settings.hpp"
 #include <fstream>

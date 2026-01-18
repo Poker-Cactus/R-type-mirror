@@ -1,9 +1,7 @@
-/*
-** EPITECH PROJECT, 2025
-** R-Type
-** File description:
-** LobbyMenu - Menu for creating and joining game lobbies
-*/
+/**
+ * @file LobbyMenu.cpp
+ * @brief Menu for creating and joining game lobbies.
+ */
 
 #include "LobbyMenu.hpp"
 #include "../../../include/Settings.hpp"

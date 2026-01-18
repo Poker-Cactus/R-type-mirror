@@ -1,9 +1,7 @@
-/*
-** EPITECH PROJECT, 2025
-** R-type-mirror
-** File description:
-** IRenderer.hpp
-*/
+/**
+ * @file IRenderer.hpp
+ * @brief Combined renderer interface aggregating all subsystems.
+ */
 
 #pragma once
 
@@ -18,6 +16,10 @@
 #include "ITime.hpp"
 #include "IWindow.hpp"
 
+/**
+ * @class IRenderer
+ * @brief Convenience interface combining render, window, input, audio, and utility APIs.
+ */
 class IRenderer : public IRender,
                   public IWindow,
                   public IInput,

@@ -97,8 +97,8 @@ int main(int argc, char **argv)
   game.run();
   return 0;
 }
-// Network commented out, il faudra qu'on merge vraiment les deux (juste avoir les deux trucs dans le main quoi), c'est
-// juste pour la PR #include "../../network/include/AsioClient.hpp"
+// Network section commented out: TODO merge both flows (keep both parts in main). This is only for the PR.
+// #include "../../network/include/AsioClient.hpp"
 // #include "../include/Client.hpp"
 // #include <csignal>
 

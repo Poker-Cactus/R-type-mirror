@@ -1,9 +1,7 @@
-/*
-** EPITECH PROJECT, 2025
-** R-Type
-** File description:
-** LobbyRoomState implementation
-*/
+/**
+ * @file LobbyRoomState.cpp
+ * @brief Lobby waiting room state implementation.
+ */
 
 #include "LobbyRoomState.hpp"
 #include "../../engineCore/include/ecs/ComponentSignature.hpp"

@@ -1,9 +1,7 @@
-/*
-** EPITECH PROJECT, 2025
-** R-Type
-** File description:
-** ParallaxBackground.cpp
-*/
+/**
+ * @file ParallaxBackground.cpp
+ * @brief Parallax background implementation.
+ */
 
 #include "ParallaxBackground.hpp"
 #include "../include/AssetPath.hpp"

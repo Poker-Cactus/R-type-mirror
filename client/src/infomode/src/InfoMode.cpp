@@ -276,7 +276,7 @@ void InfoMode::calculateLayout()
   const int screenW = m_renderer->getWindowWidth();
   const int screenH = m_renderer->getWindowHeight();
 
-  // Panel plus large que haut (layout horizontal) - clamp in one operation
+  // Panel wider than tall (horizontal layout) - clamp in one operation
   m_panelWidth = std::max(450, std::min(650, static_cast<int>(screenW * 0.35f)));
   m_padding = std::max(10, static_cast<int>(screenH * PADDING_RATIO));
   m_lineHeight = std::max(16, std::min(26, static_cast<int>(screenH * LINE_HEIGHT_RATIO)));

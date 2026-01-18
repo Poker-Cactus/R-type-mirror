@@ -1,8 +1,6 @@
-/*
- ** EPITECH PROJECT, 2025
- ** R-type-mirror
- ** File description:
- ** Client.hpp - Game client wrapper
+/**
+ * @file Client.hpp
+ * @brief High-level game client wrapper.
  */
 
 #ifndef CLIENT_HPP_
@@ -47,6 +45,9 @@ public:
   static void signalHandler(int signum);
 
 private:
+  /**
+   * @brief Register and configure ECS/network systems.
+   */
   void initializeSystems();
 
   std::shared_ptr<INetworkManager> m_networkManager;
