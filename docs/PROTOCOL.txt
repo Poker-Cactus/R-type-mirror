@@ -1,0 +1,307 @@
+Network Working Group                                         R-Type Team
+Internet-Draft                                               January 2026
+Intended status: Informational
+Expires: July 18, 2026
+
+
+               R-Type Network Protocol Specification
+                        (RTNP Version 1.0)
+
+
+Abstract
+
+This document specifies the R-Type Network Protocol (RTNP), a
+UDP-based protocol designed for real-time multiplayer communication
+in the R-Type networked game.
+
+RTNP uses a strict client-server architecture with a server-
+authoritative game state model. Messages are represented using JSON
+[RFC8259] and MAY optionally be encapsulated using Cap'n Proto for
+binary transport efficiency.
+
+
+Status of This Memo
+
+This Internet-Draft is submitted in full conformance with the
+provisions of BCP 78 and BCP 79.
+
+This document is not an Internet Standards Track specification.
+It is published for informational purposes.
+
+
+Copyright Notice
+
+Copyright (c) 2026 R-Type Development Team.
+All rights reserved.
+
+
+Table of Contents
+
+1.  Introduction
+2.  Terminology
+3.  Protocol Architecture
+4.  Transport Layer
+5.  Message Format
+6.  Message Types
+7.  Connection Management
+8.  Game State Synchronization
+9.  Implementation Requirements
+10. Performance Characteristics
+11. Security Considerations
+12. IANA Considerations
+13. References
+
+
+1.  Introduction
+
+1.1.  Purpose
+
+This document defines the R-Type Network Protocol (RTNP), a
+UDP-based communication protocol for real-time multiplayer gameplay.
+
+RTNP is designed to provide low-latency synchronization between
+multiple Clients and a Server-authoritative game engine.
+
+
+1.2.  Requirements Language
+
+The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT",
+"SHOULD", "SHOULD NOT", "RECOMMENDED", "MAY", and "OPTIONAL" in this
+document are to be interpreted as described in RFC 2119 [RFC2119]
+and RFC 8174 [RFC8174].
+
+
+1.3.  Scope
+
+This specification defines:
+
+- A UDP-based transport mechanism for RTNP communication
+- Message formats and serialization using JSON
+- Message type semantics and constraints
+- Connection establishment and termination procedures
+- Game state synchronization rules
+- Server authority principles
+
+This specification does not define:
+
+- Client-side rendering or visualization behavior
+- Client-side prediction or interpolation
+- Cryptographic security mechanisms
+- Anti-cheat or validation strategies
+
+
+2.  Terminology
+
+Client:
+   A game instance running on a player's machine that communicates
+   with the Server.
+
+Server:
+   The authoritative instance that maintains the canonical game
+   state and processes all player inputs.
+
+Entity:
+   A networked game object identified by a unique Network ID.
+
+Component:
+   A data structure associated with an Entity that stores gameplay
+   or rendering-related state.
+
+Snapshot:
+   A Server-generated message containing the current state of one
+   or more Entities.
+
+Game Tick:
+   A discrete time interval during which the Server processes input,
+   updates game logic, and broadcasts a Snapshot.
+
+Epoch:
+   A monotonically increasing counter identifying Snapshot order.
+
+
+3.  Protocol Architecture
+
+RTNP implements a strict client-server communication model.
+
+The Server is the authoritative source of all game state. Clients
+MUST NOT perform authoritative simulation or conflict resolution.
+
+Clients send input messages to the Server. The Server processes
+these inputs and broadcasts state updates to all connected Clients.
+
+Communication is bidirectional over UDP, using a best-effort delivery
+model.
+
+
+4.  Transport Layer
+
+RTNP operates over the User Datagram Protocol (UDP) as defined in
+RFC 768 [RFC768].
+
+UDP is selected due to its low latency and suitability for real-time
+applications where occasional packet loss is acceptable.
+
+RTNP does not provide reliability, ordering, congestion control,
+or retransmission mechanisms.
+
+RTNP datagrams MUST NOT exceed 8192 bytes in size.
+
+
+5.  Message Format
+
+RTNP messages are encoded as JSON objects conforming to RFC 8259
+[RFC8259].
+
+Each message MUST contain a "type" field identifying the message
+category.
+
+All text fields MUST be encoded using UTF-8 as specified in
+RFC 3629 [RFC3629].
+
+Messages MAY be wrapped using Cap'n Proto for binary transport, but
+the logical message format remains JSON.
+
+
+6.  Message Types
+
+6.1.  assign_id
+
+Direction:
+   Server to Client
+
+Semantics:
+   The Server assigns a unique identifier to the Client.
+
+Fields:
+   type:
+      MUST be "assign_id".
+
+   client_id:
+      A non-negative integer uniquely identifying the Client.
+
+Example:
+
+{
+  "type": "assign_id",
+  "client_id": 5
+}
+
+
+6.2.  player_input
+
+Direction:
+   Client to Server
+
+Semantics:
+   Transmits the instantaneous input state of a Client.
+
+Clients SHOULD send this message once per Game Tick.
+
+Input messages MUST be stateless and independent.
+
+
+6.3.  snapshot
+
+Direction:
+   Server to Client
+
+Semantics:
+   Contains the complete authoritative game state.
+
+The epoch field MUST increase monotonically by exactly one for each
+Snapshot sent by the Server.
+
+Clients MUST discard Snapshots with stale epoch values.
+
+
+7.  Connection Management
+
+Clients initiate communication by sending any valid message to the
+Server.
+
+Upon receiving the first message from a new Client address, the
+Server MUST assign a client identifier and respond with an
+assign_id message.
+
+Clients MAY terminate communication by sending a disconnect message.
+
+Servers MUST remove Clients that are inactive for a configured
+timeout period.
+
+
+8.  Game State Synchronization
+
+The Server MUST maintain the canonical game state.
+
+Clients MUST render the state provided by the Server and MUST NOT
+apply authoritative logic or state correction.
+
+Snapshots SHOULD be broadcast at a regular interval, typically
+between 30 Hz and 60 Hz.
+
+
+9.  Implementation Requirements
+
+Servers MUST:
+
+- Process all player inputs
+- Update game logic
+- Generate Snapshots every Game Tick
+- Broadcast Snapshots to all connected Clients
+
+Clients MUST:
+
+- Send input messages regularly
+- Receive and process Snapshots
+- Discard stale Snapshots
+- Render the received game state without modification
+
+
+10.  Performance Characteristics
+
+RTNP is designed for low-latency communication.
+
+Packet loss is tolerated through frequent Snapshot transmission.
+
+Bandwidth usage scales linearly with the number of Entities and
+connected Clients.
+
+
+11.  Security Considerations
+
+RTNP does not provide authentication, encryption, or integrity
+protection.
+
+Deployments on untrusted networks SHOULD implement additional
+security mechanisms such as DTLS or application-level encryption.
+
+Servers SHOULD validate received messages and apply rate limiting.
+
+
+12.  IANA Considerations
+
+This document requires no IANA actions.
+
+
+13.  References
+
+13.1.  Normative References
+
+RFC 768
+   Postel, J., "User Datagram Protocol", STD 6, August 1980.
+
+RFC 2119
+   Bradner, S., "Key words for use in RFCs to Indicate Requirement
+   Levels", BCP 14, March 1997.
+
+RFC 3629
+   Yergeau, F., "UTF-8, a transformation format of ISO 10646",
+   STD 63, November 2003.
+
+RFC 8259
+   Bray, T., "The JavaScript Object Notation (JSON) Data Interchange
+   Format", STD 90, December 2017.
+
+RFC 8174
+   Leiba, B., "Ambiguity of Uppercase vs Lowercase in RFC 2119 Key
+   Words", BCP 14, May 2020.

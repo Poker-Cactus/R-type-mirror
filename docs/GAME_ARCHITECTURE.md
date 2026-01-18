@@ -14,7 +14,7 @@ Cette architecture implémente un système ECS (Entity-Component-System) event-d
 - ✅ Gère le spawn des entités
 
 ### Client  
-- ✅ Rend l'image (SDL2)
+- ✅ Rend l'image
 - ✅ Lit l'input joueur
 - ✅ Peut faire des prédictions (optionnel)
 - ✅ Affiche l'état reçu du serveur

@@ -105,21 +105,43 @@ Copy-Item -Path "build\libs\Release\sdl2_module.dll" -Destination "build\client\
 
 ## 📚 Documentation
 
-- **Language:** C++20
-- **Architecture:** ECS (Entity Component System)
-- **Network:** UDP (Game State)
-- **Graphics:** SDL2
-- **Protocol:** Custom Binary Protocol with capnproto
+Complete documentation is available in the `docs/` folder. Here's where to start:
 
----
+### 🎮 For Game Developers
 
-## 📚 Documentation
+**New to the engine?** Start here:
+1. **[Créer un Nouveau Jeu](docs/guides/Creating-A-Game.md)** ⭐ **BEGIN HERE**
+2. **[Comprendre l'ECS](docs/technical/ECS-Engine.md)** - Entity-Component-System concepts
+3. **[Composants](docs/guides/Adding-Components.md)** - Data structures
+4. **[Systèmes](docs/guides/Creating-Systems.md)** - Game logic
+5. **[Code Examples](docs/guides/Code-Examples.md)** - 5 complete working examples
 
-Detailed documentation is available in the `docs/` folder:
+### 📖 All Documentation
 
-- **Development Setup:** VS Code workflow & tools.
-- **Network Protocol:** Binary packet structure RFC.
-- **Architecture:** Diagrams of the Server/Client logic.
+- **[Documentation Index](docs/INDEX.md)** - Complete index & search
+- **[Architecture](docs/ARCHITECTURE.md)** - Project structure
+- **[Best Practices](docs/guides/Architecture-Best-Practices.md)** - Patterns & optimization
+- **[Network Protocol](docs/PROTOCOL.md)** - Client-Server communication
+- **[Guides](docs/guides/README.md)** - All guides directory
+
+### 🎓 Learning Paths
+
+| Path | Duration | For |
+|------|----------|-----|
+| [Simple 2D Game](docs/guides/Creating-A-Game.md) | 2-3 days | Beginners |
+| [ECS Expert](docs/technical/ECS-Engine.md) | 1 week | Intermediate |
+| [Multiplayer](docs/guides/Architecture-Best-Practices.md#client-vs-serveur) | 1-2 weeks | Advanced |
+
+### 🛠️ Technology Stack
+
+| Component | Technology |
+|-----------|-----------|
+| **Language** | C++20 |
+| **Architecture** | ECS (Entity Component System) |
+| **Network** | ASIO (Async I/O) |
+| **Graphics** | SDL2 |
+| **Protocol** | Custom binary (Cap'n Proto) |
+| **Build** | CMake + Conan |
 
 ### ✅ Compiler Support
 
@@ -129,10 +151,10 @@ Detailed documentation is available in the `docs/` folder:
 
 ### 🔧 Cross-Platform Features
 
-- ✅ Threading: `std::thread`, `std::mutex`, `std::atomic`
-- ✅ Networking: ASIO (no raw sockets, no POSIX dependencies)
-- ✅ Graphics: SDL2 (cross-platform)
-- ✅ Build System: CMake with MSVC and GCC/Clang support
+- ✅ **Multithreading:** `std::thread`, `std::mutex`, `std::atomic`
+- ✅ **Networking:** ASIO (no raw sockets, no POSIX dependencies)
+- ✅ **Graphics:** SDL2 (cross-platform windowing & rendering)
+- ✅ **Build System:** CMake with MSVC and GCC/Clang support
 
 ---
 

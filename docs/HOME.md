@@ -5,25 +5,55 @@ Bienvenue sur la documentation du projet R-Type - Un moteur de jeu multi-joueurs
 ## 📚 Table des Matières
 
 ### Pour Commencer
-- **[Guide de Démarrage](HOW_TO_START.md)** - Installation et compilation du projet
-- **[Architecture](ARCHITECTURE.md)** - Structure détaillée du projet
-- **[Résumé](SUMMARY.md)** - Vue d'ensemble de l'architecture
+- **[Guide de Démarrage Rapide](QUICKSTART.md)** - Installation et compilation rapide
+- **[Architecture du Projet](ARCHITECTURE.md)** - Structure détaillée et modules
+- **[Résumé Architecture](GAME_ARCHITECTURE.md)** - Vue d'ensemble technique
+- **[Comment Débuter](HOW_TO_START.md)** - Guide complet pour les nouveaux contributeurs
 
-### Documentation Technique
-- **[ECS Engine](technical/ECS-Engine.md)** - Système Entity-Component-System
-- **[Composants](technical/Components.md)** - Liste des composants disponibles
-- **[Protocole Réseau](technical/Network-Protocol.md)** - Communication client-serveur
-- **[Systèmes](technical/Systems.md)** - Systèmes de logique de jeu
+### 🎮 Créer un Jeu avec R-Type
 
-### Guides de Développement
-- **[Ajouter un Composant](guides/Adding-Components.md)** - Comment créer un nouveau composant
-- **[Créer un Système](guides/Creating-Systems.md)** - Comment créer un système de jeu
-- **[Conventions de Code](guides/Code-Conventions.md)** - Standards et bonnes pratiques
+> **Nouveau développeur?** Commencez par ces guides:
 
-### API Reference
-- **[Registry API](api/Registry.md)** - API du Registry ECS
-- **[Network API](api/Network.md)** - API réseau
-- **[Rendering API](api/Rendering.md)** - API de rendu
+- **[Créer un Nouveau Jeu](guides/Creating-A-Game.md)** ⭐ **START HERE**
+  - Vue d'ensemble du processus
+  - Exemple complet pas à pas
+  - Architecture d'un jeu simple
+  
+- **[Comprendre l'ECS](technical/ECS-Engine.md)** 📚 Fondamental
+  - Concepts d'Entity-Component-System
+  - Architecture ECS détaillée
+  - Exemples pratiques et patterns
+  
+- **[Créer des Composants](guides/Adding-Components.md)** 🧩
+  - Structure des composants
+  - Signatures et filtering
+  - Sérialisation réseau
+  
+- **[Implémenter les Systèmes](guides/Creating-Systems.md)** ⚙️
+  - Architecture d'un système
+  - Systèmes de base (physics, collision, combat)
+  - Patterns avancés
+
+### Architecture & Best Practices
+
+- **[Architecture & Best Practices](guides/Architecture-Best-Practices.md)** 🏗️
+  - Patterns de conception (Factory, Pool, Events)
+  - Client vs Serveur
+  - Performance & optimisation
+  - Bonnes pratiques et anti-patterns
+
+### Documentation Technique Complète
+
+- **[ECS Engine (Détail)](technical/ECS-Engine.md)** - Deep dive sur l'ECS
+- **[Systèmes du Moteur](technical/SYSTEM_MANAGER.md)** - Gestion des systèmes
+- **[Protocole Réseau](PROTOCOL.md)** - Communication client-serveur
+- **[Sprites Côté Serveur](SERVER_DRIVEN_SPRITES.md)** - Gestion des sprites
+
+### Code & Standards
+
+- **[Nomenclature](NOMENCLATURE.md)** - Conventions de nommage
+- **[Coding Standards](CODING_STANDARDS.md)** - Standards de code
+- **[Configuration Windows MSVC](WINDOWS_MSVC_COMPLIANCE.md)** - Windows setup
 
 ## 🚀 Démarrage Rapide
 
