@@ -11,10 +11,11 @@
 #include "../../engineCore/include/ecs/World.hpp"
 #include "../../engineCore/include/ecs/components/Input.hpp"
 #include "../../network/include/AsioClient.hpp"
+#include "Lobby.hpp"
+#include "Menu.hpp"
 #include <cstdint>
 #include <memory>
 #include <string>
-#include "Menu.hpp"
 
 class Game
 {
@@ -78,12 +79,15 @@ private:
   float m_lobbyStateTime = 0.0F;
   bool fullScreen = true;
 
+  std::unique_ptr<Menu> menu;
+  std::unique_ptr<Lobby> lobby;
+
   void sendLeaveToServer();
 
   // Usefull func
   void render();
   void update(float deltaTime);
+  void processInput();
 
-  std::unique_ptr<Menu> menu;
   // HighscoreManager highscoreManager;
 };

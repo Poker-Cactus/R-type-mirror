@@ -4,10 +4,11 @@ add_executable(flappybird_client
     src/main.cpp
     src/Game.cpp
     src/Menu.cpp
+    src/Lobby.cpp
 )
 
 target_include_directories(flappybird_client PRIVATE
-    src
+    ${CMAKE_SOURCE_DIR}/flappyBird/client/src
     ${CMAKE_SOURCE_DIR}
     ${CMAKE_SOURCE_DIR}/client
 )

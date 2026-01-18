@@ -6,6 +6,7 @@
 */
 
 #include "Game.hpp"
+#include "../../client/interface/KeyCodes.hpp"
 #include <chrono>
 #include <exception>
 #include <vector>
@@ -104,8 +105,26 @@ bool Game::init()
 
   try {
     menu = std::make_unique<Menu>(renderer);
-    menu->init();
-  } catch (std::exception error) {
+    if (!menu->init()) {
+      std::cerr << "[Game] ERROR: Menu initialization failed" << std::endl;
+      return false;
+    }
+    std::cout << "[Game] Menu initialized successfully" << std::endl;
+  } catch (std::exception &error) {
+    std::cerr << "[Game] ERROR: Menu exception: " << error.what() << std::endl;
+    return false;
+  }
+
+  try {
+    lobby = std::make_unique<Lobby>(renderer);
+    if (!lobby->init()) {
+      std::cerr << "[Game] ERROR: Lobby initialization failed" << std::endl;
+      return false;
+    }
+    std::cout << "[Game] Lobby initialized successfully" << std::endl;
+  } catch (std::exception &error) {
+    std::cerr << "[Game] ERROR: Lobby exception: " << error.what() << std::endl;
+    return false;
   }
 
   isRunning = true;
@@ -166,6 +185,7 @@ void Game::run()
   auto lastTime = std::chrono::high_resolution_clock::now();
 
   while (isRunning) {
+    processInput();
     auto currentTime = std::chrono::high_resolution_clock::now();
     float deltaTime = std::chrono::duration<float>(currentTime - lastTime).count();
     lastTime = currentTime;
@@ -183,11 +203,54 @@ void Game::run()
   std::cout << "[Game] Game loop ended" << std::endl;
 }
 
+void Game::processInput()
+{
+  if (renderer == nullptr)
+    return;
+
+  switch (currentState) {
+  case GameState::MENU: {
+    if (renderer->isKeyJustPressed(KeyCode::KEY_RETURN)) {
+      currentState = GameState::LOBBY_ROOM;
+      std::cout << "[Game] Entering lobby..." << std::endl;
+    }
+    break;
+  }
+  case GameState::LOBBY_ROOM: {
+    if (!lobby) {
+      std::cerr << "[Game] ERROR: Lobby is null!" << std::endl;
+      currentState = GameState::MENU;
+      break;
+    }
+    if (renderer->isKeyJustPressed(KeyCode::KEY_X)) {
+      lobby->setReady(!lobby->isReady());
+      std::cout << "[Game] Ready status: " << (lobby->isReady() ? "READY" : "NOT READY") << std::endl;
+    }
+    if (lobby->isReady() && renderer->isKeyJustPressed(KeyCode::KEY_RETURN)) {
+      currentState = GameState::PLAYING;
+      std::cout << "[Game] Starting game..." << std::endl;
+    }
+    break;
+  }
+  case GameState::PLAYING: {
+    // Game input handling will go here
+    break;
+  }
+  default:
+    break;
+  }
+}
+
 void Game::update(float deltaTime)
 {
   // Update menu animation
   if (currentState == GameState::MENU && menu) {
     menu->update(deltaTime);
+  }
+
+  // Update lobby animation
+  if (currentState == GameState::LOBBY_ROOM && lobby) {
+    lobby->update(deltaTime);
   }
 
   // Update ECS world - systems will process entities
@@ -206,8 +269,23 @@ void Game::render()
 
   switch (currentState) {
   case GameState::MENU: {
-    menu->render();
-  };
+    if (menu) {
+      menu->render();
+    }
+    break;
+  }
+  case GameState::LOBBY_ROOM: {
+    if (lobby) {
+      lobby->render();
+    }
+    break;
+  }
+  case GameState::PLAYING: {
+    // Game rendering will go here
+    break;
+  }
+  default:
+    break;
   }
 
   // ECS render systems will draw entities here
