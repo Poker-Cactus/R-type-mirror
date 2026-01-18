@@ -59,16 +59,16 @@ bool PlayingState::init()
   // Load sprite textures
   loadSpriteTextures();
 
-  // Load hearts texture for health display
+  // Load life texture for health display
   try {
-    m_heartsTexture = renderer->loadTexture("client/assets/life-bar/hearts.png");
-    if (m_heartsTexture != nullptr) {
-      std::cout << "[PlayingState] ✓ Loaded hearts.png for HP display" << '\n';
+    m_lifeTexture = renderer->loadTexture("client/assets/life-bar/r-type-life.png");
+    if (m_lifeTexture != nullptr) {
+      std::cout << "[PlayingState] ✓ Loaded r-type-life.png for HP display" << '\n';
     } else {
-      std::cerr << "[PlayingState] ✗ Failed to load hearts.png" << '\n';
+      std::cerr << "[PlayingState] ✗ Failed to load r-type-life.png" << '\n';
     }
   } catch (const std::exception &e) {
-    std::cerr << "[PlayingState] ✗ Failed to load hearts.png: " << e.what() << '\n';
+    std::cerr << "[PlayingState] ✗ Failed to load r-type-life.png: " << e.what() << '\n';
   }
 
   // Load HUD font with fallback
@@ -572,68 +572,41 @@ void PlayingState::renderHUD()
     return;
   }
 
-  // Hearts texture properties
-  constexpr int HEARTS_TEXTURE_WIDTH = 33;
-  constexpr float HEART_ROW_HEIGHT = 76.0f / 7.0f; // 11.0 pixels per row, using float for precision
-  constexpr int HEARTS_X = 20;
-  constexpr int HEARTS_Y = 20;
+  // Life texture properties
+  constexpr int LIFE_ICON_SIZE = 32; // Assume 32x32 icon
+  constexpr int LIFE_X = 20;
+  constexpr int LIFE_Y = 20;
   constexpr int DISPLAY_SCALE = 2; // Scale up for better visibility
+  constexpr int LIFE_SPACING = 5; // Space between life icons
   constexpr Color HUD_TEXT_WHITE = {.r = 255, .g = 255, .b = 255, .a = 255};
   constexpr int HUD_SCORE_OFFSET_Y = 50;
 
-  // Draw hearts if texture is loaded
-  if (m_heartsTexture != nullptr) {
+  // Draw life icons if texture is loaded
+  if (m_lifeTexture != nullptr) {
     // Calculate heart display based on actual HP value
     // Each 100 HP = 1 full heart
-    // Use floating point for precise heart calculation
     float heartsValue = static_cast<float>(m_playerHealth) / 100.0f;
 
     // Clamp to valid range (0.0 to 3.0 hearts max)
     heartsValue = std::max(0.0f, std::min(3.0f, heartsValue));
 
-    // Convert hearts value to row index (0-6)
-    // 3.0 hearts = row 0 (full)
-    // 2.5 hearts = row 1
-    // 2.0 hearts = row 2
-    // 1.5 hearts = row 3
-    // 1.0 hearts = row 4
-    // 0.5 hearts = row 5
-    // 0.0 hearts = row 6 (empty)
+    // Convert to number of lives: 2 hearts = 4 lives, so 1 heart = 2 lives
+    int numLives = static_cast<int>(std::round(heartsValue * 2.0f));
 
-    int heartRow = 0;
-    if (heartsValue >= 2.5f) {
-      heartRow = 0; // 2.5-3.0 hearts: full
-    } else if (heartsValue >= 2.0f) {
-      heartRow = 1; // 2.0-2.4 hearts
-    } else if (heartsValue >= 1.5f) {
-      heartRow = 2; // 1.5-1.9 hearts
-    } else if (heartsValue >= 1.0f) {
-      heartRow = 3; // 1.0-1.4 hearts
-    } else if (heartsValue >= 0.5f) {
-      heartRow = 4; // 0.5-0.9 hearts
-    } else if (heartsValue > 0.0f) {
-      heartRow = 5; // 0.1-0.4 hearts
-    } else {
-      heartRow = 6; // 0 hearts: empty
+    // Draw each life icon
+    for (int i = 0; i < numLives; ++i) {
+      int destX = LIFE_X + i * (LIFE_ICON_SIZE * DISPLAY_SCALE + LIFE_SPACING);
+      renderer->drawTextureRegion(
+        m_lifeTexture,
+        {.x = 0, .y = 0, .width = LIFE_ICON_SIZE, .height = LIFE_ICON_SIZE},
+        {.x = destX, .y = LIFE_Y, .width = LIFE_ICON_SIZE * DISPLAY_SCALE, .height = LIFE_ICON_SIZE * DISPLAY_SCALE});
     }
-
-    // Calculate source Y position with rounding for exact pixel alignment
-    int sourceY = static_cast<int>(std::round(heartRow * HEART_ROW_HEIGHT));
-
-    // Draw the appropriate heart row
-    renderer->drawTextureRegion(
-      m_heartsTexture,
-      {.x = 0, .y = sourceY, .width = HEARTS_TEXTURE_WIDTH, .height = static_cast<int>(std::round(HEART_ROW_HEIGHT))},
-      {.x = HEARTS_X,
-       .y = HEARTS_Y,
-       .width = HEARTS_TEXTURE_WIDTH * DISPLAY_SCALE,
-       .height = static_cast<int>(std::round(HEART_ROW_HEIGHT)) * DISPLAY_SCALE});
   }
 
   // Score text (only if font is loaded)
   if (m_hudFont) {
     std::string scoreText = "Score: " + std::to_string(m_playerScore);
-    renderer->drawText(m_hudFont.get(), scoreText, HEARTS_X, HEARTS_Y + HUD_SCORE_OFFSET_Y, HUD_TEXT_WHITE);
+    renderer->drawText(m_hudFont.get(), scoreText, LIFE_X, LIFE_Y + HUD_SCORE_OFFSET_Y, HUD_TEXT_WHITE);
   }
 
   // Render info mode if active
@@ -994,10 +967,10 @@ void PlayingState::cleanup()
   // Free all loaded sprite textures
   freeSpriteTextures();
 
-  // Free hearts texture
-  if (m_heartsTexture != nullptr && renderer != nullptr) {
-    renderer->freeTexture(m_heartsTexture);
-    m_heartsTexture = nullptr;
+  // Free life texture
+  if (m_lifeTexture != nullptr && renderer != nullptr) {
+    renderer->freeTexture(m_lifeTexture);
+    m_lifeTexture = nullptr;
   }
 
   // Free HUD font (handled by shared_ptr destructor)

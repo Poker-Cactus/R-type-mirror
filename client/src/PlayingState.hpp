@@ -137,7 +137,7 @@ private:
   // HUD state
   static constexpr int INITIAL_PLAYER_HEALTH = 100;
   std::shared_ptr<void> m_hudFont = nullptr;
-  void *m_heartsTexture = nullptr;
+  void *m_lifeTexture = nullptr;
   int m_playerHealth = INITIAL_PLAYER_HEALTH;
   int m_playerMaxHealth = INITIAL_PLAYER_HEALTH;
   int m_playerScore = 0;
