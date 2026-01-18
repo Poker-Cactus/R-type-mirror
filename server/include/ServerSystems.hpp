@@ -10,6 +10,7 @@
 
 // IWYU pragma: begin_exports
 #include "systems/AllySystem.hpp"
+#include "systems/AttractionSystem.hpp"
 #include "systems/CollisionSystem.hpp"
 #include "systems/DamageSystem.hpp"
 #include "systems/DeathSystem.hpp"
@@ -17,6 +18,7 @@
 #include "systems/EntityLifetimeSystem.hpp"
 #include "systems/FollowerSystem.hpp"
 #include "systems/InputMovementSystem.hpp"
+#include "systems/InvulnerabilitySystem.hpp"
 #include "systems/LifetimeSystem.hpp"
 #include "systems/NetworkReceiveSystem.hpp"
 #include "systems/NetworkSendSystem.hpp"
@@ -25,8 +27,6 @@
 #include "systems/ScoreSystem.hpp"
 #include "systems/ShootingSystem.hpp"
 #include "systems/SpawnSystem.hpp"
-#include "systems/InvulnerabilitySystem.hpp"
-#include "systems/AttractionSystem.hpp"
 // IWYU pragma: end_exports
 
 #endif /* !SERVERSYSTEMS_HPP_ */

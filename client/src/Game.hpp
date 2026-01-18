@@ -17,9 +17,9 @@
 #include "LobbyRoomState.hpp"
 #include "Menu.hpp"
 #include "PlayingState.hpp"
-#include <nlohmann/json.hpp>
 #include <cstdint>
 #include <memory>
+#include <nlohmann/json.hpp>
 #include <string>
 
 class INetworkManager;

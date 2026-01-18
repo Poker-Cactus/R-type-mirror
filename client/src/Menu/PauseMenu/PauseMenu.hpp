@@ -15,10 +15,10 @@
  * @brief Actions available in the pause menu
  */
 enum class PauseMenuAction {
-  NONE,    ///< No action selected
-  RESUME,  ///< Resume the game
-  SETTINGS,///< Open settings from pause menu
-  QUIT     ///< Quit to main menu
+  NONE, ///< No action selected
+  RESUME, ///< Resume the game
+  SETTINGS, ///< Open settings from pause menu
+  QUIT ///< Quit to main menu
 };
 
 /**
@@ -63,11 +63,11 @@ public:
   void reset();
 
 private:
-  std::shared_ptr<IRenderer> m_renderer;   ///< Renderer interface
-  void* m_font = nullptr;                   ///< Menu font
-  void* m_titleFont = nullptr;              ///< Title font
-  int m_selectedIndex = 0;                  ///< Currently selected option
-  std::vector<std::string> m_options;       ///< Menu options
-  void* m_selectSound = nullptr;            ///< Selection sound
-  void* m_confirmSound = nullptr;           ///< Confirm sound
+  std::shared_ptr<IRenderer> m_renderer; ///< Renderer interface
+  void *m_font = nullptr; ///< Menu font
+  void *m_titleFont = nullptr; ///< Title font
+  int m_selectedIndex = 0; ///< Currently selected option
+  std::vector<std::string> m_options; ///< Menu options
+  void *m_selectSound = nullptr; ///< Selection sound
+  void *m_confirmSound = nullptr; ///< Confirm sound
 };

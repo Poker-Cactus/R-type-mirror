@@ -15,10 +15,11 @@
 #include "../../../engineCore/include/ecs/components/Follower.hpp"
 #include "../../../engineCore/include/ecs/components/Health.hpp"
 #include "../../../engineCore/include/ecs/components/Immortal.hpp"
-#include "../../../engineCore/include/ecs/components/Invulnerable.hpp"
 #include "../../../engineCore/include/ecs/components/Input.hpp"
+#include "../../../engineCore/include/ecs/components/Invulnerable.hpp"
 #include "../../../engineCore/include/ecs/components/Owner.hpp"
 #include "../../../engineCore/include/ecs/components/Pattern.hpp"
+#include "../../../engineCore/include/ecs/components/Shield.hpp"
 #include "../../../engineCore/include/ecs/components/Sprite.hpp"
 #include "../../../engineCore/include/ecs/components/Velocity.hpp"
 #include "../../../engineCore/include/ecs/events/EventListenerHandle.hpp"
@@ -76,7 +77,12 @@ private:
 
     // Skip if either entity is a follower (bubble/drone attached to player)
     // Followers should not cause damage - they only block projectiles and shoot
-    if (world.hasComponent<ecs::Follower>(entityA) || world.hasComponent<ecs::Follower>(entityB)) {
+    // Shields are followers but must take damage.
+    bool aIsFollower = world.hasComponent<ecs::Follower>(entityA);
+    bool bIsFollower = world.hasComponent<ecs::Follower>(entityB);
+    bool aIsShield = world.hasComponent<ecs::Shield>(entityA);
+    bool bIsShield = world.hasComponent<ecs::Shield>(entityB);
+    if ((aIsFollower && !aIsShield) || (bIsFollower && !bIsShield)) {
       return;
     }
 

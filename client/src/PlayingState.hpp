@@ -139,7 +139,7 @@ private:
   // Reference resolution for coordinate normalization (same as server)
   static constexpr float REFERENCE_WIDTH = 1920.0F;
   static constexpr float REFERENCE_HEIGHT = 1080.0F;
-  
+
   float m_scaleX = 1.0f; ///< Horizontal scale factor (windowWidth / REFERENCE_WIDTH)
   float m_scaleY = 1.0f; ///< Vertical scale factor (gameAreaHeight / REFERENCE_HEIGHT)
   int m_hudHeight = 0; ///< HUD strip height in pixels (bottom 1/12)

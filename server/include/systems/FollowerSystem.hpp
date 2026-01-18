@@ -110,7 +110,7 @@ public:
           (sprite.spriteId >= ecs::SpriteId::BUBBLE_RUBAN_BACK1 &&
            sprite.spriteId <= ecs::SpriteId::BUBBLE_RUBAN_FRONT4);
         isBubble = (sprite.spriteId == ecs::SpriteId::BUBBLE || sprite.spriteId == ecs::SpriteId::BUBBLE_TRIPLE ||
-                    isRubanSpriteId);
+                    sprite.spriteId == ecs::SpriteId::SHIELD_BUBBLE || isRubanSpriteId);
         isRubanBubble = isRubanSpriteId;
       }
 

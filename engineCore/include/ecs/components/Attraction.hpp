@@ -21,7 +21,7 @@ namespace ecs
  */
 struct Attraction : public IComponent {
   float force = 0.0F; // Attraction force magnitude
-  float radius = 0.0F; // Effective radius of attraction 
+  float radius = 0.0F; // Effective radius of attraction
 
   [[nodiscard]] nlohmann::json toJson() const override
   {

@@ -157,9 +157,18 @@ constexpr std::uint32_t BUBBLE_RUBAN_FRONT4 = 61;
 constexpr std::uint32_t TRIPLE_PROJECTILE_RIGHT = 62;
 constexpr std::uint32_t TRIPLE_PROJECTILE_UP = 63;
 constexpr std::uint32_t TRIPLE_PROJECTILE_DOWN = 64;
-constexpr std::uint32_t DEATH_ANIM = 66;
-constexpr std::uint32_t BOSS_EVANGELIC_SHOOT = 68;
-constexpr std::uint32_t BOSS_EVANGELIC = 69;
+// Death animation
+constexpr std::uint32_t DEATH_ANIM = 65;
+// Elite enemy + shield
+constexpr std::uint32_t ELITE_ENEMY = 66;
+constexpr std::uint32_t SHIELD_BUBBLE = 67;
+// Elite green enemy + projectiles
+constexpr std::uint32_t ELITE_ENEMY_GREEN = 68;
+constexpr std::uint32_t ELITE_ENEMY_GREEN_OUT = 69;
+constexpr std::uint32_t ELITE_ENEMY_GREEN_IN = 70;
+// Evangelic boss + projectiles
+constexpr std::uint32_t BOSS_EVANGELIC_SHOOT = 71;
+constexpr std::uint32_t BOSS_EVANGELIC = 72;
 } // namespace SpriteId
 
 } // namespace ecs

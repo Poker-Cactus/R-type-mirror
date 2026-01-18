@@ -23,6 +23,7 @@
 #include "../../../engineCore/include/ecs/components/Owner.hpp"
 #include "../../../engineCore/include/ecs/components/Pattern.hpp"
 #include "../../../engineCore/include/ecs/components/PlayerId.hpp"
+#include "../../../engineCore/include/ecs/components/Shield.hpp"
 #include "../../../engineCore/include/ecs/components/Sprite.hpp"
 #include "../../../engineCore/include/ecs/components/Transform.hpp"
 #include "../../../engineCore/include/ecs/components/Velocity.hpp"
@@ -811,10 +812,17 @@ private:
     sprite.reverseAnimation = config->sprite.reverseAnimation;
     world.addComponent(enemy, sprite);
 
+    // Elite enemy: spawn shield and make elite immortal until shield is destroyed
+    if (enemyType == "enemy_elite_blue") {
+      ecs::Immortal immortal;
+      immortal.isImmortal = true;
+      world.addComponent(enemy, immortal);
+      spawnEliteShield(world, enemy, transform);
+    }
     // Collider component sized to sprite * transform.scale (matches visual size)
     world.addComponent(enemy,
-               ecs::Collider{static_cast<float>(sprite.width) * transform.scale,
-                     static_cast<float>(sprite.height) * transform.scale});
+                       ecs::Collider{static_cast<float>(sprite.width) * transform.scale,
+                                     static_cast<float>(sprite.height) * transform.scale});
 
     std::cout << "[SpawnSystem] Spawned enemy '" << enemyType << "' (spriteId=" << config->sprite.spriteId
               << ", pattern=" << config->pattern.type << ") at (" << posX << ", " << posY << ")" << std::endl;
@@ -823,6 +831,65 @@ private:
     ecs::Networked net;
     net.networkId = enemy;
     world.addComponent(enemy, net);
+  }
+
+  void spawnEliteShield(ecs::World &world, ecs::Entity parent, const ecs::Transform &parentTransform)
+  {
+    ecs::Entity shield = world.createEntity();
+
+    // Shield transform (follow parent)
+    ecs::Transform shieldTransform;
+    shieldTransform.x = parentTransform.x;
+    shieldTransform.y = parentTransform.y;
+    shieldTransform.rotation = 0.0F;
+    shieldTransform.scale = 2.5F;
+    world.addComponent(shield, shieldTransform);
+
+    ecs::Follower follower;
+    follower.parent = parent;
+    follower.offsetX = -60.0F;
+    follower.offsetY = 20.0F;
+    follower.smoothing = 30.0F;
+    world.addComponent(shield, follower);
+
+    // Shield marker with parent link
+    ecs::Shield shieldComp;
+    shieldComp.parent = parent;
+    world.addComponent(shield, shieldComp);
+
+    // Shield health: 3 hits (damageFromProjectile=20)
+    ecs::Health shieldHealth;
+    shieldHealth.hp = 60;
+    shieldHealth.maxHp = 60;
+    world.addComponent(shield, shieldHealth);
+
+    // Shield collider (bubble frame size * scale)
+    world.addComponent(shield, ecs::Collider{60.0F, 60.0F});
+
+    // Shield sprite (match BUBBLE animation)
+    ecs::Sprite shieldSprite;
+    shieldSprite.spriteId = ecs::SpriteId::SHIELD_BUBBLE;
+    shieldSprite.width = 24; // bubble.png frame width
+    shieldSprite.height = 24; // bubble.png height
+    shieldSprite.animated = true;
+    shieldSprite.frameCount = 12;
+    shieldSprite.startFrame = 0;
+    shieldSprite.endFrame = 11;
+    shieldSprite.currentFrame = 0;
+    shieldSprite.frameTime = 0.1F;
+    shieldSprite.reverseAnimation = false;
+    shieldSprite.loop = true;
+    shieldSprite.row = 0;
+    shieldSprite.offsetX = 0;
+    world.addComponent(shield, shieldSprite);
+
+    // Networked for replication
+    ecs::Networked net;
+    net.networkId = shield;
+    world.addComponent(shield, net);
+
+    std::cout << "[SpawnSystem] Spawned elite shield for entity " << parent << " (shield=" << shield << ")"
+              << std::endl;
   }
 
   static void handleSpawnEvent(ecs::World &world, const ecs::SpawnEntityEvent &event)
@@ -916,8 +983,8 @@ private:
 
     // Collider based on initial phase dimensions (after sprite so it matches visual)
     world.addComponent(projectile,
-               ecs::Collider{static_cast<float>(sprite.width) * transform.scale,
-                     static_cast<float>(sprite.height) * transform.scale});
+                       ecs::Collider{static_cast<float>(sprite.width) * transform.scale,
+                                     static_cast<float>(sprite.height) * transform.scale});
 
     // Mark as networked so the snapshot system replicates it to clients.
     ecs::Networked net;
@@ -981,8 +1048,9 @@ private:
       world.addComponent(projectile, sprite);
 
       // Collider sized to sprite dimensions (scale == 1)
-      world.addComponent(projectile, ecs::Collider{static_cast<float>(sprite.width) * transform.scale,
-                      static_cast<float>(sprite.height) * transform.scale});
+      world.addComponent(projectile,
+                         ecs::Collider{static_cast<float>(sprite.width) * transform.scale,
+                                       static_cast<float>(sprite.height) * transform.scale});
 
       // Mark as networked
       ecs::Networked net;
@@ -1047,8 +1115,9 @@ private:
     world.addComponent(projectile, sprite);
 
     // Collider sized to sprite * transform.scale
-    world.addComponent(projectile, ecs::Collider{static_cast<float>(sprite.width) * transform.scale,
-                          static_cast<float>(sprite.height) * transform.scale});
+    world.addComponent(projectile,
+                       ecs::Collider{static_cast<float>(sprite.width) * transform.scale,
+                                     static_cast<float>(sprite.height) * transform.scale});
 
     // Mark as networked so the snapshot system replicates it to clients.
     ecs::Networked net;
@@ -1103,8 +1172,8 @@ private:
 
     // Collider sized to sprite * scale
     world.addComponent(projectile,
-               ecs::Collider{static_cast<float>(sprite.width) * transform.scale,
-                     static_cast<float>(sprite.height) * transform.scale});
+                       ecs::Collider{static_cast<float>(sprite.width) * transform.scale,
+                                     static_cast<float>(sprite.height) * transform.scale});
 
     ecs::Networked net;
     net.networkId = projectile;

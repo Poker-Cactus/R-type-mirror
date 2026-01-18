@@ -22,10 +22,10 @@
 #include "../include/systems/NetworkSendSystem.hpp"
 #include "../interface/Geometry.hpp"
 #include "../interface/KeyCodes.hpp"
-#include <iostream>
-#include <unordered_set>
 #include <fstream>
+#include <iostream>
 #include <nlohmann/json.hpp>
+#include <unordered_set>
 
 PlayingState::PlayingState(std::shared_ptr<IRenderer> renderer, const std::shared_ptr<ecs::World> &world,
                            Settings &settings, std::shared_ptr<INetworkManager> networkManager,
@@ -58,9 +58,9 @@ bool PlayingState::init()
   m_scaleX = static_cast<float>(windowWidth) / REFERENCE_WIDTH;
   // Vertical scale is based on the game area height (top 11/12)
   m_scaleY = static_cast<float>(m_gameHeight) / REFERENCE_HEIGHT;
-  
-  std::cout << "[PlayingState] Window: " << windowWidth << "x" << windowHeight 
-            << ", Scale: " << m_scaleX << "x" << m_scaleY << '\n';
+
+  std::cout << "[PlayingState] Window: " << windowWidth << "x" << windowHeight << ", Scale: " << m_scaleX << "x"
+            << m_scaleY << '\n';
 
   settingsMenu = std::make_shared<SettingsMenu>(renderer);
 
@@ -72,55 +72,55 @@ bool PlayingState::init()
   }
 
   // Load level map texture
-    // Default to ruins_map.png but try to read first level from server/config/levels.json
-    std::string mapPath = "client/assets/ruins_map.png";
-    std::string collisionPath = "client/assets/collisions/ruins_map.png";
-    try {
-      std::ifstream cfg("server/config/levels.json");
-      if (cfg) {
-        nlohmann::json j;
-        cfg >> j;
-        if (j.contains("levels") && j["levels"].is_array() && !j["levels"].empty()) {
-          const auto &first = j["levels"][0];
-                if (first.contains("map")) {
-                  if (first["map"].is_string()) {
-                    mapPath = first["map"].get<std::string>();
-                  } else if (first["map"].is_object()) {
-                    const auto &m = first["map"];
-                    if (m.contains("path") && m["path"].is_string()) {
-                      mapPath = m["path"].get<std::string>();
-                    }
-                    if (m.contains("collision_map") && m["collision_map"].is_string()) {
-                      collisionPath = m["collision_map"].get<std::string>();
-                    }
-                    // Read optional speed parameter to control client map scroll
-                    if (m.contains("speed") && (m["speed"].is_number_float() || m["speed"].is_number())) {
-                      try {
-                        m_mapScrollSpeed = static_cast<float>(m["speed"].get<double>());
-                      } catch (...) {
-                        // ignore and keep default
-                      }
-                    }
-                  }
-                }
+  // Default to ruins_map.png but try to read first level from server/config/levels.json
+  std::string mapPath = "client/assets/ruins_map.png";
+  std::string collisionPath = "client/assets/collisions/ruins_map.png";
+  try {
+    std::ifstream cfg("server/config/levels.json");
+    if (cfg) {
+      nlohmann::json j;
+      cfg >> j;
+      if (j.contains("levels") && j["levels"].is_array() && !j["levels"].empty()) {
+        const auto &first = j["levels"][0];
+        if (first.contains("map")) {
+          if (first["map"].is_string()) {
+            mapPath = first["map"].get<std::string>();
+          } else if (first["map"].is_object()) {
+            const auto &m = first["map"];
+            if (m.contains("path") && m["path"].is_string()) {
+              mapPath = m["path"].get<std::string>();
+            }
+            if (m.contains("collision_map") && m["collision_map"].is_string()) {
+              collisionPath = m["collision_map"].get<std::string>();
+            }
+            // Read optional speed parameter to control client map scroll
+            if (m.contains("speed") && (m["speed"].is_number_float() || m["speed"].is_number())) {
+              try {
+                m_mapScrollSpeed = static_cast<float>(m["speed"].get<double>());
+              } catch (...) {
+                // ignore and keep default
+              }
+            }
+          }
         }
-      } else {
-        std::cerr << "PlayingState: Warning - Could not open server/config/levels.json, using default map" << std::endl;
       }
-    } catch (const std::exception &e) {
-      std::cerr << "PlayingState: Warning - Failed to parse levels.json: " << e.what() << std::endl;
-    }
-
-    m_mapTexture = renderer->loadTexture(mapPath);
-    if (m_mapTexture) {
-      renderer->getTextureSize(m_mapTexture, m_mapWidth, m_mapHeight);
-      std::cout << "PlayingState: Loaded map texture (" << m_mapWidth << "x" << m_mapHeight << ") from " << mapPath
-                << std::endl;
     } else {
-      std::cerr << "PlayingState: Warning - Failed to load map texture from " << mapPath << std::endl;
+      std::cerr << "PlayingState: Warning - Could not open server/config/levels.json, using default map" << std::endl;
     }
+  } catch (const std::exception &e) {
+    std::cerr << "PlayingState: Warning - Failed to parse levels.json: " << e.what() << std::endl;
+  }
 
-    // Map collision support removed from client; no TMX loading here
+  m_mapTexture = renderer->loadTexture(mapPath);
+  if (m_mapTexture) {
+    renderer->getTextureSize(m_mapTexture, m_mapWidth, m_mapHeight);
+    std::cout << "PlayingState: Loaded map texture (" << m_mapWidth << "x" << m_mapHeight << ") from " << mapPath
+              << std::endl;
+  } else {
+    std::cerr << "PlayingState: Warning - Failed to load map texture from " << mapPath << std::endl;
+  }
+
+  // Map collision support removed from client; no TMX loading here
 
   // Load sprite textures
   loadSpriteTextures();
@@ -197,7 +197,7 @@ void PlayingState::update(float delta_time)
 
   // Update map scrolling (scale based on game area height)
   if (m_mapTexture) {
-  m_mapOffsetX += m_mapScrollSpeed * delta_time;
+    m_mapOffsetX += m_mapScrollSpeed * delta_time;
 
     // Reset offset when it exceeds map width for seamless looping
     const float scale = static_cast<float>(m_gameHeight) / static_cast<float>(m_mapHeight);
@@ -350,8 +350,13 @@ void PlayingState::render()
 
         switch (sprite.spriteId) {
         case ecs::SpriteId::ENEMY_SHIP:
+        case ecs::SpriteId::ELITE_ENEMY:
           frameWidth = 533 / 16; // 33px per frame
           frameHeight = 36;
+          break;
+        case ecs::SpriteId::ELITE_ENEMY_GREEN:
+          frameWidth = 166 / 3; // 55px per frame
+          frameHeight = 58;
           break;
         case ecs::SpriteId::PLAYER_SHIP:
           frameWidth = PLAYER_FRAME_WIDTH;
@@ -388,6 +393,10 @@ void PlayingState::render()
           frameWidth = 549 / 7; // 78px per frame
           frameHeight = 72;
           break;
+        case ecs::SpriteId::ELITE_ENEMY_GREEN_OUT:
+          frameWidth = 131 / 2; // 65px per frame
+          frameHeight = 18;
+          break;
         case ecs::SpriteId::BOSS_DOBKERATOP_SHOOT:
           frameWidth = 34;
           frameHeight = 34;
@@ -419,6 +428,7 @@ void PlayingState::render()
         case ecs::SpriteId::DRONE:
         case ecs::SpriteId::BUBBLE:
         case ecs::SpriteId::BUBBLE_TRIPLE:
+        case ecs::SpriteId::SHIELD_BUBBLE:
         case ecs::SpriteId::BUBBLE_RUBAN1:
         case ecs::SpriteId::BUBBLE_RUBAN2:
         case ecs::SpriteId::BUBBLE_RUBAN3:
@@ -453,7 +463,17 @@ void PlayingState::render()
         case ecs::SpriteId::RUBAN12_PROJECTILE:
         case ecs::SpriteId::RUBAN13_PROJECTILE:
         case ecs::SpriteId::RUBAN14_PROJECTILE:
-          // Use sprite dimensions from server
+        case ecs::SpriteId::RUBAN15_PROJECTILE:
+        case ecs::SpriteId::RUBAN16_PROJECTILE:
+        case ecs::SpriteId::RUBAN17_PROJECTILE:
+        case ecs::SpriteId::RUBAN18_PROJECTILE:
+        case ecs::SpriteId::RUBAN19_PROJECTILE:
+        case ecs::SpriteId::RUBAN20_PROJECTILE:
+        case ecs::SpriteId::RUBAN21_PROJECTILE:
+        case ecs::SpriteId::RUBAN22_PROJECTILE:
+        case ecs::SpriteId::RUBAN23_PROJECTILE:
+        case ecs::SpriteId::RUBAN24_PROJECTILE:
+          // Use dimensions from server for per-file sprites and followers
           frameWidth = static_cast<int>(sprite.width);
           frameHeight = static_cast<int>(sprite.height);
 
@@ -467,6 +487,10 @@ void PlayingState::render()
               logged = true;
             }
           }
+          break;
+        case ecs::SpriteId::ELITE_ENEMY_GREEN_IN:
+          frameWidth = 93 / 3; // 31px per frame
+          frameHeight = 18;
           break;
         case ecs::SpriteId::ENEMY_ROBOT:
           frameWidth = 200 / 6; // 33px per frame
@@ -574,7 +598,7 @@ void PlayingState::render()
               renderScale = it->second.currentScale;
             }
           }
-                    // Apply transform scale to sprite dimensions AND screen scaling
+          // Apply transform scale to sprite dimensions AND screen scaling
           int scaledWidth = static_cast<int>(sprite.width * transformComponent.scale * m_scaleX);
           int scaledHeight = static_cast<int>(sprite.height * transformComponent.scale * m_scaleY);
 
@@ -674,7 +698,8 @@ void PlayingState::render()
           int scaledWidth = static_cast<int>(sprite.width * transformComponent.scale * m_scaleX);
           int scaledHeight = static_cast<int>(sprite.height * transformComponent.scale * m_scaleY);
           renderer->drawTextureEx(textureIt->second, static_cast<int>(transformComponent.x * m_scaleX),
-                                  static_cast<int>(transformComponent.y * m_scaleY), scaledWidth, scaledHeight, 0.0, false, false);
+                                  static_cast<int>(transformComponent.y * m_scaleY), scaledWidth, scaledHeight, 0.0,
+                                  false, false);
         }
       }
     } else {
@@ -695,6 +720,8 @@ void PlayingState::render()
         color = COLOR_PLAYER_BLUE;
         break;
       case ecs::SpriteId::ENEMY_SHIP:
+      case ecs::SpriteId::ELITE_ENEMY:
+      case ecs::SpriteId::ELITE_ENEMY_GREEN:
         color = COLOR_ENEMY_RED;
         break;
       case ecs::SpriteId::ENEMY_YELLOW:
@@ -720,9 +747,14 @@ void PlayingState::render()
         color = COLOR_PROJECTILE_YELLOW;
         break;
       case ecs::SpriteId::PROJECTILE:
+      case ecs::SpriteId::ELITE_ENEMY_GREEN_OUT:
+      case ecs::SpriteId::ELITE_ENEMY_GREEN_IN:
         color = COLOR_PROJECTILE_YELLOW;
         break;
       case ecs::SpriteId::POWERUP:
+        color = COLOR_POWERUP_GREEN;
+        break;
+      case ecs::SpriteId::SHIELD_BUBBLE:
         color = COLOR_POWERUP_GREEN;
         break;
       case ecs::SpriteId::EXPLOSION:
@@ -743,8 +775,8 @@ void PlayingState::render()
 
       int scaledWidth = static_cast<int>(sprite.width * transformComponent.scale * m_scaleX);
       int scaledHeight = static_cast<int>(sprite.height * transformComponent.scale * m_scaleY);
-      renderer->drawRect(static_cast<int>(transformComponent.x * m_scaleX), static_cast<int>(transformComponent.y * m_scaleY), scaledWidth,
-                         scaledHeight, color);
+      renderer->drawRect(static_cast<int>(transformComponent.x * m_scaleX),
+                         static_cast<int>(transformComponent.y * m_scaleY), scaledWidth, scaledHeight, color);
     }
   }
 
@@ -1244,6 +1276,70 @@ void PlayingState::loadSpriteTextures()
     std::cerr << "[PlayingState] ✗ Failed to load enemy_ship.gif: " << e.what() << '\n';
   }
 
+  // ELITE_ENEMY = 66 (uses elite_enemy_blue.png, same layout as enemy_ship)
+  try {
+    void *elite_tex = renderer->loadTexture("client/assets/sprites/elite_enemy_blue.png");
+    if (elite_tex != nullptr) {
+      m_spriteTextures[ecs::SpriteId::ELITE_ENEMY] = elite_tex;
+      std::cout << "[PlayingState] ✓ Loaded elite_enemy_blue.png" << '\n';
+    } else if (m_spriteTextures.find(ecs::SpriteId::ENEMY_SHIP) != m_spriteTextures.end()) {
+      m_spriteTextures[ecs::SpriteId::ELITE_ENEMY] = m_spriteTextures[ecs::SpriteId::ENEMY_SHIP];
+      std::cout << "[PlayingState] ✓ Using enemy_ship.gif for elite (fallback)" << '\n';
+    }
+  } catch (const std::exception &e) {
+    if (m_spriteTextures.find(ecs::SpriteId::ENEMY_SHIP) != m_spriteTextures.end()) {
+      m_spriteTextures[ecs::SpriteId::ELITE_ENEMY] = m_spriteTextures[ecs::SpriteId::ENEMY_SHIP];
+      std::cout << "[PlayingState] ✓ Using enemy_ship.gif for elite (fallback after error)" << '\n';
+    } else {
+      std::cerr << "[PlayingState] ✗ Failed to load elite_enemy_blue.png: " << e.what() << '\n';
+    }
+  }
+
+  // ELITE_ENEMY_GREEN = 68 (elite_enemy_green.png)
+  try {
+    void *elite_green_tex = renderer->loadTexture("client/assets/sprites/elite_enemy_green.png");
+    if (elite_green_tex != nullptr) {
+      m_spriteTextures[ecs::SpriteId::ELITE_ENEMY_GREEN] = elite_green_tex;
+      std::cout << "[PlayingState] ✓ Loaded elite_enemy_green.png" << '\n';
+    } else if (m_spriteTextures.find(ecs::SpriteId::ENEMY_SHIP) != m_spriteTextures.end()) {
+      m_spriteTextures[ecs::SpriteId::ELITE_ENEMY_GREEN] = m_spriteTextures[ecs::SpriteId::ENEMY_SHIP];
+      std::cout << "[PlayingState] ✓ Using enemy_ship.gif for elite green (fallback)" << '\n';
+    }
+  } catch (const std::exception &e) {
+    if (m_spriteTextures.find(ecs::SpriteId::ENEMY_SHIP) != m_spriteTextures.end()) {
+      m_spriteTextures[ecs::SpriteId::ELITE_ENEMY_GREEN] = m_spriteTextures[ecs::SpriteId::ENEMY_SHIP];
+      std::cout << "[PlayingState] ✓ Using enemy_ship.gif for elite green (fallback after error)" << '\n';
+    } else {
+      std::cerr << "[PlayingState] ✗ Failed to load elite_enemy_green.png: " << e.what() << '\n';
+    }
+  }
+
+  // ELITE_ENEMY_GREEN_OUT = 69 (elite_enemy_green_out.png)
+  try {
+    void *elite_green_out_tex = renderer->loadTexture("client/assets/sprites/elite_enemy_green_out.png");
+    if (elite_green_out_tex != nullptr) {
+      m_spriteTextures[ecs::SpriteId::ELITE_ENEMY_GREEN_OUT] = elite_green_out_tex;
+      std::cout << "[PlayingState] ✓ Loaded elite_enemy_green_out.png" << '\n';
+    } else {
+      std::cerr << "[PlayingState] ✗ Failed to load elite_enemy_green_out.png (returned null)" << '\n';
+    }
+  } catch (const std::exception &e) {
+    std::cerr << "[PlayingState] ✗ Failed to load elite_enemy_green_out.png: " << e.what() << '\n';
+  }
+
+  // ELITE_ENEMY_GREEN_IN = 70 (elite_enemy_green_in.png)
+  try {
+    void *elite_green_in_tex = renderer->loadTexture("client/assets/sprites/elite_enemy_green_in.png");
+    if (elite_green_in_tex != nullptr) {
+      m_spriteTextures[ecs::SpriteId::ELITE_ENEMY_GREEN_IN] = elite_green_in_tex;
+      std::cout << "[PlayingState] ✓ Loaded elite_enemy_green_in.png" << '\n';
+    } else {
+      std::cerr << "[PlayingState] ✗ Failed to load elite_enemy_green_in.png (returned null)" << '\n';
+    }
+  } catch (const std::exception &e) {
+    std::cerr << "[PlayingState] ✗ Failed to load elite_enemy_green_in.png: " << e.what() << '\n';
+  }
+
   // PROJECTILE = 3 (spritesheet: 422x92, 2 frames, using first frame only)
   try {
     void *projectile_tex = renderer->loadTexture("client/assets/sprites/simpleShot.png");
@@ -1323,6 +1419,12 @@ void PlayingState::loadSpriteTextures()
       m_spriteTextures[ecs::SpriteId::BUBBLE] = m_spriteTextures[ecs::SpriteId::POWERUP];
       std::cout << "[PlayingState] ✓ Using powerup.png for bubble triple (fallback after error)" << '\n';
     }
+  }
+
+  // SHIELD_BUBBLE = 67 (uses bubble.png)
+  if (m_spriteTextures.find(ecs::SpriteId::BUBBLE) != m_spriteTextures.end()) {
+    m_spriteTextures[ecs::SpriteId::SHIELD_BUBBLE] = m_spriteTextures[ecs::SpriteId::BUBBLE];
+    std::cout << "[PlayingState] ✓ Using bubble.png for shield" << '\n';
   }
 
   // BUBBLE = 8 (uses powerup texture as fallback)
@@ -1593,7 +1695,7 @@ void PlayingState::loadSpriteTextures()
     std::cerr << "[PlayingState] ✗ Failed to load loadChargedShot.png: " << e.what() << '\n';
   }
 
-  // DEATH_ANIM = 66 (spritesheet: 586x94, 6 frames)
+  // DEATH_ANIM = 65 (spritesheet: 586x94, 6 frames)
   try {
     void *death_anim_tex = renderer->loadTexture("client/assets/sprites/death_anim.png");
     if (death_anim_tex != nullptr) {

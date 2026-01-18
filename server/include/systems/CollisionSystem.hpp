@@ -94,7 +94,8 @@ private:
     }
     const auto &sprite = world.getComponent<ecs::Sprite>(entity);
     return sprite.spriteId == ecs::SpriteId::ENEMY_SHIP || sprite.spriteId == ecs::SpriteId::ENEMY_YELLOW ||
-      sprite.spriteId == ecs::SpriteId::ENEMY_WALKER || sprite.spriteId == ecs::SpriteId::ENEMY_ROBOT;
+      sprite.spriteId == ecs::SpriteId::ENEMY_WALKER || sprite.spriteId == ecs::SpriteId::ENEMY_ROBOT ||
+      sprite.spriteId == ecs::SpriteId::ELITE_ENEMY || sprite.spriteId == ecs::SpriteId::SHIELD_BUBBLE;
   }
 
   static bool checkCollision(const ecs::Transform &transA, const ecs::Collider &colA, const ecs::Transform &transB,
