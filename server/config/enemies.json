@@ -10,7 +10,7 @@
         "hp": 30,
         "maxHp": 30
       },
-      "id": "enemy_elite_green",
+      "id": "enemy_red",
       "name": "Red Oscillator",
       "pattern": {
         "amplitude": 40.0,
@@ -303,6 +303,92 @@
     },
     {
       "collider": {
+        "height": 100.0,
+        "width": 100.0
+      },
+      "description": "BOSS Dobkeratops",
+      "health": {
+        "hp": 500,
+        "maxHp": 500
+      },
+      "id": "boss_dobkeratops",
+      "name": "boss_dobkeratops",
+      "pattern": {
+        "amplitude": 0.0,
+        "frequency": 0.0,
+        "type": "boss_pattern"
+      },
+      "spawn": {
+        "groupSizeMax": 1,
+        "groupSizeMin": 1,
+        "spawnDelay": 0.0,
+        "spawnInterval": 0.0
+      },
+      "sprite": {
+        "animated": true,
+        "endFrame": 5,
+        "frameCount": 6,
+        "frameTime": 0.3,
+        "height": 146,
+        "loop": true,
+        "reverseAnimation": false,
+        "spriteId": 44,
+        "startFrame": 0,
+        "width": 184
+      },
+      "transform": {
+        "scale": 4.0
+      },
+      "velocity": {
+        "dx": -200.0,
+        "dy": 0.0
+      }
+    },
+    {
+      "collider": {
+        "height": 100.0,
+        "width": 100.0
+      },
+      "description": "BOSS brocolis",
+      "health": {
+        "hp": 500,
+        "maxHp": 500
+      },
+      "id": "boss_brocolis",
+      "name": "boss_brocolis",
+      "pattern": {
+        "amplitude": 0.0,
+        "frequency": 0.0,
+        "type": "boss_brocolis_pattern"
+      },
+      "spawn": {
+        "groupSizeMax": 1,
+        "groupSizeMin": 1,
+        "spawnDelay": 0.0,
+        "spawnInterval": 0.0
+      },
+      "sprite": {
+        "animated": true,
+        "endFrame": 3,
+        "frameCount": 4,
+        "frameTime": 0.3,
+        "height": 34,
+        "loop": true,
+        "reverseAnimation": false,
+        "spriteId": 46,
+        "startFrame": 0,
+        "width": 33
+      },
+      "transform": {
+        "scale": 8.0
+      },
+      "velocity": {
+        "dx": -200.0,
+        "dy": 0.0
+      }
+    },
+    {
+      "collider": {
         "height": 145.0,
         "width": 137.5
       },
@@ -341,6 +427,49 @@
       },
       "velocity": {
         "dx": -150.0,
+        "dy": 0.0
+      }
+    },
+    {
+      "collider": {
+        "height": 100.0,
+        "width": 100.0
+      },
+      "description": "BOSS evangelic",
+      "health": {
+        "hp": 500,
+        "maxHp": 500
+      },
+      "id": "boss_evangelic",
+      "name": "boss_evangelic",
+      "pattern": {
+        "amplitude": 0.0,
+        "frequency": 0.0,
+        "type": "boss_evangelic_pattern"
+      },
+      "spawn": {
+        "groupSizeMax": 1,
+        "groupSizeMin": 1,
+        "spawnDelay": 0.0,
+        "spawnInterval": 0.0
+      },
+      "sprite": {
+        "animated": true,
+        "endFrame": 3,
+        "frameCount": 4,
+        "frameTime": 0.3,
+        "height": 74,
+        "loop": true,
+        "reverseAnimation": false,
+        "spriteId": 72,
+        "startFrame": 0,
+        "width": 65
+      },
+      "transform": {
+        "scale": 6.0
+      },
+      "velocity": {
+        "dx": -200.0,
         "dy": 0.0
       }
     }

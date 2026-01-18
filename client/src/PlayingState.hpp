@@ -124,6 +124,17 @@ private:
 
   std::unordered_map<std::uint32_t, void *> m_spriteTextures; ///< Sprite texture cache
 
+  // Client-side visual state for brocolis eclosion (visual only — authoritative state remains on server)
+  struct BrocolisEclosionState {
+    bool active = false;
+    float timer = 0.0f; // elapsed time since eclosion started
+    float duration = 3.0f; // seconds to hatch (matches server)
+    float startScale = 0.1f; // initial small scale
+    float targetScale = 1.0f; // expected scale when hatched
+    float currentScale = 0.1f; // scale used for rendering
+  };
+  std::unordered_map<ecs::Entity, BrocolisEclosionState> m_brocolisEclosions;
+
   /**
    * @brief Load sprite textures into cache
    */

@@ -10,6 +10,7 @@
 
 // IWYU pragma: begin_exports
 #include "systems/AllySystem.hpp"
+#include "systems/AttractionSystem.hpp"
 #include "systems/CollisionSystem.hpp"
 #include "systems/DamageSystem.hpp"
 #include "systems/DeathSystem.hpp"
