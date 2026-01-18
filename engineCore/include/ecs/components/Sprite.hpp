@@ -163,6 +163,9 @@ constexpr std::uint32_t TRIPLE_PROJECTILE_DOWN = 64;
 
 // Death animation
 constexpr std::uint32_t DEATH_ANIM = 65;
+// Elite enemy + shield
+constexpr std::uint32_t ELITE_ENEMY = 66;
+constexpr std::uint32_t SHIELD_BUBBLE = 67;
 } // namespace SpriteId
 
 } // namespace ecs

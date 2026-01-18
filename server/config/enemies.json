@@ -257,6 +257,49 @@
         "dx": -300.0,
         "dy": 200.0
       }
+    },
+    {
+      "collider": {
+        "height": 108.0,
+        "width": 99.0
+      },
+      "description": "Elite enemy with shield (3 hits) and 4 hits to kill",
+      "health": {
+        "hp": 80,
+        "maxHp": 80
+      },
+      "id": "enemy_elite_blue",
+      "name": "Elite Blue",
+      "pattern": {
+        "amplitude": 35.0,
+        "frequency": 4.0,
+        "type": "sine_wave"
+      },
+      "spawn": {
+        "groupSizeMax": 1,
+        "groupSizeMin": 1,
+        "spawnDelay": 0.0,
+        "spawnInterval": 14.0
+      },
+      "sprite": {
+        "animated": true,
+        "endFrame": 0,
+        "frameCount": 16,
+        "frameTime": 0.1,
+        "height": 36,
+        "loop": true,
+        "reverseAnimation": true,
+        "spriteId": 66,
+        "startFrame": 7,
+        "width": 33
+      },
+      "transform": {
+        "scale": 3.0
+      },
+      "velocity": {
+        "dx": -220.0,
+        "dy": 0.0
+      }
     }
   ]
 }

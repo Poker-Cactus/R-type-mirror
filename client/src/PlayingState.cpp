@@ -235,6 +235,7 @@ void PlayingState::render()
 
         switch (sprite.spriteId) {
         case ecs::SpriteId::ENEMY_SHIP:
+        case ecs::SpriteId::ELITE_ENEMY:
           frameWidth = 533 / 16; // 33px per frame
           frameHeight = 36;
           break;
@@ -276,6 +277,7 @@ void PlayingState::render()
         case ecs::SpriteId::DRONE:
         case ecs::SpriteId::BUBBLE:
         case ecs::SpriteId::BUBBLE_TRIPLE:
+        case ecs::SpriteId::SHIELD_BUBBLE:
         case ecs::SpriteId::BUBBLE_RUBAN1:
         case ecs::SpriteId::BUBBLE_RUBAN2:
         case ecs::SpriteId::BUBBLE_RUBAN3:
@@ -516,6 +518,7 @@ void PlayingState::render()
         color = COLOR_PLAYER_BLUE;
         break;
       case ecs::SpriteId::ENEMY_SHIP:
+      case ecs::SpriteId::ELITE_ENEMY:
         color = COLOR_ENEMY_RED;
         break;
       case ecs::SpriteId::ENEMY_YELLOW:
@@ -537,6 +540,9 @@ void PlayingState::render()
         color = COLOR_PROJECTILE_YELLOW;
         break;
       case ecs::SpriteId::POWERUP:
+        color = COLOR_POWERUP_GREEN;
+        break;
+      case ecs::SpriteId::SHIELD_BUBBLE:
         color = COLOR_POWERUP_GREEN;
         break;
       case ecs::SpriteId::EXPLOSION:
@@ -1046,6 +1052,25 @@ void PlayingState::loadSpriteTextures()
     std::cerr << "[PlayingState] ✗ Failed to load enemy_ship.gif: " << e.what() << '\n';
   }
 
+  // ELITE_ENEMY = 66 (uses elite_enemy_blue.png, same layout as enemy_ship)
+  try {
+    void *elite_tex = renderer->loadTexture("client/assets/sprites/elite_enemy_blue.png");
+    if (elite_tex != nullptr) {
+      m_spriteTextures[ecs::SpriteId::ELITE_ENEMY] = elite_tex;
+      std::cout << "[PlayingState] ✓ Loaded elite_enemy_blue.png" << '\n';
+    } else if (m_spriteTextures.find(ecs::SpriteId::ENEMY_SHIP) != m_spriteTextures.end()) {
+      m_spriteTextures[ecs::SpriteId::ELITE_ENEMY] = m_spriteTextures[ecs::SpriteId::ENEMY_SHIP];
+      std::cout << "[PlayingState] ✓ Using enemy_ship.gif for elite (fallback)" << '\n';
+    }
+  } catch (const std::exception &e) {
+    if (m_spriteTextures.find(ecs::SpriteId::ENEMY_SHIP) != m_spriteTextures.end()) {
+      m_spriteTextures[ecs::SpriteId::ELITE_ENEMY] = m_spriteTextures[ecs::SpriteId::ENEMY_SHIP];
+      std::cout << "[PlayingState] ✓ Using enemy_ship.gif for elite (fallback after error)" << '\n';
+    } else {
+      std::cerr << "[PlayingState] ✗ Failed to load elite_enemy_blue.png: " << e.what() << '\n';
+    }
+  }
+
   // PROJECTILE = 3 (spritesheet: 422x92, 2 frames, using first frame only)
   try {
     void *projectile_tex = renderer->loadTexture("client/assets/sprites/simpleShot.png");
@@ -1125,6 +1150,12 @@ void PlayingState::loadSpriteTextures()
       m_spriteTextures[ecs::SpriteId::BUBBLE] = m_spriteTextures[ecs::SpriteId::POWERUP];
       std::cout << "[PlayingState] ✓ Using powerup.png for bubble triple (fallback after error)" << '\n';
     }
+  }
+
+  // SHIELD_BUBBLE = 67 (uses bubble.png)
+  if (m_spriteTextures.find(ecs::SpriteId::BUBBLE) != m_spriteTextures.end()) {
+    m_spriteTextures[ecs::SpriteId::SHIELD_BUBBLE] = m_spriteTextures[ecs::SpriteId::BUBBLE];
+    std::cout << "[PlayingState] ✓ Using bubble.png for shield" << '\n';
   }
 
   // BUBBLE = 8 (uses powerup texture as fallback)
