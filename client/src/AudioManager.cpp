@@ -34,6 +34,9 @@ bool AudioManager::init()
   // Load all music tracks
   loadMusicTrack("menu_music", "client/assets/audios/loadingMusic.mp3");
   loadMusicTrack("level1_music", "client/assets/Sounds/level1.mp3");
+  loadMusicTrack("level2_music", "client/assets/Sounds/level2.mp3");
+  loadMusicTrack("level3_music", "client/assets/Sounds/level3.mp3");
+  loadMusicTrack("level4_music", "client/assets/Sounds/level4.mp3");
   loadMusicTrack("intro_music", "client/assets/audios/loadingMusic.mp3");
 
   std::cout << "[AudioManager] Loaded " << m_sounds.size() << " sounds and " << m_music.size() << " music tracks"

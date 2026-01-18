@@ -198,7 +198,12 @@ public:
     m_currentLevel = nullptr;
     m_maxPlayerDistance = 0.0F;
     m_nextWaveIndex = 0;
-    std::cout << "[SpawnSystem] Level stopped" << std::endl;
+    
+    // Clear spawn queue to prevent spawning enemies after death
+    m_spawnQueue.clear();
+    m_spawnQueueTimer = 0.0F;
+    
+    std::cout << "[SpawnSystem] Level stopped (cleared spawn queue)" << std::endl;
   }
 
   void update(ecs::World &world, float deltaTime) override
@@ -231,6 +236,11 @@ public:
         m_powerupSpawnTimer = 0.0F;
       }
 
+      return;
+    }
+
+    // If level is not active and not in infinite mode, stop all spawning
+    if (!m_isLevelActive && !m_isInfiniteMode) {
       return;
     }
 
@@ -455,6 +465,10 @@ public:
    */
   void processSpawnQueue(ecs::World &world, float deltaTime)
   {
+    // Don't process spawn queue if level is not active (e.g., after player death)
+    if (!m_isLevelActive && !m_isInfiniteMode)
+      return;
+      
     if (m_spawnQueue.empty())
       return;
 

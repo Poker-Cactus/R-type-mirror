@@ -22,6 +22,7 @@
 #include "../include/systems/NetworkSendSystem.hpp"
 #include "../interface/Geometry.hpp"
 #include "../interface/KeyCodes.hpp"
+#include <algorithm>
 #include <iostream>
 #include <unordered_set>
 
@@ -1446,6 +1447,7 @@ void PlayingState::freeSpriteTextures()
 void PlayingState::startLevelTransition(const std::string &nextLevelId)
 {
   std::cout << "[PlayingState] ✓ Starting level transition to: " << nextLevelId << std::endl;
+  std::cout << "[PlayingState] Current music should fade out, preparing for: " << nextLevelId << std::endl;
   
   m_isTransitioning = true;
   m_transitionPhase = TransitionPhase::FADE_OUT;
@@ -1457,6 +1459,7 @@ void PlayingState::startLevelTransition(const std::string &nextLevelId)
   if (m_audioManager) {
     std::cout << "[PlayingState] → Playing stage_clear sound" << std::endl;
     m_audioManager->playSound("stage_clear");
+    std::cout << "[PlayingState] ✓ Stage clear sound requested" << std::endl;
   } else {
     std::cout << "[PlayingState] ✗ AudioManager is null, cannot play sound" << std::endl;
   }
@@ -1489,9 +1492,32 @@ void PlayingState::updateLevelTransition(float deltaTime)
         m_transitionTimer = 0.0f;
         std::cout << "[PlayingState] Wait complete, fading in..." << std::endl;
         
-        // TODO: Here we would actually load/start the next level
-        // For now, just log it
-        std::cout << "[PlayingState] Would start level: " << m_nextLevelId << std::endl;
+        // Change music based on level
+        std::cout << "[PlayingState] === CHANGING MUSIC ===" << std::endl;
+        std::cout << "[PlayingState] Next level ID: '" << m_nextLevelId << "'" << std::endl;
+        
+        if (m_audioManager) {
+          // Map level ID to music name
+          // Supports: "level_1", "level_2", "level1", "level2" etc.
+          std::string musicName = m_nextLevelId;
+          
+          // Remove all underscores
+          musicName.erase(std::remove(musicName.begin(), musicName.end(), '_'), musicName.end());
+          
+          // Ensure it ends with "_music"
+          if (musicName.find("_music") == std::string::npos) {
+            musicName += "_music";
+          }
+          
+          std::cout << "[PlayingState] Computed music name: '" << musicName << "'" << std::endl;
+          std::cout << "[PlayingState] → Stopping current music and playing " << musicName << std::endl;
+          
+          m_audioManager->stopMusic();
+          m_audioManager->playMusic(musicName, true);
+          std::cout << "[PlayingState] ✓ Music change requested" << std::endl;
+        } else {
+          std::cout << "[PlayingState] ✗ AudioManager is null!" << std::endl;
+        }
       }
       break;
       
@@ -1522,9 +1548,9 @@ void PlayingState::renderFadeOverlay()
   // Calculate alpha value (0-255)
   int alpha = static_cast<int>(m_fadeAlpha * 255.0f);
   
-  // Get window dimensions
-  int viewportWidth = 1280;  // Default
-  int viewportHeight = 720;  // Default
+  // Get actual window dimensions from renderer
+  int viewportWidth = renderer->getWindowWidth();
+  int viewportHeight = renderer->getWindowHeight();
   
   // Draw a black rectangle covering the entire screen with alpha
   // RGB(0, 0, 0) = black, with alpha for transparency

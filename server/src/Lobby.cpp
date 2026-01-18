@@ -303,7 +303,8 @@ void Lobby::initializeSystems()
   }
 
   // Listen for level complete events to notify clients
-  m_world->getEventBus().subscribe<ecs::LevelCompleteEvent>([this](const ecs::LevelCompleteEvent &event) {
+  // Store the handle to keep the listener alive!
+  m_levelCompleteListener = m_world->getEventBus().subscribe<ecs::LevelCompleteEvent>([this](const ecs::LevelCompleteEvent &event) {
     std::cout << "[Lobby:" << m_code << "] ✓ Level complete: " << event.levelId 
               << " → " << event.nextLevelId << std::endl;
     

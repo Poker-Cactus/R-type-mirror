@@ -653,11 +653,6 @@ void Game::handlePlayingStateInput()
   if (playingState && playingState->shouldReturnToMenu()) {
     std::cout << "[Game] Player died - returning to menu" << '\n';
 
-    // Resume menu music when returning to menu
-    if (m_audioManager) {
-      m_audioManager->playMusic("menu_music", true);
-    }
-
     // Save highscore if in solo mode
     if (playingState->isSolo() && lobbyRoomState) {
       int finalScore = playingState->getPlayerScore();
@@ -684,9 +679,15 @@ void Game::handlePlayingStateInput()
       }
     }
 
-    // Clean up playing state resources
+    // Clean up playing state resources (this stops the game music)
     playingState->cleanup();
     playingState.reset();
+
+    // Resume menu music AFTER cleanup (so game music is stopped first)
+    if (m_audioManager) {
+      std::cout << "[Game] Resuming menu music" << std::endl;
+      m_audioManager->playMusic("menu_music", true);
+    }
 
     // Also clear all entities from the client world to avoid stale data
     if (m_world) {
