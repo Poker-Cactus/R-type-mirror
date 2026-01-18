@@ -11,6 +11,7 @@
 
 #pragma once
 #include "../../common/include/Common.hpp"
+#include "Menu/AIDifficultyMenu/AIDifficultyMenu.hpp"
 #include "Menu/IntroScreen/IntroScreen.hpp"
 #include "Menu/LobbyMenu/LobbyMenu.hpp"
 #include "Menu/MainMenu/MainMenu.hpp"
@@ -20,6 +21,7 @@
 #include <string>
 
 class Settings;
+class AudioManager;
 
 /**
  * @class Menu
@@ -36,8 +38,9 @@ public:
    * @brief Construct the menu system
    * @param renderer Pointer to the renderer interface
    * @param settings Reference to game settings
+   * @param audioManager Shared pointer to audio manager
    */
-  Menu(std::shared_ptr<IRenderer> renderer, Settings &settings);
+  Menu(std::shared_ptr<IRenderer> renderer, Settings &settings, std::shared_ptr<AudioManager> audioManager);
   ~Menu();
 
   /**
@@ -80,6 +83,12 @@ public:
   [[nodiscard]] bool isCreatingLobby() const;
 
   /**
+   * @brief Check if player is playing solo
+   * @return true if solo mode
+   */
+  [[nodiscard]] bool isSolo() const;
+
+  /**
    * @brief Get the lobby code player wants to join
    * @return Lobby code string
    */
@@ -90,7 +99,18 @@ public:
    */
   void resetLobbySelection();
   [[nodiscard]] Difficulty getCurrentDifficulty() const;
+  [[nodiscard]] GameMode getCurrentGameMode() const;
   [[nodiscard]] LobbyMenu *getLobbyMenu() const { return m_lobbyMenu.get(); }
+
+  /**
+   * @brief Set solo mode for lobby
+   */
+  void setSoloMode();
+
+  /**
+   * @brief Start difficulty selection for solo mode
+   */
+  void startSoloDifficultySelection();
 
   /**
    * @brief Reset highscore refresh flag in lobby menu
@@ -160,6 +180,7 @@ private:
   std::shared_ptr<ProfileMenu> m_profileMenu;
   std::shared_ptr<SettingsMenu> m_settingsMenu;
   std::shared_ptr<LobbyMenu> m_lobbyMenu;
+  std::shared_ptr<AIDifficultyMenu> m_aiDifficultyMenu;
   std::shared_ptr<IntroScreen> introScreen; ///< Intro screen
 
   // Moon Parallax offsets
@@ -177,7 +198,8 @@ private:
   void *moonBack = nullptr; ///< Back layer texture
 
   void *menu_font = nullptr;
-  void *menuMusic;
+  std::shared_ptr<AudioManager> m_audioManager;
   Difficulty currentDifficulty = Difficulty::MEDIUM;
+  GameMode currentGameMode = GameMode::CLASSIC;
   MenuState currentState = MenuState::INTRO; ///< Current menu state
 };

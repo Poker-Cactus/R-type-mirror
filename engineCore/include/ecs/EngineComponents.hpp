@@ -16,6 +16,7 @@
 
 // Components
 #include "components/Attraction.hpp"
+#include "components/Ally.hpp"
 #include "components/Collider.hpp"
 #include "components/Follower.hpp"
 #include "components/GunOffset.hpp"

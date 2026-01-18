@@ -6,10 +6,12 @@
   },
   "controls": {
     "chargedShoot": 24,
+    "detach": 43,
     "down": 11,
     "left": 12,
     "right": 13,
     "shoot": 5,
+    "toggleInfoMode": 28,
     "up": 10
   },
   "debug": {

@@ -12,6 +12,10 @@
 #include "infomode/include/InfoMode.hpp"
 #include <memory>
 #include <unordered_map>
+#include <unordered_set>
+
+// Forward declarations
+class AudioManager;
 
 /**
  * @class PlayingState
@@ -33,9 +37,10 @@ public:
    * @param world Shared pointer to ECS world
    * @param settings Game settings reference
    * @param networkManager Network manager for stats
+   * @param audioManager Audio manager for sounds and music
    */
   PlayingState(std::shared_ptr<IRenderer> renderer, const std::shared_ptr<ecs::World> &world, Settings &settings,
-               std::shared_ptr<INetworkManager> networkManager);
+               std::shared_ptr<INetworkManager> networkManager, std::shared_ptr<AudioManager> audioManager);
   ~PlayingState();
 
   /**
@@ -66,10 +71,28 @@ public:
   void cleanup();
 
   /**
-   * @brief Check if player is dead and should return to menu
-   * @return true if player health is zero or below
+   * @brief Set solo mode (no network multiplayer)
+   * @param isSolo true for solo gameplay
    */
-  bool shouldReturnToMenu() const { return m_playerHealth <= 0; }
+  void setSoloMode(bool isSolo);
+
+  /**
+   * @brief Check if this is solo mode
+   * @return true if solo mode
+   */
+  [[nodiscard]] bool isSolo() const { return m_isSolo; }
+
+  /**
+   * @brief Check if player is dead and should return to menu
+   * @return true if player health is zero or below AND not in spectator mode
+   */
+  bool shouldReturnToMenu() const { return m_playerHealth <= 0 && !m_isSpectator; }
+
+  /**
+   * @brief Get the current player score
+   * @return the player score
+   */
+  [[nodiscard]] int getPlayerScore() const { return m_playerScore; }
 
   /**
    * @brief Update player animation based on movement input
@@ -81,6 +104,18 @@ public:
    * @brief Reset player animation to idle state
    */
   void resetPlayerAnimation();
+
+  /**
+   * @brief Enable/disable spectator mode
+   * @param enabled true to enable spectator mode
+   */
+  void setSpectatorMode(bool enabled) { m_isSpectator = enabled; }
+
+  /**
+   * @brief Check if in spectator mode
+   * @return true if spectating
+   */
+  bool isSpectator() const { return m_isSpectator; }
 
 private:
   std::shared_ptr<IRenderer> renderer; ///< Renderer interface
@@ -152,6 +187,7 @@ private:
 
   Settings &settings; ///< Game settings reference
   std::shared_ptr<SettingsMenu> settingsMenu; ///< Settings menu
+  bool m_isSolo = false; ///< Solo mode flag
 
   // FPS tracking
   float m_fpsAccumulator = 0.0f; ///< Time accumulator for FPS calculation
@@ -160,4 +196,43 @@ private:
 
   std::shared_ptr<INetworkManager> m_networkManager; ///< Network manager for stats
   float m_pingTimer = 0.0f; ///< Timer for sending pings
+
+  bool m_isSpectator = false; ///< Spectator mode flag
+
+  // Audio
+  std::shared_ptr<AudioManager> m_audioManager; ///< Audio manager for sounds and music
+
+  // Input state tracking for sound effects
+  bool m_prevShootPressed = false; ///< Previous shoot key state
+  bool m_prevChargedShootPressed = false; ///< Previous charged shoot key state
+  float m_chargedShotSoundTimer = -1.0f; ///< Timer to delay charged shot sound by 1 second
+
+  // Entity tracking for sound effects
+  std::unordered_set<ecs::Entity> m_previousEnemies; ///< Track enemies from previous frame
+  int m_previousEnemyCount = 0; ///< Track enemy count from previous frame
+
+  /**
+   * @brief Load sound effects
+   */
+  void loadSounds();
+
+  /**
+   * @brief Free sound effects
+   */
+  void freeSounds();
+
+  /**
+   * @brief Load level music
+   */
+  void loadMusic();
+
+  /**
+   * @brief Free level music
+   */
+  void freeMusic();
+
+  /**
+   * @brief Update sound effects based on game events
+   */
+  void updateSounds();
 };

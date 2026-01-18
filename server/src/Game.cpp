@@ -9,6 +9,7 @@
 #include "../../engineCore/include/ecs/EngineComponents.hpp"
 #include "../include/config/EnemyConfig.hpp"
 #include "../include/config/LevelConfig.hpp"
+#include "systems/AllySystem.hpp"
 #include "systems/ChargeSystem.hpp"
 #include "systems/SpawnSystem.hpp"
 #include <chrono>
@@ -29,6 +30,8 @@ Game::Game()
 
   // Register all systems
   world->registerSystem<server::InputMovementSystem>();
+  world->registerSystem<server::EnemyAISystem>();
+  world->registerSystem<server::AllySystem>();
   world->registerSystem<ecs::MovementSystem>();
   world->registerSystem<server::CollisionSystem>();
 

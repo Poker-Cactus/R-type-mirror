@@ -9,6 +9,7 @@
 #include "../../engineCore/include/ecs/components/Collider.hpp"
 #include "../../engineCore/include/ecs/components/Health.hpp"
 #include "../../engineCore/include/ecs/components/Networked.hpp"
+#include "../../engineCore/include/ecs/components/Owner.hpp"
 #include "../../engineCore/include/ecs/components/Pattern.hpp"
 #include "../../engineCore/include/ecs/components/PlayerId.hpp"
 #include "../../engineCore/include/ecs/components/Score.hpp"
@@ -17,6 +18,7 @@
 #include "../../engineCore/include/ecs/components/Velocity.hpp"
 #include "../../network/include/AsioClient.hpp"
 #include "../include/AssetPath.hpp"
+#include "../include/AudioManager.hpp"
 #include "../include/systems/NetworkSendSystem.hpp"
 #include "../interface/Geometry.hpp"
 #include "../interface/KeyCodes.hpp"
@@ -24,9 +26,10 @@
 #include <unordered_set>
 
 PlayingState::PlayingState(std::shared_ptr<IRenderer> renderer, const std::shared_ptr<ecs::World> &world,
-                           Settings &settings, std::shared_ptr<INetworkManager> networkManager)
+                           Settings &settings, std::shared_ptr<INetworkManager> networkManager,
+                           std::shared_ptr<AudioManager> audioManager)
     : renderer(std::move(renderer)), world(world), background(nullptr), settings(settings),
-      m_networkManager(networkManager)
+      m_networkManager(networkManager), m_audioManager(std::move(audioManager))
 {
 }
 
@@ -121,6 +124,58 @@ void PlayingState::update(float delta_time)
 
   // Update HUD data from world state
   updateHUDFromWorld(delta_time);
+
+  // Update charged shot sound timer
+  if (m_chargedShotSoundTimer > 0.0f) {
+    m_chargedShotSoundTimer -= delta_time;
+    if (m_chargedShotSoundTimer <= 0.0f && m_audioManager) {
+      m_audioManager->playSound("charged_shot");
+      m_chargedShotSoundTimer = -1.0f; // Reset timer
+    }
+  }
+
+  // Detect enemy deaths and play explosion sound
+  if (world != nullptr && m_audioManager) {
+    // Track current enemies
+    std::unordered_set<ecs::Entity> currentEnemies;
+
+    // Get all enemies (entities with Pattern component)
+    ecs::ComponentSignature enemySig;
+    enemySig.set(ecs::getComponentId<ecs::Pattern>());
+    enemySig.set(ecs::getComponentId<ecs::Health>());
+    std::vector<ecs::Entity> enemies;
+    world->getEntitiesWithSignature(enemySig, enemies);
+
+    for (const auto &enemy : enemies) {
+      currentEnemies.insert(enemy);
+    }
+
+    // Count how many enemies died (simple count-based detection)
+    int currentEnemyCount = static_cast<int>(currentEnemies.size());
+    if (m_previousEnemyCount > 0 && currentEnemyCount < m_previousEnemyCount) {
+      // At least one enemy died - play explosion sound
+      int enemiesDied = m_previousEnemyCount - currentEnemyCount;
+      // Play sound for each enemy that died (limited to avoid sound spam)
+      for (int i = 0; i < enemiesDied && i < 3; i++) {
+        m_audioManager->playSound("enemy_explosion");
+      }
+    }
+
+    // Also check for individual enemies that disappeared
+    for (const auto &prevEnemy : m_previousEnemies) {
+      if (currentEnemies.find(prevEnemy) == currentEnemies.end()) {
+        // This specific enemy died
+        if (currentEnemyCount >= m_previousEnemyCount) {
+          // Only play if count-based detection didn't already trigger
+          m_audioManager->playSound("enemy_explosion");
+        }
+      }
+    }
+
+    // Update tracking for next frame
+    m_previousEnemies = std::move(currentEnemies);
+    m_previousEnemyCount = currentEnemyCount;
+  }
 
   // Update info mode
   if (m_infoMode) {
@@ -437,7 +492,8 @@ void PlayingState::render()
         // Draw using actual texture
         if (sprite.spriteId == ecs::SpriteId::PLAYER_SHIP) {
           // Player ship is a spritesheet with player animation
-          int srcX = m_playerFrameIndex * PLAYER_FRAME_WIDTH;
+          int frameIndex = sprite.animated ? sprite.currentFrame : m_playerFrameIndex;
+          int srcX = frameIndex * PLAYER_FRAME_WIDTH;
           int srcY = 0; // première ligne seulement
           int scaledWidth = static_cast<int>(sprite.width * transformComponent.scale);
           int scaledHeight = static_cast<int>(sprite.height * transformComponent.scale);
@@ -654,6 +710,23 @@ void PlayingState::renderHUD()
   // Render info mode if active
   if (m_infoMode) {
     m_infoMode->render();
+  }
+
+  // Show spectator indicator if in spectator mode
+  if (m_isSpectator) {
+    const int winWidth = renderer->getWindowWidth();
+
+    constexpr std::uint8_t TEXT_WHITE = 255;
+    constexpr std::uint8_t TEXT_ALPHA = 255;
+    const Color spectatorColor = {TEXT_WHITE, TEXT_WHITE, TEXT_WHITE, TEXT_ALPHA};
+
+    // Use the HUD font like the score display
+    if (m_hudFont) {
+      renderer->drawText(m_hudFont.get(), "you died, you are in SPECTATOR MODE", winWidth / 2 - 100, 50,
+                         spectatorColor);
+    } else {
+      std::cout << "[PlayingState] Warning: m_hudFont is null, cannot render spectator text" << std::endl;
+    }
   }
 }
 
@@ -911,8 +984,28 @@ void PlayingState::updateHUDFromWorld(float deltaTime)
 
 void PlayingState::processInput()
 {
-  if (renderer == nullptr)
+  // Don't process input if in spectator mode
+  if (m_isSpectator) {
     return;
+  }
+
+  if (renderer == nullptr) {
+    return;
+  }
+
+  // Check for shoot key press and play sound on press (not hold)
+  bool shootPressed = renderer->isKeyPressed(settings.shoot);
+  if (shootPressed && !m_prevShootPressed && m_audioManager) {
+    m_audioManager->playSound("base_shot");
+  }
+  m_prevShootPressed = shootPressed;
+
+  // Check for charged shoot key press and start timer for delayed sound (1 second)
+  bool chargedShootPressed = renderer->isKeyPressed(settings.chargedShoot);
+  if (chargedShootPressed && !m_prevChargedShootPressed) {
+    m_chargedShotSoundTimer = 1.0f; // Start 1 second timer
+  }
+  m_prevChargedShootPressed = chargedShootPressed;
 
   if (renderer->isKeyPressed(settings.up)) {
     m_returnUp = true;
@@ -1012,6 +1105,11 @@ void PlayingState::cleanup()
   m_hudFont.reset();
 
   std::cout << "PlayingState: Cleaned up" << '\n';
+}
+
+void PlayingState::setSoloMode(bool isSolo)
+{
+  m_isSolo = isSolo;
 }
 
 void PlayingState::loadSpriteTextures()
