@@ -31,22 +31,35 @@ constexpr int DEFAULT_PORT = 4242;
 constexpr int TICK_RATE_MS = 16;
 constexpr float MICROSECONDS_TO_SECONDS = 1000000.0F;
 
-// Player configuration
+// Reference resolution (base for normalization)
+constexpr float REFERENCE_WIDTH = 1920.0F;
+constexpr float REFERENCE_HEIGHT = 1080.0F;
+
+// Player configuration (normalized to reference resolution)
 constexpr float PLAYER_GUN_OFFSET = 20.0F;
-constexpr float PLAYER_SPAWN_X = 100.0F;
-constexpr float PLAYER_SPAWN_Y = 300.0F;
+constexpr float PLAYER_SPAWN_X = 100.0F;  // ~5.2% of width
+constexpr float PLAYER_SPAWN_Y = 300.0F;  // ~27.8% of height
 constexpr int PLAYER_MAX_HP = 100;
-constexpr float PLAYER_COLLIDER_SIZE = 32.0F;
+constexpr float PLAYER_COLLIDER_WIDTH = 140.0F;
+constexpr float PLAYER_COLLIDER_HEIGHT = 60.0F;
 constexpr int PLAYER_SPRITE_WIDTH = 140;
 constexpr int PLAYER_SPRITE_HEIGHT = 60;
 
-// Ally configuration
-constexpr float ALLY_SPAWN_X = 150.0F;
-constexpr float ALLY_SPAWN_Y = 350.0F;
+// Ally configuration (normalized to reference resolution)
+constexpr float ALLY_SPAWN_X = 150.0F;  // ~7.8% of width
+constexpr float ALLY_SPAWN_Y = 350.0F;  // ~32.4% of height
 constexpr int ALLY_MAX_HP = 100;
+// Ally collider dimensions (box) — prefer width/height like player
+constexpr float ALLY_COLLIDER_WIDTH = 32.0F;
+constexpr float ALLY_COLLIDER_HEIGHT = 32.0F;
+// Backwards-compat alias for code using single size constant
 constexpr float ALLY_COLLIDER_SIZE = 32.0F;
 constexpr int ALLY_SPRITE_WIDTH = 140;
 constexpr int ALLY_SPRITE_HEIGHT = 60;
+
+// Projectile collider dimensions (commonly used sizes)
+constexpr float PROJECTILE_COLLIDER_WIDTH = 18.0F;
+constexpr float PROJECTILE_COLLIDER_HEIGHT = 14.0F;
 } // namespace GameConfig
 
 class NetworkReceiveSystem;
@@ -74,6 +87,8 @@ public:
   Difficulty currentDifficulty = Difficulty::MEDIUM;
 
 private:
+  void initializeMapCollision(const std::string &levelId);
+
   std::shared_ptr<ecs::World> world;
 
   std::shared_ptr<INetworkManager> m_networkManager;
@@ -98,6 +113,7 @@ private:
 
   std::unordered_set<std::uint32_t> m_lobbyClients;
   LobbyManager m_lobbyManager;
+  ecs::Entity m_mapEntity = 0; // Entity holding map collision data
 };
 
 #endif /* !GAME_HPP_ */

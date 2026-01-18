@@ -21,6 +21,7 @@
 #include "components/GunOffset.hpp"
 #include "components/Health.hpp"
 #include "components/Input.hpp"
+#include "components/MapCollision.hpp"
 #include "components/Networked.hpp"
 #include "components/Pattern.hpp"
 #include "components/PlayerId.hpp"

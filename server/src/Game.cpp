@@ -32,6 +32,7 @@ Game::Game()
   world->registerSystem<server::InputMovementSystem>();
   world->registerSystem<server::EnemyAISystem>();
   world->registerSystem<server::AllySystem>();
+  world->registerSystem<server::MapCollisionSystem>(); // Check collisions before movement
   world->registerSystem<ecs::MovementSystem>();
   world->registerSystem<server::CollisionSystem>();
 
@@ -75,6 +76,7 @@ Game::Game()
 
     // Start level 1
     spawnSystem->startLevel("level_1");
+    initializeMapCollision("level_1"); // Load map collision data
 
     std::cout << "[Game] Level configurations loaded successfully" << std::endl;
   } else {
@@ -174,7 +176,7 @@ void Game::spawnPlayer()
   input.shoot = false;
   world->addComponent(player, input);
 
-  world->addComponent(player, ecs::Collider{GameConfig::PLAYER_COLLIDER_SIZE, GameConfig::PLAYER_COLLIDER_SIZE});
+  world->addComponent(player, ecs::Collider{GameConfig::PLAYER_COLLIDER_WIDTH, GameConfig::PLAYER_COLLIDER_HEIGHT});
 
   ecs::Sprite sprite;
   sprite.spriteId = ecs::SpriteId::PLAYER_SHIP;
@@ -251,7 +253,7 @@ void Game::spawnPlayer(std::uint32_t networkId)
   input.shoot = false;
   world->addComponent(player, input);
 
-  world->addComponent(player, ecs::Collider{GameConfig::PLAYER_COLLIDER_SIZE, GameConfig::PLAYER_COLLIDER_SIZE});
+  world->addComponent(player, ecs::Collider{GameConfig::PLAYER_COLLIDER_WIDTH, GameConfig::PLAYER_COLLIDER_HEIGHT});
 
   ecs::Sprite sprite;
   sprite.spriteId = ecs::SpriteId::PLAYER_SHIP;
@@ -393,4 +395,38 @@ const std::unordered_set<std::uint32_t> &Game::getLobbyClients() const
 LobbyManager &Game::getLobbyManager()
 {
   return m_lobbyManager;
+}
+
+void Game::initializeMapCollision(const std::string &levelId)
+{
+  if (!m_levelConfigManager || !world) {
+    return;
+  }
+
+  const server::LevelConfig *config = m_levelConfigManager->getConfig(levelId);
+  if (!config || config->collision_map.empty()) {
+    std::cout << "[Game] No collision map for level " << levelId << std::endl;
+    return;
+  }
+
+  // Destroy previous map entity if it exists
+  if (m_mapEntity != 0 && world->isAlive(m_mapEntity)) {
+    world->destroyEntity(m_mapEntity);
+  }
+
+  // Create a new map entity
+  m_mapEntity = world->createEntity();
+
+  // Add and load MapCollision component
+  ecs::MapCollision mapCollision;
+  if (mapCollision.loadFromFile(config->collision_map)) {
+    world->addComponent(m_mapEntity, mapCollision);
+    std::cout << "[Game] Loaded map collision from " << config->collision_map << std::endl;
+    std::cout << "[Game] Map size: " << mapCollision.mapWidth << "x" << mapCollision.mapHeight
+              << " tiles (" << mapCollision.tileWidth << "x" << mapCollision.tileHeight << "px)" << std::endl;
+  } else {
+    std::cerr << "[Game] Failed to load collision map from " << config->collision_map << std::endl;
+    world->destroyEntity(m_mapEntity);
+    m_mapEntity = 0;
+  }
 }

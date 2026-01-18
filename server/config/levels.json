@@ -4,6 +4,8 @@
       "description": "Introductory level with basic enemy wave",
       "id": "level_1",
       "name": "First Contact",
+      "map": "client/assets/ruins_map.png",
+      "collision_map": "client/assets/collisions/ruins_map.tmx",
       "waves": [
         {
           "id": "wave_1",
@@ -127,6 +129,8 @@
       "description": "Increased difficulty with faster waves",
       "id": "level_2",
       "name": "Escalation",
+      "map": "",
+      "collision_map": "",
       "waves": [
         {
           "id": "wave_1",

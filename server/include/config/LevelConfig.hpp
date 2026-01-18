@@ -73,6 +73,8 @@ struct LevelConfig {
   std::string id;
   std::string name;
   std::string description;
+  std::string map; // Path to the level's background/map image
+  std::string collision_map; // Path to the collision map JSON file
   std::vector<WaveConfig> waves;
 
   static LevelConfig fromJson(const nlohmann::json &json)
@@ -81,6 +83,8 @@ struct LevelConfig {
     level.id = json.value("id", "");
     level.name = json.value("name", "");
     level.description = json.value("description", "");
+    level.map = json.value("map", "");
+    level.collision_map = json.value("collision_map", "");
 
     if (json.contains("waves") && json["waves"].is_array()) {
       for (const auto &waveJson : json["waves"]) {

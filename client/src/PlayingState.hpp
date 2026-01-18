@@ -117,6 +117,19 @@ private:
   std::shared_ptr<ecs::World> world; ///< ECS world
   std::unique_ptr<ParallaxBackground> background; ///< Scrolling background
 
+  void *m_mapTexture = nullptr; ///< Level map texture
+  int m_mapWidth = 0; ///< Map texture width
+  int m_mapHeight = 0; ///< Map texture height
+  float m_mapOffsetX = 0.0f; ///< Map horizontal scroll offset
+  static constexpr float MAP_SCROLL_SPEED = 50.0f; ///< Map scroll speed (pixels/second)
+
+  // Reference resolution for coordinate normalization (same as server)
+  static constexpr float REFERENCE_WIDTH = 1920.0F;
+  static constexpr float REFERENCE_HEIGHT = 1080.0F;
+  
+  float m_scaleX = 1.0f; ///< Horizontal scale factor (windowWidth / REFERENCE_WIDTH)
+  float m_scaleY = 1.0f; ///< Vertical scale factor (windowHeight / REFERENCE_HEIGHT)
+
   std::unordered_map<std::uint32_t, void *> m_spriteTextures; ///< Sprite texture cache
 
   /**

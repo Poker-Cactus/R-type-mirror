@@ -44,6 +44,15 @@ bool PlayingState::init()
 
   std::cout << "[PlayingState] Initializing with m_playerHealth = " << m_playerHealth << '\n';
 
+  // Calculate scale factors based on window size
+  const int windowWidth = renderer->getWindowWidth();
+  const int windowHeight = renderer->getWindowHeight();
+  m_scaleX = static_cast<float>(windowWidth) / REFERENCE_WIDTH;
+  m_scaleY = static_cast<float>(windowHeight) / REFERENCE_HEIGHT;
+  
+  std::cout << "[PlayingState] Window: " << windowWidth << "x" << windowHeight 
+            << ", Scale: " << m_scaleX << "x" << m_scaleY << '\n';
+
   settingsMenu = std::make_shared<SettingsMenu>(renderer);
 
   // Initialiser le background parallaxe
@@ -51,6 +60,15 @@ bool PlayingState::init()
   if (!background->init()) {
     std::cerr << "PlayingState: Failed to initialize parallax background" << '\n';
     return false;
+  }
+
+  // Load level map texture
+  m_mapTexture = renderer->loadTexture("client/assets/ruins_map.png");
+  if (m_mapTexture) {
+    renderer->getTextureSize(m_mapTexture, m_mapWidth, m_mapHeight);
+    std::cout << "PlayingState: Loaded map texture (" << m_mapWidth << "x" << m_mapHeight << ")" << std::endl;
+  } else {
+    std::cerr << "PlayingState: Warning - Failed to load map texture" << std::endl;
   }
 
   // Load sprite textures
@@ -114,6 +132,21 @@ void PlayingState::update(float delta_time)
   if (background) {
     background->update(delta_time);
   }
+
+  // Update map scrolling
+  if (m_mapTexture) {
+    m_mapOffsetX += MAP_SCROLL_SPEED * delta_time;
+    
+    // Reset offset when it exceeds map width for seamless looping
+    const int windowHeight = renderer->getWindowHeight();
+    const float scale = static_cast<float>(windowHeight) / static_cast<float>(m_mapHeight);
+    const int scaledWidth = static_cast<int>(m_mapWidth * scale);
+    
+    if (m_mapOffsetX >= scaledWidth) {
+      m_mapOffsetX -= scaledWidth;
+    }
+  }
+
   changeAnimationPlayers(delta_time);
 
   // Update sprite animations
@@ -142,6 +175,28 @@ void PlayingState::render()
   // Dessiner le background en premier
   if (background) {
     background->render();
+  }
+
+  // Render level map with scrolling and height scaling
+  if (m_mapTexture) {
+    const int windowHeight = renderer->getWindowHeight();
+    const int windowWidth = renderer->getWindowWidth();
+    
+    // Scale map to window height while maintaining aspect ratio
+    const float scale = static_cast<float>(windowHeight) / static_cast<float>(m_mapHeight);
+    const int scaledWidth = static_cast<int>(m_mapWidth * scale);
+    const int scaledHeight = windowHeight;
+    
+    // Apply horizontal offset for scrolling
+    const int offsetX = -static_cast<int>(m_mapOffsetX);
+    
+    // Draw map (possibly multiple times for seamless looping)
+    renderer->drawTextureEx(m_mapTexture, offsetX, 0, scaledWidth, scaledHeight, 0.0, false, false);
+    
+    // If map scrolled past the edge, draw another copy for seamless loop
+    if (offsetX + scaledWidth < windowWidth) {
+      renderer->drawTextureEx(m_mapTexture, offsetX + scaledWidth, 0, scaledWidth, scaledHeight, 0.0, false, false);
+    }
   }
 
   // CLIENT PURE RENDERER - NO GAMEPLAY INFERENCE
@@ -340,9 +395,9 @@ void PlayingState::render()
             srcY = static_cast<int>(sprite.offsetY) + (sprite.row * frameHeight);
           }
 
-          // Apply transform scale to sprite dimensions
-          int scaledWidth = static_cast<int>(sprite.width * transformComponent.scale);
-          int scaledHeight = static_cast<int>(sprite.height * transformComponent.scale);
+          // Apply transform scale to sprite dimensions AND screen scaling
+          int scaledWidth = static_cast<int>(sprite.width * transformComponent.scale * m_scaleX);
+          int scaledHeight = static_cast<int>(sprite.height * transformComponent.scale * m_scaleY);
 
           // Debug: log animation state for enemy ships
           static float debugTimer = 0.0f;
@@ -360,8 +415,8 @@ void PlayingState::render()
           renderer->drawTextureRegion(
             textureIt->second,
             {.x = srcX, .y = srcY, .width = frameWidth, .height = frameHeight}, // Source: current frame
-            {.x = static_cast<int>(transformComponent.x),
-             .y = static_cast<int>(transformComponent.y),
+            {.x = static_cast<int>(transformComponent.x * m_scaleX),
+             .y = static_cast<int>(transformComponent.y * m_scaleY),
              .width = scaledWidth,
              .height = scaledHeight}); // Destination with scale applied
           rendered = true;
@@ -376,25 +431,25 @@ void PlayingState::render()
           int frameIndex = sprite.animated ? sprite.currentFrame : m_playerFrameIndex;
           int srcX = frameIndex * PLAYER_FRAME_WIDTH;
           int srcY = 0; // première ligne seulement
-          int scaledWidth = static_cast<int>(sprite.width * transformComponent.scale);
-          int scaledHeight = static_cast<int>(sprite.height * transformComponent.scale);
+          int scaledWidth = static_cast<int>(sprite.width * transformComponent.scale * m_scaleX);
+          int scaledHeight = static_cast<int>(sprite.height * transformComponent.scale * m_scaleY);
           renderer->drawTextureRegion(
             textureIt->second, {.x = srcX, .y = srcY, .width = PLAYER_FRAME_WIDTH, .height = PLAYER_FRAME_HEIGHT},
-            {.x = static_cast<int>(transformComponent.x),
-             .y = static_cast<int>(transformComponent.y),
+            {.x = static_cast<int>(transformComponent.x * m_scaleX),
+             .y = static_cast<int>(transformComponent.y * m_scaleY),
              .width = scaledWidth,
              .height = scaledHeight}); // Destination with scale
         } else if (sprite.spriteId == ecs::SpriteId::PROJECTILE) {
           // Projectile is a spritesheet: 422x92 with 2 frames
           constexpr int PROJECTILE_FRAME_WIDTH = 18;
           constexpr int PROJECTILE_FRAME_HEIGHT = 14;
-          int scaledWidth = static_cast<int>(sprite.width * transformComponent.scale);
-          int scaledHeight = static_cast<int>(sprite.height * transformComponent.scale);
+          int scaledWidth = static_cast<int>(sprite.width * transformComponent.scale * m_scaleX);
+          int scaledHeight = static_cast<int>(sprite.height * transformComponent.scale * m_scaleY);
           renderer->drawTextureRegion(
             textureIt->second,
             {.x = 0, .y = 0, .width = PROJECTILE_FRAME_WIDTH, .height = PROJECTILE_FRAME_HEIGHT}, // Source: first frame
-            {.x = static_cast<int>(transformComponent.x),
-             .y = static_cast<int>(transformComponent.y),
+            {.x = static_cast<int>(transformComponent.x * m_scaleX),
+             .y = static_cast<int>(transformComponent.y * m_scaleY),
              .width = scaledWidth,
              .height = scaledHeight}); // Destination with scale
         } else if (sprite.spriteId == ecs::SpriteId::POWERUP) {
@@ -402,12 +457,12 @@ void PlayingState::render()
           constexpr int POWERUP_FRAME_WIDTH = 12; // 84 / 7 = 12px per frame
           constexpr int POWERUP_FRAME_HEIGHT = 12;
           int srcX = sprite.currentFrame * POWERUP_FRAME_WIDTH;
-          int scaledWidth = static_cast<int>(sprite.width * transformComponent.scale);
-          int scaledHeight = static_cast<int>(sprite.height * transformComponent.scale);
+          int scaledWidth = static_cast<int>(sprite.width * transformComponent.scale * m_scaleX);
+          int scaledHeight = static_cast<int>(sprite.height * transformComponent.scale * m_scaleY);
           renderer->drawTextureRegion(textureIt->second,
                                       {.x = srcX, .y = 0, .width = POWERUP_FRAME_WIDTH, .height = POWERUP_FRAME_HEIGHT},
-                                      {.x = static_cast<int>(transformComponent.x),
-                                       .y = static_cast<int>(transformComponent.y),
+                                      {.x = static_cast<int>(transformComponent.x * m_scaleX),
+                                       .y = static_cast<int>(transformComponent.y * m_scaleY),
                                        .width = scaledWidth,
                                        .height = scaledHeight});
         } else if (sprite.spriteId == ecs::SpriteId::ENEMY_YELLOW) {
@@ -421,8 +476,8 @@ void PlayingState::render()
           int srcX = col * YELLOW_BEE_FRAME_WIDTH;
           int srcY = row * YELLOW_BEE_FRAME_HEIGHT;
 
-          int scaledWidth = static_cast<int>(sprite.width * transformComponent.scale);
-          int scaledHeight = static_cast<int>(sprite.height * transformComponent.scale);
+          int scaledWidth = static_cast<int>(sprite.width * transformComponent.scale * m_scaleX);
+          int scaledHeight = static_cast<int>(sprite.height * transformComponent.scale * m_scaleY);
 
           // Calculate rotation angle based on velocity
           float rotation = transformComponent.rotation;
@@ -430,17 +485,17 @@ void PlayingState::render()
           renderer->drawTextureRegionEx(
             textureIt->second,
             {.x = srcX, .y = srcY, .width = YELLOW_BEE_FRAME_WIDTH, .height = YELLOW_BEE_FRAME_HEIGHT},
-            {.x = static_cast<int>(transformComponent.x),
-             .y = static_cast<int>(transformComponent.y),
+            {.x = static_cast<int>(transformComponent.x * m_scaleX),
+             .y = static_cast<int>(transformComponent.y * m_scaleY),
              .width = scaledWidth,
              .height = scaledHeight},
             rotation, false, false);
         } else {
           // Other sprites: draw full texture
-          int scaledWidth = static_cast<int>(sprite.width * transformComponent.scale);
-          int scaledHeight = static_cast<int>(sprite.height * transformComponent.scale);
-          renderer->drawTextureEx(textureIt->second, static_cast<int>(transformComponent.x),
-                                  static_cast<int>(transformComponent.y), scaledWidth, scaledHeight, 0.0, false, false);
+          int scaledWidth = static_cast<int>(sprite.width * transformComponent.scale * m_scaleX);
+          int scaledHeight = static_cast<int>(sprite.height * transformComponent.scale * m_scaleY);
+          renderer->drawTextureEx(textureIt->second, static_cast<int>(transformComponent.x * m_scaleX),
+                                  static_cast<int>(transformComponent.y * m_scaleY), scaledWidth, scaledHeight, 0.0, false, false);
         }
       }
     } else {
@@ -500,9 +555,9 @@ void PlayingState::render()
         break;
       }
 
-      int scaledWidth = static_cast<int>(sprite.width * transformComponent.scale);
-      int scaledHeight = static_cast<int>(sprite.height * transformComponent.scale);
-      renderer->drawRect(static_cast<int>(transformComponent.x), static_cast<int>(transformComponent.y), scaledWidth,
+      int scaledWidth = static_cast<int>(sprite.width * transformComponent.scale * m_scaleX);
+      int scaledHeight = static_cast<int>(sprite.height * transformComponent.scale * m_scaleY);
+      renderer->drawRect(static_cast<int>(transformComponent.x * m_scaleX), static_cast<int>(transformComponent.y * m_scaleY), scaledWidth,
                          scaledHeight, color);
     }
   }
@@ -584,6 +639,11 @@ void PlayingState::renderHUD()
   // Render info mode if active
   if (m_infoMode) {
     m_infoMode->render();
+    // Compute map scale and offset used when drawing the map so collision overlay aligns
+    const int windowHeight = renderer->getWindowHeight();
+    const float mapScale = (m_mapHeight > 0) ? (static_cast<float>(windowHeight) / static_cast<float>(m_mapHeight)) : 1.0f;
+    const int offsetX = -static_cast<int>(m_mapOffsetX);
+    m_infoMode->renderHitboxes(world, m_scaleX, m_scaleY, mapScale, static_cast<float>(offsetX));
   }
 
   // Show spectator indicator if in spectator mode
@@ -924,6 +984,12 @@ void PlayingState::cleanup()
 
   // Free all loaded sprite textures
   freeSpriteTextures();
+
+  // Free map texture
+  if (m_mapTexture != nullptr && renderer != nullptr) {
+    renderer->freeTexture(m_mapTexture);
+    m_mapTexture = nullptr;
+  }
 
   // Free hearts texture
   if (m_heartsTexture != nullptr && renderer != nullptr) {

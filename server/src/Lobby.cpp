@@ -235,6 +235,7 @@ void Lobby::initializeSystems()
   m_world->registerSystem<server::InputMovementSystem>();
   m_world->registerSystem<server::EnemyAISystem>();
   m_world->registerSystem<server::AllySystem>();
+  m_world->registerSystem<server::MapCollisionSystem>(); // Check collisions before movement
   m_world->registerSystem<ecs::MovementSystem>();
   m_world->registerSystem<server::CollisionSystem>();
 
@@ -287,6 +288,7 @@ void Lobby::initializeSystems()
       std::cout << "[Lobby:" << m_code << "] Infinite mode enabled" << std::endl;
     } else if (m_levelConfigManager) {
       spawnSystem->startLevel("level_1");
+      initializeMapCollision("level_1"); // Load map collision data
       std::cout << "[Lobby:" << m_code << "] Level config manager set, started level_1" << std::endl;
     } else if (m_enemyConfigManager) {
       // Fallback to multi-type spawning if no level config
@@ -348,7 +350,7 @@ void Lobby::spawnPlayer(std::uint32_t clientId)
   input.shoot = false;
   m_world->addComponent(player, input);
 
-  m_world->addComponent(player, ecs::Collider{GameConfig::PLAYER_COLLIDER_SIZE, GameConfig::PLAYER_COLLIDER_SIZE});
+  m_world->addComponent(player, ecs::Collider{GameConfig::PLAYER_COLLIDER_WIDTH, GameConfig::PLAYER_COLLIDER_HEIGHT});
 
   ecs::Sprite sprite;
   sprite.spriteId = ecs::SpriteId::PLAYER_SHIP;
@@ -431,7 +433,7 @@ void Lobby::spawnAlly()
   health.maxHp = startingHP;
   m_world->addComponent(ally, health);
 
-  m_world->addComponent(ally, ecs::Collider{GameConfig::ALLY_COLLIDER_SIZE, GameConfig::ALLY_COLLIDER_SIZE});
+  m_world->addComponent(ally, ecs::Collider{GameConfig::ALLY_COLLIDER_WIDTH, GameConfig::ALLY_COLLIDER_HEIGHT});
 
   ecs::Sprite sprite;
   sprite.spriteId = ecs::SpriteId::PLAYER_SHIP; // Same sprite as player
@@ -572,4 +574,38 @@ void Lobby::convertToSpectator(std::uint32_t clientId)
 AIDifficulty Lobby::getAIDifficulty() const
 {
   return m_aiDifficulty;
+}
+
+void Lobby::initializeMapCollision(const std::string &levelId)
+{
+  if (!m_levelConfigManager || !m_world) {
+    return;
+  }
+
+  const server::LevelConfig *config = m_levelConfigManager->getConfig(levelId);
+  if (!config || config->collision_map.empty()) {
+    std::cout << "[Lobby:" << m_code << "] No collision map for level " << levelId << std::endl;
+    return;
+  }
+
+  // Destroy previous map entity if it exists
+  if (m_mapEntity != 0 && m_world->isAlive(m_mapEntity)) {
+    m_world->destroyEntity(m_mapEntity);
+  }
+
+  // Create a new map entity
+  m_mapEntity = m_world->createEntity();
+
+  // Add and load MapCollision component
+  ecs::MapCollision mapCollision;
+  if (mapCollision.loadFromFile(config->collision_map)) {
+    m_world->addComponent(m_mapEntity, mapCollision);
+    std::cout << "[Lobby:" << m_code << "] Loaded map collision from " << config->collision_map << std::endl;
+    std::cout << "[Lobby:" << m_code << "] Map size: " << mapCollision.mapWidth << "x" << mapCollision.mapHeight
+              << " tiles (" << mapCollision.tileWidth << "x" << mapCollision.tileHeight << "px)" << std::endl;
+  } else {
+    std::cerr << "[Lobby:" << m_code << "] Failed to load collision map from " << config->collision_map << std::endl;
+    m_world->destroyEntity(m_mapEntity);
+    m_mapEntity = 0;
+  }
 }
