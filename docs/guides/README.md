@@ -2,11 +2,11 @@
 
 Bienvenue dans les guides de développement! Ici vous trouverez tout ce dont vous avez besoin pour créer un jeu avec le moteur R-Type.
 
-## 🚀 Par Où Commencer?
+## Par Où Commencer?
 
 ### Pour les Nouveaux Développeurs
 
-1. **[Créer un Nouveau Jeu](Creating-A-Game.md)** ⭐ **START HERE**
+1. **[Créer un Nouveau Jeu](Creating-A-Game.md)**  **START HERE**
    - Vue d'ensemble complète du processus
    - Exemple pas-à-pas d'un jeu simple
    - Checklist de vérification
