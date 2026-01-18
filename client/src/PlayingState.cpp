@@ -46,11 +46,15 @@ bool PlayingState::init()
 
   std::cout << "[PlayingState] Initializing with m_playerHealth = " << m_playerHealth << '\n';
 
-  // Calculate scale factors based on window size
+  // Calculate scale factors based on window size and reserve HUD at bottom
   const int windowWidth = renderer->getWindowWidth();
   const int windowHeight = renderer->getWindowHeight();
+  // HUD occupies 1/12th of the screen height at the bottom
+  m_hudHeight = windowHeight / 12;
+  m_gameHeight = windowHeight - m_hudHeight;
   m_scaleX = static_cast<float>(windowWidth) / REFERENCE_WIDTH;
-  m_scaleY = static_cast<float>(windowHeight) / REFERENCE_HEIGHT;
+  // Vertical scale is based on the game area height (top 11/12)
+  m_scaleY = static_cast<float>(m_gameHeight) / REFERENCE_HEIGHT;
   
   std::cout << "[PlayingState] Window: " << windowWidth << "x" << windowHeight 
             << ", Scale: " << m_scaleX << "x" << m_scaleY << '\n';
@@ -156,15 +160,14 @@ void PlayingState::update(float delta_time)
     background->update(delta_time);
   }
 
-  // Update map scrolling
+  // Update map scrolling (scale based on game area height)
   if (m_mapTexture) {
     m_mapOffsetX += MAP_SCROLL_SPEED * delta_time;
-    
+
     // Reset offset when it exceeds map width for seamless looping
-    const int windowHeight = renderer->getWindowHeight();
-    const float scale = static_cast<float>(windowHeight) / static_cast<float>(m_mapHeight);
+    const float scale = static_cast<float>(m_gameHeight) / static_cast<float>(m_mapHeight);
     const int scaledWidth = static_cast<int>(m_mapWidth * scale);
-    
+
     if (m_mapOffsetX >= scaledWidth) {
       m_mapOffsetX -= scaledWidth;
     }
@@ -195,27 +198,29 @@ void PlayingState::update(float delta_time)
 
 void PlayingState::render()
 {
+  // Render game area (top 11/12) using viewport to avoid drawing into HUD
+  const int windowWidth = renderer->getWindowWidth();
+  // Set viewport to game area (clip everything to top area)
+  renderer->setViewport(0, 0, windowWidth, m_gameHeight);
+
   // Dessiner le background en premier
   if (background) {
     background->render();
   }
 
-  // Render level map with scrolling and height scaling
+  // Render level map with scrolling and height scaling (fit to game area)
   if (m_mapTexture) {
-    const int windowHeight = renderer->getWindowHeight();
-    const int windowWidth = renderer->getWindowWidth();
-    
-    // Scale map to window height while maintaining aspect ratio
-    const float scale = static_cast<float>(windowHeight) / static_cast<float>(m_mapHeight);
+    // Scale map to game area height while maintaining aspect ratio
+    const float scale = static_cast<float>(m_gameHeight) / static_cast<float>(m_mapHeight);
     const int scaledWidth = static_cast<int>(m_mapWidth * scale);
-    const int scaledHeight = windowHeight;
-    
+    const int scaledHeight = m_gameHeight;
+
     // Apply horizontal offset for scrolling
     const int offsetX = -static_cast<int>(m_mapOffsetX);
-    
+
     // Draw map (possibly multiple times for seamless looping)
     renderer->drawTextureEx(m_mapTexture, offsetX, 0, scaledWidth, scaledHeight, 0.0, false, false);
-    
+
     // If map scrolled past the edge, draw another copy for seamless loop
     if (offsetX + scaledWidth < windowWidth) {
       renderer->drawTextureEx(m_mapTexture, offsetX + scaledWidth, 0, scaledWidth, scaledHeight, 0.0, false, false);
@@ -585,7 +590,21 @@ void PlayingState::render()
     }
   }
 
-  // Draw HUD on top of everything
+  // Render info overlay (hitboxes, panels) while still in game viewport
+  if (m_infoMode) {
+    m_infoMode->render();
+    // Compute map scale and offset used when drawing the map so collision overlay aligns
+    m_infoMode->renderHitboxes(world, m_scaleX, m_scaleY);
+  }
+
+  // Reset viewport back to full window before drawing HUD
+  renderer->resetViewport();
+
+  // Draw black HUD strip at the bottom (1/12th of screen)
+  constexpr Color HUD_BLACK = {.r = 0, .g = 0, .b = 0, .a = 255};
+  renderer->drawRect(0, m_gameHeight, renderer->getWindowWidth(), m_hudHeight, HUD_BLACK);
+
+  // Draw HUD on top of everything (in the bottom strip)
   renderHUD();
 }
 
@@ -599,7 +618,7 @@ void PlayingState::renderHUD()
   constexpr int HEARTS_TEXTURE_WIDTH = 33;
   constexpr float HEART_ROW_HEIGHT = 76.0f / 7.0f; // 11.0 pixels per row, using float for precision
   constexpr int HEARTS_X = 20;
-  constexpr int HEARTS_Y = 20;
+  const int HEARTS_Y = m_gameHeight + 10; // place hearts inside HUD strip with padding
   constexpr int DISPLAY_SCALE = 2; // Scale up for better visibility
   constexpr Color HUD_TEXT_WHITE = {.r = 255, .g = 255, .b = 255, .a = 255};
   constexpr int HUD_SCORE_OFFSET_Y = 50;
@@ -659,13 +678,7 @@ void PlayingState::renderHUD()
     renderer->drawText(m_hudFont.get(), scoreText, HEARTS_X, HEARTS_Y + HUD_SCORE_OFFSET_Y, HUD_TEXT_WHITE);
   }
 
-  // Render info mode if active
-  if (m_infoMode) {
-    m_infoMode->render();
-    // Compute map scale and offset used when drawing the map so collision overlay aligns
-    const int windowHeight = renderer->getWindowHeight();
-    m_infoMode->renderHitboxes(world, m_scaleX, m_scaleY);
-  }
+  // Info mode rendering / hitboxes are rendered in the main render() inside the game viewport
 
   // Show spectator indicator if in spectator mode
   if (m_isSpectator) {
@@ -677,8 +690,8 @@ void PlayingState::renderHUD()
 
     // Use the HUD font like the score display
     if (m_hudFont) {
-      renderer->drawText(m_hudFont.get(), "you died, you are in SPECTATOR MODE", winWidth / 2 - 100, 50,
-                         spectatorColor);
+      renderer->drawText(m_hudFont.get(), "you died, you are in SPECTATOR MODE", winWidth / 2 - 100,
+                         m_gameHeight + 10, spectatorColor);
     } else {
       std::cout << "[PlayingState] Warning: m_hudFont is null, cannot render spectator text" << std::endl;
     }

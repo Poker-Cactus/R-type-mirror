@@ -127,6 +127,7 @@ private:
   std::vector<ParallaxLayer> layers;
   int windowWidth = 0;
   int windowHeight = 0;
+  int gameHeight = 0; ///< Height of the game area (windowHeight - HUD strip)
 
   /**
    * @brief Render a layer with repetition for infinite effect

@@ -128,7 +128,9 @@ private:
   static constexpr float REFERENCE_HEIGHT = 1080.0F;
   
   float m_scaleX = 1.0f; ///< Horizontal scale factor (windowWidth / REFERENCE_WIDTH)
-  float m_scaleY = 1.0f; ///< Vertical scale factor (windowHeight / REFERENCE_HEIGHT)
+  float m_scaleY = 1.0f; ///< Vertical scale factor (gameAreaHeight / REFERENCE_HEIGHT)
+  int m_hudHeight = 0; ///< HUD strip height in pixels (bottom 1/12)
+  int m_gameHeight = 0; ///< Game area height in pixels (windowHeight - hudHeight)
 
   std::unordered_map<std::uint32_t, void *> m_spriteTextures; ///< Sprite texture cache
 
