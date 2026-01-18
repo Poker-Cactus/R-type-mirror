@@ -22,6 +22,8 @@
 #include "../interface/KeyCodes.hpp"
 #include <iostream>
 #include <unordered_set>
+#include <fstream>
+#include <nlohmann/json.hpp>
 
 PlayingState::PlayingState(std::shared_ptr<IRenderer> renderer, const std::shared_ptr<ecs::World> &world,
                            Settings &settings, std::shared_ptr<INetworkManager> networkManager)
@@ -63,13 +65,34 @@ bool PlayingState::init()
   }
 
   // Load level map texture
-  m_mapTexture = renderer->loadTexture("client/assets/ruins_map.png");
-  if (m_mapTexture) {
-    renderer->getTextureSize(m_mapTexture, m_mapWidth, m_mapHeight);
-    std::cout << "PlayingState: Loaded map texture (" << m_mapWidth << "x" << m_mapHeight << ")" << std::endl;
-  } else {
-    std::cerr << "PlayingState: Warning - Failed to load map texture" << std::endl;
-  }
+    // Load level map texture. Default to ruins_map.png but try to read first level from server/config/levels.json
+    std::string mapPath = "client/assets/ruins_map.png";
+    try {
+      std::ifstream cfg("server/config/levels.json");
+      if (cfg) {
+        nlohmann::json j;
+        cfg >> j;
+        if (j.contains("levels") && j["levels"].is_array() && !j["levels"].empty()) {
+          const auto &first = j["levels"][0];
+          if (first.contains("map") && first["map"].is_string()) {
+            mapPath = first["map"].get<std::string>();
+          }
+        }
+      } else {
+        std::cerr << "PlayingState: Warning - Could not open server/config/levels.json, using default map" << std::endl;
+      }
+    } catch (const std::exception &e) {
+      std::cerr << "PlayingState: Warning - Failed to parse levels.json: " << e.what() << std::endl;
+    }
+
+    m_mapTexture = renderer->loadTexture(mapPath);
+    if (m_mapTexture) {
+      renderer->getTextureSize(m_mapTexture, m_mapWidth, m_mapHeight);
+      std::cout << "PlayingState: Loaded map texture (" << m_mapWidth << "x" << m_mapHeight << ") from " << mapPath
+                << std::endl;
+    } else {
+      std::cerr << "PlayingState: Warning - Failed to load map texture from " << mapPath << std::endl;
+    }
 
   // Load sprite textures
   loadSpriteTextures();
@@ -641,9 +664,7 @@ void PlayingState::renderHUD()
     m_infoMode->render();
     // Compute map scale and offset used when drawing the map so collision overlay aligns
     const int windowHeight = renderer->getWindowHeight();
-    const float mapScale = (m_mapHeight > 0) ? (static_cast<float>(windowHeight) / static_cast<float>(m_mapHeight)) : 1.0f;
-    const int offsetX = -static_cast<int>(m_mapOffsetX);
-    m_infoMode->renderHitboxes(world, m_scaleX, m_scaleY, mapScale, static_cast<float>(offsetX));
+    m_infoMode->renderHitboxes(world, m_scaleX, m_scaleY);
   }
 
   // Show spectator indicator if in spectator mode

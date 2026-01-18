@@ -64,15 +64,13 @@ public:
   /** @brief Update bandwidth statistics */
   void setNetworkBandwidth(int uploadBytes, int downloadBytes);
 
-  /** @brief Render hitboxes for all entities with colliders and map collisions
+  /** @brief Render hitboxes for all entities with colliders
    *  @param world World pointer
    *  @param entityScaleX Scale applied to entity coordinates (usually reference scale)
    *  @param entityScaleY Scale applied to entity coordinates
-   *  @param mapScale Scale applied to the map (height-based scaling)
-   *  @param mapOffsetX Horizontal offset applied to the map when rendering (pixels)
    */
   void renderHitboxes(const std::shared_ptr<ecs::World> &world, float entityScaleX = 1.0f,
-                       float entityScaleY = 1.0f, float mapScale = 1.0f, float mapOffsetX = 0.0f);
+                       float entityScaleY = 1.0f);
 
 private:
   /** @brief Fetch static system info once (OS, CPU name, cores, total RAM) */
@@ -154,9 +152,7 @@ private:
   int m_labelWidth = 0; ///< Width of label column (fixed 90px)
   int m_barHeight = 0; ///< Progress bar height
 
-  // Map collision debug overlay
-  ecs::MapCollision m_mapCollision; ///< TMX-based collision parser
-  bool m_mapCollisionLoaded = false; ///< Whether collision data was successfully loaded
+  // Map collision debug overlay (disabled)
   // Layout proportions (percentage of screen)
   static constexpr float PANEL_MARGIN_RATIO = 0.01f; // 1% margin from edge
   static constexpr float LINE_HEIGHT_RATIO = 0.025f; // 2.5% of screen height

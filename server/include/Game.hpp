@@ -87,7 +87,7 @@ public:
   Difficulty currentDifficulty = Difficulty::MEDIUM;
 
 private:
-  void initializeMapCollision(const std::string &levelId);
+  // Map collision initialization removed (feature temporarily disabled)
 
   std::shared_ptr<ecs::World> world;
 
@@ -113,7 +113,7 @@ private:
 
   std::unordered_set<std::uint32_t> m_lobbyClients;
   LobbyManager m_lobbyManager;
-  ecs::Entity m_mapEntity = 0; // Entity holding map collision data
+  // ecs::Entity m_mapEntity = 0; // Entity holding map collision data (removed)
 };
 
 #endif /* !GAME_HPP_ */

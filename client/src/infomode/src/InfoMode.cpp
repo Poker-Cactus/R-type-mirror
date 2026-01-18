@@ -75,15 +75,7 @@ InfoMode::InfoMode(std::shared_ptr<IRenderer> renderer, std::shared_ptr<void> hu
   initStaticSystemInfo();
   updateDynamicSystemInfo();
 
-  // Try to load a TMX collision map if present (client-side debug only)
-  // Path matches server config: server/config/levels.json -> "collision_map"
-  // Default: client/assets/collisions/ruins_map.tmx
-  const std::string collisionPath = "client/assets/collisions/ruins_map.tmx";
-  m_mapCollisionLoaded = m_mapCollision.loadFromFile(collisionPath);
-  if (m_mapCollisionLoaded) {
-    std::cout << "InfoMode: Loaded collision TMX (" << m_mapCollision.mapWidth << "x" << m_mapCollision.mapHeight
-              << ") from " << collisionPath << std::endl;
-  }
+  // Map collision debug overlay disabled for now
 }
 
 void InfoMode::initStaticSystemInfo()
@@ -508,8 +500,7 @@ void InfoMode::setNetworkBandwidth(int uploadBytes, int downloadBytes)
   m_downloadBytes = downloadBytes;
 }
 
-void InfoMode::renderHitboxes(const std::shared_ptr<ecs::World> &world, float entityScaleX, float entityScaleY,
-                             float mapScale, float mapOffsetX)
+void InfoMode::renderHitboxes(const std::shared_ptr<ecs::World> &world, float entityScaleX, float entityScaleY)
 {
   if (!world || !m_isActive) {
     return;
@@ -555,32 +546,7 @@ void InfoMode::renderHitboxes(const std::shared_ptr<ecs::World> &world, float en
     m_renderer->drawRectOutline(x, y, w, h, hitboxColor);
   }
 
-  // Draw map collision overlay (red) if we loaded a TMX collision map
-  if (m_mapCollisionLoaded && !m_mapCollision.collisionData.empty()) {
-    const Color mapCollisionColor = {255, 0, 0, 120};
-    const int tileW = m_mapCollision.tileWidth;
-    const int tileH = m_mapCollision.tileHeight;
-    const int mapW = m_mapCollision.mapWidth;
-    const int mapH = m_mapCollision.mapHeight;
-
-    for (int ty = 0; ty < mapH; ++ty) {
-      for (int tx = 0; tx < mapW; ++tx) {
-        int idx = ty * mapW + tx;
-        if (idx < 0 || idx >= static_cast<int>(m_mapCollision.collisionData.size()))
-          continue;
-        if (m_mapCollision.collisionData[idx] == 0)
-          continue;
-
-        // Compute screen rectangle using mapScale and horizontal offset
-        int sx = static_cast<int>(tx * tileW * mapScale + mapOffsetX);
-        int sy = static_cast<int>(ty * tileH * mapScale);
-        int sw = static_cast<int>(tileW * mapScale);
-        int sh = static_cast<int>(tileH * mapScale);
-
-        m_renderer->drawRect(sx, sy, sw, sh, mapCollisionColor);
-      }
-    }
-  }
+  // Map overlay disabled
 }
 
 } // namespace rtype

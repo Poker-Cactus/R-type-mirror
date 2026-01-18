@@ -5,7 +5,6 @@
       "id": "level_1",
       "name": "First Contact",
       "map": "client/assets/ruins_map.png",
-      "collision_map": "client/assets/collisions/ruins_map.tmx",
       "waves": [
         {
           "id": "wave_1",
@@ -130,7 +129,6 @@
       "id": "level_2",
       "name": "Escalation",
       "map": "",
-      "collision_map": "",
       "waves": [
         {
           "id": "wave_1",
