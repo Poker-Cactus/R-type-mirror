@@ -11,6 +11,7 @@
 #include "../Entity.hpp"
 #include "IEvent.hpp"
 #include <cstdint>
+#include <string>
 #include <vector>
 
 namespace ecs
