@@ -176,8 +176,6 @@ bool Game::init()
           auto &scores = msg["scores"];
           for (const auto &entry : scores) {
             if (entry.contains("client_id") && entry.contains("score")) {
-              int clientId = entry["client_id"];
-              int score = entry["score"];
               // If this is our client id, persist to highscores
               // We don't know our assigned client id here, so rely on Menu->Highscore addition when appropriate
             }

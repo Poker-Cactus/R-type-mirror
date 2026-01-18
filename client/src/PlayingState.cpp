@@ -613,8 +613,8 @@ void PlayingState::render()
             }
           }
           // Apply transform scale to sprite dimensions AND screen scaling
-          int scaledWidth = static_cast<int>(sprite.width * transformComponent.scale * m_scaleX);
-          int scaledHeight = static_cast<int>(sprite.height * transformComponent.scale * m_scaleY);
+          int scaledWidth = static_cast<int>(sprite.width * renderScale * m_scaleX);
+          int scaledHeight = static_cast<int>(sprite.height * renderScale * m_scaleY);
 
           // Debug: log animation state for enemy ships
           static float debugTimer = 0.0f;
@@ -825,13 +825,9 @@ void PlayingState::renderHUD()
   }
 
   // Hearts texture properties
-  constexpr int HEARTS_TEXTURE_WIDTH = 33;
-  constexpr float HEART_ROW_HEIGHT = 76.0f / 7.0f; // 11.0 pixels per row, using float for precision
   constexpr int HEARTS_X = 20;
-  const int HEARTS_Y = m_gameHeight + 10; // place hearts inside HUD strip with padding
   constexpr int DISPLAY_SCALE = 2; // Scale up for better visibility
   constexpr Color HUD_TEXT_WHITE = {.r = 255, .g = 255, .b = 255, .a = 255};
-  constexpr int HUD_SCORE_OFFSET_Y = 50;
 
   // Draw life icons if texture is loaded
   int displayLifeW = 0;

@@ -20,8 +20,8 @@
 
 Lobby::Lobby(const std::string &code, std::shared_ptr<INetworkManager> networkManager, bool isSolo,
              AIDifficulty aiDifficulty, GameMode mode)
-    : m_code(code), m_networkManager(std::move(networkManager)), m_isSolo(isSolo), m_aiDifficulty(aiDifficulty),
-      m_gameMode(mode)
+    : m_code(code), m_isSolo(isSolo), m_networkManager(std::move(networkManager)), m_gameMode(mode),
+      m_aiDifficulty(aiDifficulty)
 {
   // Create isolated world for this lobby
   m_world = std::make_shared<ecs::World>();
@@ -521,7 +521,7 @@ void Lobby::spawnAlly()
   sprite.endFrame = 2; // Stay at idle frame
   sprite.loop = false; // Don't loop, stay at idle
   sprite.frameTime = 1.0f; // Not used since no animation
-  sprite.offsetY = 34.4f; // Take sprite sheet from this point
+  sprite.offsetY = 34u; // Take sprite sheet from this point
   m_world->addComponent(ally, sprite);
 
   ecs::Networked networked;

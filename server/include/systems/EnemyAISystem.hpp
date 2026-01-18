@@ -356,9 +356,7 @@ public:
             const float dirX = (shotDx / shotDist) * PROJECTILE_SPEED;
             const float dirY = (shotDy / shotDist) * PROJECTILE_SPEED;
 
-            constexpr float ELITE_SPRITE_WIDTH = 166.0F;
             constexpr float ELITE_SPRITE_HEIGHT = 58.0F;
-            const float enemyWidth = ELITE_SPRITE_WIDTH * transform.scale;
             const float enemyHeight = ELITE_SPRITE_HEIGHT * transform.scale;
 
             const float projectileScale = transform.scale;
@@ -418,7 +416,6 @@ public:
             ecs::Transform muzzleTransform;
             const float muzzleScale = projectileScale; // match projectile height
             const float muzzleWidth = 31.0F * muzzleScale;
-            const float muzzleHeight = 18.0F * muzzleScale;
             muzzleTransform.x = transform.x - muzzleWidth * 1.2F;
             // Align muzzle Y with projectile Y so both are on the same line
             muzzleTransform.y = projTransform.y;
