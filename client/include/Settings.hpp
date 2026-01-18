@@ -39,7 +39,7 @@ public:
   // AUDIO Settings
   int masterVolume = 100; ///< Master volume level (0-100)
   int musicVolume = 100; ///< Music volume level (0-100)
-  int sfxVolume = 100; ///< Sound effects volume level (0-100)
+  int sfxVolume = 40; ///< Sound effects volume level (0-100)
 
   // CONTROL Settings
   int up = KeyCode::KEY_UP; ///< Key binding for moving up

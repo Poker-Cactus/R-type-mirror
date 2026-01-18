@@ -21,6 +21,7 @@
 #include <string>
 
 class Settings;
+class AudioManager;
 
 /**
  * @class Menu
@@ -37,8 +38,9 @@ public:
    * @brief Construct the menu system
    * @param renderer Pointer to the renderer interface
    * @param settings Reference to game settings
+   * @param audioManager Shared pointer to audio manager
    */
-  Menu(std::shared_ptr<IRenderer> renderer, Settings &settings);
+  Menu(std::shared_ptr<IRenderer> renderer, Settings &settings, std::shared_ptr<AudioManager> audioManager);
   ~Menu();
 
   /**
@@ -196,7 +198,7 @@ private:
   void *moonBack = nullptr; ///< Back layer texture
 
   void *menu_font = nullptr;
-  void *menuMusic;
+  std::shared_ptr<AudioManager> m_audioManager;
   Difficulty currentDifficulty = Difficulty::MEDIUM;
   GameMode currentGameMode = GameMode::CLASSIC;
   MenuState currentState = MenuState::INTRO; ///< Current menu state

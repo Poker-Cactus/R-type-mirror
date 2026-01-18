@@ -109,6 +109,19 @@ bool Game::init()
     }
     renderer->setWindowTitle("ChaD");
 
+    // Initialize audio manager
+    m_audioManager = std::make_shared<AudioManager>(renderer);
+    if (!m_audioManager->init()) {
+      std::cerr << "[Game::init] WARNING: Audio manager initialization failed" << '\n';
+    }
+
+    // Apply volume settings from config
+    std::cout << "[Game::init] Applying volume settings - Master: " << settings.masterVolume
+              << ", Music: " << settings.musicVolume << ", SFX: " << settings.sfxVolume << '\n';
+    m_audioManager->setMasterVolume(settings.masterVolume);
+    m_audioManager->setMusicVolume(settings.musicVolume);
+    m_audioManager->setSfxVolume(settings.sfxVolume);
+
     // Start the game in fullscreen by default
     try {
       renderer->setFullscreen(true);
@@ -116,7 +129,7 @@ bool Game::init()
       std::cerr << "[Game::init] Warning: failed to set fullscreen: " << e.what() << '\n';
     }
 
-    menu = std::make_unique<Menu>(renderer, settings);
+    menu = std::make_unique<Menu>(renderer, settings, m_audioManager);
     menu->init();
 
     m_world = std::make_shared<ecs::World>();
@@ -173,8 +186,8 @@ bool Game::init()
         std::cout << "[Game] Game started callback triggered - transitioning to PLAYING" << '\n';
         // Ensure the playing state exists and is initialized (recreate after death)
         if (!this->playingState) {
-          this->playingState =
-            std::make_unique<PlayingState>(this->renderer, this->m_world, this->settings, this->m_networkManager);
+          this->playingState = std::make_unique<PlayingState>(this->renderer, this->m_world, this->settings,
+                                                              this->m_networkManager, this->m_audioManager);
           if (!this->playingState->init()) {
             std::cerr << "[Game] Failed to initialize playing state on game_started" << '\n';
             // Fallback to menu if we cannot initialize rendering state
@@ -195,6 +208,12 @@ bool Game::init()
         }
 
         this->currentState = GameState::PLAYING;
+
+        // Stop menu music and start level music
+        if (this->m_audioManager) {
+          this->m_audioManager->playMusic("level1_music", true);
+        }
+
         // Send current viewport to server immediately after the game starts
         // so the server records the correct client viewport for the playing session.
         this->sendViewportToServer();
@@ -209,7 +228,7 @@ bool Game::init()
         });
     }
 
-    playingState = std::make_unique<PlayingState>(renderer, m_world, settings, m_networkManager);
+    playingState = std::make_unique<PlayingState>(renderer, m_world, settings, m_networkManager, m_audioManager);
     if (!playingState->init()) {
       std::cerr << "Failed to initialize playing state" << '\n';
       return false;
@@ -272,6 +291,11 @@ void Game::shutdown()
   if (playingState) {
     playingState->cleanup();
     playingState.reset();
+  }
+
+  if (m_audioManager) {
+    m_audioManager->cleanup();
+    m_audioManager.reset();
   }
 
   if (menu) {
@@ -747,6 +771,11 @@ void Game::handlePlayingStateInput()
 
   if (playingState && playingState->shouldReturnToMenu()) {
     std::cout << "[Game] Player died - returning to menu" << '\n';
+
+    // Resume menu music when returning to menu
+    if (m_audioManager) {
+      m_audioManager->playMusic("menu_music", true);
+    }
 
     // Save highscore if in solo mode
     if (playingState->isSolo() && lobbyRoomState) {

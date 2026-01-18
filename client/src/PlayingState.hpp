@@ -12,6 +12,10 @@
 #include "infomode/include/InfoMode.hpp"
 #include <memory>
 #include <unordered_map>
+#include <unordered_set>
+
+// Forward declarations
+class AudioManager;
 
 /**
  * @class PlayingState
@@ -33,9 +37,10 @@ public:
    * @param world Shared pointer to ECS world
    * @param settings Game settings reference
    * @param networkManager Network manager for stats
+   * @param audioManager Audio manager for sounds and music
    */
   PlayingState(std::shared_ptr<IRenderer> renderer, const std::shared_ptr<ecs::World> &world, Settings &settings,
-               std::shared_ptr<INetworkManager> networkManager);
+               std::shared_ptr<INetworkManager> networkManager, std::shared_ptr<AudioManager> audioManager);
   ~PlayingState();
 
   /**
@@ -142,6 +147,17 @@ private:
 
   std::unordered_map<std::uint32_t, void *> m_spriteTextures; ///< Sprite texture cache
 
+  // Client-side visual state for brocolis eclosion (visual only — authoritative state remains on server)
+  struct BrocolisEclosionState {
+    bool active = false;
+    float timer = 0.0f; // elapsed time since eclosion started
+    float duration = 3.0f; // seconds to hatch (matches server)
+    float startScale = 0.1f; // initial small scale
+    float targetScale = 1.0f; // expected scale when hatched
+    float currentScale = 0.1f; // scale used for rendering
+  };
+  std::unordered_map<ecs::Entity, BrocolisEclosionState> m_brocolisEclosions;
+
   /**
    * @brief Load sprite textures into cache
    */
@@ -205,4 +221,41 @@ private:
   float m_pingTimer = 0.0f; ///< Timer for sending pings
 
   bool m_isSpectator = false; ///< Spectator mode flag
+
+  // Audio
+  std::shared_ptr<AudioManager> m_audioManager; ///< Audio manager for sounds and music
+
+  // Input state tracking for sound effects
+  bool m_prevShootPressed = false; ///< Previous shoot key state
+  bool m_prevChargedShootPressed = false; ///< Previous charged shoot key state
+  float m_chargedShotSoundTimer = -1.0f; ///< Timer to delay charged shot sound by 1 second
+
+  // Entity tracking for sound effects
+  std::unordered_set<ecs::Entity> m_previousEnemies; ///< Track enemies from previous frame
+  int m_previousEnemyCount = 0; ///< Track enemy count from previous frame
+
+  /**
+   * @brief Load sound effects
+   */
+  void loadSounds();
+
+  /**
+   * @brief Free sound effects
+   */
+  void freeSounds();
+
+  /**
+   * @brief Load level music
+   */
+  void loadMusic();
+
+  /**
+   * @brief Free level music
+   */
+  void freeMusic();
+
+  /**
+   * @brief Update sound effects based on game events
+   */
+  void updateSounds();
 };

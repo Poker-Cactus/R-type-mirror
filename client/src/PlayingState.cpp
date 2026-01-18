@@ -9,6 +9,7 @@
 #include "../../engineCore/include/ecs/components/Collider.hpp"
 #include "../../engineCore/include/ecs/components/Health.hpp"
 #include "../../engineCore/include/ecs/components/Networked.hpp"
+#include "../../engineCore/include/ecs/components/Owner.hpp"
 #include "../../engineCore/include/ecs/components/Pattern.hpp"
 #include "../../engineCore/include/ecs/components/PlayerId.hpp"
 #include "../../engineCore/include/ecs/components/Score.hpp"
@@ -17,6 +18,7 @@
 #include "../../engineCore/include/ecs/components/Velocity.hpp"
 #include "../../network/include/AsioClient.hpp"
 #include "../include/AssetPath.hpp"
+#include "../include/AudioManager.hpp"
 #include "../include/systems/NetworkSendSystem.hpp"
 #include "../interface/Geometry.hpp"
 #include "../interface/KeyCodes.hpp"
@@ -26,9 +28,10 @@
 #include <nlohmann/json.hpp>
 
 PlayingState::PlayingState(std::shared_ptr<IRenderer> renderer, const std::shared_ptr<ecs::World> &world,
-                           Settings &settings, std::shared_ptr<INetworkManager> networkManager)
+                           Settings &settings, std::shared_ptr<INetworkManager> networkManager,
+                           std::shared_ptr<AudioManager> audioManager)
     : renderer(std::move(renderer)), world(world), background(nullptr), settings(settings),
-      m_networkManager(networkManager)
+      m_networkManager(networkManager), m_audioManager(std::move(audioManager))
 {
 }
 
@@ -213,6 +216,58 @@ void PlayingState::update(float delta_time)
   // Update HUD data from world state
   updateHUDFromWorld(delta_time);
 
+  // Update charged shot sound timer
+  if (m_chargedShotSoundTimer > 0.0f) {
+    m_chargedShotSoundTimer -= delta_time;
+    if (m_chargedShotSoundTimer <= 0.0f && m_audioManager) {
+      m_audioManager->playSound("charged_shot");
+      m_chargedShotSoundTimer = -1.0f; // Reset timer
+    }
+  }
+
+  // Detect enemy deaths and play explosion sound
+  if (world != nullptr && m_audioManager) {
+    // Track current enemies
+    std::unordered_set<ecs::Entity> currentEnemies;
+
+    // Get all enemies (entities with Pattern component)
+    ecs::ComponentSignature enemySig;
+    enemySig.set(ecs::getComponentId<ecs::Pattern>());
+    enemySig.set(ecs::getComponentId<ecs::Health>());
+    std::vector<ecs::Entity> enemies;
+    world->getEntitiesWithSignature(enemySig, enemies);
+
+    for (const auto &enemy : enemies) {
+      currentEnemies.insert(enemy);
+    }
+
+    // Count how many enemies died (simple count-based detection)
+    int currentEnemyCount = static_cast<int>(currentEnemies.size());
+    if (m_previousEnemyCount > 0 && currentEnemyCount < m_previousEnemyCount) {
+      // At least one enemy died - play explosion sound
+      int enemiesDied = m_previousEnemyCount - currentEnemyCount;
+      // Play sound for each enemy that died (limited to avoid sound spam)
+      for (int i = 0; i < enemiesDied && i < 3; i++) {
+        m_audioManager->playSound("enemy_explosion");
+      }
+    }
+
+    // Also check for individual enemies that disappeared
+    for (const auto &prevEnemy : m_previousEnemies) {
+      if (currentEnemies.find(prevEnemy) == currentEnemies.end()) {
+        // This specific enemy died
+        if (currentEnemyCount >= m_previousEnemyCount) {
+          // Only play if count-based detection didn't already trigger
+          m_audioManager->playSound("enemy_explosion");
+        }
+      }
+    }
+
+    // Update tracking for next frame
+    m_previousEnemies = std::move(currentEnemies);
+    m_previousEnemyCount = currentEnemyCount;
+  }
+
   // Update info mode
   if (m_infoMode) {
     m_infoMode->update();
@@ -333,6 +388,34 @@ void PlayingState::render()
           frameWidth = 549 / 7; // 78px per frame
           frameHeight = 72;
           break;
+        case ecs::SpriteId::BOSS_DOBKERATOP_SHOOT:
+          frameWidth = 34;
+          frameHeight = 34;
+          break;
+        case ecs::SpriteId::BOSS_EVANGELIC:
+          frameWidth = 65;
+          frameHeight = 74;
+          break;
+        case ecs::SpriteId::BOSS_EVANGELIC_SHOOT:
+          frameWidth = 32; // 197 / 6 frames ≈ 32.83, arrondi à 32
+          frameHeight = 30;
+          break;
+        case ecs::SpriteId::BOSS_BROCOLIS:
+          frameWidth = 33;
+          frameHeight = 34;
+          break;
+        case ecs::SpriteId::BOSS_DOBKERATOP:
+          frameWidth = 184; // 155 pixels / 4 frames, arrondi supérieur pour éviter débordement
+          frameHeight = 146;
+          break;
+        case ecs::SpriteId::BOSS_BROCOLIS_SHOOT:
+          frameWidth = 33;
+          frameHeight = 31;
+          break;
+        case ecs::SpriteId::BOSS_BROCOLIS_ECLOSION:
+          frameWidth = 33;
+          frameHeight = 34;
+          break;
         case ecs::SpriteId::DRONE:
         case ecs::SpriteId::BUBBLE:
         case ecs::SpriteId::BUBBLE_TRIPLE:
@@ -449,13 +532,49 @@ void PlayingState::render()
             // Triple projectile direction sprites: single image per file
             srcX = 0;
             srcY = 0;
+          } else if (sprite.spriteId >= ecs::SpriteId::BOSS_DOBKERATOP) {
+            // For player ship and other standard sprites: use currentFrame
+            srcX = sprite.currentFrame * frameWidth;
+            srcY = 0;
+          } else if (sprite.spriteId >= ecs::SpriteId::BOSS_EVANGELIC) {
+            // For player ship and other standard sprites: use currentFrame
+            srcX = sprite.currentFrame * frameWidth;
+            srcY = 0;
+          } else if (sprite.spriteId >= ecs::SpriteId::BOSS_EVANGELIC_SHOOT) {
+            // For player ship and other standard sprites: use currentFrame
+            srcX = sprite.currentFrame * frameWidth;
+            srcY = 0;
+          } else if (sprite.spriteId >= ecs::SpriteId::BOSS_DOBKERATOP_SHOOT) {
+            // For player ship and other standard sprites: use currentFrame
+            srcX = sprite.currentFrame * frameWidth;
+            srcY = 0;
+          } else if (sprite.spriteId >= ecs::SpriteId::BOSS_BROCOLIS) {
+            // For player ship and other standard sprites: use currentFrame
+            srcX = sprite.currentFrame * frameWidth;
+            srcY = 0;
+          } else if (sprite.spriteId >= ecs::SpriteId::BOSS_BROCOLIS_SHOOT) {
+            // For player ship and other standard sprites: use currentFrame
+            srcX = sprite.currentFrame * frameWidth;
+            srcY = 0;
+          } else if (sprite.spriteId >= ecs::SpriteId::BOSS_BROCOLIS_ECLOSION) {
+            // For player ship and other standard sprites: use currentFrame
+            srcX = sprite.currentFrame * frameWidth;
+            srcY = 0;
           } else {
             // For Ruban and other sprites: use offsetX/offsetY/row if present
             srcX = static_cast<int>(sprite.offsetX) + (sprite.currentFrame * frameWidth);
             srcY = static_cast<int>(sprite.offsetY) + (sprite.row * frameHeight);
           }
 
-          // Apply transform scale to sprite dimensions AND screen scaling
+          // Apply transform scale to sprite dimensions
+          float renderScale = transformComponent.scale;
+          if (sprite.spriteId == ecs::SpriteId::BOSS_BROCOLIS_ECLOSION) {
+            auto it = m_brocolisEclosions.find(entity);
+            if (it != m_brocolisEclosions.end() && it->second.active) {
+              renderScale = it->second.currentScale;
+            }
+          }
+                    // Apply transform scale to sprite dimensions AND screen scaling
           int scaledWidth = static_cast<int>(sprite.width * transformComponent.scale * m_scaleX);
           int scaledHeight = static_cast<int>(sprite.height * transformComponent.scale * m_scaleY);
 
@@ -588,9 +707,16 @@ void PlayingState::render()
         color = COLOR_PROJECTILE_YELLOW;
         break;
       case ecs::SpriteId::ENEMY_ROBOT:
+      case ecs::SpriteId::BOSS_DOBKERATOP:
+      case ecs::SpriteId::BOSS_EVANGELIC:
+      case ecs::SpriteId::BOSS_BROCOLIS_ECLOSION:
+      case ecs::SpriteId::BOSS_BROCOLIS:
         color = COLOR_ENEMY_YELLOW;
         break;
+      case ecs::SpriteId::BOSS_DOBKERATOP_SHOOT:
       case ecs::SpriteId::ROBOT_PROJECTILE:
+      case ecs::SpriteId::BOSS_BROCOLIS_SHOOT:
+      case ecs::SpriteId::BOSS_EVANGELIC_SHOOT:
         color = COLOR_PROJECTILE_YELLOW;
         break;
       case ecs::SpriteId::PROJECTILE:
@@ -747,6 +873,36 @@ void PlayingState::updateAnimations(float deltaTime)
         } else if (sprite.loop) {
           sprite.currentFrame = sprite.startFrame; // Loop back
         }
+      }
+    }
+
+    // --- Client-side eclosion smoothing (visual only) ---
+    // When server tells us an entity is in BOSS_BROCOLIS_ECLOSION we locally tween the render scale
+    // so the hatch appears smooth even across network updates. We do NOT change authoritative
+    // game state here — only the visual scale used for rendering.
+    if (sprite.spriteId == ecs::SpriteId::BOSS_BROCOLIS_ECLOSION) {
+      // Ensure we have a transform to read baseline values
+      if (world->hasComponent<ecs::Transform>(entity)) {
+        auto &transform = world->getComponent<ecs::Transform>(entity);
+        auto &st = m_brocolisEclosions[entity];
+        if (!st.active) {
+          st.active = true;
+          st.timer = 0.0f;
+          st.startScale = transform.scale; // usually 0.1f from server
+          st.targetScale = std::max(1.0f, st.startScale); // fallback target if we don't know better
+          st.currentScale = st.startScale;
+        }
+
+        st.timer += deltaTime;
+        const float progress = std::clamp(st.timer / st.duration, 0.0f, 1.0f);
+        const float eased = progress * progress * (3.0f - 2.0f * progress); // smoothstep
+        st.currentScale = st.startScale + (st.targetScale - st.startScale) * eased;
+      }
+    } else {
+      // Not eclosing: ensure no stale state
+      auto it = m_brocolisEclosions.find(entity);
+      if (it != m_brocolisEclosions.end()) {
+        m_brocolisEclosions.erase(it);
       }
     }
   }
@@ -928,6 +1084,19 @@ void PlayingState::processInput()
     m_isSpectator = !m_isSpectator;
     std::cout << "[PlayingState] Spectator mode toggled: " << (m_isSpectator ? "ON" : "OFF") << std::endl;
   }
+  // Check for shoot key press and play sound on press (not hold)
+  bool shootPressed = renderer->isKeyPressed(settings.shoot);
+  if (shootPressed && !m_prevShootPressed && m_audioManager) {
+    m_audioManager->playSound("base_shot");
+  }
+  m_prevShootPressed = shootPressed;
+
+  // Check for charged shoot key press and start timer for delayed sound (1 second)
+  bool chargedShootPressed = renderer->isKeyPressed(settings.chargedShoot);
+  if (chargedShootPressed && !m_prevChargedShootPressed) {
+    m_chargedShotSoundTimer = 1.0f; // Start 1 second timer
+  }
+  m_prevChargedShootPressed = chargedShootPressed;
 
   if (renderer->isKeyPressed(settings.up)) {
     m_returnUp = true;
@@ -1424,7 +1593,7 @@ void PlayingState::loadSpriteTextures()
     std::cerr << "[PlayingState] ✗ Failed to load loadChargedShot.png: " << e.what() << '\n';
   }
 
-  // DEATH_ANIM = 65 (spritesheet: 586x94, 6 frames)
+  // DEATH_ANIM = 66 (spritesheet: 586x94, 6 frames)
   try {
     void *death_anim_tex = renderer->loadTexture("client/assets/sprites/death_anim.png");
     if (death_anim_tex != nullptr) {
@@ -1435,6 +1604,97 @@ void PlayingState::loadSpriteTextures()
     }
   } catch (const std::exception &e) {
     std::cerr << "[PlayingState] ✗ Failed to load death_anim.png: " << e.what() << '\n';
+  }
+
+  // BOSS_ANIM = 65 (spritesheet: 586x94, 6 frames)
+  try {
+    void *boss_anim_tex = renderer->loadTexture("client/assets/boss/boss_dobkeratops.png");
+    if (boss_anim_tex != nullptr) {
+      m_spriteTextures[ecs::SpriteId::BOSS_DOBKERATOP] = boss_anim_tex;
+      std::cout << "[PlayingState] ✓ Loaded BOSS_anim.png" << '\n';
+    } else {
+      std::cerr << "[PlayingState] ✗ Failed to load BOSS_anim.png (returned null)" << '\n';
+    }
+  } catch (const std::exception &e) {
+    std::cerr << "[PlayingState] ✗ Failed to load BOSS_anim.png: " << e.what() << '\n';
+  }
+
+  // BOSS_ANIM = 65 (spritesheet: 586x94, 6 frames)
+  try {
+    void *boss_shoot_anim_tex = renderer->loadTexture("client/assets/r-typesheet30a.gif");
+    if (boss_shoot_anim_tex != nullptr) {
+      m_spriteTextures[ecs::SpriteId::BOSS_DOBKERATOP_SHOOT] = boss_shoot_anim_tex;
+      std::cout << "[PlayingState] ✓ Loaded BOSS_anim.png" << '\n';
+    } else {
+      std::cerr << "[PlayingState] ✗ Failed to load BOSS_anim.png (returned null)" << '\n';
+    }
+  } catch (const std::exception &e) {
+    std::cerr << "[PlayingState] ✗ Failed to load BOSS_anim.png: " << e.what() << '\n';
+  }
+
+  // BOSS_ANIM = 65 (spritesheet: 586x94, 6 frames)
+  try {
+    void *boss_anim_tex = renderer->loadTexture("client/assets/boss/boss_brocolis.png");
+    if (boss_anim_tex != nullptr) {
+      m_spriteTextures[ecs::SpriteId::BOSS_BROCOLIS] = boss_anim_tex;
+      std::cout << "[PlayingState] ✓ Loaded BOSS_anim.png" << '\n';
+    } else {
+      std::cerr << "[PlayingState] ✗ Failed to load BOSS_anim.png (returned null)" << '\n';
+    }
+  } catch (const std::exception &e) {
+    std::cerr << "[PlayingState] ✗ Failed to load BOSS_anim.png: " << e.what() << '\n';
+  }
+
+  // BOSS_ANIM = 65 (spritesheet: 586x94, 6 frames)
+  try {
+    void *boss_anim_tex = renderer->loadTexture("client/assets/boss/boss_brocolis_shoot.png");
+    if (boss_anim_tex != nullptr) {
+      m_spriteTextures[ecs::SpriteId::BOSS_BROCOLIS_SHOOT] = boss_anim_tex;
+      std::cout << "[PlayingState] ✓ Loaded BOSS_anim.png" << '\n';
+    } else {
+      std::cerr << "[PlayingState] ✗ Failed to load BOSS_anim.png (returned null)" << '\n';
+    }
+  } catch (const std::exception &e) {
+    std::cerr << "[PlayingState] ✗ Failed to load BOSS_anim.png: " << e.what() << '\n';
+  }
+
+  // BOSS_ANIM = 65 (spritesheet: 586x94, 6 frames)
+  try {
+    void *boss_anim_tex = renderer->loadTexture("client/assets/boss/boss_brocolis_eclosion.png");
+    if (boss_anim_tex != nullptr) {
+      m_spriteTextures[ecs::SpriteId::BOSS_BROCOLIS_ECLOSION] = boss_anim_tex;
+      std::cout << "[PlayingState] ✓ Loaded BOSS_anim.png" << '\n';
+    } else {
+      std::cerr << "[PlayingState] ✗ Failed to load BOSS_anim.png (returned null)" << '\n';
+    }
+  } catch (const std::exception &e) {
+    std::cerr << "[PlayingState] ✗ Failed to load BOSS_anim.png: " << e.what() << '\n';
+  }
+
+  // New: boss_goblins_shoot_down (non-animated, used for projectiles originating from bottom)
+  try {
+    void *boss_anim_tex_down = renderer->loadTexture("client/assets/boss/boss_evangelic.png");
+    if (boss_anim_tex_down != nullptr) {
+      m_spriteTextures[ecs::SpriteId::BOSS_EVANGELIC] = boss_anim_tex_down;
+      std::cout << "[PlayingState] ✓ Loaded boss_goblins_shoot_down.png" << '\n';
+    } else {
+      std::cerr << "[PlayingState] ✗ Failed to load boss_goblins_shoot_down.png (returned null)" << '\n';
+    }
+  } catch (const std::exception &e) {
+    std::cerr << "[PlayingState] ✗ Failed to load boss_goblins_shoot_down.png: " << e.what() << '\n';
+  }
+
+  // New: boss_goblins_shoot_down (non-animated, used for projectiles originating from bottom)
+  try {
+    void *boss_anim_tex_down = renderer->loadTexture("client/assets/boss/boss_evangelic_shoot.png");
+    if (boss_anim_tex_down != nullptr) {
+      m_spriteTextures[ecs::SpriteId::BOSS_EVANGELIC_SHOOT] = boss_anim_tex_down;
+      std::cout << "[PlayingState] ✓ Loaded boss_goblins_shoot_down.png" << '\n';
+    } else {
+      std::cerr << "[PlayingState] ✗ Failed to load boss_goblins_shoot_down.png (returned null)" << '\n';
+    }
+  } catch (const std::exception &e) {
+    std::cerr << "[PlayingState] ✗ Failed to load boss_goblins_shoot_down.png: " << e.what() << '\n';
   }
 }
 

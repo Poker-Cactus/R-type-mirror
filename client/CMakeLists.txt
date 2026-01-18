@@ -5,6 +5,7 @@ add_executable(client
     src/Game.cpp
     src/Settings.cpp
     src/ChatUI.cpp
+    src/AudioManager.cpp
     src/helper/KeyToLabel.cpp
     src/Menu.cpp
     src/Menu/ProcessInputMenu.cpp

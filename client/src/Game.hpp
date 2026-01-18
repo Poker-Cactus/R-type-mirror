@@ -8,6 +8,7 @@
 #include "../../engineCore/include/ecs/components/Input.hpp"
 #include "../../network/include/AsioClient.hpp"
 #include "../ModuleLoader.hpp"
+#include "../include/AudioManager.hpp"
 #include "../include/Settings.hpp"
 #include "../include/systems/NetworkReceiveSystem.hpp"
 #include "../include/systems/NetworkSendSystem.hpp"
@@ -132,4 +133,12 @@ private:
   ColorBlindMode currentColorBlindMode = ColorBlindMode::NONE;
   HighscoreManager highscoreManager;
   std::unique_ptr<ChatUI> m_chatUI;
+  std::shared_ptr<AudioManager> m_audioManager;
+
+public:
+  /**
+   * @brief Get the audio manager
+   * @return Shared pointer to audio manager
+   */
+  std::shared_ptr<AudioManager> getAudioManager() const { return m_audioManager; }
 };

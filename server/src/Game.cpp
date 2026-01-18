@@ -44,6 +44,8 @@ Game::Game()
   scoreSystem = &world->registerSystem<server::ScoreSystem>();
   powerupSystem = &world->registerSystem<server::PowerupSystem>();
 
+  world->registerSystem<server::EnemyAISystem>();
+  world->registerSystem<server::AttractionSystem>();
   world->registerSystem<server::FollowerSystem>();
   world->registerSystem<server::RubanAnimationSystem>();
 
