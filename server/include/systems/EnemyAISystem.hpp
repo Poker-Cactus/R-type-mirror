@@ -13,11 +13,13 @@
 #include "../../../engineCore/include/ecs/World.hpp"
 #include "../../../engineCore/include/ecs/components/Attraction.hpp"
 #include "../../../engineCore/include/ecs/components/Collider.hpp"
+#include "../../../engineCore/include/ecs/components/Lifetime.hpp"
 #include "../../../engineCore/include/ecs/components/Networked.hpp"
 #include "../../../engineCore/include/ecs/components/Owner.hpp"
 #include "../../../engineCore/include/ecs/components/Pattern.hpp"
 #include "../../../engineCore/include/ecs/components/PlayerId.hpp"
 #include "../../../engineCore/include/ecs/components/Sprite.hpp"
+#include "../../../engineCore/include/ecs/events/EventListenerHandle.hpp"
 #include "../../../engineCore/include/ecs/events/GameEvents.hpp"
 #include "ecs/ComponentSignature.hpp"
 #include <algorithm>
@@ -570,6 +572,399 @@ public:
           }
         }
 
+      } else if (pattern.patternType == "boss_brocolis_pattern") {
+        struct BrocolisState {
+          bool hasEntered = false; // Pour le Boss : est-il arrivé au centre ?
+          bool isHatching = false; // Pour l'Œuf/Projectile : est-il en train d'éclore ?
+          float hatchingTimer = 0.0F; // Timer pour l'animation d'éclosion
+        };
+        static std::unordered_map<ecs::Entity, BrocolisState> s_brocolisStates;
+        auto &state = s_brocolisStates[entity];
+
+        // Identifier le type d'entité selon son Sprite actuel
+        bool isProjectile = false;
+        bool isHatchingEgg = false;
+
+        if (world.hasComponent<ecs::Sprite>(entity)) {
+          auto &sprite = world.getComponent<ecs::Sprite>(entity);
+          if (sprite.spriteId == ecs::SpriteId::BOSS_BROCOLIS_SHOOT) {
+            isProjectile = true;
+          } else if (sprite.spriteId == ecs::SpriteId::BOSS_BROCOLIS_ECLOSION) {
+            isHatchingEgg = true;
+          }
+        }
+
+        if (isProjectile || isHatchingEgg) {
+          // =========================================================
+          // LOGIQUE DU PROJECTILE / OEUF
+          // 1. Vole vers le joueur (SHOOT)
+          // 2. Si touché -> Devient OEUF (ECLOSION) et s'arrête
+          // 3. Animation ECLOSION -> Spawn Mini Boss
+          // =========================================================
+
+          auto &sprite = world.getComponent<ecs::Sprite>(entity);
+
+          // Cas 1 : C'est un projectile en vol (BOSS_BROCOLIS_SHOOT)
+          if (isProjectile && !state.isHatching) {
+            // Rotation du sprite selon la vélocité (Optionnel, pour le réalisme)
+            if (velocity.dx != 0 || velocity.dy != 0) {
+              // Ajustement simple ou rotation complète via Transform
+            }
+
+            // Vérifier si le projectile a été touché par le joueur (Dégâts reçus)
+            if (world.hasComponent<ecs::Health>(entity)) {
+              const auto &hp = world.getComponent<ecs::Health>(entity);
+              if (hp.hp < hp.maxHp) {
+                // Seuls les projectiles tirés par le BOSS "parent" (grande échelle) peuvent éclore.
+                bool ownerIsParentBoss = false;
+                if (world.hasComponent<ecs::Owner>(entity)) {
+                  const auto &ownerComp = world.getComponent<ecs::Owner>(entity);
+                  if (world.isAlive(ownerComp.ownerId) && world.hasComponent<ecs::Transform>(ownerComp.ownerId) &&
+                      world.hasComponent<ecs::Sprite>(ownerComp.ownerId)) {
+                    const auto &ownerTrans = world.getComponent<ecs::Transform>(ownerComp.ownerId);
+                    const auto &ownerSpr = world.getComponent<ecs::Sprite>(ownerComp.ownerId);
+                    if (ownerSpr.spriteId == ecs::SpriteId::BOSS_BROCOLIS && ownerTrans.scale > 2.0F) {
+                      ownerIsParentBoss = true;
+                    }
+                  }
+                }
+
+                if (!ownerIsParentBoss) {
+                  // Petit boss : ne PAS démarrer l'animation d'éclosion — laisser la destruction normale agir
+                } else {
+                  // TRANSITION : Le projectile est touché, il devient un œuf qui éclot
+                  state.isHatching = true;
+
+                  // 1. Changer le sprite visuel
+                  sprite.spriteId = ecs::SpriteId::BOSS_BROCOLIS_ECLOSION;
+
+                  // 2. Arrêter le mouvement immédiatement
+                  velocity.dx = 0.0F;
+                  velocity.dy = 0.0F;
+
+                  // 3. Configurer l'animation d'éclosion (Ouverture 3 -> 0)
+                  sprite.animated = true;
+                  sprite.reverseAnimation = true;
+                  sprite.startFrame = 0;
+                  sprite.endFrame = 3;
+                  sprite.currentFrame = 3; // Commence fermé
+                  sprite.loop = false;
+                  sprite.frameTime = 0.15F;
+
+                  // 4. Reset Timer
+                  state.hatchingTimer = 0.0F;
+
+                  // 5. Désactiver le Collider ou le mettre en Trigger pour éviter qu'il ne re-prenne des dégâts
+                  // (Optionnel selon votre moteur, ici on laisse mais on ignore les dégâts suivants)
+                }
+              }
+            }
+          }
+          // Cas 2 : C'est un œuf en cours d'éclosion (BOSS_BROCOLIS_ECLOSION)
+          else if (state.isHatching || isHatchingEgg) {
+            // S'assurer que la vélocité reste à 0
+            velocity.dx = 0.0F;
+            velocity.dy = 0.0F;
+
+            // Avancer le timer
+            state.hatchingTimer += deltaTime;
+            constexpr float HATCH_DURATION = 0.6F; // Durée de l'anim
+
+            if (state.hatchingTimer >= HATCH_DURATION) {
+              // FIN DE L'ÉCLOSION -> SPAWN DU MINI BOSS
+
+              ecs::Entity newBoss = world.createEntity();
+
+              // Position
+              ecs::Transform bossTrans;
+              bossTrans.x = transform.x;
+              bossTrans.y = transform.y;
+              bossTrans.scale = 1.5F; // Mini Boss
+              world.addComponent(newBoss, bossTrans);
+
+              // Sprite
+              ecs::Sprite bossSprite;
+              bossSprite.spriteId = ecs::SpriteId::BOSS_BROCOLIS;
+              bossSprite.width = 33;
+              bossSprite.height = 34;
+              bossSprite.animated = true;
+              bossSprite.frameCount = 4;
+              bossSprite.startFrame = 0;
+              bossSprite.endFrame = 3;
+              bossSprite.currentFrame = 0;
+              bossSprite.frameTime = 0.15F;
+              bossSprite.loop = true;
+              world.addComponent(newBoss, bossSprite);
+
+              // Physique
+              ecs::Velocity bossVel;
+              bossVel.dx = 0.0F;
+              bossVel.dy = 0.0F;
+              world.addComponent(newBoss, bossVel);
+
+              ecs::Collider bossCol;
+              bossCol.width = 33.0F * 1.5F;
+              bossCol.height = 34.0F * 1.5F;
+              world.addComponent(newBoss, bossCol);
+
+              // Santé
+              ecs::Health bossHp;
+              bossHp.maxHp = 200;
+              bossHp.hp = 200;
+              world.addComponent(newBoss, bossHp);
+
+              // IA (Récursive)
+              ecs::Pattern bossPat;
+              bossPat.patternType = "boss_brocolis_pattern";
+              bossPat.phase = 0.0F;
+              world.addComponent(newBoss, bossPat);
+
+              ecs::Networked net;
+              net.networkId = newBoss;
+              world.addComponent(newBoss, net);
+
+              // Détruire l'œuf/projectile transformé
+              world.destroyEntity(entity);
+              s_brocolisStates.erase(entity);
+            }
+          }
+
+        } else {
+          // =========================================================
+          // LOGIQUE DU BOSS (Brocolis Mère/Père)
+          // =========================================================
+
+          constexpr float TARGET_ENTER_X = 960.0F;
+          constexpr float TARGET_ENTER_Y = 200.0F;
+          constexpr float ENTER_SPEED = 300.0F;
+          constexpr float ENTER_THRESHOLD = 10.0F;
+
+          if (!state.hasEntered) {
+            // PHASE 1 : ENTRÉE
+            float dx = TARGET_ENTER_X - transform.x;
+            float dy = TARGET_ENTER_Y - transform.y;
+            float dist = std::sqrt(dx * dx + dy * dy);
+
+            if (dist < ENTER_THRESHOLD) {
+              state.hasEntered = true;
+              velocity.dx = 0.0F;
+              velocity.dy = 0.0F;
+              transform.x = TARGET_ENTER_X;
+              transform.y = TARGET_ENTER_Y;
+            } else {
+              velocity.dx = (dx / dist) * ENTER_SPEED;
+              velocity.dy = (dy / dist) * ENTER_SPEED;
+            }
+
+          } else {
+            // PHASE 2 : COMBAT
+            constexpr float PREFERRED_DISTANCE = 600.0F;
+            constexpr float MOVE_SPEED = 200.0F;
+            constexpr float SHOOT_INTERVAL = 5.0F; // Fréquence de tir
+            constexpr float SCREEN_MARGIN = 50.0F;
+
+            // 1. Mouvement (Reste identique : flottement/évitement)
+            std::vector<ecs::Entity> players;
+            ecs::ComponentSignature playerSig;
+            playerSig.set(ecs::getComponentId<ecs::PlayerId>());
+            world.getEntitiesWithSignature(playerSig, players);
+
+            float targetDx = 0.0F;
+            float targetDy = 0.0F;
+
+            if (!players.empty()) {
+              auto &playerPos = world.getComponent<ecs::Transform>(players[0]);
+              float dx = transform.x - playerPos.x;
+              float dy = transform.y - playerPos.y;
+              float dist = std::sqrt(dx * dx + dy * dy);
+
+              if (dist > 0.0F) {
+                dx /= dist;
+                dy /= dist;
+              }
+
+              if (dist < PREFERRED_DISTANCE) {
+                targetDx = dx * MOVE_SPEED;
+                targetDy = dy * MOVE_SPEED;
+              } else {
+                float driftX = std::cos(pattern.phase * 0.5F);
+                float driftY = std::sin(pattern.phase * 0.8F);
+                targetDx = driftX * (MOVE_SPEED * 0.5F);
+                targetDy = driftY * (MOVE_SPEED * 0.5F);
+              }
+            }
+
+            velocity.dx += (targetDx - velocity.dx) * 2.0F * deltaTime;
+            velocity.dy += (targetDy - velocity.dy) * 2.0F * deltaTime;
+
+            if (transform.x < SCREEN_MARGIN && velocity.dx < 0)
+              velocity.dx = -velocity.dx;
+            if (transform.x > 1920.0F - SCREEN_MARGIN && velocity.dx > 0)
+              velocity.dx = -velocity.dx;
+            if (transform.y < SCREEN_MARGIN && velocity.dy < 0)
+              velocity.dy = -velocity.dy;
+            if (transform.y > 1080.0F - SCREEN_MARGIN && velocity.dy > 0)
+              velocity.dy = -velocity.dy;
+
+            // 2. TIR : comportement différent selon taille (parent boss vs mini‑boss)
+            if (transform.scale > 2.0F) {
+              // Parent boss (inchangé)
+              pattern.phase += deltaTime;
+
+              if (pattern.phase >= SHOOT_INTERVAL) {
+                pattern.phase = 0.0F;
+
+                // Trouver le joueur pour viser
+                float shootDirX = 0.0F;
+                float shootDirY = 1.0F; // Par défaut vers le bas
+
+                if (!players.empty()) {
+                  auto &pPos = world.getComponent<ecs::Transform>(players[0]);
+                  float pdx = pPos.x - transform.x;
+                  float pdy = pPos.y - transform.y;
+                  float pdist = std::sqrt(pdx * pdx + pdy * pdy);
+                  if (pdist > 0) {
+                    shootDirX = pdx / pdist;
+                    shootDirY = pdy / pdist;
+                  }
+                }
+
+                ecs::Entity proj = world.createEntity();
+                ecs::Transform projTrans;
+                projTrans.x = transform.x;
+                projTrans.y = transform.y + 40.0F;
+                projTrans.scale = 1.0F;
+                world.addComponent(proj, projTrans);
+
+                // Utilisation du sprite PROJECTILE (SHOOT) au départ
+                ecs::Sprite projSprite;
+                projSprite.spriteId = ecs::SpriteId::BOSS_BROCOLIS_SHOOT;
+                projSprite.width = 33;
+                projSprite.height = 31;
+                projSprite.animated = true;
+                projSprite.frameCount = 4;
+                projSprite.currentFrame = 0;
+                projSprite.startFrame = 0;
+                projSprite.endFrame = 3;
+                projSprite.frameTime = 0.08F;
+                projSprite.animationTimer = 0.0F;
+                projSprite.reverseAnimation = false;
+                projSprite.loop = true;
+                world.addComponent(proj, projSprite);
+
+                // Vélocité vers le joueur
+                constexpr float PROJ_SPEED = 250.0F;
+                ecs::Velocity projVel;
+                projVel.dx = shootDirX * PROJ_SPEED;
+                projVel.dy = shootDirY * PROJ_SPEED;
+                world.addComponent(proj, projVel);
+
+                // Le projectile utilise le MÊME pattern système pour gérer sa transformation
+                ecs::Pattern projPat;
+                projPat.patternType = "boss_brocolis_pattern"; // parent projectiles can hatch
+                world.addComponent(proj, projPat);
+
+                // Santé (Pour détecter si le joueur tire dessus)
+                ecs::Health projHp;
+                projHp.maxHp = 10; // Fragile
+                projHp.hp = 10;
+                world.addComponent(proj, projHp);
+
+                // Collider (Pour faire des dégâts au joueur ET être touché)
+                ecs::Collider projCol;
+                projCol.width = 33.0F;
+                projCol.height = 31.0F;
+                projCol.shape = ecs::Collider::Shape::CIRCLE;
+                world.addComponent(proj, projCol);
+
+                // Owner : Défini pour éviter que le boss ne se blesse lui-même
+                ecs::Owner owner;
+                owner.ownerId = entity;
+                world.addComponent(proj, owner);
+
+                ecs::Networked net;
+                net.networkId = proj;
+                world.addComponent(proj, net);
+              }
+
+            } else if (transform.scale > 1.0F) {
+              // Mini-boss : tire aussi, mais ses projectiles NE DOIVENT PAS éclore
+              constexpr float MINI_SHOOT_INTERVAL = 3.0F; // plus fréquent
+              pattern.phase += deltaTime;
+
+              if (pattern.phase >= MINI_SHOOT_INTERVAL) {
+                pattern.phase = 0.0F;
+
+                // Vise le joueur (même logique)
+                float shootDirX = 0.0F;
+                float shootDirY = 1.0F;
+                if (!players.empty()) {
+                  auto &pPos = world.getComponent<ecs::Transform>(players[0]);
+                  float pdx = pPos.x - transform.x;
+                  float pdy = pPos.y - transform.y;
+                  float pdist = std::sqrt(pdx * pdx + pdy * pdy);
+                  if (pdist > 0) {
+                    shootDirX = pdx / pdist;
+                    shootDirY = pdy / pdist;
+                  }
+                }
+
+                ecs::Entity proj = world.createEntity();
+                ecs::Transform projTrans;
+                projTrans.x = transform.x;
+                projTrans.y = transform.y + 28.0F; // légèrement différent
+                projTrans.scale = 1.0F;
+                world.addComponent(proj, projTrans);
+
+                ecs::Sprite projSprite;
+                projSprite.spriteId = ecs::SpriteId::BOSS_BROCOLIS_SHOOT;
+                projSprite.width = 33;
+                projSprite.height = 31;
+                projSprite.animated = true;
+                projSprite.frameCount = 4;
+                projSprite.currentFrame = 0;
+                projSprite.startFrame = 0;
+                projSprite.endFrame = 3;
+                projSprite.frameTime = 0.08F;
+                projSprite.loop = true;
+                world.addComponent(proj, projSprite);
+
+                // Vitesse et résistance moindres
+                constexpr float PROJ_SPEED_CHILD = 200.0F;
+                ecs::Velocity projVel;
+                projVel.dx = shootDirX * PROJ_SPEED_CHILD;
+                projVel.dy = shootDirY * PROJ_SPEED_CHILD;
+                world.addComponent(proj, projVel);
+
+                // IMPORTANT: utilise le MÊME sprite/pattern mais son owner est un mini-boss
+                // La logique d'éclosion vérifie maintenant l'owner pour décider du comportement.
+                ecs::Pattern projPat;
+                projPat.patternType = "boss_brocolis_pattern";
+                world.addComponent(proj, projPat);
+
+                ecs::Health projHp;
+                projHp.maxHp = 6;
+                projHp.hp = 6;
+                world.addComponent(proj, projHp);
+
+                ecs::Collider projCol;
+                projCol.width = 28.0F;
+                projCol.height = 28.0F;
+                projCol.shape = ecs::Collider::Shape::CIRCLE;
+                world.addComponent(proj, projCol);
+
+                ecs::Owner owner;
+                owner.ownerId = entity;
+                world.addComponent(proj, owner);
+
+                ecs::Networked net;
+                net.networkId = proj;
+                world.addComponent(proj, net);
+              }
+            }
+          }
+        }
+      } else if (pattern.patternType == "boss_goblins") {
       } else {
         // Default or "none" pattern: keep velocity as configured
         // velocity.dx and velocity.dy are already set from config
@@ -628,6 +1023,9 @@ public:
   }
 
 private:
+  // Subscription handle for DamageEvent
+  ecs::EventListenerHandle m_damageHandle;
+
   // AI behavior constants
   static constexpr float ENEMY_MOVE_SPEED = -384.0F;
   static constexpr float OFFSCREEN_DESTROY_X = -100.0F;

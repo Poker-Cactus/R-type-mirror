@@ -11,10 +11,12 @@
 #include "../../../engineCore/include/ecs/Entity.hpp"
 #include "../../../engineCore/include/ecs/ISystem.hpp"
 #include "../../../engineCore/include/ecs/World.hpp"
+#include "../../../engineCore/include/ecs/components/Collider.hpp"
 #include "../../../engineCore/include/ecs/components/Health.hpp"
 #include "../../../engineCore/include/ecs/components/Input.hpp"
 #include "../../../engineCore/include/ecs/components/Lifetime.hpp"
 #include "../../../engineCore/include/ecs/components/Networked.hpp"
+#include "../../../engineCore/include/ecs/components/Pattern.hpp"
 #include "../../../engineCore/include/ecs/components/Sprite.hpp"
 #include "../../../engineCore/include/ecs/components/Transform.hpp"
 #include "../../../engineCore/include/ecs/events/EventListenerHandle.hpp"
@@ -149,6 +151,90 @@ private:
       std::cout << "[DeathSystem] Entity " << event.entity << " died but killer " << event.killer << " is not alive"
                 << std::endl;
     }
+
+    // Special-case: if a boss brocolis projectile/egg was killed by a player, spawn a mini-boss immediately
+    if (world.isAlive(event.killer) && world.hasComponent<ecs::Input>(event.killer) &&
+        world.hasComponent<ecs::Sprite>(event.entity) && world.hasComponent<ecs::Transform>(event.entity)) {
+      const auto &spr = world.getComponent<ecs::Sprite>(event.entity);
+      if (spr.spriteId == ecs::SpriteId::BOSS_BROCOLIS_SHOOT || spr.spriteId == ecs::SpriteId::BOSS_BROCOLIS_ECLOSION) {
+        // Only spawn a mini-boss if the destroyed projectile/egg belonged to a *parent* boss
+        bool ownerIsParentBoss = false;
+        if (world.hasComponent<ecs::Owner>(event.entity)) {
+          const auto &ownerComp = world.getComponent<ecs::Owner>(event.entity);
+          if (world.isAlive(ownerComp.ownerId) && world.hasComponent<ecs::Transform>(ownerComp.ownerId) &&
+              world.hasComponent<ecs::Sprite>(ownerComp.ownerId)) {
+            const auto &ownerTrans = world.getComponent<ecs::Transform>(ownerComp.ownerId);
+            const auto &ownerSpr = world.getComponent<ecs::Sprite>(ownerComp.ownerId);
+            if (ownerSpr.spriteId == ecs::SpriteId::BOSS_BROCOLIS && ownerTrans.scale > 2.0F) {
+              ownerIsParentBoss = true;
+            }
+          }
+        }
+
+        if (!ownerIsParentBoss) {
+          // Do not spawn from mini-boss projectiles
+        } else {
+          const auto &srcTrans = world.getComponent<ecs::Transform>(event.entity);
+
+          ecs::Entity newBoss = world.createEntity();
+
+          // Position
+          ecs::Transform bossTrans;
+          bossTrans.x = srcTrans.x;
+          bossTrans.y = srcTrans.y;
+          bossTrans.rotation = 0.0F;
+          bossTrans.scale = 1.5F; // Mini Boss
+          world.addComponent(newBoss, bossTrans);
+
+          // Sprite
+          ecs::Sprite bossSprite;
+          bossSprite.spriteId = ecs::SpriteId::BOSS_BROCOLIS;
+          bossSprite.width = 33;
+          bossSprite.height = 34;
+          bossSprite.animated = true;
+          bossSprite.frameCount = 4;
+          bossSprite.startFrame = 0;
+          bossSprite.endFrame = 3;
+          bossSprite.currentFrame = 0;
+          bossSprite.frameTime = 0.15F;
+          bossSprite.loop = true;
+          bossSprite.animationTimer = 0.0F;
+          bossSprite.reverseAnimation = false;
+          world.addComponent(newBoss, bossSprite);
+
+          // Physique
+          ecs::Velocity bossVel;
+          bossVel.dx = 0.0F;
+          bossVel.dy = 0.0F;
+          world.addComponent(newBoss, bossVel);
+
+          ecs::Collider bossCol;
+          bossCol.width = 33.0F * 1.5F;
+          bossCol.height = 34.0F * 1.5F;
+          world.addComponent(newBoss, bossCol);
+
+          // Santé
+          ecs::Health bossHp;
+          bossHp.maxHp = 200;
+          bossHp.hp = 200;
+          world.addComponent(newBoss, bossHp);
+
+          // IA (Récursive)
+          ecs::Pattern bossPat;
+          bossPat.patternType = "boss_brocolis_pattern";
+          bossPat.phase = 0.0F;
+          world.addComponent(newBoss, bossPat);
+
+          ecs::Networked net;
+          net.networkId = newBoss;
+          world.addComponent(newBoss, net);
+
+          std::cout << "[DeathSystem] Spawned mini boss brocolis at (" << bossTrans.x << ',' << bossTrans.y
+                    << ") from destroyed projectile\n";
+        }
+      }
+    }
+
     // Notify owning client (if any) that their player died so client can return to menu.
     // Try to find the lobby owning this world and send a direct message.
     Lobby *lobby = getLobbyForWorld(&world);

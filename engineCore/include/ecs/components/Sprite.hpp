@@ -109,7 +109,6 @@ constexpr std::uint32_t BUBBLE_RUBAN1 = 12;
 constexpr std::uint32_t BUBBLE_RUBAN2 = 13;
 constexpr std::uint32_t BUBBLE_RUBAN3 = 14;
 constexpr std::uint32_t TRIPLE_PROJECTILE = 15;
-// Ruban projectile phases 1-24 (xruban_projectile.png format)
 constexpr std::uint32_t RUBAN1_PROJECTILE = 16;
 constexpr std::uint32_t RUBAN2_PROJECTILE = 17;
 constexpr std::uint32_t RUBAN3_PROJECTILE = 18;
@@ -141,33 +140,26 @@ constexpr std::uint32_t LOADING_SHOT = 43;
 constexpr std::uint32_t BOSS_DOBKERATOP = 44;
 constexpr std::uint32_t BOSS_DOBKERATOP_SHOOT = 45;
 constexpr std::uint32_t BOSS_BROCOLIS = 46;
-// constexpr std::uint32_t BOSS_DOBKERATOP_UP = 46;
-// constexpr std::uint32_t BOSS_DOBKERATOP_DOWN = 47;
-
-// Bubble Ruban individual frames (4 frames each for back/middle/front)
-// Back (compressed) frames 1-4
+constexpr std::uint32_t BOSS_BROCOLIS_SHOOT = 47;
+constexpr std::uint32_t BOSS_BROCOLIS_ECLOSION = 48;
+constexpr std::uint32_t BOSS_GOBLINS = 49;
 constexpr std::uint32_t BUBBLE_RUBAN_BACK1 = 50;
 constexpr std::uint32_t BUBBLE_RUBAN_BACK2 = 51;
 constexpr std::uint32_t BUBBLE_RUBAN_BACK3 = 52;
 constexpr std::uint32_t BUBBLE_RUBAN_BACK4 = 53;
-// Middle (neutral) frames 1-4
 constexpr std::uint32_t BUBBLE_RUBAN_MIDDLE1 = 54;
 constexpr std::uint32_t BUBBLE_RUBAN_MIDDLE2 = 55;
 constexpr std::uint32_t BUBBLE_RUBAN_MIDDLE3 = 56;
 constexpr std::uint32_t BUBBLE_RUBAN_MIDDLE4 = 57;
-// Front (stretched) frames 1-4
 constexpr std::uint32_t BUBBLE_RUBAN_FRONT1 = 58;
 constexpr std::uint32_t BUBBLE_RUBAN_FRONT2 = 59;
 constexpr std::uint32_t BUBBLE_RUBAN_FRONT3 = 60;
 constexpr std::uint32_t BUBBLE_RUBAN_FRONT4 = 61;
-
-// Triple projectile direction sprites
 constexpr std::uint32_t TRIPLE_PROJECTILE_RIGHT = 62;
 constexpr std::uint32_t TRIPLE_PROJECTILE_UP = 63;
 constexpr std::uint32_t TRIPLE_PROJECTILE_DOWN = 64;
-
-// Death animation
-constexpr std::uint32_t DEATH_ANIM = 65;
+constexpr std::uint32_t BOSS_GOBLINS_BABY = 65;
+constexpr std::uint32_t DEATH_ANIM = 66; // previously collided with BOSS_GOBLINS_BABY, assign unique id
 } // namespace SpriteId
 
 } // namespace ecs

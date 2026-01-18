@@ -300,6 +300,92 @@
         "dx": -200.0,
         "dy": 0.0
       }
+    },
+    {
+      "collider": {
+        "height": 100.0,
+        "width": 100.0
+      },
+      "description": "BOSS brocolis",
+      "health": {
+        "hp": 40,
+        "maxHp": 40
+      },
+      "id": "boss_brocolis",
+      "name": "boss_brocolis",
+      "pattern": {
+        "amplitude": 0.0,
+        "frequency": 0.0,
+        "type": "boss_brocolis_pattern"
+      },
+      "spawn": {
+        "groupSizeMax": 1,
+        "groupSizeMin": 1,
+        "spawnDelay": 0.0,
+        "spawnInterval": 0.0
+      },
+      "sprite": {
+        "animated": true,
+        "endFrame": 3,
+        "frameCount": 4,
+        "frameTime": 0.3,
+        "height": 34,
+        "loop": true,
+        "reverseAnimation": false,
+        "spriteId": 46,
+        "startFrame": 0,
+        "width": 33
+      },
+      "transform": {
+        "scale": 8.0
+      },
+      "velocity": {
+        "dx": -200.0,
+        "dy": 0.0
+      }
+    },
+    {
+      "collider": {
+        "height": 100.0,
+        "width": 100.0
+      },
+      "description": "BOSS goblins",
+      "health": {
+        "hp": 40,
+        "maxHp": 40
+      },
+      "id": "boss_goblins",
+      "name": "boss_goblins",
+      "pattern": {
+        "amplitude": 0.0,
+        "frequency": 0.0,
+        "type": "boss_goblins_pattern"
+      },
+      "spawn": {
+        "groupSizeMax": 1,
+        "groupSizeMin": 1,
+        "spawnDelay": 0.0,
+        "spawnInterval": 0.0
+      },
+      "sprite": {
+        "animated": true,
+        "endFrame": 4,
+        "frameCount": 5,
+        "frameTime": 0.3,
+        "height": 67,
+        "loop": true,
+        "reverseAnimation": false,
+        "spriteId": 49,
+        "startFrame": 0,
+        "width": 67
+      },
+      "transform": {
+        "scale": 6.0
+      },
+      "velocity": {
+        "dx": -200.0,
+        "dy": 0.0
+      }
     }
   ]
 }

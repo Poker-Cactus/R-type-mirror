@@ -7,12 +7,12 @@
       "waves": [
         {
           "id": "wave_boss",
-          "name": "BOSS FIGHT - Dobkeratops",
+          "name": "BOSS FIGHT",
           "spawns": [
             {
               "count": 1,
               "delay": 0.0,
-              "enemyType": "boss_dobkeratops",
+              "enemyType": "boss_brocolis",
               "spacing": 0.0,
               "x": 1500.0,
               "y": 200.0
