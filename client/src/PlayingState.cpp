@@ -262,6 +262,10 @@ void PlayingState::render()
           frameWidth = 34;
           frameHeight = 28;
           break;
+        case ecs::SpriteId::BOSS_GREEN_MOTHERSHIP_TURRET_SHOT:
+          frameWidth = 16;
+          frameHeight = 16;
+          break;
         case ecs::SpriteId::BOSS_GREEN_MOTHERSHIP_BOOSTER:
           frameWidth = 32;
           frameHeight = 32;
@@ -1603,6 +1607,19 @@ void PlayingState::loadSpriteTextures()
     }
   } catch (const std::exception &e) {
     std::cerr << "[PlayingState] ✗ Failed to load green-mothership turret texture: " << e.what() << '\n';
+  }
+
+  // BOSS_GREEN_MOTHERSHIP_TURRET_SHOT = 71
+  try {
+    void *turret_shot_tex = renderer->loadTexture(resolveAssetPath("client/assets/boss/green-mothership/touret-shot.gif"));
+    if (turret_shot_tex != nullptr) {
+      m_spriteTextures[ecs::SpriteId::BOSS_GREEN_MOTHERSHIP_TURRET_SHOT] = turret_shot_tex;
+      std::cout << "[PlayingState] ✓ Loaded green-mothership turret shot texture" << '\n';
+    } else {
+      std::cerr << "[PlayingState] ✗ Failed to load green-mothership turret shot texture (returned null)" << '\n';
+    }
+  } catch (const std::exception &e) {
+    std::cerr << "[PlayingState] ✗ Failed to load green-mothership turret shot texture: " << e.what() << '\n';
   }
 
   // BOSS_GREEN_MOTHERSHIP_BOOSTER = 72

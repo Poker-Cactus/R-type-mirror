@@ -389,13 +389,13 @@
     },
     {
       "collider": {
-        "height": 181.0,
-        "width": 594.0
+        "height": 52.0,
+        "width": 170.0
       },
       "description": "BOSS green mothership",
       "health": {
-        "hp": 50,
-        "maxHp": 50
+        "hp": 600,
+        "maxHp": 600
       },
       "id": "boss_green_mothership",
       "name": "boss_green_mothership",

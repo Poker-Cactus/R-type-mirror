@@ -1012,16 +1012,15 @@ public:
           
           // Check if cooldown has passed (0.25 seconds)
           if (timerIt->second >= 0.25F) {
-            // Find player position
-            std::vector<ecs::Entity> allEntities;
-            world.getEntitiesWithSignature(ecs::ComponentSignature(), allEntities);
+            // Find player position using efficient signature-based lookup
+            ecs::ComponentSignature playerSig;
+            playerSig.set(ecs::getComponentId<ecs::PlayerId>());
+            std::vector<ecs::Entity> players;
+            world.getEntitiesWithSignature(playerSig, players);
             
             ecs::Entity playerEntity = 0;
-            for (auto ent : allEntities) {
-              if (world.hasComponent<ecs::PlayerId>(ent)) {
-                playerEntity = ent;
-                break;
-              }
+            if (!players.empty()) {
+              playerEntity = players[0]; // Use first player found
             }
             
             if (playerEntity != 0 && world.hasComponent<ecs::Transform>(playerEntity)) {
@@ -1099,16 +1098,15 @@ public:
           
           // Check if shooting cooldown has passed (2 seconds)
           if (shootTimerIt->second >= 2.0F) {
-            // Find player position
-            std::vector<ecs::Entity> allEntities;
-            world.getEntitiesWithSignature(ecs::ComponentSignature(), allEntities);
+            // Find player position using efficient signature-based lookup
+            ecs::ComponentSignature playerSig;
+            playerSig.set(ecs::getComponentId<ecs::PlayerId>());
+            std::vector<ecs::Entity> players;
+            world.getEntitiesWithSignature(playerSig, players);
             
             ecs::Entity playerEntity = 0;
-            for (auto ent : allEntities) {
-              if (world.hasComponent<ecs::PlayerId>(ent)) {
-                playerEntity = ent;
-                break;
-              }
+            if (!players.empty()) {
+              playerEntity = players[0]; // Use first player found
             }
             
             if (playerEntity != 0 && world.hasComponent<ecs::Transform>(playerEntity)) {
