@@ -308,8 +308,8 @@
       },
       "description": "BOSS Dobkeratops",
       "health": {
-        "hp": 500,
-        "maxHp": 500
+        "hp": 1500,
+        "maxHp": 1500
       },
       "id": "boss_dobkeratops",
       "name": "boss_dobkeratops",
@@ -351,8 +351,8 @@
       },
       "description": "BOSS brocolis",
       "health": {
-        "hp": 500,
-        "maxHp": 500
+        "hp": 1500,
+        "maxHp": 1500
       },
       "id": "boss_brocolis",
       "name": "boss_brocolis",
@@ -437,8 +437,8 @@
       },
       "description": "BOSS evangelic",
       "health": {
-        "hp": 500,
-        "maxHp": 500
+        "hp": 1500,
+        "maxHp": 1500
       },
       "id": "boss_evangelic",
       "name": "boss_evangelic",

@@ -228,8 +228,8 @@ private:
 
           // Santé
           ecs::Health bossHp;
-          bossHp.maxHp = 200;
-          bossHp.hp = 200;
+          bossHp.maxHp = 1500;
+          bossHp.hp = 1500;
           world.addComponent(newBoss, bossHp);
 
           // IA (Récursive)
