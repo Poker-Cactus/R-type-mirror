@@ -22,6 +22,8 @@
 #include "../../../engineCore/include/ecs/events/EventListenerHandle.hpp"
 #include "../../../engineCore/include/ecs/events/GameEvents.hpp"
 #include "ecs/ComponentSignature.hpp"
+#include "ecs/components/Transform.hpp"
+#include "ecs/components/Velocity.hpp"
 #include <algorithm>
 #include <cmath>
 #include <random>
