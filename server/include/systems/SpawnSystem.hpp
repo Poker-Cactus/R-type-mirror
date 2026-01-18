@@ -13,6 +13,7 @@
 #include "../../../engineCore/include/ecs/Entity.hpp"
 #include "../../../engineCore/include/ecs/ISystem.hpp"
 #include "../../../engineCore/include/ecs/World.hpp"
+#include "../../../engineCore/include/ecs/components/Attraction.hpp"
 #include "../../../engineCore/include/ecs/components/Collider.hpp"
 #include "../../../engineCore/include/ecs/components/Follower.hpp"
 #include "../../../engineCore/include/ecs/components/GunOffset.hpp"
@@ -467,6 +468,7 @@ public:
             // Spawn just outside the right edge of screen (worldWidth + 100px)
             // Don't add offsetX here - let the delay create natural spacing
             float spawnX = worldWidth + 100.0f;
+            // float spawnX = (spawn.x > 0.0f) ? spawn.x : (worldWidth + 100.0f);
 
             m_spawnQueue.push_back({spawnX, spawn.y + offsetY, individualDelay, spawn.enemyType,
                                     1, // Spawn only 1 enemy per queue entry
