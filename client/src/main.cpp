@@ -24,7 +24,7 @@ static void printUsage(const char *programName)
             << "\n"
             << "Options:\n"
             << "  -h, --help          Display this help message and exit\n"
-            << "  --r RENDERER        Choose renderer module: sdl2 or sfml (default: sdl2)\n"
+            << "  -r RENDERER        Choose renderer module: sdl2 or sfml (default: sdl2)\n"
             << std::endl;
 }
 
@@ -50,13 +50,13 @@ int main(int argc, char **argv)
     if (arg == "-h" || arg == "--help") {
       printUsage(argv[0]);
       return EXIT_SUCCESS;
-    } else if (arg.substr(0, 11) == "--renderer=") {
+    } else if (arg.substr(0, 11) == "-renderer=") {
       rendererType = arg.substr(11);
       if (rendererType != "sdl2" && rendererType != "sfml") {
         std::cerr << "Error: Invalid renderer type '" << rendererType << "'. Must be 'sdl2' or 'sfml'." << std::endl;
         return EXIT_FAILURE;
       }
-    } else if (arg == "--r") {
+    } else if (arg == "-r") {
       if (i + 1 < argc) {
         rendererType = argv[++i];
         if (rendererType != "sdl2" && rendererType != "sfml") {
@@ -64,7 +64,7 @@ int main(int argc, char **argv)
           return EXIT_FAILURE;
         }
       } else {
-        std::cerr << "Error: --r requires a value (sdl2 or sfml)." << std::endl;
+        std::cerr << "Error: -r requires a value (sdl2 or sfml)." << std::endl;
         return EXIT_FAILURE;
       }
     } else if (host == "127.0.0.1" && arg.find('.') != std::string::npos) {

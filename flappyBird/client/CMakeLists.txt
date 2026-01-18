@@ -3,6 +3,7 @@ project(flappybird_client)
 add_executable(flappybird_client
     src/main.cpp
     src/Game.cpp
+    src/Menu.cpp
 )
 
 target_include_directories(flappybird_client PRIVATE

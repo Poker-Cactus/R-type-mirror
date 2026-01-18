@@ -6,11 +6,13 @@
 */
 
 #include "Game.hpp"
+#include <chrono>
+#include <exception>
 #include <vector>
 
 Game::Game()
     : module(nullptr), renderer(nullptr), isRunning(false), currentState(GameState::MENU), m_serverHost("127.0.0.1"),
-      m_serverPort("4242"), m_rendererType("sfml")
+      m_serverPort("4243"), m_rendererType("sfml")
 {
 }
 
@@ -26,83 +28,103 @@ Game::Game(const std::string &host, const std::string &port, const std::string &
 {
 }
 
-Game::~Game() {
-    shutdown();
+Game::~Game()
+{
+  shutdown();
 }
 
-bool Game::init() {
-    std::vector<std::string> modulePaths;
-    std::vector<std::string> basePaths = { "sdl2_module.so", "libs/sdl2_module.so", "./build/libs/sdl2_module.so",
-      "sfml_module.so", "libs/sfml_module.so", "./build/libs/sfml_module.so",
-      "../libs/sdl2_module.so", "../libs/sfml_module.so" };
+bool Game::init()
+{
+  std::vector<std::string> modulePaths;
+  std::vector<std::string> basePaths = {
+    "../../libs/sdl2_module.so",   "../../libs/sfml_module.so", // From build/flappyBird/client/
+    "./build/libs/sdl2_module.so", "./build/libs/sfml_module.so", // From project root
+    "libs/sdl2_module.so",         "libs/sfml_module.so",         "sdl2_module.so", "sfml_module.so"};
 
-      // Prioritize the requested renderer type
-    for (const auto &path : basePaths) {
-      if ((m_rendererType == "sdl2" && path.find("sdl2_module") != std::string::npos) ||
-          (m_rendererType == "sfml" && path.find("sfml_module") != std::string::npos)) {
-        modulePaths.push_back(path);
-      }
+  // Prioritize the requested renderer type
+  for (const auto &path : basePaths) {
+    if ((m_rendererType == "sdl2" && path.find("sdl2_module") != std::string::npos) ||
+        (m_rendererType == "sfml" && path.find("sfml_module") != std::string::npos)) {
+      modulePaths.push_back(path);
     }
+  }
 
-    // Add the other renderer as fallback
-    for (const auto &path : basePaths) {
-      if ((m_rendererType == "sdl2" && path.find("sfml_module") != std::string::npos) ||
-          (m_rendererType == "sfml" && path.find("sdl2_module") != std::string::npos)) {
-        modulePaths.push_back(path);
-      }
+  // Add the other renderer as fallback
+  for (const auto &path : basePaths) {
+    if ((m_rendererType == "sdl2" && path.find("sfml_module") != std::string::npos) ||
+        (m_rendererType == "sfml" && path.find("sdl2_module") != std::string::npos)) {
+      modulePaths.push_back(path);
     }
+  }
 
-    bool moduleLoaded = false;
-    for (const std::string &path : modulePaths) {
-      try {
-        module = std::make_unique<Module<IRenderer>>(path.c_str(), "createRenderer", "destroyRenderer");
-        std::cout << "[Game::init] Loaded " << m_rendererType << " module from: " << path << std::endl;
-        moduleLoaded = true;
-        break;
-      } catch (const std::exception &e) {
-        // Try next path
-        continue;
-      }
-    }
-
-    if (!moduleLoaded) {
-      std::cerr << "[Game::init] ERROR: Could not find SDL2 module in any known location" << std::endl;
-      return false;
-    }
-
-    renderer = std::shared_ptr<IRenderer>(module->create(), [this](IRenderer *ptr) {
-      if (module) {
-        module->destroy(ptr);
-      }
-    });
-
-    if (renderer == nullptr) {
-      std::cerr << "[Game::init] ERROR: Renderer is null" << '\n';
-      return false;
-    }
-    renderer->setWindowTitle("ChaD");
-
-    // Start the game in fullscreen by default
+  bool moduleLoaded = false;
+  for (const std::string &path : modulePaths) {
     try {
-      renderer->setFullscreen(true);
+      module = std::make_unique<Module<IRenderer>>(path.c_str(), "createRenderer", "destroyRenderer");
+      std::cout << "[Game::init] Loaded " << m_rendererType << " module from: " << path << std::endl;
+      moduleLoaded = true;
+      break;
     } catch (const std::exception &e) {
-      std::cerr << "[Game::init] Warning: failed to set fullscreen: " << e.what() << '\n';
+      // Try next path
+      continue;
     }
+  }
+
+  if (!moduleLoaded) {
+    std::cerr << "[Game::init] ERROR: Could not find SDL2 module in any known location" << std::endl;
+    return false;
+  }
+
+  renderer = std::shared_ptr<IRenderer>(module->create(), [this](IRenderer *ptr) {
+    if (module) {
+      module->destroy(ptr);
+    }
+  });
+
+  if (renderer == nullptr) {
+    std::cerr << "[Game::init] ERROR: Renderer is null" << '\n';
+    return false;
+  }
+  renderer->setWindowTitle("ChaD");
+
+  // Start the game in fullscreen by default
+  try {
+    renderer->setFullscreen(true);
+  } catch (const std::exception &e) {
+    std::cerr << "[Game::init] Warning: failed to set fullscreen: " << e.what() << '\n';
+  }
+
+  // Initialize network manager
+  m_networkManager = std::make_shared<AsioClient>(m_serverHost, m_serverPort);
+  std::cout << "[Game::init] Connected to server at " << m_serverHost << ":" << m_serverPort << std::endl;
+
+  // Initialize ECS world
+  m_world = std::make_shared<ecs::World>();
+  std::cout << "[Game::init] ECS World initialized" << std::endl;
+
+  try {
+    menu = std::make_unique<Menu>(renderer);
+    menu->init();
+  } catch (std::exception error) {
+  }
+
+  isRunning = true;
+  return true;
 }
 
 void Game::shutdown()
 {
   // Save settings before shutting down
-//   settings.saveToFile();
+  //   settings.saveToFile();
 
   // Notify server that we're leaving before shutting down
   sendLeaveToServer();
 
-//   if (menu) {
-//     menu->cleanup();
-//     menu.reset();
-//     // Renderer will be automatically destroyed by shared_ptr when all references are gone
-//   }
+  //   if (menu) {
+  //     menu->cleanup();
+  //     menu.reset();
+  //     // Renderer will be automatically destroyed by shared_ptr when all references are gone
+  //   }
 
   if (m_networkManager) {
     m_networkManager->stop();
@@ -134,17 +156,60 @@ void Game::sendLeaveToServer()
     std::span<const std::byte>(reinterpret_cast<const std::byte *>(serialized.data()), serialized.size()), 0);
 }
 
-void Game::run() {
-    if (!isRunning || renderer == nullptr) {
+void Game::run()
+{
+  if (!isRunning || renderer == nullptr) {
     return;
   }
 
+  std::cout << "[Game] Starting game loop" << std::endl;
+  auto lastTime = std::chrono::high_resolution_clock::now();
+
   while (isRunning) {
-    // processInput();
+    auto currentTime = std::chrono::high_resolution_clock::now();
+    float deltaTime = std::chrono::duration<float>(currentTime - lastTime).count();
+    lastTime = currentTime;
 
-    // float deltaTime = renderer->getDeltaTime();
-    // update(deltaTime);
+    // Poll window events
+    if (!renderer->pollEvents()) {
+      isRunning = false;
+      break;
+    }
 
-    // render();
+    update(deltaTime);
+    render();
   }
+
+  std::cout << "[Game] Game loop ended" << std::endl;
+}
+
+void Game::update(float deltaTime)
+{
+  // Update menu animation
+  if (currentState == GameState::MENU && menu) {
+    menu->update(deltaTime);
+  }
+
+  // Update ECS world - systems will process entities
+  if (m_world) {
+    m_world->update(deltaTime);
+  }
+}
+
+void Game::render()
+{
+  if (!renderer) {
+    return;
+  }
+
+  renderer->clear();
+
+  switch (currentState) {
+  case GameState::MENU: {
+    menu->render();
+  };
+  }
+
+  // ECS render systems will draw entities here
+  renderer->present();
 }

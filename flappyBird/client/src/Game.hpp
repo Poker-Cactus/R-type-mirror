@@ -14,6 +14,7 @@
 #include <cstdint>
 #include <memory>
 #include <string>
+#include "Menu.hpp"
 
 class Game
 {
@@ -71,7 +72,7 @@ private:
   bool isRunning = false;
   GameState currentState = GameState::MENU;
   std::string m_serverHost = "127.0.0.1";
-  std::string m_serverPort = "4242";
+  std::string m_serverPort = "4243";
   std::string m_rendererType = "sfml";
   ecs::Entity m_inputEntity{0};
   float m_lobbyStateTime = 0.0F;
@@ -81,6 +82,8 @@ private:
 
   // Usefull func
   void render();
-  void update();
+  void update(float deltaTime);
+
+  std::unique_ptr<Menu> menu;
   // HighscoreManager highscoreManager;
 };
