@@ -129,10 +129,11 @@ public:
 
   /**
    * @brief Network callback: lobby state update
-   * @param lobbyCode Current lobby code
-   * @param playerCount Number of players in lobby
+    * @param lobbyCode Current lobby code
+    * @param playerCount Number of players in lobby
+    * @param spectatorCount Number of spectators in lobby
    */
-  void onLobbyState(const std::string &lobbyCode, int playerCount);
+    void onLobbyState(const std::string &lobbyCode, int playerCount, int spectatorCount);
 
   /**
    * @brief Network callback: error occurred
@@ -141,9 +142,18 @@ public:
   void onError(const std::string &errorMsg);
 
   /**
+   * @brief Show a temporary lobby-wide message for the given duration (seconds)
+   */
+  void showTemporaryMessage(const std::string &message, int durationSeconds);
+
+  /**
    * @brief Send viewport dimensions to server
    */
   void sendViewportToServer();
+  /**
+   * @brief Provide Settings pointer so this state can include username in lobby requests
+   */
+  void setSettings(Settings *settings);
 
 private:
   void loadSpriteTextures();
@@ -178,5 +188,12 @@ private:
   LobbyConnectionState m_connectionState = LobbyConnectionState::CONNECTING;
   std::string m_lobbyCode;
   int m_playerCount = 0;
+  int m_spectatorCount = 0;
   std::string m_errorMessage;
+  // Local settings pointer to include username in requests
+  Settings *m_settings = nullptr;
+  // Temporary lobby-wide message display
+  std::string m_tempMessage;
+  float m_tempMessageTimer = 0.0f;
+
 };

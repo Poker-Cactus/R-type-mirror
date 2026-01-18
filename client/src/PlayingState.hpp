@@ -144,12 +144,12 @@ private:
    */
   void freeSpriteTextures();
 
-  // HUD state
-  static constexpr int INITIAL_PLAYER_HEALTH = 100;
+  // HUD state (discrete lives)
+  static constexpr int INITIAL_PLAYER_LIVES = 3;
   std::shared_ptr<void> m_hudFont = nullptr;
-  void *m_heartsTexture = nullptr;
-  int m_playerHealth = INITIAL_PLAYER_HEALTH;
-  int m_playerMaxHealth = INITIAL_PLAYER_HEALTH;
+  void *m_lifeTexture = nullptr; ///< Texture for life icon
+  int m_playerHealth = INITIAL_PLAYER_LIVES; ///< Interpreted as number of lives
+  int m_playerMaxHealth = INITIAL_PLAYER_LIVES;
   int m_playerScore = 0;
   /**
    * @brief Update entity animations

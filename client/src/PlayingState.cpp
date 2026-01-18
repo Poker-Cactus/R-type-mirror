@@ -101,16 +101,16 @@ bool PlayingState::init()
   // Load sprite textures
   loadSpriteTextures();
 
-  // Load hearts texture for health display
+  // Load life texture for lives display
   try {
-    m_heartsTexture = renderer->loadTexture("client/assets/life-bar/hearts.png");
-    if (m_heartsTexture != nullptr) {
-      std::cout << "[PlayingState] ✓ Loaded hearts.png for HP display" << '\n';
+    m_lifeTexture = renderer->loadTexture("client/assets/life.png");
+    if (m_lifeTexture != nullptr) {
+      std::cout << "[PlayingState] ✓ Loaded life.png for lives display" << '\n';
     } else {
-      std::cerr << "[PlayingState] ✗ Failed to load hearts.png" << '\n';
+      std::cerr << "[PlayingState] ✗ Failed to load life.png" << '\n';
     }
   } catch (const std::exception &e) {
-    std::cerr << "[PlayingState] ✗ Failed to load hearts.png: " << e.what() << '\n';
+    std::cerr << "[PlayingState] ✗ Failed to load life.png: " << e.what() << '\n';
   }
 
   // Load HUD font with fallback
@@ -623,79 +623,41 @@ void PlayingState::renderHUD()
   constexpr Color HUD_TEXT_WHITE = {.r = 255, .g = 255, .b = 255, .a = 255};
   constexpr int HUD_SCORE_OFFSET_Y = 50;
 
-  // Draw hearts if texture is loaded
-  if (m_heartsTexture != nullptr) {
-    // Calculate heart display based on actual HP value
-    // Each 100 HP = 1 full heart
-    // Use floating point for precise heart calculation
-    float heartsValue = static_cast<float>(m_playerHealth) / 100.0f;
+  // Draw life icons if texture is loaded
+  int displayLifeW = 0;
+  int displayLifeH = 0;
+  if (m_lifeTexture != nullptr) {
+    int texW = 0, texH = 0;
+    renderer->getTextureSize(m_lifeTexture, texW, texH);
+    displayLifeW = texW * DISPLAY_SCALE;
+    displayLifeH = texH * DISPLAY_SCALE;
 
-    // Clamp to valid range (0.0 to 3.0 hearts max)
-    heartsValue = std::max(0.0f, std::min(3.0f, heartsValue));
-
-    // Convert hearts value to row index (0-6)
-    // 3.0 hearts = row 0 (full)
-    // 2.5 hearts = row 1
-    // 2.0 hearts = row 2
-    // 1.5 hearts = row 3
-    // 1.0 hearts = row 4
-    // 0.5 hearts = row 5
-    // 0.0 hearts = row 6 (empty)
-
-    int heartRow = 0;
-    if (heartsValue >= 2.5f) {
-      heartRow = 0; // 2.5-3.0 hearts: full
-    } else if (heartsValue >= 2.0f) {
-      heartRow = 1; // 2.0-2.4 hearts
-    } else if (heartsValue >= 1.5f) {
-      heartRow = 2; // 1.5-1.9 hearts
-    } else if (heartsValue >= 1.0f) {
-      heartRow = 3; // 1.0-1.4 hearts
-    } else if (heartsValue >= 0.5f) {
-      heartRow = 4; // 0.5-0.9 hearts
-    } else if (heartsValue > 0.0f) {
-      heartRow = 5; // 0.1-0.4 hearts
-    } else {
-      heartRow = 6; // 0 hearts: empty
+    // Draw one icon per life
+    for (int i = 0; i < m_playerHealth; ++i) {
+      int x = HEARTS_X + i * (displayLifeW + 8);
+      int y = m_gameHeight + (m_hudHeight - displayLifeH) / 2;
+      renderer->drawTextureEx(m_lifeTexture, x, y, displayLifeW, displayLifeH, 0.0, false, false);
     }
-
-    // Calculate source Y position with rounding for exact pixel alignment
-    int sourceY = static_cast<int>(std::round(heartRow * HEART_ROW_HEIGHT));
-
-    // Draw the appropriate heart row
-    renderer->drawTextureRegion(
-      m_heartsTexture,
-      {.x = 0, .y = sourceY, .width = HEARTS_TEXTURE_WIDTH, .height = static_cast<int>(std::round(HEART_ROW_HEIGHT))},
-      {.x = HEARTS_X,
-       .y = HEARTS_Y,
-       .width = HEARTS_TEXTURE_WIDTH * DISPLAY_SCALE,
-       .height = static_cast<int>(std::round(HEART_ROW_HEIGHT)) * DISPLAY_SCALE});
+  } else {
+    // Fallback: draw lives as text
+    std::string livesText = "Lives: " + std::to_string(m_playerHealth);
+    renderer->drawText(m_hudFont.get(), livesText, HEARTS_X, m_gameHeight + 10, HUD_TEXT_WHITE);
   }
 
-  // Score text (only if font is loaded)
+  // Score text (centered horizontally in HUD strip)
   if (m_hudFont) {
     std::string scoreText = "Score: " + std::to_string(m_playerScore);
-    renderer->drawText(m_hudFont.get(), scoreText, HEARTS_X, HEARTS_Y + HUD_SCORE_OFFSET_Y, HUD_TEXT_WHITE);
+    int textW = 0, textH = 0;
+    renderer->getTextSize(m_hudFont.get(), scoreText, textW, textH);
+    const int winW = renderer->getWindowWidth();
+    int scoreX = (winW - textW) / 2;
+    int scoreY = m_gameHeight + (m_hudHeight - textH) / 2;
+    renderer->drawText(m_hudFont.get(), scoreText, scoreX, scoreY, HUD_TEXT_WHITE);
   }
 
   // Info mode rendering / hitboxes are rendered in the main render() inside the game viewport
 
-  // Show spectator indicator if in spectator mode
-  if (m_isSpectator) {
-    const int winWidth = renderer->getWindowWidth();
-
-    constexpr std::uint8_t TEXT_WHITE = 255;
-    constexpr std::uint8_t TEXT_ALPHA = 255;
-    const Color spectatorColor = {TEXT_WHITE, TEXT_WHITE, TEXT_WHITE, TEXT_ALPHA};
-
-    // Use the HUD font like the score display
-    if (m_hudFont) {
-      renderer->drawText(m_hudFont.get(), "you died, you are in SPECTATOR MODE", winWidth / 2 - 100,
-                         m_gameHeight + 10, spectatorColor);
-    } else {
-      std::cout << "[PlayingState] Warning: m_hudFont is null, cannot render spectator text" << std::endl;
-    }
-  }
+  // Spectator overlay removed: spectators are now explained in lobby waiting text
 }
 
 void PlayingState::updateAnimations(float deltaTime)
@@ -922,13 +884,16 @@ void PlayingState::updateHUDFromWorld(float deltaTime)
 
 void PlayingState::processInput()
 {
-  // Don't process input if in spectator mode
-  if (m_isSpectator) {
-    return;
-  }
+  // Spectator input blocking removed: input is allowed (spectator UI removed)
 
   if (renderer == nullptr) {
     return;
+  }
+
+  // Toggle ghost/spectator mode with G key
+  if (renderer->isKeyJustPressed(KeyCode::KEY_G)) {
+    m_isSpectator = !m_isSpectator;
+    std::cout << "[PlayingState] Spectator mode toggled: " << (m_isSpectator ? "ON" : "OFF") << std::endl;
   }
 
   if (renderer->isKeyPressed(settings.up)) {
@@ -1025,10 +990,10 @@ void PlayingState::cleanup()
     m_mapTexture = nullptr;
   }
 
-  // Free hearts texture
-  if (m_heartsTexture != nullptr && renderer != nullptr) {
-    renderer->freeTexture(m_heartsTexture);
-    m_heartsTexture = nullptr;
+  // Free life texture
+  if (m_lifeTexture != nullptr && renderer != nullptr) {
+    renderer->freeTexture(m_lifeTexture);
+    m_lifeTexture = nullptr;
   }
 
   // Free HUD font (handled by shared_ptr destructor)

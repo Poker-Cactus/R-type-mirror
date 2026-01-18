@@ -40,6 +40,8 @@ constexpr float PLAYER_GUN_OFFSET = 20.0F;
 constexpr float PLAYER_SPAWN_X = 100.0F;  // ~5.2% of width
 constexpr float PLAYER_SPAWN_Y = 300.0F;  // ~27.8% of height
 constexpr int PLAYER_MAX_HP = 100;
+// Number of lives given to player on spawn (client HUD will display lives)
+constexpr int PLAYER_START_LIVES = 3;
 constexpr float PLAYER_COLLIDER_WIDTH = 140.0F;
 constexpr float PLAYER_COLLIDER_HEIGHT = 60.0F;
 constexpr int PLAYER_SPRITE_WIDTH = 140;

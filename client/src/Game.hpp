@@ -16,6 +16,7 @@
 #include "LobbyRoomState.hpp"
 #include "Menu.hpp"
 #include "PlayingState.hpp"
+#include <nlohmann/json.hpp>
 #include <cstdint>
 #include <memory>
 #include <string>
@@ -108,6 +109,7 @@ private:
   void handlePlayingStateInput();
   void updatePlayerInput();
   void delegateInputToCurrentState();
+  void renderEndScreen();
 
   std::unique_ptr<Module<IRenderer>> module;
   std::shared_ptr<IRenderer> renderer;
@@ -124,6 +126,8 @@ private:
   std::unique_ptr<PlayingState> playingState;
   float m_lobbyStateTime = 0.0F;
   Settings settings;
+  bool m_showEndScreen = false;
+  nlohmann::json m_endScreenPayload;
   bool fullScreen = true;
   ColorBlindMode currentColorBlindMode = ColorBlindMode::NONE;
   HighscoreManager highscoreManager;

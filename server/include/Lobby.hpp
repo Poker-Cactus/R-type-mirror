@@ -187,6 +187,35 @@ public:
   void convertToSpectator(std::uint32_t clientId);
 
   /**
+   * @brief Trigger end-of-game flow: stop spawning, collect scores and notify clients
+   */
+  void endGameShowScores();
+
+  /**
+   * @brief Notify the lobby that a client has left the end-screen view
+   */
+  void notifyEndScreenLeft(std::uint32_t clientId);
+
+  [[nodiscard]] bool isEndScreenActive() const { return m_endScreenActive; }
+
+  /**
+   * @brief Request that the owning LobbyManager destroy this lobby
+   * This will notify the manager to stop and remove the lobby.
+   */
+  void requestDestroy();
+
+  /**
+   * @brief Set owning LobbyManager for callbacks
+   */
+  void setManager(class LobbyManager *manager);
+
+  /**
+   * @brief Convert a spectator back to player (recreate player entity if game started)
+   * @param clientId The client identifier
+   */
+  void convertToPlayer(std::uint32_t clientId);
+
+  /**
    * @brief Get the AI difficulty setting
    * @return The AI difficulty
    */
@@ -215,6 +244,8 @@ private:
   std::unordered_map<std::uint32_t, ecs::Entity> m_playerEntities;
   ecs::Entity m_allyEntity = 0;
   ecs::Entity m_mapEntity = 0; // Entity holding map collision data
+  // Pointer back to owning manager (not owning)
+  class LobbyManager *m_manager = nullptr;
 
   // Enemy configuration manager
   std::shared_ptr<server::EnemyConfigManager> m_enemyConfigManager;
@@ -230,6 +261,19 @@ private:
 
   // AI difficulty setting
   AIDifficulty m_aiDifficulty = AIDifficulty::MEDIUM;
+
+  // End-of-game state: store final scores when player entities are removed
+  bool m_endScreenActive = false;
+  std::unordered_map<std::uint32_t, int> m_finalScores; // clientId -> score
+  std::unordered_set<std::uint32_t> m_endScreenViewers;  // clients currently viewing the score page
+  // Optional mapping of client IDs to their display names (provided by client)
+  std::unordered_map<std::uint32_t, std::string> m_clientNames;
+
+public:
+  // Store a client's display name for use in UI (scores, chat, etc.)
+  void setClientName(std::uint32_t clientId, const std::string &name);
+  [[nodiscard]] std::string getClientName(std::uint32_t clientId) const;
+ 
 };
 
 #endif /* !LOBBY_HPP_ */

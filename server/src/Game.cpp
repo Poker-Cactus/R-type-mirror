@@ -12,6 +12,7 @@
 #include "systems/AllySystem.hpp"
 #include "systems/ChargeSystem.hpp"
 #include "systems/SpawnSystem.hpp"
+#include "systems/InvulnerabilitySystem.hpp"
 #include <chrono>
 #include <cstdint>
 #include <memory>
@@ -49,6 +50,7 @@ Game::Game()
   spawnSystem = &world->registerSystem<server::SpawnSystem>();
   world->registerSystem<server::EntityLifetimeSystem>();
   world->registerSystem<server::LifetimeSystem>();
+  world->registerSystem<server::InvulnerabilitySystem>();
 
   // Initialize systems first
   initializeSystems();
@@ -143,30 +145,27 @@ void Game::spawnPlayer()
   world->addComponent(player, velocity);
 
   ecs::Health health;
-  int baseHealth = GameConfig::PLAYER_MAX_HP;
-
-  // Adjust player health based on difficulty
+  // Determine starting lives based on server difficulty
+  int startingLives = 0;
   switch (currentDifficulty) {
   case Difficulty::EASY:
-    baseHealth = static_cast<int>(baseHealth * 1.5f); // 150 HP
+    startingLives = 5;
     break;
   case Difficulty::MEDIUM:
-    // Normal health (100 HP)
+    startingLives = 3;
     break;
   case Difficulty::EXPERT:
-    baseHealth = static_cast<int>(baseHealth * 0.75f); // 75 HP
+    startingLives = 1;
+    break;
+  default:
+    startingLives = GameConfig::PLAYER_START_LIVES;
     break;
   }
-
-  health.hp = baseHealth;
-  health.maxHp = baseHealth;
+  health.hp = startingLives;
+  health.maxHp = startingLives;
   world->addComponent(player, health);
 
-  std::cout << "[Server] Spawning player with " << baseHealth << " HP (difficulty: "
-            << (currentDifficulty == Difficulty::EASY       ? "easy"
-                  : currentDifficulty == Difficulty::MEDIUM ? "medium"
-                                                            : "expert")
-            << ")" << std::endl;
+  std::cout << "[Server] Spawning player with " << startingLives << " LIVES" << std::endl;
 
   ecs::Input input;
   input.up = false;
@@ -220,30 +219,27 @@ void Game::spawnPlayer(std::uint32_t networkId)
   world->addComponent(player, velocity);
 
   ecs::Health health;
-  int baseHealth = GameConfig::PLAYER_MAX_HP;
-
-  // Adjust player health based on difficulty
+  // Determine starting lives based on server difficulty
+  int startingLives = 0;
   switch (currentDifficulty) {
   case Difficulty::EASY:
-    baseHealth = static_cast<int>(baseHealth * 1.5f); // 150 HP
+    startingLives = 5;
     break;
   case Difficulty::MEDIUM:
-    // Normal health (100 HP)
+    startingLives = 3;
     break;
   case Difficulty::EXPERT:
-    baseHealth = static_cast<int>(baseHealth * 0.75f); // 75 HP
+    startingLives = 1;
+    break;
+  default:
+    startingLives = GameConfig::PLAYER_START_LIVES;
     break;
   }
-
-  health.hp = baseHealth;
-  health.maxHp = baseHealth;
+  health.hp = startingLives;
+  health.maxHp = startingLives;
   world->addComponent(player, health);
 
-  std::cout << "[Server] Spawning player with networkId " << networkId << " with " << baseHealth << " HP (difficulty: "
-            << (currentDifficulty == Difficulty::EASY       ? "easy"
-                  : currentDifficulty == Difficulty::MEDIUM ? "medium"
-                                                            : "expert")
-            << ")" << std::endl;
+  std::cout << "[Server] Spawning player with networkId " << networkId << " with " << startingLives << " LIVES" << std::endl;
 
   ecs::Input input;
   input.up = false;

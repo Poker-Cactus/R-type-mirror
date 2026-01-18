@@ -50,6 +50,15 @@ void NetworkReceiveSystem::setGame(Game *game)
         // Remove from lobby manager tracking
         lobbyManager.leaveLobby(clientId);
 
+        // If lobby is showing end-screen, notify that this client left the end-screen
+        if (lobby->isEndScreenActive()) {
+          try {
+            lobby->notifyEndScreenLeft(clientId);
+          } catch (const std::exception &e) {
+            std::cerr << "[Server] Error notifying end-screen left: " << e.what() << std::endl;
+          }
+        }
+
         // Notify remaining players
         if (!lobby->isEmpty()) {
           nlohmann::json lobbyState;
@@ -117,10 +126,17 @@ void NetworkReceiveSystem::handleMessage(ecs::World &world, const std::string &m
 
     const std::string type = json["type"].get<std::string>();
 
+    if (type == "end_screen_left") {
+      // Client closed end-screen and wants to return to menu; treat as leaving lobby
+      handleEndScreenLeft(world, clientId);
+    }
+    else
     if (type == "player_input") {
       handlePlayerInput(world, message, clientId);
     } else if (type == "request_lobby") {
       handleRequestLobby(json, clientId);
+    } else if (type == "toggle_spectator") {
+      handleToggleSpectator(json, clientId);
     } else if (type == "start_game") {
       handleStartGame(world, clientId);
     } else if (type == "leave_lobby") {
@@ -254,6 +270,20 @@ void NetworkReceiveSystem::handleStartGame([[maybe_unused]] ecs::World &world, s
   // Check if this lobby's game is already started
   if (lobby->isGameStarted()) {
     sendErrorResponse(clientId, "Game already in progress");
+    return;
+  }
+
+  // Prevent starting the game if there are no active players (only spectators)
+  if (lobby->getPlayerCount() == 0) {
+    std::cerr << "[Server] Cannot start game: no active players (only spectators) in lobby " << lobby->getCode()
+              << std::endl;
+    // Broadcast a temporary lobby message to all clients to explain why start failed
+    nlohmann::json notice;
+    notice["type"] = "lobby_message";
+    notice["message"] = "Cannot start game: no active players (only spectators)";
+    notice["duration"] = 4; // seconds
+    std::vector<std::uint32_t> lobbyClients(lobby->getClients().begin(), lobby->getClients().end());
+    sendJsonMessageToAll(lobbyClients, notice);
     return;
   }
 
@@ -428,16 +458,26 @@ void NetworkReceiveSystem::handleRequestLobby(const nlohmann::json &json, std::u
               << '\n';
     sendLobbyResponse(clientId, {"lobby_joined", lobbyCode});
 
-    // Notify client about current lobby state
-    if (targetLobby != nullptr) {
+    // Notify client(s) about current lobby state. Use the authoritative lobby object
+    Lobby *joinedLobby = lobbyManager.getLobby(lobbyCode);
+    // If client provided a username in the request, store it
+    if (joinedLobby != nullptr && json.contains("username") && json["username"].is_string()) {
+      std::string uname = json["username"].get<std::string>();
+      if (!uname.empty()) {
+        joinedLobby->setClientName(clientId, uname);
+      }
+    }
+    if (joinedLobby != nullptr) {
       nlohmann::json lobbyState;
       lobbyState["type"] = "lobby_state";
       lobbyState["code"] = lobbyCode;
-      lobbyState["player_count"] = targetLobby->getClientCount();
+      lobbyState["player_count"] = joinedLobby->getClientCount();
+
+      // Send state to the joining client
       sendJsonMessage(clientId, lobbyState);
 
       // Notify all other players in the lobby about the new player count
-      for (const auto &playerId : targetLobby->getClients()) {
+      for (const auto &playerId : joinedLobby->getClients()) {
         if (playerId != clientId) {
           sendJsonMessage(playerId, lobbyState);
         }
@@ -552,6 +592,67 @@ void NetworkReceiveSystem::handleLeaveLobby([[maybe_unused]] ecs::World &world, 
       }
     }
   }
+
+  // Confirm leave to client
+  nlohmann::json response;
+  response["type"] = "lobby_left";
+  sendJsonMessage(clientId, response);
+}
+
+void NetworkReceiveSystem::handleToggleSpectator(const nlohmann::json &json, std::uint32_t clientId)
+{
+  std::cout << "[Server] Client " << clientId << " requested toggle_spectator" << std::endl;
+
+  if (m_game == nullptr) {
+    return;
+  }
+
+  auto &lobbyManager = m_game->getLobbyManager();
+  Lobby *lobby = lobbyManager.getClientLobby(clientId);
+  if (lobby == nullptr) {
+    sendErrorResponse(clientId, "Not in a lobby");
+    return;
+  }
+
+  // Decide desired spectator state: toggle by default, but honor explicit flag
+  bool wantSpectator = !lobby->isSpectator(clientId);
+  if (json.contains("spectator") && json["spectator"].is_boolean()) {
+    wantSpectator = json["spectator"].get<bool>();
+  }
+
+  if (wantSpectator) {
+    lobby->convertToSpectator(clientId);
+  } else {
+    lobby->convertToPlayer(clientId);
+  }
+}
+
+void NetworkReceiveSystem::handleEndScreenLeft([[maybe_unused]] ecs::World &world, std::uint32_t clientId)
+{
+  std::cout << "[Server] Client " << clientId << " closed end-screen and requested to leave lobby" << std::endl;
+  if (m_game == nullptr) {
+    return;
+  }
+
+  auto &lobbyManager = m_game->getLobbyManager();
+  Lobby *lobby = lobbyManager.getClientLobby(clientId);
+  if (lobby == nullptr) {
+    sendErrorResponse(clientId, "Not in any lobby");
+    return;
+  }
+
+  const std::string lobbyCode = lobby->getCode();
+
+  // Notify lobby that this client left the end-screen view
+  try {
+    lobby->notifyEndScreenLeft(clientId);
+  } catch (const std::exception &e) {
+    std::cerr << "[Server] Error notifying end-screen left: " << e.what() << std::endl;
+  }
+
+  // Remove client from lobby tracking
+  lobby->removeClient(clientId);
+  lobbyManager.leaveLobby(clientId);
 
   // Confirm leave to client
   nlohmann::json response;

@@ -26,6 +26,7 @@
 #include "systems/ScoreSystem.hpp"
 #include "systems/ShootingSystem.hpp"
 #include "systems/SpawnSystem.hpp"
+#include "systems/InvulnerabilitySystem.hpp"
 // IWYU pragma: end_exports
 
 #endif /* !SERVERSYSTEMS_HPP_ */

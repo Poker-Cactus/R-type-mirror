@@ -36,6 +36,9 @@ bool LobbyManager::createLobby(const std::string &code, GameConfig::Difficulty d
   m_lobbies[code]->setDifficulty(difficulty);
   m_lobbies[code]->setGameMode(mode);
 
+  // Let the lobby know its manager for callbacks
+  m_lobbies[code]->setManager(this);
+
   std::cout << "[LobbyManager] Created lobby: " << code << '\n';
   return true;
 }
@@ -103,6 +106,38 @@ void LobbyManager::cleanupEmptyLobbies()
       ++lobby_it;
     }
   }
+}
+
+void LobbyManager::removeLobby(const std::string &code)
+{
+  auto it = m_lobbies.find(code);
+  if (it == m_lobbies.end()) {
+    return;
+  }
+
+  std::cout << "[LobbyManager] Removing lobby by request: " << code << '\n';
+
+  // Notify all clients in the lobby that the lobby is closing
+  Lobby *lobby = it->second.get();
+  if (lobby) {
+    std::vector<std::uint32_t> clients(lobby->getClients().begin(), lobby->getClients().end());
+    nlohmann::json notice;
+    notice["type"] = "lobby_closed";
+    notice["message"] = "Lobby closed: all players dead";
+    for (auto cid : clients) {
+      lobby->sendJsonToClient(cid, notice);
+      // Remove client->lobby mapping
+      leaveLobby(cid);
+    }
+
+    // Stop the game if running
+    if (lobby->isGameStarted()) {
+      lobby->stopGame();
+    }
+  }
+
+  // Erase the lobby
+  m_lobbies.erase(it);
 }
 
 const std::unordered_map<std::string, std::unique_ptr<Lobby>> &LobbyManager::getLobbies() const
