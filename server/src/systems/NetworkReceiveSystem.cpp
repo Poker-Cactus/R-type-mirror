@@ -129,9 +129,7 @@ void NetworkReceiveSystem::handleMessage(ecs::World &world, const std::string &m
     if (type == "end_screen_left") {
       // Client closed end-screen and wants to return to menu; treat as leaving lobby
       handleEndScreenLeft(world, clientId);
-    }
-    else
-    if (type == "player_input") {
+    } else if (type == "player_input") {
       handlePlayerInput(world, message, clientId);
     } else if (type == "request_lobby") {
       handleRequestLobby(json, clientId);

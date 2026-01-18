@@ -13,10 +13,12 @@
 #include "../../../engineCore/include/ecs/World.hpp"
 #include "../../../engineCore/include/ecs/components/Collider.hpp"
 #include "../../../engineCore/include/ecs/components/Health.hpp"
+#include "../../../engineCore/include/ecs/components/Immortal.hpp"
 #include "../../../engineCore/include/ecs/components/Input.hpp"
 #include "../../../engineCore/include/ecs/components/Lifetime.hpp"
 #include "../../../engineCore/include/ecs/components/Networked.hpp"
 #include "../../../engineCore/include/ecs/components/Pattern.hpp"
+#include "../../../engineCore/include/ecs/components/Shield.hpp"
 #include "../../../engineCore/include/ecs/components/Sprite.hpp"
 #include "../../../engineCore/include/ecs/components/Transform.hpp"
 #include "../../../engineCore/include/ecs/events/EventListenerHandle.hpp"
@@ -66,7 +68,7 @@ public:
       // Don't show death animation for players
       bool isPlayer = world.hasComponent<ecs::Input>(entity);
 
-      if (!isPlayer && world.hasComponent<ecs::Transform>(entity)) {
+      if (!isPlayer && world.hasComponent<ecs::Transform>(entity) && !world.hasComponent<ecs::Shield>(entity)) {
         // Spawn death animation for enemies
         spawnDeathAnimation(world, entity);
       }
@@ -141,6 +143,16 @@ private:
 
   static void handleDeath(ecs::World &world, const ecs::DeathEvent &event)
   {
+    // If a shield dies, remove immortality from its parent
+    if (world.isAlive(event.entity) && world.hasComponent<ecs::Shield>(event.entity)) {
+      const auto &shield = world.getComponent<ecs::Shield>(event.entity);
+      if (world.isAlive(shield.parent) && world.hasComponent<ecs::Immortal>(shield.parent)) {
+        auto &immortal = world.getComponent<ecs::Immortal>(shield.parent);
+        immortal.isImmortal = false;
+        std::cout << "[DeathSystem] Shield destroyed, removing immortality from parent " << shield.parent << std::endl;
+      }
+    }
+
     // When an entity dies, award score to the killer
     if (world.isAlive(event.killer)) {
       // Award 100 points to the killer

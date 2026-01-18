@@ -8,9 +8,9 @@
 
 #pragma once
 
-#include "../../../interface/IRenderer.hpp"
-#include "../../../../engineCore/include/ecs/World.hpp"
 #include "../../../../engineCore/include/ecs/EngineComponents.hpp"
+#include "../../../../engineCore/include/ecs/World.hpp"
+#include "../../../interface/IRenderer.hpp"
 #include <chrono>
 #include <memory>
 #include <string>
@@ -68,8 +68,7 @@ public:
    *  @param entityScaleX Scale applied to entity coordinates (usually reference scale)
    *  @param entityScaleY Scale applied to entity coordinates
    */
-  void renderHitboxes(const std::shared_ptr<ecs::World> &world, float entityScaleX = 1.0f,
-                       float entityScaleY = 1.0f);
+  void renderHitboxes(const std::shared_ptr<ecs::World> &world, float entityScaleX = 1.0f, float entityScaleY = 1.0f);
 
   // Map collision overlay removed; no API exposed
 

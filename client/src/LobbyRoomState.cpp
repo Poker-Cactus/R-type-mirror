@@ -242,8 +242,7 @@ void LobbyRoomState::processInput()
       std::string serialized = message.dump();
       const auto capnpSerialized = m_networkManager->getPacketHandler()->serialize(serialized);
       m_networkManager->send(
-        std::span<const std::byte>(reinterpret_cast<const std::byte *>(capnpSerialized.data()),
-                                   capnpSerialized.size()),
+        std::span<const std::byte>(reinterpret_cast<const std::byte *>(capnpSerialized.data()), capnpSerialized.size()),
         0);
       // We don't leave the lobby; wait for server lobby_state update
     }

@@ -9,8 +9,7 @@
 #include "../../../interface/KeyCodes.hpp"
 #include <iostream>
 
-PauseMenu::PauseMenu(std::shared_ptr<IRenderer> renderer)
-    : m_renderer(std::move(renderer))
+PauseMenu::PauseMenu(std::shared_ptr<IRenderer> renderer) : m_renderer(std::move(renderer))
 {
   m_options = {"Resume", "Settings", "Quit"};
 }
@@ -38,7 +37,7 @@ bool PauseMenu::init()
 
     m_selectSound = m_renderer->loadSound("client/assets/Sounds/Hovering3.wav");
     m_confirmSound = m_renderer->loadSound("client/assets/audios/Retro3.mp3");
-  } catch (const std::exception& e) {
+  } catch (const std::exception &e) {
     std::cerr << "[PauseMenu] Warning: Could not load resources: " << e.what() << std::endl;
   }
 
@@ -57,13 +56,14 @@ void PauseMenu::render(int winWidth, int winHeight)
     m_renderer->getTextSize(m_titleFont, "PAUSED", titleW, titleH);
     int titleX = (winWidth - titleW) / 2;
     int titleY = winHeight / 4;
-    
+
     Color titleColor = {.r = 255, .g = 255, .b = 255, .a = 255};
     m_renderer->drawText(m_titleFont, "PAUSED", titleX, titleY, titleColor);
   }
 
   // Menu options
-  if (!m_font) return;
+  if (!m_font)
+    return;
 
   const int optionHeight = 60;
   const int totalHeight = static_cast<int>(m_options.size()) * optionHeight;
@@ -71,7 +71,7 @@ void PauseMenu::render(int winWidth, int winHeight)
 
   for (size_t i = 0; i < m_options.size(); ++i) {
     bool selected = (static_cast<int>(i) == m_selectedIndex);
-    
+
     int textW = 0, textH = 0;
     m_renderer->getTextSize(m_font, m_options[i], textW, textH);
     int textX = (winWidth - textW) / 2;
@@ -85,16 +85,15 @@ void PauseMenu::render(int winWidth, int winHeight)
       m_renderer->drawRect(textX - padding, textY - 5, textW + padding * 2, textH + 10, bgColor);
     }
 
-    Color textColor = selected 
-      ? Color{.r = 255, .g = 255, .b = 255, .a = 255}
-      : Color{.r = 150, .g = 150, .b = 150, .a = 255};
-    
+    Color textColor =
+      selected ? Color{.r = 255, .g = 255, .b = 255, .a = 255} : Color{.r = 150, .g = 150, .b = 150, .a = 255};
+
     m_renderer->drawText(m_font, m_options[i], textX, textY, textColor);
   }
 
   // Help text
   Color helpColor = {.r = 180, .g = 180, .b = 180, .a = 200};
-  const char* helpText = "Press ESC to resume";
+  const char *helpText = "Press ESC to resume";
   int helpW = 0, helpH = 0;
   m_renderer->getTextSize(m_font, helpText, helpW, helpH);
   m_renderer->drawText(m_font, helpText, (winWidth - helpW) / 2, winHeight - 80, helpColor);
@@ -141,16 +140,16 @@ PauseMenuAction PauseMenu::process()
     if (m_confirmSound) {
       m_renderer->playSound(m_confirmSound);
     }
-    
+
     switch (m_selectedIndex) {
-      case 0:
-        return PauseMenuAction::RESUME;
-      case 1:
-        return PauseMenuAction::SETTINGS;
-      case 2:
-        return PauseMenuAction::QUIT;
-      default:
-        return PauseMenuAction::NONE;
+    case 0:
+      return PauseMenuAction::RESUME;
+    case 1:
+      return PauseMenuAction::SETTINGS;
+    case 2:
+      return PauseMenuAction::QUIT;
+    default:
+      return PauseMenuAction::NONE;
     }
   }
 

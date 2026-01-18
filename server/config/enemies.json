@@ -260,6 +260,49 @@
     },
     {
       "collider": {
+        "height": 108.0,
+        "width": 99.0
+      },
+      "description": "Elite enemy with shield (3 hits) and 4 hits to kill",
+      "health": {
+        "hp": 80,
+        "maxHp": 80
+      },
+      "id": "enemy_elite_blue",
+      "name": "Elite Blue",
+      "pattern": {
+        "amplitude": 35.0,
+        "frequency": 4.0,
+        "type": "sine_wave"
+      },
+      "spawn": {
+        "groupSizeMax": 1,
+        "groupSizeMin": 1,
+        "spawnDelay": 0.0,
+        "spawnInterval": 14.0
+      },
+      "sprite": {
+        "animated": true,
+        "endFrame": 0,
+        "frameCount": 16,
+        "frameTime": 0.1,
+        "height": 36,
+        "loop": true,
+        "reverseAnimation": true,
+        "spriteId": 66,
+        "startFrame": 7,
+        "width": 33
+      },
+      "transform": {
+        "scale": 3.0
+      },
+      "velocity": {
+        "dx": -220.0,
+        "dy": 0.0
+      }
+    },
+    {
+      "collider": {
         "height": 100.0,
         "width": 100.0
       },
@@ -346,6 +389,49 @@
     },
     {
       "collider": {
+        "height": 145.0,
+        "width": 137.5
+      },
+      "description": "Elite green enemy that tracks the player and fires high-damage shots",
+      "health": {
+        "hp": 120,
+        "maxHp": 120
+      },
+      "id": "enemy_elite_green",
+      "name": "Elite Green",
+      "pattern": {
+        "amplitude": 240.0,
+        "frequency": 220.0,
+        "type": "elite_track"
+      },
+      "spawn": {
+        "groupSizeMax": 1,
+        "groupSizeMin": 1,
+        "spawnDelay": 0.0,
+        "spawnInterval": 18.0
+      },
+      "sprite": {
+        "animated": true,
+        "endFrame": 2,
+        "frameCount": 3,
+        "frameTime": 0.1,
+        "height": 58,
+        "loop": true,
+        "reverseAnimation": false,
+        "spriteId": 68,
+        "startFrame": 0,
+        "width": 55
+      },
+      "transform": {
+        "scale": 2.5
+      },
+      "velocity": {
+        "dx": -150.0,
+        "dy": 0.0
+      }
+    },
+    {
+      "collider": {
         "height": 100.0,
         "width": 100.0
       },
@@ -375,7 +461,7 @@
         "height": 74,
         "loop": true,
         "reverseAnimation": false,
-        "spriteId": 69,
+        "spriteId": 72,
         "startFrame": 0,
         "width": 65
       },
