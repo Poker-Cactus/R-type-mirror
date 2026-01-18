@@ -106,6 +106,13 @@ public:
   void resetPlayerAnimation();
 
   /**
+   * @brief Reset transient state for a new game (map offsets, background, etc.)
+   *
+   * Called when starting a new game so visual state begins at origin.
+   */
+  void resetForNewGame();
+
+  /**
    * @brief Enable/disable spectator mode
    * @param enabled true to enable spectator mode
    */
@@ -121,6 +128,22 @@ private:
   std::shared_ptr<IRenderer> renderer; ///< Renderer interface
   std::shared_ptr<ecs::World> world; ///< ECS world
   std::unique_ptr<ParallaxBackground> background; ///< Scrolling background
+
+  void *m_mapTexture = nullptr; ///< Level map texture
+  int m_mapWidth = 0; ///< Map texture width
+  int m_mapHeight = 0; ///< Map texture height
+  float m_mapOffsetX = 0.0f; ///< Map horizontal scroll offset
+  static constexpr float MAP_SCROLL_SPEED = 50.0f; ///< Map scroll speed (pixels/second)
+  float m_mapScrollSpeed = MAP_SCROLL_SPEED; ///< Configurable map scroll speed (from level config)
+
+  // Reference resolution for coordinate normalization (same as server)
+  static constexpr float REFERENCE_WIDTH = 1920.0F;
+  static constexpr float REFERENCE_HEIGHT = 1080.0F;
+  
+  float m_scaleX = 1.0f; ///< Horizontal scale factor (windowWidth / REFERENCE_WIDTH)
+  float m_scaleY = 1.0f; ///< Vertical scale factor (gameAreaHeight / REFERENCE_HEIGHT)
+  int m_hudHeight = 0; ///< HUD strip height in pixels (bottom 1/12)
+  int m_gameHeight = 0; ///< Game area height in pixels (windowHeight - hudHeight)
 
   std::unordered_map<std::uint32_t, void *> m_spriteTextures; ///< Sprite texture cache
 
@@ -145,12 +168,12 @@ private:
    */
   void freeSpriteTextures();
 
-  // HUD state
-  static constexpr int INITIAL_PLAYER_HEALTH = 100;
+  // HUD state (discrete lives)
+  static constexpr int INITIAL_PLAYER_LIVES = 3;
   std::shared_ptr<void> m_hudFont = nullptr;
-  void *m_heartsTexture = nullptr;
-  int m_playerHealth = INITIAL_PLAYER_HEALTH;
-  int m_playerMaxHealth = INITIAL_PLAYER_HEALTH;
+  void *m_lifeTexture = nullptr; ///< Texture for life icon
+  int m_playerHealth = INITIAL_PLAYER_LIVES; ///< Interpreted as number of lives
+  int m_playerMaxHealth = INITIAL_PLAYER_LIVES;
   int m_playerScore = 0;
   /**
    * @brief Update entity animations

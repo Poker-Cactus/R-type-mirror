@@ -24,6 +24,8 @@
 #include "../interface/KeyCodes.hpp"
 #include <iostream>
 #include <unordered_set>
+#include <fstream>
+#include <nlohmann/json.hpp>
 
 PlayingState::PlayingState(std::shared_ptr<IRenderer> renderer, const std::shared_ptr<ecs::World> &world,
                            Settings &settings, std::shared_ptr<INetworkManager> networkManager,
@@ -47,6 +49,19 @@ bool PlayingState::init()
 
   std::cout << "[PlayingState] Initializing with m_playerHealth = " << m_playerHealth << '\n';
 
+  // Calculate scale factors based on window size and reserve HUD at bottom
+  const int windowWidth = renderer->getWindowWidth();
+  const int windowHeight = renderer->getWindowHeight();
+  // HUD occupies 1/12th of the screen height at the bottom
+  m_hudHeight = windowHeight / 12;
+  m_gameHeight = windowHeight - m_hudHeight;
+  m_scaleX = static_cast<float>(windowWidth) / REFERENCE_WIDTH;
+  // Vertical scale is based on the game area height (top 11/12)
+  m_scaleY = static_cast<float>(m_gameHeight) / REFERENCE_HEIGHT;
+  
+  std::cout << "[PlayingState] Window: " << windowWidth << "x" << windowHeight 
+            << ", Scale: " << m_scaleX << "x" << m_scaleY << '\n';
+
   settingsMenu = std::make_shared<SettingsMenu>(renderer);
 
   // Initialiser le background parallaxe
@@ -56,19 +71,70 @@ bool PlayingState::init()
     return false;
   }
 
+  // Load level map texture
+    // Default to ruins_map.png but try to read first level from server/config/levels.json
+    std::string mapPath = "client/assets/ruins_map.png";
+    std::string collisionPath = "client/assets/collisions/ruins_map.png";
+    try {
+      std::ifstream cfg("server/config/levels.json");
+      if (cfg) {
+        nlohmann::json j;
+        cfg >> j;
+        if (j.contains("levels") && j["levels"].is_array() && !j["levels"].empty()) {
+          const auto &first = j["levels"][0];
+                if (first.contains("map")) {
+                  if (first["map"].is_string()) {
+                    mapPath = first["map"].get<std::string>();
+                  } else if (first["map"].is_object()) {
+                    const auto &m = first["map"];
+                    if (m.contains("path") && m["path"].is_string()) {
+                      mapPath = m["path"].get<std::string>();
+                    }
+                    if (m.contains("collision_map") && m["collision_map"].is_string()) {
+                      collisionPath = m["collision_map"].get<std::string>();
+                    }
+                    // Read optional speed parameter to control client map scroll
+                    if (m.contains("speed") && (m["speed"].is_number_float() || m["speed"].is_number())) {
+                      try {
+                        m_mapScrollSpeed = static_cast<float>(m["speed"].get<double>());
+                      } catch (...) {
+                        // ignore and keep default
+                      }
+                    }
+                  }
+                }
+        }
+      } else {
+        std::cerr << "PlayingState: Warning - Could not open server/config/levels.json, using default map" << std::endl;
+      }
+    } catch (const std::exception &e) {
+      std::cerr << "PlayingState: Warning - Failed to parse levels.json: " << e.what() << std::endl;
+    }
+
+    m_mapTexture = renderer->loadTexture(mapPath);
+    if (m_mapTexture) {
+      renderer->getTextureSize(m_mapTexture, m_mapWidth, m_mapHeight);
+      std::cout << "PlayingState: Loaded map texture (" << m_mapWidth << "x" << m_mapHeight << ") from " << mapPath
+                << std::endl;
+    } else {
+      std::cerr << "PlayingState: Warning - Failed to load map texture from " << mapPath << std::endl;
+    }
+
+    // Map collision support removed from client; no TMX loading here
+
   // Load sprite textures
   loadSpriteTextures();
 
-  // Load hearts texture for health display
+  // Load life texture for lives display
   try {
-    m_heartsTexture = renderer->loadTexture("client/assets/life-bar/hearts.png");
-    if (m_heartsTexture != nullptr) {
-      std::cout << "[PlayingState] ✓ Loaded hearts.png for HP display" << '\n';
+    m_lifeTexture = renderer->loadTexture("client/assets/life.png");
+    if (m_lifeTexture != nullptr) {
+      std::cout << "[PlayingState] ✓ Loaded life.png for lives display" << '\n';
     } else {
-      std::cerr << "[PlayingState] ✗ Failed to load hearts.png" << '\n';
+      std::cerr << "[PlayingState] ✗ Failed to load life.png" << '\n';
     }
   } catch (const std::exception &e) {
-    std::cerr << "[PlayingState] ✗ Failed to load hearts.png: " << e.what() << '\n';
+    std::cerr << "[PlayingState] ✗ Failed to load life.png: " << e.what() << '\n';
   }
 
   // Load HUD font with fallback
@@ -100,6 +166,17 @@ bool PlayingState::init()
   return true;
 }
 
+void PlayingState::resetForNewGame()
+{
+  // Reset map scroll offset so map starts at left origin for each new game
+  m_mapOffsetX = 0.0f;
+
+  // Reset background layer offsets if background exists
+  if (background) {
+    background->resetOffsets();
+  }
+}
+
 void PlayingState::update(float delta_time)
 {
   // Calculate FPS
@@ -117,6 +194,20 @@ void PlayingState::update(float delta_time)
   if (background) {
     background->update(delta_time);
   }
+
+  // Update map scrolling (scale based on game area height)
+  if (m_mapTexture) {
+  m_mapOffsetX += m_mapScrollSpeed * delta_time;
+
+    // Reset offset when it exceeds map width for seamless looping
+    const float scale = static_cast<float>(m_gameHeight) / static_cast<float>(m_mapHeight);
+    const int scaledWidth = static_cast<int>(m_mapWidth * scale);
+
+    if (m_mapOffsetX >= scaledWidth) {
+      m_mapOffsetX -= scaledWidth;
+    }
+  }
+
   changeAnimationPlayers(delta_time);
 
   // Update sprite animations
@@ -194,9 +285,33 @@ void PlayingState::update(float delta_time)
 
 void PlayingState::render()
 {
+  // Render game area (top 11/12) using viewport to avoid drawing into HUD
+  const int windowWidth = renderer->getWindowWidth();
+  // Set viewport to game area (clip everything to top area)
+  renderer->setViewport(0, 0, windowWidth, m_gameHeight);
+
   // Dessiner le background en premier
   if (background) {
     background->render();
+  }
+
+  // Render level map with scrolling and height scaling (fit to game area)
+  if (m_mapTexture) {
+    // Scale map to game area height while maintaining aspect ratio
+    const float scale = static_cast<float>(m_gameHeight) / static_cast<float>(m_mapHeight);
+    const int scaledWidth = static_cast<int>(m_mapWidth * scale);
+    const int scaledHeight = m_gameHeight;
+
+    // Apply horizontal offset for scrolling
+    const int offsetX = -static_cast<int>(m_mapOffsetX);
+
+    // Draw map (possibly multiple times for seamless looping)
+    renderer->drawTextureEx(m_mapTexture, offsetX, 0, scaledWidth, scaledHeight, 0.0, false, false);
+
+    // If map scrolled past the edge, draw another copy for seamless loop
+    if (offsetX + scaledWidth < windowWidth) {
+      renderer->drawTextureEx(m_mapTexture, offsetX + scaledWidth, 0, scaledWidth, scaledHeight, 0.0, false, false);
+    }
   }
 
   // CLIENT PURE RENDERER - NO GAMEPLAY INFERENCE
@@ -483,9 +598,9 @@ void PlayingState::render()
               renderScale = it->second.currentScale;
             }
           }
-
-          int scaledWidth = static_cast<int>(sprite.width * renderScale);
-          int scaledHeight = static_cast<int>(sprite.height * renderScale);
+                    // Apply transform scale to sprite dimensions AND screen scaling
+          int scaledWidth = static_cast<int>(sprite.width * transformComponent.scale * m_scaleX);
+          int scaledHeight = static_cast<int>(sprite.height * transformComponent.scale * m_scaleY);
 
           // Debug: log animation state for enemy ships
           static float debugTimer = 0.0f;
@@ -503,8 +618,8 @@ void PlayingState::render()
           renderer->drawTextureRegion(
             textureIt->second,
             {.x = srcX, .y = srcY, .width = frameWidth, .height = frameHeight}, // Source: current frame
-            {.x = static_cast<int>(transformComponent.x),
-             .y = static_cast<int>(transformComponent.y),
+            {.x = static_cast<int>(transformComponent.x * m_scaleX),
+             .y = static_cast<int>(transformComponent.y * m_scaleY),
              .width = scaledWidth,
              .height = scaledHeight}); // Destination with scale applied
           rendered = true;
@@ -519,25 +634,25 @@ void PlayingState::render()
           int frameIndex = sprite.animated ? sprite.currentFrame : m_playerFrameIndex;
           int srcX = frameIndex * PLAYER_FRAME_WIDTH;
           int srcY = 0; // première ligne seulement
-          int scaledWidth = static_cast<int>(sprite.width * transformComponent.scale);
-          int scaledHeight = static_cast<int>(sprite.height * transformComponent.scale);
+          int scaledWidth = static_cast<int>(sprite.width * transformComponent.scale * m_scaleX);
+          int scaledHeight = static_cast<int>(sprite.height * transformComponent.scale * m_scaleY);
           renderer->drawTextureRegion(
             textureIt->second, {.x = srcX, .y = srcY, .width = PLAYER_FRAME_WIDTH, .height = PLAYER_FRAME_HEIGHT},
-            {.x = static_cast<int>(transformComponent.x),
-             .y = static_cast<int>(transformComponent.y),
+            {.x = static_cast<int>(transformComponent.x * m_scaleX),
+             .y = static_cast<int>(transformComponent.y * m_scaleY),
              .width = scaledWidth,
              .height = scaledHeight}); // Destination with scale
         } else if (sprite.spriteId == ecs::SpriteId::PROJECTILE) {
           // Projectile is a spritesheet: 422x92 with 2 frames
           constexpr int PROJECTILE_FRAME_WIDTH = 18;
           constexpr int PROJECTILE_FRAME_HEIGHT = 14;
-          int scaledWidth = static_cast<int>(sprite.width * transformComponent.scale);
-          int scaledHeight = static_cast<int>(sprite.height * transformComponent.scale);
+          int scaledWidth = static_cast<int>(sprite.width * transformComponent.scale * m_scaleX);
+          int scaledHeight = static_cast<int>(sprite.height * transformComponent.scale * m_scaleY);
           renderer->drawTextureRegion(
             textureIt->second,
             {.x = 0, .y = 0, .width = PROJECTILE_FRAME_WIDTH, .height = PROJECTILE_FRAME_HEIGHT}, // Source: first frame
-            {.x = static_cast<int>(transformComponent.x),
-             .y = static_cast<int>(transformComponent.y),
+            {.x = static_cast<int>(transformComponent.x * m_scaleX),
+             .y = static_cast<int>(transformComponent.y * m_scaleY),
              .width = scaledWidth,
              .height = scaledHeight}); // Destination with scale
         } else if (sprite.spriteId == ecs::SpriteId::POWERUP) {
@@ -545,12 +660,12 @@ void PlayingState::render()
           constexpr int POWERUP_FRAME_WIDTH = 12; // 84 / 7 = 12px per frame
           constexpr int POWERUP_FRAME_HEIGHT = 12;
           int srcX = sprite.currentFrame * POWERUP_FRAME_WIDTH;
-          int scaledWidth = static_cast<int>(sprite.width * transformComponent.scale);
-          int scaledHeight = static_cast<int>(sprite.height * transformComponent.scale);
+          int scaledWidth = static_cast<int>(sprite.width * transformComponent.scale * m_scaleX);
+          int scaledHeight = static_cast<int>(sprite.height * transformComponent.scale * m_scaleY);
           renderer->drawTextureRegion(textureIt->second,
                                       {.x = srcX, .y = 0, .width = POWERUP_FRAME_WIDTH, .height = POWERUP_FRAME_HEIGHT},
-                                      {.x = static_cast<int>(transformComponent.x),
-                                       .y = static_cast<int>(transformComponent.y),
+                                      {.x = static_cast<int>(transformComponent.x * m_scaleX),
+                                       .y = static_cast<int>(transformComponent.y * m_scaleY),
                                        .width = scaledWidth,
                                        .height = scaledHeight});
         } else if (sprite.spriteId == ecs::SpriteId::ENEMY_YELLOW) {
@@ -564,8 +679,8 @@ void PlayingState::render()
           int srcX = col * YELLOW_BEE_FRAME_WIDTH;
           int srcY = row * YELLOW_BEE_FRAME_HEIGHT;
 
-          int scaledWidth = static_cast<int>(sprite.width * transformComponent.scale);
-          int scaledHeight = static_cast<int>(sprite.height * transformComponent.scale);
+          int scaledWidth = static_cast<int>(sprite.width * transformComponent.scale * m_scaleX);
+          int scaledHeight = static_cast<int>(sprite.height * transformComponent.scale * m_scaleY);
 
           // Calculate rotation angle based on velocity
           float rotation = transformComponent.rotation;
@@ -573,17 +688,17 @@ void PlayingState::render()
           renderer->drawTextureRegionEx(
             textureIt->second,
             {.x = srcX, .y = srcY, .width = YELLOW_BEE_FRAME_WIDTH, .height = YELLOW_BEE_FRAME_HEIGHT},
-            {.x = static_cast<int>(transformComponent.x),
-             .y = static_cast<int>(transformComponent.y),
+            {.x = static_cast<int>(transformComponent.x * m_scaleX),
+             .y = static_cast<int>(transformComponent.y * m_scaleY),
              .width = scaledWidth,
              .height = scaledHeight},
             rotation, false, false);
         } else {
           // Other sprites: draw full texture
-          int scaledWidth = static_cast<int>(sprite.width * transformComponent.scale);
-          int scaledHeight = static_cast<int>(sprite.height * transformComponent.scale);
-          renderer->drawTextureEx(textureIt->second, static_cast<int>(transformComponent.x),
-                                  static_cast<int>(transformComponent.y), scaledWidth, scaledHeight, 0.0, false, false);
+          int scaledWidth = static_cast<int>(sprite.width * transformComponent.scale * m_scaleX);
+          int scaledHeight = static_cast<int>(sprite.height * transformComponent.scale * m_scaleY);
+          renderer->drawTextureEx(textureIt->second, static_cast<int>(transformComponent.x * m_scaleX),
+                                  static_cast<int>(transformComponent.y * m_scaleY), scaledWidth, scaledHeight, 0.0, false, false);
         }
       }
     } else {
@@ -657,14 +772,29 @@ void PlayingState::render()
         break;
       }
 
-      int scaledWidth = static_cast<int>(sprite.width * transformComponent.scale);
-      int scaledHeight = static_cast<int>(sprite.height * transformComponent.scale);
-      renderer->drawRect(static_cast<int>(transformComponent.x), static_cast<int>(transformComponent.y), scaledWidth,
+      int scaledWidth = static_cast<int>(sprite.width * transformComponent.scale * m_scaleX);
+      int scaledHeight = static_cast<int>(sprite.height * transformComponent.scale * m_scaleY);
+      renderer->drawRect(static_cast<int>(transformComponent.x * m_scaleX), static_cast<int>(transformComponent.y * m_scaleY), scaledWidth,
                          scaledHeight, color);
     }
   }
 
-  // Draw HUD on top of everything
+  // Render info overlay (hitboxes, panels) while still in game viewport
+  if (m_infoMode) {
+    m_infoMode->render();
+    // Render hitboxes
+    m_infoMode->renderHitboxes(world, m_scaleX, m_scaleY);
+    // Map collision overlay removed
+  }
+
+  // Reset viewport back to full window before drawing HUD
+  renderer->resetViewport();
+
+  // Draw black HUD strip at the bottom (1/12th of screen)
+  constexpr Color HUD_BLACK = {.r = 0, .g = 0, .b = 0, .a = 255};
+  renderer->drawRect(0, m_gameHeight, renderer->getWindowWidth(), m_hudHeight, HUD_BLACK);
+
+  // Draw HUD on top of everything (in the bottom strip)
   renderHUD();
 }
 
@@ -678,87 +808,46 @@ void PlayingState::renderHUD()
   constexpr int HEARTS_TEXTURE_WIDTH = 33;
   constexpr float HEART_ROW_HEIGHT = 76.0f / 7.0f; // 11.0 pixels per row, using float for precision
   constexpr int HEARTS_X = 20;
-  constexpr int HEARTS_Y = 20;
+  const int HEARTS_Y = m_gameHeight + 10; // place hearts inside HUD strip with padding
   constexpr int DISPLAY_SCALE = 2; // Scale up for better visibility
   constexpr Color HUD_TEXT_WHITE = {.r = 255, .g = 255, .b = 255, .a = 255};
   constexpr int HUD_SCORE_OFFSET_Y = 50;
 
-  // Draw hearts if texture is loaded
-  if (m_heartsTexture != nullptr) {
-    // Calculate heart display based on actual HP value
-    // Each 100 HP = 1 full heart
-    // Use floating point for precise heart calculation
-    float heartsValue = static_cast<float>(m_playerHealth) / 100.0f;
+  // Draw life icons if texture is loaded
+  int displayLifeW = 0;
+  int displayLifeH = 0;
+  if (m_lifeTexture != nullptr) {
+    int texW = 0, texH = 0;
+    renderer->getTextureSize(m_lifeTexture, texW, texH);
+    displayLifeW = texW * DISPLAY_SCALE;
+    displayLifeH = texH * DISPLAY_SCALE;
 
-    // Clamp to valid range (0.0 to 3.0 hearts max)
-    heartsValue = std::max(0.0f, std::min(3.0f, heartsValue));
-
-    // Convert hearts value to row index (0-6)
-    // 3.0 hearts = row 0 (full)
-    // 2.5 hearts = row 1
-    // 2.0 hearts = row 2
-    // 1.5 hearts = row 3
-    // 1.0 hearts = row 4
-    // 0.5 hearts = row 5
-    // 0.0 hearts = row 6 (empty)
-
-    int heartRow = 0;
-    if (heartsValue >= 2.5f) {
-      heartRow = 0; // 2.5-3.0 hearts: full
-    } else if (heartsValue >= 2.0f) {
-      heartRow = 1; // 2.0-2.4 hearts
-    } else if (heartsValue >= 1.5f) {
-      heartRow = 2; // 1.5-1.9 hearts
-    } else if (heartsValue >= 1.0f) {
-      heartRow = 3; // 1.0-1.4 hearts
-    } else if (heartsValue >= 0.5f) {
-      heartRow = 4; // 0.5-0.9 hearts
-    } else if (heartsValue > 0.0f) {
-      heartRow = 5; // 0.1-0.4 hearts
-    } else {
-      heartRow = 6; // 0 hearts: empty
+    // Draw one icon per life
+    for (int i = 0; i < m_playerHealth; ++i) {
+      int x = HEARTS_X + i * (displayLifeW + 8);
+      int y = m_gameHeight + (m_hudHeight - displayLifeH) / 2;
+      renderer->drawTextureEx(m_lifeTexture, x, y, displayLifeW, displayLifeH, 0.0, false, false);
     }
-
-    // Calculate source Y position with rounding for exact pixel alignment
-    int sourceY = static_cast<int>(std::round(heartRow * HEART_ROW_HEIGHT));
-
-    // Draw the appropriate heart row
-    renderer->drawTextureRegion(
-      m_heartsTexture,
-      {.x = 0, .y = sourceY, .width = HEARTS_TEXTURE_WIDTH, .height = static_cast<int>(std::round(HEART_ROW_HEIGHT))},
-      {.x = HEARTS_X,
-       .y = HEARTS_Y,
-       .width = HEARTS_TEXTURE_WIDTH * DISPLAY_SCALE,
-       .height = static_cast<int>(std::round(HEART_ROW_HEIGHT)) * DISPLAY_SCALE});
+  } else {
+    // Fallback: draw lives as text
+    std::string livesText = "Lives: " + std::to_string(m_playerHealth);
+    renderer->drawText(m_hudFont.get(), livesText, HEARTS_X, m_gameHeight + 10, HUD_TEXT_WHITE);
   }
 
-  // Score text (only if font is loaded)
+  // Score text (centered horizontally in HUD strip)
   if (m_hudFont) {
     std::string scoreText = "Score: " + std::to_string(m_playerScore);
-    renderer->drawText(m_hudFont.get(), scoreText, HEARTS_X, HEARTS_Y + HUD_SCORE_OFFSET_Y, HUD_TEXT_WHITE);
+    int textW = 0, textH = 0;
+    renderer->getTextSize(m_hudFont.get(), scoreText, textW, textH);
+    const int winW = renderer->getWindowWidth();
+    int scoreX = (winW - textW) / 2;
+    int scoreY = m_gameHeight + (m_hudHeight - textH) / 2;
+    renderer->drawText(m_hudFont.get(), scoreText, scoreX, scoreY, HUD_TEXT_WHITE);
   }
 
-  // Render info mode if active
-  if (m_infoMode) {
-    m_infoMode->render();
-  }
+  // Info mode rendering / hitboxes are rendered in the main render() inside the game viewport
 
-  // Show spectator indicator if in spectator mode
-  if (m_isSpectator) {
-    const int winWidth = renderer->getWindowWidth();
-
-    constexpr std::uint8_t TEXT_WHITE = 255;
-    constexpr std::uint8_t TEXT_ALPHA = 255;
-    const Color spectatorColor = {TEXT_WHITE, TEXT_WHITE, TEXT_WHITE, TEXT_ALPHA};
-
-    // Use the HUD font like the score display
-    if (m_hudFont) {
-      renderer->drawText(m_hudFont.get(), "you died, you are in SPECTATOR MODE", winWidth / 2 - 100, 50,
-                         spectatorColor);
-    } else {
-      std::cout << "[PlayingState] Warning: m_hudFont is null, cannot render spectator text" << std::endl;
-    }
-  }
+  // Spectator overlay removed: spectators are now explained in lobby waiting text
 }
 
 void PlayingState::updateAnimations(float deltaTime)
@@ -1015,15 +1104,17 @@ void PlayingState::updateHUDFromWorld(float deltaTime)
 
 void PlayingState::processInput()
 {
-  // Don't process input if in spectator mode
-  if (m_isSpectator) {
-    return;
-  }
+  // Spectator input blocking removed: input is allowed (spectator UI removed)
 
   if (renderer == nullptr) {
     return;
   }
 
+  // Toggle ghost/spectator mode with G key
+  if (renderer->isKeyJustPressed(KeyCode::KEY_G)) {
+    m_isSpectator = !m_isSpectator;
+    std::cout << "[PlayingState] Spectator mode toggled: " << (m_isSpectator ? "ON" : "OFF") << std::endl;
+  }
   // Check for shoot key press and play sound on press (not hold)
   bool shootPressed = renderer->isKeyPressed(settings.shoot);
   if (shootPressed && !m_prevShootPressed && m_audioManager) {
@@ -1126,10 +1217,16 @@ void PlayingState::cleanup()
   // Free all loaded sprite textures
   freeSpriteTextures();
 
-  // Free hearts texture
-  if (m_heartsTexture != nullptr && renderer != nullptr) {
-    renderer->freeTexture(m_heartsTexture);
-    m_heartsTexture = nullptr;
+  // Free map texture
+  if (m_mapTexture != nullptr && renderer != nullptr) {
+    renderer->freeTexture(m_mapTexture);
+    m_mapTexture = nullptr;
+  }
+
+  // Free life texture
+  if (m_lifeTexture != nullptr && renderer != nullptr) {
+    renderer->freeTexture(m_lifeTexture);
+    m_lifeTexture = nullptr;
   }
 
   // Free HUD font (handled by shared_ptr destructor)

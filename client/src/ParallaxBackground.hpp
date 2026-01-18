@@ -94,6 +94,13 @@ public:
   void cleanup();
 
   /**
+   * @brief Reset scrolling offsets for all layers
+   *
+   * Use this when starting a new game to ensure background starts from origin.
+   */
+  void resetOffsets();
+
+  /**
    * @brief Add a parallax layer
    * @param texturePath Texture file path
    * @param scrollSpeed Scroll speed (pixels/second)
@@ -127,6 +134,7 @@ private:
   std::vector<ParallaxLayer> layers;
   int windowWidth = 0;
   int windowHeight = 0;
+  int gameHeight = 0; ///< Height of the game area (windowHeight - HUD strip)
 
   /**
    * @brief Render a layer with repetition for infinite effect

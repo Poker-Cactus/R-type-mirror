@@ -30,6 +30,8 @@ bool ParallaxBackground::init()
 
   windowWidth = renderer->getWindowWidth();
   windowHeight = renderer->getWindowHeight();
+  // Reserve bottom 1/12th for HUD; only generate background inside game area
+  gameHeight = windowHeight - (windowHeight / 12);
 
   addStarLayerWithVariedColors(SLOW_STAR_COUNT, SLOW_SPEED, SLOW_MIN_RADIUS, SLOW_MAX_RADIUS);
   addStarLayerWithVariedColors(MEDIUM_STAR_COUNT, MEDIUM_SPEED, MEDIUM_MIN_RADIUS, MEDIUM_MAX_RADIUS);
@@ -81,7 +83,7 @@ void ParallaxBackground::addStarLayer(int starCount, float scrollSpeed, float mi
   std::random_device rd;
   std::mt19937 gen(rd());
   std::uniform_real_distribution<float> xDist(0.0f, static_cast<float>(layer.textureWidth));
-  std::uniform_real_distribution<float> yDist(0.0f, static_cast<float>(windowHeight));
+  std::uniform_real_distribution<float> yDist(0.0f, static_cast<float>(gameHeight));
   std::uniform_real_distribution<float> radiusDist(minRadius, maxRadius);
 
   layer.stars.reserve(starCount);
@@ -116,7 +118,7 @@ void ParallaxBackground::addStarLayerWithVariedColors(int starCount, float scrol
   std::random_device rd;
   std::mt19937 gen(rd());
   std::uniform_real_distribution<float> xDist(0.0f, static_cast<float>(layer.textureWidth));
-  std::uniform_real_distribution<float> yDist(0.0f, static_cast<float>(windowHeight));
+  std::uniform_real_distribution<float> yDist(0.0f, static_cast<float>(gameHeight));
   std::uniform_real_distribution<float> radiusDist(minRadius, maxRadius);
   std::uniform_real_distribution<float> colorDist(0.0f, 100.0f);
 
@@ -263,4 +265,11 @@ void ParallaxBackground::cleanup()
   }
 
   layers.clear();
+}
+
+void ParallaxBackground::resetOffsets()
+{
+  for (auto &layer : layers) {
+    layer.offsetX = 0.0f;
+  }
 }
