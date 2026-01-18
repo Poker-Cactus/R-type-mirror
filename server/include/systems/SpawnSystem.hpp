@@ -574,21 +574,26 @@ private:
   static constexpr float POWERUP_COLLIDER_SIZE = 32.0F;
   static constexpr float POWERUP_SCALE = 4.0F;
 
-  static constexpr float PROJECTILE_COLLIDER_SIZE = 8.0F;
+  // Projectile dimensions (18×14 sprite)
+  static constexpr float PROJECTILE_COLLIDER_WIDTH = 18.0F;
+  static constexpr float PROJECTILE_COLLIDER_HEIGHT = 14.0F;
   static constexpr unsigned int PROJECTILE_SPRITE_WIDTH = 84;
   static constexpr unsigned int PROJECTILE_SPRITE_HEIGHT = 37;
   static constexpr float PROJECTILE_VELOCITY_MULTIPLIER = 2400.0F;
   static constexpr float DIRECTION_THRESHOLD = 0.01F;
 
-  // Charged projectile configuration
-  static constexpr float CHARGED_PROJECTILE_COLLIDER_SIZE = 20.0F;
+  // Charged projectile configuration (82×16 sprite)
+  static constexpr float CHARGED_PROJECTILE_COLLIDER_WIDTH = 82.0F;
+  static constexpr float CHARGED_PROJECTILE_COLLIDER_HEIGHT = 16.0F;
   static constexpr unsigned int CHARGED_PROJECTILE_SPRITE_WIDTH = 165;
   static constexpr unsigned int CHARGED_PROJECTILE_SPRITE_HEIGHT = 16;
   static constexpr float CHARGED_PROJECTILE_VELOCITY = 2400.0F;
   static constexpr float CHARGED_PROJECTILE_SCALE = 3.0F;
 
   // loading shot configuration
-  static constexpr float LOADING_SHOT_COLLIDER_SIZE = 12.0F;
+  // Loading shot properties (31x29 sprite)
+  static constexpr float LOADING_SHOT_COLLIDER_WIDTH = 31.0F;
+  static constexpr float LOADING_SHOT_COLLIDER_HEIGHT = 29.0F;
   static constexpr unsigned int LOADING_SHOT_SPRITE_WIDTH = 255 / 8;
   static constexpr unsigned int LOADING_SHOT_SPRITE_HEIGHT = 29;
   static constexpr float LOADING_SHOT_VELOCITY = 0.0F;
@@ -792,9 +797,6 @@ private:
     health.maxHp = config->health.maxHp;
     world.addComponent(enemy, health);
 
-    // Collider component
-    world.addComponent(enemy, ecs::Collider{config->collider.width, config->collider.height});
-
     // Sprite component
     ecs::Sprite sprite;
     sprite.spriteId = config->sprite.spriteId;
@@ -808,6 +810,11 @@ private:
     sprite.frameTime = config->sprite.frameTime;
     sprite.reverseAnimation = config->sprite.reverseAnimation;
     world.addComponent(enemy, sprite);
+
+    // Collider component sized to sprite * transform.scale (matches visual size)
+    world.addComponent(enemy,
+               ecs::Collider{static_cast<float>(sprite.width) * transform.scale,
+                     static_cast<float>(sprite.height) * transform.scale});
 
     std::cout << "[SpawnSystem] Spawned enemy '" << enemyType << "' (spriteId=" << config->sprite.spriteId
               << ", pattern=" << config->pattern.type << ") at (" << posX << ", " << posY << ")" << std::endl;
@@ -893,11 +900,6 @@ private:
     // Add wave beam pattern for R-Type ribbon effect (oscillating vertically)
     world.addComponent(projectile, ecs::Pattern{"wave_beam", RUBAN_WAVE_AMPLITUDE, RUBAN_WAVE_FREQUENCY});
 
-    // Collider based on initial phase dimensions
-    world.addComponent(projectile,
-                       ecs::Collider{static_cast<float>(RUBAN_INITIAL_WIDTH) * RUBAN_SCALE,
-                                     static_cast<float>(RUBAN_INITIAL_HEIGHT) * RUBAN_SCALE});
-
     // Start with phase 1 sprite (1ruban_projectile.png: 21x49, 1 frame)
     ecs::Sprite sprite;
     sprite.spriteId = ecs::SpriteId::RUBAN1_PROJECTILE;
@@ -911,6 +913,11 @@ private:
     sprite.currentFrame = 0;
 
     world.addComponent(projectile, sprite);
+
+    // Collider based on initial phase dimensions (after sprite so it matches visual)
+    world.addComponent(projectile,
+               ecs::Collider{static_cast<float>(sprite.width) * transform.scale,
+                     static_cast<float>(sprite.height) * transform.scale});
 
     // Mark as networked so the snapshot system replicates it to clients.
     ecs::Networked net;
@@ -960,8 +967,6 @@ private:
       velocity.dy = projectileVelocity * std::sin(angles[i]);
       world.addComponent(projectile, velocity);
 
-      world.addComponent(projectile, ecs::Collider{PROJECTILE_COLLIDER_SIZE, PROJECTILE_COLLIDER_SIZE});
-
       // Sprite for triple projectile - use direction-specific sprite
       ecs::Sprite sprite;
       sprite.spriteId = spriteIds[i];
@@ -974,6 +979,10 @@ private:
       sprite.endFrame = 0;
 
       world.addComponent(projectile, sprite);
+
+      // Collider sized to sprite dimensions (scale == 1)
+      world.addComponent(projectile, ecs::Collider{static_cast<float>(sprite.width) * transform.scale,
+                      static_cast<float>(sprite.height) * transform.scale});
 
       // Mark as networked
       ecs::Networked net;
@@ -1023,8 +1032,6 @@ private:
 
     // Despawn is handled by LifetimeSystem when projectile leaves the viewport.
 
-    world.addComponent(projectile, ecs::Collider{PROJECTILE_COLLIDER_SIZE, PROJECTILE_COLLIDER_SIZE});
-
     // SERVER ASSIGNS VISUAL IDENTITY AS DATA
     // Projectile sprite decided at creation, never inferred later
     ecs::Sprite sprite;
@@ -1038,6 +1045,10 @@ private:
     sprite.endFrame = 2;
 
     world.addComponent(projectile, sprite);
+
+    // Collider sized to sprite * transform.scale
+    world.addComponent(projectile, ecs::Collider{static_cast<float>(sprite.width) * transform.scale,
+                          static_cast<float>(sprite.height) * transform.scale});
 
     // Mark as networked so the snapshot system replicates it to clients.
     ecs::Networked net;
@@ -1079,8 +1090,6 @@ private:
     velocity.dy = 0.0F;
     world.addComponent(projectile, velocity);
 
-    world.addComponent(projectile, ecs::Collider{CHARGED_PROJECTILE_COLLIDER_SIZE, CHARGED_PROJECTILE_COLLIDER_SIZE});
-
     ecs::Sprite sprite;
     sprite.spriteId = ecs::SpriteId::CHARGED_PROJECTILE;
     sprite.width = CHARGED_PROJECTILE_SPRITE_WIDTH;
@@ -1091,6 +1100,11 @@ private:
     sprite.startFrame = 0;
     sprite.endFrame = 1;
     world.addComponent(projectile, sprite);
+
+    // Collider sized to sprite * scale
+    world.addComponent(projectile,
+               ecs::Collider{static_cast<float>(sprite.width) * transform.scale,
+                     static_cast<float>(sprite.height) * transform.scale});
 
     ecs::Networked net;
     net.networkId = projectile;

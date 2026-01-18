@@ -67,12 +67,34 @@ struct WaveConfig {
 };
 
 /**
+ * @brief Configuration for the map
+ */
+struct MapConfig {
+  std::string path; // Path to the map image
+  std::string collision_map; // Path to the TMX collision map
+  std::string scale; // Scaling behavior (e.g., "fit-height")
+  float speed; // Scrolling speed of the map
+
+  static MapConfig fromJson(const nlohmann::json &json)
+  {
+    MapConfig map;
+    map.path = json.value("path", "");
+    map.collision_map = json.value("collision_map", "");
+    map.scale = json.value("scale", "fit-height");
+    map.speed = json.value("speed", 1.0f);
+    return map;
+  }
+};
+
+/**
  * @brief Configuration for a complete level
  */
 struct LevelConfig {
   std::string id;
   std::string name;
   std::string description;
+  MapConfig map; // Map configuration
+  std::string collision_map; // Path to the collision map JSON file
   std::vector<WaveConfig> waves;
 
   static LevelConfig fromJson(const nlohmann::json &json)
@@ -81,11 +103,16 @@ struct LevelConfig {
     level.id = json.value("id", "");
     level.name = json.value("name", "");
     level.description = json.value("description", "");
+    level.collision_map = json.value("collision_map", "");
 
     if (json.contains("waves") && json["waves"].is_array()) {
       for (const auto &waveJson : json["waves"]) {
         level.waves.push_back(WaveConfig::fromJson(waveJson));
       }
+    }
+
+    if (json.contains("map") && json["map"].is_object()) {
+      level.map = MapConfig::fromJson(json["map"]);
     }
 
     return level;
