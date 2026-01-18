@@ -28,7 +28,14 @@ class Settings;
 class MainMenu
 {
 public:
+  /**
+   * @brief Construct the main menu.
+   * @param renderer Renderer interface.
+   */
   MainMenu(std::shared_ptr<IRenderer> renderer);
+  /**
+   * @brief Destroy the main menu and release resources.
+   */
   ~MainMenu();
 
   /**

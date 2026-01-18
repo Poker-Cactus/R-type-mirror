@@ -1,9 +1,7 @@
-/*
-** EPITECH PROJECT, 2025
-** R-type-mirror
-** File description:
-** ChatUI.hpp - In-game chat interface
-*/
+/**
+ * @file ChatUI.hpp
+ * @brief In-game chat interface.
+ */
 
 #ifndef CHATUI_HPP_
 #define CHATUI_HPP_
@@ -131,9 +129,13 @@ public:
   void setLocalUsername(const std::string &username) { m_localUsername = username; }
 
 private:
+  /** @brief Render the chat background panel. */
   void renderBackground();
+  /** @brief Render the chat message list. */
   void renderMessages();
+  /** @brief Render the chat input box. */
   void renderInputBox();
+  /** @brief Handle text input and key mapping. */
   void handleTextInput();
 
   std::shared_ptr<IRenderer> m_renderer;

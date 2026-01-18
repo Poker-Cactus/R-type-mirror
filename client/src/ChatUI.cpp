@@ -1,9 +1,7 @@
-/*
-** EPITECH PROJECT, 2025
-** R-type-mirror
-** File description:
-** ChatUI.cpp - In-game chat interface implementation
-*/
+/**
+ * @file ChatUI.cpp
+ * @brief In-game chat interface implementation.
+ */
 
 #include "ChatUI.hpp"
 #include "../interface/KeyCodes.hpp"

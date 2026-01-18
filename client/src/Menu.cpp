@@ -1,9 +1,7 @@
-/*
-** EPITECH PROJECT, 2025
-** TypeMirror
-** File description:
-** Menu.cpp
-*/
+/**
+ * @file Menu.cpp
+ * @brief Main menu controller implementation.
+ */
 
 #include "Menu.hpp"
 #include "../include/AssetPath.hpp"
@@ -33,11 +31,11 @@ void Menu::init()
     // const int titleFontSize = 48;
     menu_font = m_renderer->loadFont(resolveAssetPath("client/assets/font.opf/r-type.otf").c_str(), menuFontSize);
 
-    // Initialiser IntroScreen
+    // Initialize IntroScreen
     introScreen = std::make_shared<IntroScreen>(m_renderer);
     introScreen->init();
 
-    // Initialiser MainMenu
+    // Initialize MainMenu
     m_mainMenu = std::make_shared<MainMenu>(m_renderer);
     m_mainMenu->init();
 

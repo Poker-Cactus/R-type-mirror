@@ -98,8 +98,20 @@ public:
    * @brief Reset lobby selection flags
    */
   void resetLobbySelection();
+  /**
+   * @brief Get the selected AI difficulty.
+   * @return Current AI difficulty.
+   */
   [[nodiscard]] Difficulty getCurrentDifficulty() const;
+  /**
+   * @brief Get the selected game mode.
+   * @return Current game mode.
+   */
   [[nodiscard]] GameMode getCurrentGameMode() const;
+  /**
+   * @brief Access the lobby menu instance.
+   * @return Pointer to the lobby menu, or nullptr if unavailable.
+   */
   [[nodiscard]] LobbyMenu *getLobbyMenu() const { return m_lobbyMenu.get(); }
 
   /**

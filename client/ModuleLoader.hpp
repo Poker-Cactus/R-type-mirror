@@ -1,3 +1,8 @@
+/**
+ * @file ModuleLoader.hpp
+ * @brief Cross-platform dynamic module loader.
+ */
+
 #pragma once
 
 #include <stdexcept>
@@ -23,6 +28,11 @@ using LibHandle = void *;
 #define CLOSE_LIB(handle) dlclose(handle)
 #endif
 
+/**
+ * @class Module
+ * @brief RAII wrapper for dynamically loaded modules.
+ * @tparam T Interface type exposed by the module.
+ */
 template <typename T>
 class Module
 {
@@ -30,6 +40,12 @@ public:
   using CreateFn = T *(*)();
   using DestroyFn = void (*)(T *);
 
+  /**
+   * @brief Load a module and resolve its create/destroy symbols.
+   * @param path Shared library path.
+   * @param createName Symbol name for factory creation.
+   * @param destroyName Symbol name for factory destruction.
+   */
   Module(const std::string &path, const std::string &createName, const std::string &destroyName)
       : handle(nullptr), createFn(nullptr), destroyFn(nullptr)
   {
@@ -51,6 +67,7 @@ public:
     }
   }
 
+  /** @brief Unload the module. */
   ~Module()
   {
     if (handle != nullptr) {
@@ -58,7 +75,9 @@ public:
     }
   }
 
+  /** @brief Create an instance from the module factory. */
   T *create() { return createFn(); }
+  /** @brief Destroy an instance created by the module factory. */
   void destroy(T *instance) { destroyFn(instance); }
 
 private:

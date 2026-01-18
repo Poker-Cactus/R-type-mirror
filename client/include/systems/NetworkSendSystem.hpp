@@ -57,6 +57,10 @@ public:
    * @return Client identifier
    */
   std::uint32_t getClientId() const { return m_clientId; }
+  /**
+   * @brief Send the selected AI difficulty to the server.
+   * @param diff Difficulty value to send.
+   */
   void sendSetDifficulty(Difficulty diff);
 
 protected:

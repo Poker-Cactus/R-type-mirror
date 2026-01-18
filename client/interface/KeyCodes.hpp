@@ -1,10 +1,17 @@
 #pragma once
 
-// Generic key codes - independent of any library
-// Each platform module (SDL, SFML, etc.) maps its native keycodes to these
+/**
+ * @file KeyCodes.hpp
+ * @brief Library-agnostic input key codes.
+ */
+
+/**
+ * @namespace KeyCode
+ * @brief Generic key codes mapped by each platform module (SDL, SFML, etc.).
+ */
 namespace KeyCode
 {
-// Special keys
+/** @brief Special keys. */
 constexpr int KEY_UNKNOWN = 0;
 constexpr int KEY_RETURN = 1;
 constexpr int KEY_ESCAPE = 2;
@@ -17,7 +24,7 @@ constexpr int KEY_RCTRL = 61;
 constexpr int KEY_LSHIFT = 62;
 constexpr int KEY_RSHIFT = 63;
 
-// Special characters / punctuation
+/** @brief Special characters and punctuation. */
 constexpr int KEY_SLASH = 70; // /
 constexpr int KEY_PERIOD = 71; // .
 constexpr int KEY_COMMA = 72; // ,
@@ -28,13 +35,13 @@ constexpr int KEY_EQUALS = 76; // =
 constexpr int KEY_LEFTBRACKET = 77; // [
 constexpr int KEY_RIGHTBRACKET = 78; // ]
 constexpr int KEY_BACKSLASH = 79; // backslash
-constexpr int KEY_GRAVE = 80; // ` or ù on AZERTY
+constexpr int KEY_GRAVE = 80; // ` (or the AZERTY grave key)
 constexpr int KEY_RIGHTPAREN = 81; // )
 
-// Function keys
+/** @brief Function keys. */
 constexpr int KEY_F11 = 9;
 
-// Numbers (0-9)
+/** @brief Number keys (0-9). */
 constexpr int KEY_0 = 50;
 constexpr int KEY_1 = 51;
 constexpr int KEY_2 = 52;
@@ -46,13 +53,13 @@ constexpr int KEY_7 = 57;
 constexpr int KEY_8 = 58;
 constexpr int KEY_9 = 59;
 
-// Arrow keys
+/** @brief Arrow keys. */
 constexpr int KEY_UP = 10;
 constexpr int KEY_DOWN = 11;
 constexpr int KEY_LEFT = 12;
 constexpr int KEY_RIGHT = 13;
 
-// Letters (A-Z)
+/** @brief Letter keys (A-Z). */
 constexpr int KEY_A = 20;
 constexpr int KEY_B = 21;
 constexpr int KEY_C = 22;

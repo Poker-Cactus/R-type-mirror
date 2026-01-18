@@ -1,9 +1,7 @@
-/*
-** EPITECH PROJECT, 2025
-** R-Type
-** File description:
-** Game implementation
-*/
+/**
+ * @file Game.cpp
+ * @brief Game loop orchestration and state transitions.
+ */
 
 #include "Game.hpp"
 #include "../../engineCore/include/ecs/components/Input.hpp"

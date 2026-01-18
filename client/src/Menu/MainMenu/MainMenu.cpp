@@ -1,9 +1,7 @@
-/*
-** EPITECH PROJECT, 2025
-** TypeMirror
-** File description:
-** MainMenu.cpp
-*/
+/**
+ * @file MainMenu.cpp
+ * @brief Main menu implementation.
+ */
 
 #include "MainMenu.hpp"
 #include "../../../include/Settings.hpp"
@@ -30,7 +28,10 @@ namespace fs = std::filesystem;
 // Track Asset Editor PID globally
 static pid_t g_assetEditorPid = -1;
 
-// Helper function to find and launch the Asset Editor
+/**
+ * @brief Find and launch the Asset Editor executable.
+ * @return true if the editor was started successfully.
+ */
 static bool LaunchAssetEditor()
 {
   // Try to find the asset editor binary
@@ -165,12 +166,12 @@ void MainMenu::render(int winWidth, int winHeight)
 void MainMenu::process(MenuState *currentState, Settings &settings)
 {
   (void)settings; // Unused parameter
-  // Flèche bas - descendre dans le menu
+  // Down arrow - move down in the menu
   if (m_renderer->isKeyJustPressed(KeyCode::KEY_DOWN)) {
     m_renderer->playSound(hoverSound);
     currentMenuIndex = (currentMenuIndex + 1) % mainMenuItems.size();
   }
-  // Flèche haut - monter dans le menu
+  // Up arrow - move up in the menu
   if (m_renderer->isKeyJustPressed(KeyCode::KEY_UP)) {
     m_renderer->playSound(hoverSound);
     currentMenuIndex = (currentMenuIndex - 1 + mainMenuItems.size()) % mainMenuItems.size();

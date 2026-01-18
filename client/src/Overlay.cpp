@@ -1,9 +1,7 @@
-/*
-** EPITECH PROJECT, 2025
-** R-Type
-** File description:
-** Overlay implementation
-*/
+/**
+ * @file Overlay.cpp
+ * @brief Overlay rendering implementation.
+ */
 
 #include "Overlay.hpp"
 #include <memory>

@@ -1,9 +1,7 @@
-/*
-** EPITECH PROJECT, 2025
-** R-type-mirror
-** File description:
-** MenuCommon.hpp - Common structures for menu system
-*/
+/**
+ * @file MenuCommon.hpp
+ * @brief Common structures shared by the menu system.
+ */
 
 #pragma once
 

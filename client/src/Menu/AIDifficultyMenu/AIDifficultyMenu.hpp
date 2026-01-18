@@ -30,7 +30,15 @@ class Settings;
 class AIDifficultyMenu
 {
 public:
+  /**
+   * @brief Construct the AI difficulty menu.
+   * @param renderer Renderer interface.
+   * @param onDifficultySelected Callback invoked on selection.
+   */
   AIDifficultyMenu(std::shared_ptr<IRenderer> renderer, std::function<void(AIDifficulty)> onDifficultySelected);
+  /**
+   * @brief Destroy the AI difficulty menu and release resources.
+   */
   ~AIDifficultyMenu();
 
   /**

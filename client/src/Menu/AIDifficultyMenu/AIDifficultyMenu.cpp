@@ -1,9 +1,7 @@
-/*
-** EPITECH PROJECT, 2025
-** R-type-mirror
-** File description:
-** AIDifficultyMenu.cpp
-*/
+/**
+ * @file AIDifficultyMenu.cpp
+ * @brief AI difficulty menu implementation.
+ */
 
 #include "AIDifficultyMenu.hpp"
 #include "../../../include/Settings.hpp"
@@ -74,12 +72,12 @@ void AIDifficultyMenu::render(int winWidth, int winHeight)
 
 void AIDifficultyMenu::process(MenuState *currentState, Settings &settings)
 {
-  // Flèche bas - descendre dans le menu
+  // Down arrow - move down in the menu
   if (m_renderer->isKeyJustPressed(KeyCode::KEY_DOWN)) {
     m_renderer->playSound(hoverSound);
     currentMenuIndex = (currentMenuIndex + 1) % aiDifficultyItems.size();
   }
-  // Flèche haut - monter dans le menu
+  // Up arrow - move up in the menu
   if (m_renderer->isKeyJustPressed(KeyCode::KEY_UP)) {
     m_renderer->playSound(hoverSound);
     currentMenuIndex = (currentMenuIndex - 1 + aiDifficultyItems.size()) % aiDifficultyItems.size();

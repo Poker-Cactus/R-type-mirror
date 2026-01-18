@@ -1,9 +1,7 @@
-/*
-** EPITECH PROJECT, 2025
-** R-Type
-** File description:
-** PauseMenu implementation
-*/
+/**
+ * @file PauseMenu.cpp
+ * @brief Pause menu implementation.
+ */
 
 #include "PauseMenu.hpp"
 #include "../../../interface/KeyCodes.hpp"
