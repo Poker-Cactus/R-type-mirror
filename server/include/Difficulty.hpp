@@ -1,9 +1,7 @@
-/*
-** EPITECH PROJECT, 2025
-** R-type-mirror
-** File description:
-** Difficulty configuration
-*/
+/**
+ * @file Difficulty.hpp
+ * @brief Difficulty configuration and helpers.
+ */
 
 #ifndef DIFFICULTY_HPP_
 #define DIFFICULTY_HPP_
@@ -11,6 +9,10 @@
 namespace GameConfig
 {
 // Difficulty system
+/**
+ * @enum Difficulty
+ * @brief Difficulty levels for the game.
+ */
 enum class Difficulty { EASY, MEDIUM, EXPERT };
 
 // Difficulty-based HP values
@@ -22,9 +24,9 @@ constexpr int MEDIUM_HP = 150;
 constexpr int EXPERT_HP = 50;
 
 /**
- * @brief Get player starting HP based on difficulty
- * @param difficulty The game difficulty
- * @return Starting HP value
+ * @brief Get player starting HP based on difficulty.
+ * @param difficulty The game difficulty.
+ * @return Starting HP value.
  */
 inline int getPlayerHPForDifficulty(Difficulty difficulty)
 {

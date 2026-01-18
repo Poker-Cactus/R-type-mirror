@@ -1,9 +1,7 @@
-/*
-** EPITECH PROJECT, 2025
-** R-type-mirror
-** File description:
-** Server.cpp
-*/
+/**
+ * @file Server.cpp
+ * @brief Server loop implementation.
+ */
 
 #include "../include/Server.hpp"
 #include "INetworkManager.hpp"

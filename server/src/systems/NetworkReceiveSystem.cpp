@@ -1,9 +1,7 @@
-/*
-** EPITECH PROJECT, 2025
-** R-type-mirror
-** File description:
-** NetworkReceiveSystem
-*/
+/**
+ * @file NetworkReceiveSystem.cpp
+ * @brief Server-side network receive system implementation.
+ */
 
 #include "systems/NetworkReceiveSystem.hpp"
 #include "../../engineCore/include/ecs/World.hpp"

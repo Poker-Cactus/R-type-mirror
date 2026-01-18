@@ -1,9 +1,7 @@
-/*
-** EPITECH PROJECT, 2025
-** R-type-mirror
-** File description:
-** ServerSystems - Consolidated header for all server systems
-*/
+/**
+ * @file ServerSystems.hpp
+ * @brief Consolidated header for all server systems.
+ */
 
 #ifndef SERVERSYSTEMS_HPP_
 #define SERVERSYSTEMS_HPP_

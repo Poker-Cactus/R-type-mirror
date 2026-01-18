@@ -1,9 +1,7 @@
-/*
-** EPITECH PROJECT, 2025
-** R-type-mirror
-** File description:
-** LobbyManager - Manages multiple game lobbies
-*/
+/**
+ * @file LobbyManager.hpp
+ * @brief Manager for multiple game lobbies.
+ */
 
 #ifndef LOBBY_MANAGER_HPP_
 #define LOBBY_MANAGER_HPP_
@@ -25,22 +23,40 @@ class LevelConfigManager;
 /**
  * @brief Manages creation and access to game lobbies
  */
+/**
+ * @class LobbyManager
+ * @brief Manages creation, lookup, and cleanup of lobbies.
+ */
 class LobbyManager
 {
 public:
+  /** @brief Construct a lobby manager. */
   LobbyManager() = default;
+  /** @brief Destroy the lobby manager. */
   ~LobbyManager() = default;
 
+  /**
+   * @brief Set the network manager used by lobbies.
+   * @param networkManager Network manager instance.
+   */
   void setNetworkManager(std::shared_ptr<INetworkManager> networkManager)
   {
     m_networkManager = std::move(networkManager);
   }
 
+  /**
+   * @brief Set the enemy configuration manager.
+   * @param configManager Enemy configuration manager.
+   */
   void setEnemyConfigManager(std::shared_ptr<server::EnemyConfigManager> configManager)
   {
     m_enemyConfigManager = configManager;
   }
 
+  /**
+   * @brief Set the level configuration manager.
+   * @param configManager Level configuration manager.
+   */
   void setLevelConfigManager(std::shared_ptr<server::LevelConfigManager> configManager)
   {
     m_levelConfigManager = configManager;

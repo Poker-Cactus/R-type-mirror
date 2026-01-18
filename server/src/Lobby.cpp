@@ -1,9 +1,7 @@
-/*
-** EPITECH PROJECT, 2025
-** R-type-mirror
-** File description:
-** Lobby implementation - Manages isolated game worlds per lobby
-*/
+/**
+ * @file Lobby.cpp
+ * @brief Lobby implementation for isolated game worlds.
+ */
 
 #include "Lobby.hpp"
 #include "../../engineCore/include/ecs/EngineComponents.hpp"

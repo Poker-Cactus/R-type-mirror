@@ -1,9 +1,7 @@
-/*
-** EPITECH PROJECT, 2025
-** R-type-mirror
-** File description:
-** Server.hpp - Game server wrapper
-*/
+/**
+ * @file Server.hpp
+ * @brief Game server wrapper.
+ */
 
 #ifndef SERVER_HPP_
 #define SERVER_HPP_

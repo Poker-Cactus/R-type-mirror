@@ -1,9 +1,7 @@
-/*
-** EPITECH PROJECT, 2025
-** R-type-mirror
-** File description:
-** Lobby - Manages game lobbies with unique codes and isolated game worlds
-*/
+/**
+ * @file Lobby.hpp
+ * @brief Game lobby with a unique code and isolated world.
+ */
 
 #ifndef LOBBY_HPP_
 #define LOBBY_HPP_
@@ -29,12 +27,25 @@ class LevelConfigManager;
 /**
  * @brief Represents a game lobby with a unique code and isolated game world
  */
+/**
+ * @class Lobby
+ * @brief Represents a game lobby with a unique code and isolated game world.
+ */
 class Lobby
 {
 public:
+  /**
+   * @brief Construct a lobby.
+   * @param code Unique lobby code.
+   * @param networkManager Network manager for communication.
+   * @param isSolo Whether the lobby is solo.
+   * @param aiDifficulty AI difficulty for solo mode.
+   * @param mode Game mode.
+   */
   explicit Lobby(const std::string &code, std::shared_ptr<INetworkManager> networkManager = nullptr,
                  bool isSolo = false, AIDifficulty aiDifficulty = AIDifficulty::MEDIUM,
                  GameMode mode = GameMode::CLASSIC);
+  /** @brief Destroy the lobby and release resources. */
   ~Lobby();
 
   // Disable copy and move to prevent issues with unique resources
@@ -138,7 +149,7 @@ public:
   [[nodiscard]] ecs::Entity getPlayerEntity(std::uint32_t clientId) const;
 
   /**
-   * @brief Send a JSON message to a specific client in this lobby
+   * @brief Send a JSON message to a specific client in this lobby.
    */
   void sendJsonToClient(std::uint32_t clientId, const nlohmann::json &message) const;
 
@@ -196,6 +207,10 @@ public:
    */
   void notifyEndScreenLeft(std::uint32_t clientId);
 
+  /**
+   * @brief Check if the end-screen is active.
+   * @return true if the end-screen is active.
+   */
   [[nodiscard]] bool isEndScreenActive() const { return m_endScreenActive; }
 
   /**

@@ -1,9 +1,7 @@
-/*
-** EPITECH PROJECT, 2025
-** R-type-mirror
-** File description:
-** LobbyManager implementation
-*/
+/**
+ * @file LobbyManager.cpp
+ * @brief Lobby manager implementation.
+ */
 
 #include "LobbyManager.hpp"
 #include <iostream>

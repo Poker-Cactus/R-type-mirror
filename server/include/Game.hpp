@@ -1,9 +1,7 @@
-/*
-** EPITECH PROJECT, 2025
-** R-type-mirror
-** File description:
-** Game
-*/
+/**
+ * @file Game.hpp
+ * @brief Server-side game loop and world management.
+ */
 
 #ifndef GAME_HPP_
 #define GAME_HPP_
@@ -68,25 +66,45 @@ class NetworkReceiveSystem;
 class NetworkSendSystem;
 class INetworkManager;
 
+/**
+ * @class Game
+ * @brief Manages the server game loop, ECS world, and lobby integration.
+ */
 class Game
 {
 public:
+  /** @brief Construct the game instance. */
   Game();
+  /** @brief Destroy the game instance and release resources. */
   ~Game();
+  /** @brief Set the network manager for server communication. */
   void setNetworkManager(const std::shared_ptr<INetworkManager> &networkManager);
+  /** @brief Run the server-side game loop. */
   void runGameLoop();
+  /** @brief Register and initialize server ECS systems. */
   void initializeSystems();
+  /** @brief Spawn a player with an auto-assigned network id. */
   void spawnPlayer();
+  /** @brief Spawn a player bound to a specific network id. */
   void spawnPlayer(std::uint32_t networkId);
+  /** @brief Get the server ECS world. */
   std::shared_ptr<ecs::World> getWorld();
+  /** @brief Start the game for the current lobby. */
   void startGame();
+  /** @brief Check if the game has started. */
   [[nodiscard]] bool isGameStarted() const;
+  /** @brief Track a client as part of the current lobby. */
   void addClientToLobby(std::uint32_t clientId);
+  /** @brief Remove a client from the current lobby. */
   void removeClientFromLobby(std::uint32_t clientId);
+  /** @brief Get the set of lobby client ids. */
   [[nodiscard]] const std::unordered_set<std::uint32_t> &getLobbyClients() const;
+  /** @brief Access the lobby manager. */
   [[nodiscard]] LobbyManager &getLobbyManager();
-  void initializeMap(const std::string &levelId); // Initialize map for a level
-  void startLevel(const std::string &levelId); // Start a level and initialize its map
+  /** @brief Initialize the map for a given level id. */
+  void initializeMap(const std::string &levelId);
+  /** @brief Start a level and initialize its map. */
+  void startLevel(const std::string &levelId);
 
   Difficulty currentDifficulty = Difficulty::MEDIUM;
 
