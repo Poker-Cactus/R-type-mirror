@@ -710,16 +710,43 @@ private:
 
   void spawnMothershipTurrets(ecs::World &world, ecs::Entity mothership, float mothershipX, float mothershipY)
   {
+    // Get mothership config to calculate center
+    const EnemyConfig *mothershipConfig = m_enemyConfigManager->getConfig("boss_green_mothership");
+    if (!mothershipConfig) {
+      std::cerr << "[SpawnSystem] ERROR: Mothership config not found!" << std::endl;
+      return;
+    }
+
+    // Calculate mothership center position
+    float mothershipWidth = mothershipConfig->sprite.width * mothershipConfig->transform.scale;
+    float mothershipHeight = mothershipConfig->sprite.height * mothershipConfig->transform.scale;
+    float centerX = mothershipX + (mothershipWidth / 2.0f);
+    float centerY = mothershipY + (mothershipHeight / 2.0f);
+
     // Define turret positions relative to mothership center
-    // Assuming mothership is 100x50 pixels at scale 8.0 = 800x400 rendered size
+    // X: negative = left, positive = right
+    // Y: negative = above center, positive = below center
     std::vector<std::pair<float, float>> turretOffsets = {
-      {19.0f, 175.0f}, 
-      {75.0f, 158.0f},
-      {131.0f, 141.0f},
-      // Bottom turrets facing down
-      {19.0f, 300.0f}, 
-      // {75.0f, -158.0f},
-      // {131.0f, -141.0f},
+      {-495.0f, -85.0f},  // Top-left turret
+      {-550.0f, -65.0f},  // Top-left turret
+      {-605.0f, -45.0f},  // Top-left turret
+      {-660.0f, -25.0f},  // Top-left turret
+      {-600.0f, -150.0f},  // Top-left turret
+      {-600.0f, 550.0f},  // Top-left turret
+
+
+
+
+
+
+
+
+      // {0.0f, -120.0f},     // Top-center turret  
+      // {400.0f, -100.0f},   // Top-right turret
+      // // Bottom turrets facing down
+      // {0.0f, 120.0f},      // Bottom-center turret
+      // {-400.0f, 100.0f},   // Bottom-left turret
+      // {400.0f, 100.0f},    // Bottom-right turret
     };
 
     for (size_t i = 0; i < turretOffsets.size(); ++i) {
@@ -737,10 +764,10 @@ private:
       // Pattern component
       world.addComponent(turret, ecs::Pattern{turretConfig->pattern.type, turretConfig->pattern.amplitude, turretConfig->pattern.frequency});
 
-      // Transform component - position will be set by AttachmentSystem
+      // Transform component - position relative to mothership center
       ecs::Transform transform;
-      transform.x = mothershipX + offset.first;
-      transform.y = mothershipY + offset.second;
+      transform.x = centerX + offset.first;
+      transform.y = centerY + offset.second;
       transform.rotation = 0.0F;
       transform.scale = turretConfig->transform.scale;
       world.addComponent(turret, transform);
@@ -772,14 +799,15 @@ private:
       sprite.currentFrame = turretConfig->sprite.startFrame;
       sprite.frameTime = turretConfig->sprite.frameTime;
       sprite.reverseAnimation = turretConfig->sprite.reverseAnimation;
-      sprite.flipY = (offset.second < 0.0f); // Flip bottom turrets vertically
+      sprite.flipY = (offset.second > 0.0f); // Flip bottom turrets vertically
       world.addComponent(turret, sprite);
 
       // Attachment component - links turret to mothership
+      // Convert center-relative offsets to top-left relative for AttachmentSystem
       ecs::Attachment attachment;
       attachment.parentId = mothership;
-      attachment.offsetX = offset.first;
-      attachment.offsetY = offset.second;
+      attachment.offsetX = (mothershipWidth / 2.0f) + offset.first;
+      attachment.offsetY = (mothershipHeight / 2.0f) + offset.second;
       world.addComponent(turret, attachment);
 
       // Networked component
