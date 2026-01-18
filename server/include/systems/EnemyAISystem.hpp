@@ -996,7 +996,7 @@ public:
       if (world.hasComponent<ecs::Sprite>(entity)) {
         auto &sprite = world.getComponent<ecs::Sprite>(entity);
         if (sprite.spriteId == ecs::SpriteId::BOSS_GREEN_MOTHERSHIP_TURRET) {
-          // Turret aiming cooldown - can only change direction every 0.25 seconds
+          // Turret aiming cooldown - can only change direction every 1.0 seconds
           static std::unordered_map<ecs::Entity, float> s_turretCooldownTimer;
           auto timerIt = s_turretCooldownTimer.find(entity);
           if (timerIt == s_turretCooldownTimer.end()) {
@@ -1007,8 +1007,8 @@ public:
           // Update cooldown timer
           timerIt->second += deltaTime;
           
-          // Check if cooldown has passed (0.25 seconds)
-          if (timerIt->second >= 0.5F) {
+          // Check if cooldown has passed (1.0 seconds)
+          if (timerIt->second >= 1.0F) {
             // Find player position
             std::vector<ecs::Entity> allEntities;
             world.getEntitiesWithSignature(ecs::ComponentSignature(), allEntities);
@@ -1027,6 +1027,12 @@ public:
               // Calculate angle from turret to player
               float dx = playerTransform.x - transform.x;
               float dy = playerTransform.y - transform.y;
+              
+              // For flipped turrets (bottom turrets), negate dy to account for vertical flip
+              if (sprite.flipY) {
+                dy = -dy;
+              }
+              
               float angle = std::atan2(dy, dx) * 180.0F / 3.14159265F; // Convert to degrees
               
               // Normalize angle to 0-180 range (left to right)
@@ -1040,11 +1046,10 @@ public:
               angle = 180.0F - angle;
               
               // Map angle (0-180) to frame (0-8) with hysteresis to prevent rapid switching
-              // Each frame covers 22.5 degrees (180/8), but with hysteresis zones
               const float degreesPerFrame = 180.0F / 8.0F; // 22.5 degrees per frame
-              const float hysteresis = degreesPerFrame * 0.3F; // 30% hysteresis
+              const float hysteresis = degreesPerFrame * 0.4F; // 40% hysteresis for stability
               
-              // Get current frame for hysteresis
+              // Get current frame
               int currentFrame = sprite.currentFrame;
               
               // Calculate target frame
@@ -1052,20 +1057,22 @@ public:
               if (targetFrame > 8) targetFrame = 8;
               if (targetFrame < 0) targetFrame = 0;
               
-              // Apply hysteresis - only change frame if we've moved significantly
+              // Apply hysteresis - only change if we've moved well outside current frame range
               bool shouldChange = false;
-              if (targetFrame > currentFrame) {
-                // Moving to higher frame number
-                float threshold = (currentFrame + 0.5F) * degreesPerFrame + hysteresis;
-                if (angle >= threshold) {
-                  shouldChange = true;
-                }
-              } else if (targetFrame < currentFrame) {
-                // Moving to lower frame number
-                float threshold = (currentFrame - 0.5F) * degreesPerFrame - hysteresis;
-                if (angle <= threshold) {
-                  shouldChange = true;
-                }
+              
+              // Calculate the center angle of current frame
+              float currentFrameCenter = (currentFrame + 0.5F) * degreesPerFrame;
+              
+              // Calculate the center angle of target frame  
+              float targetFrameCenter = (targetFrame + 0.5F) * degreesPerFrame;
+              
+              // Only change if the angle is significantly closer to the target frame than current frame
+              float distanceToCurrent = std::abs(angle - currentFrameCenter);
+              float distanceToTarget = std::abs(angle - targetFrameCenter);
+              
+              // If target is different and angle is much closer to target (with hysteresis)
+              if (targetFrame != currentFrame && distanceToTarget < distanceToCurrent - hysteresis) {
+                shouldChange = true;
               }
               
               // Apply the frame change and reset cooldown timer
@@ -1123,7 +1130,7 @@ public:
                 // Add components for the shot
                 ecs::Transform shotTransform;
                 shotTransform.x = transform.x + 17.0F; // Offset from turret center
-                shotTransform.y = transform.y + 14.0F;
+                shotTransform.y = transform.y + (sprite.flipY ? -14.0F : 14.0F); // Adjust for flipped turrets
                 shotTransform.rotation = 0.0F;
                 shotTransform.scale = 1.0F;
                 world.addComponent(shot, shotTransform);

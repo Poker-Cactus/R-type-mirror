@@ -716,6 +716,10 @@ private:
       {19.0f, 175.0f}, 
       {75.0f, 158.0f},
       {131.0f, 141.0f},
+      // Bottom turrets facing down
+      {19.0f, 300.0f}, 
+      // {75.0f, -158.0f},
+      // {131.0f, -141.0f},
     };
 
     for (size_t i = 0; i < turretOffsets.size(); ++i) {
@@ -768,6 +772,7 @@ private:
       sprite.currentFrame = turretConfig->sprite.startFrame;
       sprite.frameTime = turretConfig->sprite.frameTime;
       sprite.reverseAnimation = turretConfig->sprite.reverseAnimation;
+      sprite.flipY = (offset.second < 0.0f); // Flip bottom turrets vertically
       world.addComponent(turret, sprite);
 
       // Attachment component - links turret to mothership

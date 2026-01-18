@@ -447,13 +447,28 @@ void PlayingState::render()
             }
           }
 
-          renderer->drawTextureRegion(
-            textureIt->second,
-            {.x = srcX, .y = srcY, .width = frameWidth, .height = frameHeight}, // Source: current frame
-            {.x = static_cast<int>(transformComponent.x),
-             .y = static_cast<int>(transformComponent.y),
-             .width = scaledWidth,
-             .height = scaledHeight}); // Destination with scale applied
+          // Special handling for flipped sprites
+          if (sprite.flipX || sprite.flipY) {
+            // Use drawTextureRegionEx for flipped sprites
+            renderer->drawTextureRegionEx(
+              textureIt->second,
+              {.x = srcX, .y = srcY, .width = frameWidth, .height = frameHeight}, // Source: current frame
+              {.x = static_cast<int>(transformComponent.x),
+               .y = static_cast<int>(transformComponent.y),
+               .width = scaledWidth,
+               .height = scaledHeight}, // Destination with scale applied
+              0.0, // angle
+              sprite.flipX, // flipX
+              sprite.flipY); // flipY
+          } else {
+            renderer->drawTextureRegion(
+              textureIt->second,
+              {.x = srcX, .y = srcY, .width = frameWidth, .height = frameHeight}, // Source: current frame
+              {.x = static_cast<int>(transformComponent.x),
+               .y = static_cast<int>(transformComponent.y),
+               .width = scaledWidth,
+               .height = scaledHeight}); // Destination with scale applied
+          }
           rendered = true;
         }
       }

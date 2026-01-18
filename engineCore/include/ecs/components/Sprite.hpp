@@ -46,6 +46,10 @@ struct Sprite : public IComponent {
   std::uint32_t offsetX = 0; // Horizontal pixel offset (skip columns)
   std::uint32_t offsetY = 0; // Vertical pixel offset (skip rows)
 
+  // Flip support
+  bool flipX = false; // Flip horizontally
+  bool flipY = false; // Flip vertically
+
   [[nodiscard]] nlohmann::json toJson() const override
   {
     nlohmann::json json;
@@ -64,6 +68,8 @@ struct Sprite : public IComponent {
     json["row"] = row;
     json["offsetX"] = offsetX;
     json["offsetY"] = offsetY;
+    json["flipX"] = flipX;
+    json["flipY"] = flipY;
     return json;
   }
 
@@ -85,6 +91,8 @@ struct Sprite : public IComponent {
     sprite.row = json.value("row", 0u);
     sprite.offsetX = json.value("offsetX", 0u);
     sprite.offsetY = json.value("offsetY", 0u);
+    sprite.flipX = json.value("flipX", false);
+    sprite.flipY = json.value("flipY", false);
     return sprite;
   }
 };
