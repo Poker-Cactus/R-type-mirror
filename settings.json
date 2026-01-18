@@ -1,24 +1,24 @@
 {
   "audio": {
-    "masterVolume": 100,
+    "masterVolume": 65,
     "musicVolume": 100,
     "sfxVolume": 100
   },
   "controls": {
     "chargedShoot": 24,
     "detach": 43,
-    "down": 11,
-    "left": 12,
-    "right": 13,
+    "down": 38,
+    "left": 36,
+    "right": 23,
     "shoot": 5,
     "toggleInfoMode": 28,
-    "up": 10
+    "up": 45
   },
   "debug": {
     "showCPUUsage": true,
     "showEntityCount": true,
     "showFPS": true,
-    "showInfoMode": true,
+    "showInfoMode": false,
     "showNetworkInfo": true,
     "showRAMUsage": true
   },

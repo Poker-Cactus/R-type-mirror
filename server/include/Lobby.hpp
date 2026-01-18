@@ -262,6 +262,9 @@ private:
   // AI difficulty setting
   AIDifficulty m_aiDifficulty = AIDifficulty::MEDIUM;
 
+  // Event listener handles (must be kept alive for the duration of the lobby)
+  ecs::EventListenerHandle m_levelCompleteListener;
+
   // End-of-game state: store final scores when player entities are removed
   bool m_endScreenActive = false;
   std::unordered_map<std::uint32_t, int> m_finalScores; // clientId -> score

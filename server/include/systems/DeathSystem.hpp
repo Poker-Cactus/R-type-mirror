@@ -27,6 +27,7 @@
 #include "../../engineCore/include/ecs/components/Score.hpp"
 #include "../Lobby.hpp"
 #include "../WorldLobbyRegistry.hpp"
+#include "SpawnSystem.hpp"
 #include "ecs/ComponentSignature.hpp"
 #include <iostream>
 #include <nlohmann/json.hpp>
@@ -311,9 +312,16 @@ private:
           lobby->convertToSpectator(pid.clientId);
 
         } else {
-          std::cout << "[DeathSystem] -> Last player died, triggering end-screen (no player_dead message)" << std::endl;
-          // Last player died - trigger lobby end-screen (stop spawning and send scores)
-          // Do NOT send player_dead message - endGameShowScores will send lobby_end instead
+          std::cout << "[DeathSystem] -> Last player died, stopping spawn and triggering end-screen" << std::endl;
+          // Last player died - game over for everyone
+
+          // Stop level spawning when game is over
+          if (auto *spawnSystem = world.getSystem<server::SpawnSystem>()) {
+            std::cout << "[DeathSystem] -> Stopping spawn system (game over)" << std::endl;
+            spawnSystem->stopLevel();
+          }
+
+          // Trigger lobby end-screen to send scores
           if (lobby != nullptr) {
             try {
               lobby->endGameShowScores();

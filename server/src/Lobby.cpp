@@ -7,9 +7,11 @@
 
 #include "Lobby.hpp"
 #include "../../engineCore/include/ecs/EngineComponents.hpp"
+#include "../../engineCore/include/ecs/components/Immortal.hpp"
 #include "../../network/include/INetworkManager.hpp"
 #include "../include/Game.hpp"
 #include "../include/ServerSystems.hpp"
+#include "../include/TestMode.hpp"
 #include "../include/config/EnemyConfig.hpp"
 #include "WorldLobbyRegistry.hpp"
 #include "systems/InvulnerabilitySystem.hpp"
@@ -253,6 +255,7 @@ void Lobby::initializeSystems()
 
   // Register all game systems for this lobby's world
   m_world->registerSystem<server::InputMovementSystem>();
+  m_world->registerSystem<server::LevelProgressSystem>();
   m_world->registerSystem<server::EnemyAISystem>();
   m_world->registerSystem<server::AllySystem>();
   // Map collision system disabled for now
@@ -309,17 +312,40 @@ void Lobby::initializeSystems()
 
     if (m_gameMode == GameMode::ENDLESS) {
       std::cout << "[Lobby:" << m_code << "] Infinite mode enabled" << std::endl;
+      spawnSystem->enableInfiniteMode();
     } else if (m_levelConfigManager) {
       spawnSystem->startLevel("level_1");
-      std::cout << "[Lobby:" << m_code << "] Level config manager set, started level_1" << std::endl;
-    } else if (m_enemyConfigManager) {
+      std::cout << "[Lobby:" << m_code << "] CLASSIC mode - Level config manager set, started level_1" << std::endl;
+    } else {
       // Fallback to multi-type spawning if no level config
-      spawnSystem->enableMultipleSpawnTypes({"enemy_blue"});
-      std::cout << "[Lobby:" << m_code << "] Enemy config manager set on SpawnSystem" << std::endl;
+      std::cout << "[Lobby:" << m_code << "] WARNING: No level config manager, using fallback spawning" << std::endl;
+      if (m_enemyConfigManager) {
+        spawnSystem->enableMultipleSpawnTypes({"enemy_blue"});
+        std::cout << "[Lobby:" << m_code << "] Enemy config manager set on SpawnSystem" << std::endl;
+      }
     }
 
     spawnSystem->difficulty = static_cast<Difficulty>(m_difficulty);
   }
+
+  // Listen for level complete events to notify clients
+  // Store the handle to keep the listener alive!
+  m_levelCompleteListener =
+    m_world->getEventBus().subscribe<ecs::LevelCompleteEvent>([this](const ecs::LevelCompleteEvent &event) {
+      std::cout << "[Lobby:" << m_code << "] ✓ Level complete: " << event.levelId << " → " << event.nextLevelId
+                << std::endl;
+
+      // Send level complete message to all clients in this lobby
+      nlohmann::json message;
+      message["type"] = "level_complete";
+      message["current_level"] = event.levelId;
+      message["next_level"] = event.nextLevelId;
+
+      for (const auto &clientId : m_clients) {
+        sendJsonToClient(clientId, message);
+      }
+      std::cout << "[Lobby:" << m_code << "] → Sent level_complete to " << m_clients.size() << " clients" << std::endl;
+    });
 
   std::cout << "[Lobby:" << m_code << "] Initialized game systems" << '\n';
 }
@@ -410,6 +436,16 @@ void Lobby::spawnPlayer(std::uint32_t clientId)
   ecs::PlayerId playerId;
   playerId.clientId = clientId;
   m_world->addComponent(player, playerId);
+
+  if (TestMode::ENABLE_IMMORTAL_MODE) {
+    m_world->addComponent(player, ecs::Immortal{true});
+    std::cout << "[Lobby:" << m_code << "] ✓ IMMORTAL MODE: Player is invincible!" << std::endl;
+  }
+
+  // Add LevelProgress to track distance traveled through the level
+  ecs::LevelProgress levelProgress;
+  levelProgress.distanceTraveled = 0.0f;
+  m_world->addComponent(player, levelProgress);
 
   // Track the player entity
   m_playerEntities[clientId] = player;

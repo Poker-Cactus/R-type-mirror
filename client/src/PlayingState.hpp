@@ -124,6 +124,23 @@ public:
    */
   bool isSpectator() const { return m_isSpectator; }
 
+  /**
+   * @brief Start a level transition with fade effect
+   * @param nextLevelId ID of the next level
+   */
+  void startLevelTransition(const std::string &nextLevelId);
+
+  /**
+   * @brief Update level transition state
+   * @param deltaTime Time elapsed since last update
+   */
+  void updateLevelTransition(float deltaTime);
+
+  /**
+   * @brief Render the fade overlay
+   */
+  void renderFadeOverlay();
+
 private:
   std::shared_ptr<IRenderer> renderer; ///< Renderer interface
   std::shared_ptr<ecs::World> world; ///< ECS world
@@ -234,6 +251,19 @@ private:
   std::unordered_set<ecs::Entity> m_previousEnemies; ///< Track enemies from previous frame
   int m_previousEnemyCount = 0; ///< Track enemy count from previous frame
 
+  // Level transition state
+  bool m_isTransitioning = false; ///< Is a level transition in progress
+  float m_transitionTimer = 0.0f; ///< Timer for transition phases
+  float m_fadeAlpha = 0.0f; ///< Current fade alpha (0.0 = transparent, 1.0 = black)
+  enum class TransitionPhase {
+    NONE,
+    FADE_OUT, // Fade to black
+    WAITING, // Brief pause at black
+    FADE_IN // Fade from black
+  };
+  TransitionPhase m_transitionPhase = TransitionPhase::NONE;
+  std::string m_nextLevelId; ///< ID of the next level to transition to
+
   /**
    * @brief Load sound effects
    */
@@ -258,4 +288,11 @@ private:
    * @brief Update sound effects based on game events
    */
   void updateSounds();
+
+  /**
+   * @brief Load or clear the map texture for a given level id
+   * If the level has a `map` entry, loads its texture and updates scroll speed.
+   * If no map is defined, clears the current map texture so nothing is drawn.
+   */
+  void updateMapForLevel(const std::string &levelId);
 };

@@ -27,12 +27,16 @@ bool AudioManager::init()
   loadSound("base_shot", "client/assets/Sounds/rtype_base_shot.mp3");
   loadSound("charged_shot", "client/assets/Sounds/charged_shot.mp3");
   loadSound("enemy_explosion", "client/assets/Sounds/enemy_explosion.wav");
+  loadSound("stage_clear", "client/assets/Sounds/STAGE CLEAR.mp3");
   loadSound("button_click", "client/assets/Sounds/buttonClicked.wav");
   loadSound("button_hover", "client/assets/Sounds/Hovering1.wav");
 
   // Load all music tracks
   loadMusicTrack("menu_music", "client/assets/audios/loadingMusic.mp3");
   loadMusicTrack("level1_music", "client/assets/Sounds/level1.mp3");
+  loadMusicTrack("level2_music", "client/assets/Sounds/level2.mp3");
+  loadMusicTrack("level3_music", "client/assets/Sounds/level3.mp3");
+  loadMusicTrack("level4_music", "client/assets/Sounds/level4.mp3");
   loadMusicTrack("intro_music", "client/assets/audios/loadingMusic.mp3");
 
   std::cout << "[AudioManager] Loaded " << m_sounds.size() << " sounds and " << m_music.size() << " music tracks"

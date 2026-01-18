@@ -6,6 +6,8 @@
 */
 
 #include "Game.hpp"
+#include "../../engineCore/include/ecs/components/Input.hpp"
+#include "../../engineCore/include/ecs/components/Score.hpp"
 #include "../interface/IColorBlindSupport.hpp"
 #include "../interface/KeyCodes.hpp"
 #include "Menu/MenuState.hpp"
@@ -224,6 +226,37 @@ bool Game::init()
         [this](const std::string &sender, const std::string &content, std::uint32_t senderId) {
           if (this->m_chatUI) {
             this->m_chatUI->addMessage(sender, content, false, senderId);
+          }
+        });
+
+      // Set level complete callback to trigger transition
+      networkReceiveSystem->setLevelCompleteCallback(
+        [this](const std::string &currentLevel, const std::string &nextLevel) {
+          if (this->playingState && !this->playingState->isSpectator()) {
+            std::cout << "[Game] Level complete callback: " << currentLevel << " → " << nextLevel << std::endl;
+
+            // If nextLevel is empty, we've completed all levels → show victory screen
+            if (nextLevel.empty()) {
+              std::cout << "[Game] ✓ GAME COMPLETED! Showing victory screen..." << std::endl;
+
+              // Get player score before switching state
+              ecs::ComponentSignature playerSig;
+              playerSig.set(ecs::getComponentId<ecs::Input>());
+              playerSig.set(ecs::getComponentId<ecs::Score>());
+              std::vector<ecs::Entity> players;
+              this->m_world->getEntitiesWithSignature(playerSig, players);
+
+              if (!players.empty()) {
+                const auto &score = this->m_world->getComponent<ecs::Score>(players[0]);
+                this->m_victoryScore = score.points;
+              }
+
+              this->currentState = GameState::VICTORY;
+            } else {
+              this->playingState->startLevelTransition(nextLevel);
+            }
+          } else if (this->playingState && this->playingState->isSpectator()) {
+            std::cout << "[Game] Level complete but player is spectator - ignoring transition" << std::endl;
           }
         });
     }
@@ -772,11 +805,6 @@ void Game::handlePlayingStateInput()
   if (playingState && playingState->shouldReturnToMenu()) {
     std::cout << "[Game] Player died - returning to menu" << '\n';
 
-    // Resume menu music when returning to menu
-    if (m_audioManager) {
-      m_audioManager->playMusic("menu_music", true);
-    }
-
     // Save highscore if in solo mode
     if (playingState->isSolo() && lobbyRoomState) {
       int finalScore = playingState->getPlayerScore();
@@ -809,9 +837,15 @@ void Game::handlePlayingStateInput()
       }
     }
 
-    // Clean up playing state resources
+    // Clean up playing state resources (this stops the game music)
     playingState->cleanup();
     playingState.reset();
+
+    // Resume menu music AFTER cleanup (so game music is stopped first)
+    if (m_audioManager) {
+      std::cout << "[Game] Resuming menu music" << std::endl;
+      m_audioManager->playMusic("menu_music", true);
+    }
 
     // Also clear all entities from the client world to avoid stale data
     if (m_world) {
@@ -893,6 +927,9 @@ void Game::delegateInputToCurrentState()
   case GameState::PAUSED:
     // TODO: handle pause input
     break;
+  case GameState::VICTORY:
+    handleVictoryInput();
+    break;
   }
 }
 
@@ -951,6 +988,8 @@ void Game::update(float deltaTime)
       lobbyRoomState->update(deltaTime);
     }
     break;
+  case GameState::VICTORY:
+    break;
   case GameState::PLAYING:
     if (playingState) {
       playingState->update(deltaTime);
@@ -983,6 +1022,9 @@ void Game::render()
       playingState->render();
     }
     break;
+  case GameState::VICTORY:
+    renderVictoryScreen();
+    break;
   }
 
   // Render chat UI overlay (on top of everything)
@@ -1001,6 +1043,72 @@ void Game::render()
 void Game::setState(GameState newState)
 {
   currentState = newState;
+}
+
+void Game::handleVictoryInput()
+{
+  // Check for ESC or ENTER to return to menu
+  constexpr int KEY_ESCAPE = 27; // SDL_SCANCODE_ESCAPE or SFML escape
+
+  // Detect any key or click to continue
+  // For now we'll check for specific keys: ENTER or ESC
+  if (renderer->isKeyPressed(KEY_ESCAPE) || renderer->isKeyPressed(13)) { // 13 = ENTER
+    std::cout << "[Game] Returning to menu from victory screen" << std::endl;
+    currentState = GameState::MENU;
+    if (menu) {
+      menu->setState(MenuState::MAIN_MENU);
+    }
+  }
+}
+
+void Game::renderVictoryScreen()
+{
+  if (!renderer) {
+    return;
+  }
+
+  const int windowWidth = renderer->getWindowWidth();
+  const int windowHeight = renderer->getWindowHeight();
+
+  // Draw semi-transparent dark overlay
+  renderer->drawRect(0, 0, windowWidth, windowHeight, {0, 0, 0, 200});
+
+  // Load fonts
+  auto titleFont = renderer->loadFont("client/assets/font.opf/r-type.otf", 48);
+  auto subtitleFont = renderer->loadFont("client/assets/font.opf/r-type.otf", 32);
+  auto smallFont = renderer->loadFont("client/assets/font.opf/r-type.otf", 24);
+
+  // Victory message text
+  const std::string victoryText = "CONGRATULATIONS!";
+  const std::string completedText = "YOU HAVE COMPLETED THE GAME!";
+  const std::string scoreText = "FINAL SCORE: " + std::to_string(m_victoryScore);
+  const std::string continueText = "Press ENTER or ESC to return to menu";
+
+  // Get text dimensions for centering
+  int victoryW = 0, victoryH = 0;
+  renderer->getTextSize(titleFont, victoryText, victoryW, victoryH);
+
+  int completedW = 0, completedH = 0;
+  renderer->getTextSize(subtitleFont, completedText, completedW, completedH);
+
+  int scoreW = 0, scoreH = 0;
+  renderer->getTextSize(smallFont, scoreText, scoreW, scoreH);
+
+  int continueW = 0, continueH = 0;
+  renderer->getTextSize(smallFont, continueText, continueW, continueH);
+
+  const int centerX = windowWidth / 2;
+  const int centerY = windowHeight / 2;
+
+  // Draw centered text
+  renderer->drawText(titleFont, victoryText, centerX - victoryW / 2, centerY - 100, {255, 255, 0, 255});
+  renderer->drawText(subtitleFont, completedText, centerX - completedW / 2, centerY - 20, {255, 255, 255, 255});
+  renderer->drawText(smallFont, scoreText, centerX - scoreW / 2, centerY + 40, {0, 255, 0, 255});
+  renderer->drawText(smallFont, continueText, centerX - continueW / 2, centerY + 120, {200, 200, 200, 255});
+
+  renderer->freeFont(titleFont);
+  renderer->freeFont(subtitleFont);
+  renderer->freeFont(smallFont);
 }
 
 Game::GameState Game::getState() const

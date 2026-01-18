@@ -11,6 +11,7 @@
 #include "../Entity.hpp"
 #include "IEvent.hpp"
 #include <cstdint>
+#include <string>
 #include <vector>
 
 namespace ecs
@@ -142,6 +143,16 @@ struct ScoreEvent : public IEvent {
   int points;
 
   ScoreEvent(Entity p, int pts) : player(p), points(pts) {}
+};
+
+/**
+ * @brief Event triggered when a level is completed
+ */
+struct LevelCompleteEvent : public IEvent {
+  std::string levelId;
+  std::string nextLevelId;
+
+  LevelCompleteEvent(const std::string &current, const std::string &next = "") : levelId(current), nextLevelId(next) {}
 };
 
 } // namespace ecs

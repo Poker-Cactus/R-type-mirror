@@ -19,6 +19,7 @@
 #include "systems/FollowerSystem.hpp"
 #include "systems/InputMovementSystem.hpp"
 #include "systems/InvulnerabilitySystem.hpp"
+#include "systems/LevelProgressSystem.hpp"
 #include "systems/LifetimeSystem.hpp"
 #include "systems/NetworkReceiveSystem.hpp"
 #include "systems/NetworkSendSystem.hpp"
