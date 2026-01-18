@@ -37,6 +37,9 @@ bool LevelConfigManager::loadFromFile(const std::string &filepath)
         std::cerr << "[LevelConfig] Warning: skipping level with empty ID" << std::endl;
         continue;
       }
+      if (json.contains("map") && json["map"].is_object()) {
+        config.map = MapConfig::fromJson(json["map"]);
+      }
       m_configs[config.id] = config;
       std::cout << "[LevelConfig] Loaded level: " << config.id << " (" << config.name << ") with "
                 << config.waves.size() << " waves" << std::endl;

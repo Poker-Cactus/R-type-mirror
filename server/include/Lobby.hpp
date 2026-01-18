@@ -187,6 +187,35 @@ public:
   void convertToSpectator(std::uint32_t clientId);
 
   /**
+   * @brief Trigger end-of-game flow: stop spawning, collect scores and notify clients
+   */
+  void endGameShowScores();
+
+  /**
+   * @brief Notify the lobby that a client has left the end-screen view
+   */
+  void notifyEndScreenLeft(std::uint32_t clientId);
+
+  [[nodiscard]] bool isEndScreenActive() const { return m_endScreenActive; }
+
+  /**
+   * @brief Request that the owning LobbyManager destroy this lobby
+   * This will notify the manager to stop and remove the lobby.
+   */
+  void requestDestroy();
+
+  /**
+   * @brief Set owning LobbyManager for callbacks
+   */
+  void setManager(class LobbyManager *manager);
+
+  /**
+   * @brief Convert a spectator back to player (recreate player entity if game started)
+   * @param clientId The client identifier
+   */
+  void convertToPlayer(std::uint32_t clientId);
+
+  /**
    * @brief Get the AI difficulty setting
    * @return The AI difficulty
    */
@@ -194,6 +223,7 @@ public:
 
 private:
   void initializeSystems();
+  // Map collisions removed: no initialization required
   void spawnPlayer(std::uint32_t clientId);
   void spawnAlly();
   void destroyPlayerEntity(std::uint32_t clientId);
@@ -213,6 +243,9 @@ private:
   // Map client IDs to their player entities
   std::unordered_map<std::uint32_t, ecs::Entity> m_playerEntities;
   ecs::Entity m_allyEntity = 0;
+  // Map collision entity removed
+  // Pointer back to owning manager (not owning)
+  class LobbyManager *m_manager = nullptr;
 
   // Enemy configuration manager
   std::shared_ptr<server::EnemyConfigManager> m_enemyConfigManager;
@@ -231,6 +264,19 @@ private:
   
   // Event listener handles (must be kept alive for the duration of the lobby)
   ecs::EventListenerHandle m_levelCompleteListener;
+
+  // End-of-game state: store final scores when player entities are removed
+  bool m_endScreenActive = false;
+  std::unordered_map<std::uint32_t, int> m_finalScores; // clientId -> score
+  std::unordered_set<std::uint32_t> m_endScreenViewers;  // clients currently viewing the score page
+  // Optional mapping of client IDs to their display names (provided by client)
+  std::unordered_map<std::uint32_t, std::string> m_clientNames;
+
+public:
+  // Store a client's display name for use in UI (scores, chat, etc.)
+  void setClientName(std::uint32_t clientId, const std::string &name);
+  [[nodiscard]] std::string getClientName(std::uint32_t clientId) const;
+ 
 };
 
 #endif /* !LOBBY_HPP_ */

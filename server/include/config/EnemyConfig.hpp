@@ -101,6 +101,10 @@ struct EnemyConfig {
       config.transform.scale = t.value("scale", 1.0f);
     }
 
+    // Default collider to sprite dimensions (scaled) unless explicitly provided
+    config.collider.width = static_cast<float>(config.sprite.width) * config.transform.scale;
+    config.collider.height = static_cast<float>(config.sprite.height) * config.transform.scale;
+
     if (json.contains("health")) {
       const auto &h = json["health"];
       config.health.hp = h.value("hp", 10);
@@ -109,8 +113,8 @@ struct EnemyConfig {
 
     if (json.contains("collider")) {
       const auto &c = json["collider"];
-      config.collider.width = c.value("width", 32.0f);
-      config.collider.height = c.value("height", 32.0f);
+      config.collider.width = c.value("width", config.collider.width);
+      config.collider.height = c.value("height", config.collider.height);
     }
 
     if (json.contains("velocity")) {

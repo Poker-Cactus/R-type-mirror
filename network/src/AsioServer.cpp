@@ -221,7 +221,7 @@ void AsioServer::createPlayerEntity(std::uint32_t clientId)
   m_world->addComponent(player, input);
 
   m_world->addComponent(player,
-                        ecs::Collider{NetworkConfig::PLAYER_COLLIDER_SIZE, NetworkConfig::PLAYER_COLLIDER_SIZE});
+                        ecs::Collider{NetworkConfig::PLAYER_COLLIDER_WIDTH, NetworkConfig::PLAYER_COLLIDER_HEIGHT});
 
   // SERVER ASSIGNS VISUAL IDENTITY AS DATA
   // Player sprite decided at creation time

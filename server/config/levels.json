@@ -5,7 +5,27 @@
       "id": "level_1",
       "name": "First Contact",
       "levelLength": 10000.0,
+      "map": {
+        "path": "client/assets/ruins_map.png",
+        "scale": "fit-height",
+        "speed": 100.0
+      },
       "waves": [
+        {
+          "id": "wave_boss",
+          "name": "BOSS FIGHT",
+          "spawns": [
+            {
+              "count": 1,
+              "delay": 0.0,
+              "enemyType": "boss_evangelic",
+              "spacing": 0.0,
+              "x": 1500.0,
+              "y": 200.0
+            }
+          ],
+          "startTime": 1.0
+        },
         {
           "id": "wave_1",
           "name": "Opening Wave",
@@ -129,6 +149,11 @@
       "id": "level_2",
       "name": "Escalation",
       "levelLength": 13000.0,
+      "map": {
+        "path": "client/assets/forest_map.png",
+        "scale": "fit-height",
+        "speed": 1.5
+      },
       "waves": [
         {
           "id": "wave_1",

@@ -39,8 +39,10 @@ private:
   void handlePlayerInput(ecs::World &world, std::string message, std::uint32_t clientId);
   void handleViewport(ecs::World &world, const nlohmann::json &json, std::uint32_t clientId);
   void handleRequestLobby(const nlohmann::json &json, std::uint32_t clientId);
+  void handleToggleSpectator(const nlohmann::json &json, std::uint32_t clientId);
   void handleStartGame(ecs::World &world, std::uint32_t clientId);
   void handleLeaveLobby(ecs::World &world, std::uint32_t clientId);
+  void handleEndScreenLeft(ecs::World &world, std::uint32_t clientId);
   void handleSetDifficulty(const nlohmann::json &json, std::uint32_t clientId);
   void handleChatMessage(const nlohmann::json &json, std::uint32_t clientId);
 
