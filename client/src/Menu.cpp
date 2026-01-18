@@ -7,6 +7,7 @@
 
 #include "Menu.hpp"
 #include "../include/AssetPath.hpp"
+#include "../include/AudioManager.hpp"
 #include "Menu/LobbyMenu/LobbyMenu.hpp"
 #include "Menu/MainMenu/MainMenu.hpp"
 #include "Menu/ProfileMenu/ProfileMenu.hpp"
@@ -15,8 +16,8 @@
 #include <iostream>
 #include <memory>
 
-Menu::Menu(std::shared_ptr<IRenderer> renderer, Settings &settings)
-    : m_renderer(std::move(renderer)), settings(settings)
+Menu::Menu(std::shared_ptr<IRenderer> renderer, Settings &settings, std::shared_ptr<AudioManager> audioManager)
+    : m_renderer(std::move(renderer)), settings(settings), m_audioManager(std::move(audioManager))
 {
 }
 
@@ -59,7 +60,10 @@ void Menu::init()
     moonFront = m_renderer->loadTexture("client/assets/moon-para/moon_front.png");
     moonFloor = m_renderer->loadTexture("client/assets/moon-para/moon_floor.png");
 
-    menuMusic = m_renderer->loadMusic("client/assets/audios/rtypeMenuMusic.mp3");
+    // Start menu music
+    if (m_audioManager) {
+      m_audioManager->playMusic("menu_music");
+    }
   } catch (const std::exception &e) {
     std::cerr << "Exception during menu initialization: " << e.what() << '\n';
   }
@@ -134,8 +138,6 @@ void Menu::cleanup()
 {
   if (menu_font != nullptr && m_renderer != nullptr)
     m_renderer->freeFont(menu_font);
-  if (menuMusic != nullptr && m_renderer != nullptr)
-    m_renderer->freeMusic(menuMusic);
   if (moonFloor != nullptr && m_renderer != nullptr)
     m_renderer->freeTexture(moonFloor);
   if (moonSky != nullptr && m_renderer != nullptr)
@@ -147,7 +149,6 @@ void Menu::cleanup()
   if (moonBack != nullptr && m_renderer != nullptr)
     m_renderer->freeTexture(moonBack);
   menu_font = nullptr;
-  menuMusic = nullptr;
   moonFloor = nullptr;
   moonSky = nullptr;
   moonMid = nullptr;
