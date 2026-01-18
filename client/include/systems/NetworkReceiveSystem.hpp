@@ -93,6 +93,12 @@ public:
    */
   void setChatMessageCallback(std::function<void(const std::string &, const std::string &, std::uint32_t)> callback);
 
+  /**
+   * @brief Set callback for level complete event
+   * @param callback Function to call when level is completed (currentLevel, nextLevel)
+   */
+  void setLevelCompleteCallback(std::function<void(const std::string &, const std::string &)> callback);
+
 private:
   std::shared_ptr<INetworkManager> m_networkManager;
   std::function<void()> m_gameStartedCallback;
@@ -102,6 +108,7 @@ private:
   std::function<void()> m_lobbyLeftCallback;
   std::function<void(const nlohmann::json &)> m_playerDeadCallback;
   std::function<void(const std::string &, const std::string &, std::uint32_t)> m_chatMessageCallback;
+  std::function<void(const std::string &, const std::string &)> m_levelCompleteCallback;
 
   void handleEntityCreated(ecs::World &world, const nlohmann::json &json);
   void handleEntityUpdate(ecs::World &world, const nlohmann::json &json);

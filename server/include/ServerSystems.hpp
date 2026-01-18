@@ -17,6 +17,7 @@
 #include "systems/EntityLifetimeSystem.hpp"
 #include "systems/FollowerSystem.hpp"
 #include "systems/InputMovementSystem.hpp"
+#include "systems/LevelProgressSystem.hpp"
 #include "systems/LifetimeSystem.hpp"
 #include "systems/NetworkReceiveSystem.hpp"
 #include "systems/NetworkSendSystem.hpp"

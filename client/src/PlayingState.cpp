@@ -190,6 +190,11 @@ void PlayingState::update(float delta_time)
       m_pingTimer = 0.0f;
     }
   }
+
+  // Update level transition
+  if (m_isTransitioning) {
+    updateLevelTransition(delta_time);
+  }
 }
 
 void PlayingState::render()
@@ -564,6 +569,11 @@ void PlayingState::render()
 
   // Draw HUD on top of everything
   renderHUD();
+
+  // Draw fade overlay if transitioning
+  if (m_isTransitioning) {
+    renderFadeOverlay();
+  }
 }
 
 void PlayingState::renderHUD()
@@ -986,6 +996,12 @@ void PlayingState::changeAnimationPlayers(float delta_time)
 
 void PlayingState::cleanup()
 {
+  // Stop game music
+  if (m_audioManager) {
+    std::cout << "[PlayingState] Stopping game music" << std::endl;
+    m_audioManager->stopMusic();
+  }
+
   if (background) {
     background->cleanup();
     background.reset();
@@ -1425,4 +1441,94 @@ void PlayingState::freeSpriteTextures()
   }
 
   m_spriteTextures.clear();
+}
+
+void PlayingState::startLevelTransition(const std::string &nextLevelId)
+{
+  std::cout << "[PlayingState] ✓ Starting level transition to: " << nextLevelId << std::endl;
+  
+  m_isTransitioning = true;
+  m_transitionPhase = TransitionPhase::FADE_OUT;
+  m_transitionTimer = 0.0f;
+  m_fadeAlpha = 0.0f;
+  m_nextLevelId = nextLevelId;
+  
+  // Play stage clear sound
+  if (m_audioManager) {
+    std::cout << "[PlayingState] → Playing stage_clear sound" << std::endl;
+    m_audioManager->playSound("stage_clear");
+  } else {
+    std::cout << "[PlayingState] ✗ AudioManager is null, cannot play sound" << std::endl;
+  }
+}
+
+void PlayingState::updateLevelTransition(float deltaTime)
+{
+  constexpr float FADE_OUT_DURATION = 1.0f;  // 1 second to fade to black
+  constexpr float WAIT_DURATION = 4.0f;      // 4 seconds wait at black (with sound)
+  constexpr float FADE_IN_DURATION = 1.0f;   // 1 second to fade from black
+  
+  m_transitionTimer += deltaTime;
+  
+  switch (m_transitionPhase) {
+    case TransitionPhase::FADE_OUT:
+      // Fade to black
+      m_fadeAlpha = std::min(1.0f, m_transitionTimer / FADE_OUT_DURATION);
+      if (m_transitionTimer >= FADE_OUT_DURATION) {
+        m_transitionPhase = TransitionPhase::WAITING;
+        m_transitionTimer = 0.0f;
+        std::cout << "[PlayingState] Fade out complete, waiting..." << std::endl;
+      }
+      break;
+      
+    case TransitionPhase::WAITING:
+      // Wait at black screen
+      m_fadeAlpha = 1.0f;
+      if (m_transitionTimer >= WAIT_DURATION) {
+        m_transitionPhase = TransitionPhase::FADE_IN;
+        m_transitionTimer = 0.0f;
+        std::cout << "[PlayingState] Wait complete, fading in..." << std::endl;
+        
+        // TODO: Here we would actually load/start the next level
+        // For now, just log it
+        std::cout << "[PlayingState] Would start level: " << m_nextLevelId << std::endl;
+      }
+      break;
+      
+    case TransitionPhase::FADE_IN:
+      // Fade from black
+      m_fadeAlpha = std::max(0.0f, 1.0f - (m_transitionTimer / FADE_IN_DURATION));
+      if (m_transitionTimer >= FADE_IN_DURATION) {
+        m_transitionPhase = TransitionPhase::NONE;
+        m_isTransitioning = false;
+        m_fadeAlpha = 0.0f;
+        std::cout << "[PlayingState] ✓ Transition complete!" << std::endl;
+      }
+      break;
+      
+    case TransitionPhase::NONE:
+      // Should not happen
+      m_isTransitioning = false;
+      break;
+  }
+}
+
+void PlayingState::renderFadeOverlay()
+{
+  if (renderer == nullptr || m_fadeAlpha <= 0.0f) {
+    return;
+  }
+  
+  // Calculate alpha value (0-255)
+  int alpha = static_cast<int>(m_fadeAlpha * 255.0f);
+  
+  // Get window dimensions
+  int viewportWidth = 1280;  // Default
+  int viewportHeight = 720;  // Default
+  
+  // Draw a black rectangle covering the entire screen with alpha
+  // RGB(0, 0, 0) = black, with alpha for transparency
+  Color fadeColor = {0, 0, 0, static_cast<unsigned char>(alpha)};
+  
+  renderer->drawRect(0, 0, viewportWidth, viewportHeight, fadeColor);
 }

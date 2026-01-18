@@ -4,17 +4,19 @@
       "description": "Introductory level with basic enemy wave",
       "id": "level_1",
       "name": "First Contact",
+      "levelLength": 10000.0,
       "waves": [
         {
           "id": "wave_1",
           "name": "Opening Wave",
+          "triggerX": 500.0,
           "spawns": [
             {
               "count": 2,
               "delay": 0.0,
               "enemyType": "enemy_red",
               "spacing": 80.0,
-              "x": 1450.0,
+              "x": 1200.0,
               "y": 200.0
             },
             {
@@ -22,7 +24,7 @@
               "delay": 1.5,
               "enemyType": "enemy_red",
               "spacing": 80.0,
-              "x": 1450.0,
+              "x": 1200.0,
               "y": 400.0
             },
             {
@@ -30,22 +32,22 @@
               "delay": 3.0,
               "enemyType": "enemy_red",
               "spacing": 80.0,
-              "x": 1450.0,
+              "x": 1200.0,
               "y": 600.0
             }
-          ],
-          "startTime": 2.0
+          ]
         },
         {
           "id": "wave_2",
           "name": "Yellow Bee Swarm",
+          "triggerX": 3000.0,
           "spawns": [
             {
               "count": 10,
               "delay": 0.0,
               "enemyType": "enemy_blue",
               "spacing": 60.0,
-              "x": 1500.0,
+              "x": 3000.0,
               "y": 150.0
             },
             {
@@ -53,22 +55,22 @@
               "delay": 2.0,
               "enemyType": "enemy_blue",
               "spacing": 60.0,
-              "x": 1500.0,
+              "x": 3000.0,
               "y": 450.0
             }
-          ],
-          "startTime": 8.0
+          ]
         },
         {
           "id": "wave_3",
           "name": "Mixed Formation",
+          "triggerX": 6000.0,
           "spawns": [
             {
               "count": 2,
               "delay": 0.0,
               "enemyType": "enemy_red",
               "spacing": 80.0,
-              "x": 1450.0,
+              "x": 6000.0,
               "y": 300.0
             },
             {
@@ -76,7 +78,7 @@
               "delay": 0.5,
               "enemyType": "enemy_blue",
               "spacing": 40.0,
-              "x": 1500.0,
+              "x": 6200.0,
               "y": 200.0
             },
             {
@@ -84,7 +86,7 @@
               "delay": 1.0,
               "enemyType": "enemy_blue",
               "spacing": 40.0,
-              "x": 1500.0,
+              "x": 6200.0,
               "y": 400.0
             },
             {
@@ -92,22 +94,22 @@
               "delay": 1.5,
               "enemyType": "enemy_red",
               "spacing": 40.0,
-              "x": 1450.0,
+              "x": 6000.0,
               "y": 500.0
             }
-          ],
-          "startTime": 15.0
+          ]
         },
         {
           "id": "wave_4",
           "name": "Ground Walkers",
+          "triggerX": 9000.0,
           "spawns": [
             {
               "count": 3,
               "delay": 0.0,
               "enemyType": "enemy_walker",
               "spacing": 120.0,
-              "x": 1450.0,
+              "x": 9000.0,
               "y": 980.0
             },
             {
@@ -115,11 +117,10 @@
               "delay": 1.0,
               "enemyType": "enemy_red",
               "spacing": 80.0,
-              "x": 1450.0,
+              "x": 9000.0,
               "y": 200.0
             }
-          ],
-          "startTime": 22.0
+          ]
         }
       ]
     },
@@ -127,10 +128,12 @@
       "description": "Increased difficulty with faster waves",
       "id": "level_2",
       "name": "Escalation",
+      "levelLength": 13000.0,
       "waves": [
         {
           "id": "wave_1",
           "name": "Quick Start",
+          "triggerX": 500.0,
           "spawns": [
             {
               "count": 15,
@@ -148,19 +151,19 @@
               "x": 1500.0,
               "y": 500.0
             }
-          ],
-          "startTime": 1.0
+          ]
         },
         {
           "id": "wave_2",
           "name": "Heavy Assault",
+          "triggerX": 7000.0,
           "spawns": [
             {
               "count": 5,
               "delay": 0.0,
               "enemyType": "enemy_red",
               "spacing": 90.0,
-              "x": 1450.0,
+              "x": 5000.0,
               "y": 150.0
             },
             {
@@ -168,11 +171,10 @@
               "delay": 1.0,
               "enemyType": "enemy_red",
               "spacing": 90.0,
-              "x": 1450.0,
+              "x": 5000.0,
               "y": 450.0
             }
-          ],
-          "startTime": 6.0
+          ]
         }
       ]
     }

@@ -27,6 +27,7 @@ bool AudioManager::init()
   loadSound("base_shot", "client/assets/Sounds/rtype_base_shot.mp3");
   loadSound("charged_shot", "client/assets/Sounds/charged_shot.mp3");
   loadSound("enemy_explosion", "client/assets/Sounds/enemy_explosion.wav");
+  loadSound("stage_clear", "client/assets/Sounds/STAGE CLEAR.mp3");
   loadSound("button_click", "client/assets/Sounds/buttonClicked.wav");
   loadSound("button_hover", "client/assets/Sounds/Hovering1.wav");
 

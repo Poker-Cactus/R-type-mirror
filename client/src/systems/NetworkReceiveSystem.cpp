@@ -170,6 +170,14 @@ void ClientNetworkReceiveSystem::update(ecs::World &world, float deltaTime)
         if (m_chatMessageCallback) {
           m_chatMessageCallback(sender, content, senderId);
         }
+      } else if (type == "level_complete") {
+        // Handle level complete event from server
+        std::string currentLevel = json.value("current_level", "");
+        std::string nextLevel = json.value("next_level", "");
+        std::cout << "[Client] ✓ Level complete: " << currentLevel << " → " << nextLevel << std::endl;
+        if (m_levelCompleteCallback) {
+          m_levelCompleteCallback(currentLevel, nextLevel);
+        }
       }
 
     } catch (const std::exception &e) {
@@ -530,6 +538,12 @@ void ClientNetworkReceiveSystem::setChatMessageCallback(
   std::function<void(const std::string &, const std::string &, std::uint32_t)> callback)
 {
   m_chatMessageCallback = std::move(callback);
+}
+
+void ClientNetworkReceiveSystem::setLevelCompleteCallback(
+  std::function<void(const std::string &, const std::string &)> callback)
+{
+  m_levelCompleteCallback = std::move(callback);
 }
 
 ecs::ComponentSignature ClientNetworkReceiveSystem::getSignature() const

@@ -201,6 +201,17 @@ bool Game::init()
             this->m_chatUI->addMessage(sender, content, false, senderId);
           }
         });
+
+      // Set level complete callback to trigger transition
+      networkReceiveSystem->setLevelCompleteCallback(
+        [this](const std::string &currentLevel, const std::string &nextLevel) {
+          if (this->playingState && !this->playingState->isSpectator()) {
+            std::cout << "[Game] Level complete callback: " << currentLevel << " → " << nextLevel << std::endl;
+            this->playingState->startLevelTransition(nextLevel);
+          } else if (this->playingState && this->playingState->isSpectator()) {
+            std::cout << "[Game] Level complete but player is spectator - ignoring transition" << std::endl;
+          }
+        });
     }
 
     playingState = std::make_unique<PlayingState>(renderer, m_world, settings, m_networkManager, m_audioManager);

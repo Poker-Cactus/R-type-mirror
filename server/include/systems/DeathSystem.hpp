@@ -23,6 +23,7 @@
 #include "../../engineCore/include/ecs/components/Score.hpp"
 #include "../Lobby.hpp"
 #include "../WorldLobbyRegistry.hpp"
+#include "SpawnSystem.hpp"
 #include "ecs/ComponentSignature.hpp"
 #include <iostream>
 #include <nlohmann/json.hpp>
@@ -217,6 +218,12 @@ private:
           // Last player died - game over for everyone
           msg["type"] = "player_dead";
           msg["reason"] = "game_over";
+          
+          // Stop level spawning when game is over
+          if (auto *spawnSystem = world.getSystem<server::SpawnSystem>()) {
+            std::cout << "[DeathSystem] -> Stopping spawn system (game over)" << std::endl;
+            spawnSystem->stopLevel();
+          }
         }
         if (world.hasComponent<ecs::Health>(event.entity)) {
           const auto &health = world.getComponent<ecs::Health>(event.entity);

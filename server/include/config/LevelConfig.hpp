@@ -10,6 +10,7 @@
 
 #include <nlohmann/json.hpp>
 #include <string>
+#include <map>
 #include <unordered_map>
 #include <vector>
 
@@ -21,9 +22,9 @@ namespace server
  */
 struct EnemySpawn {
   std::string enemyType; // ID de l'ennemi (enemy_red, enemy_blue, etc.)
-  float x; // Position X (ou -1 pour aléatoire)
+  float x; // Position X absolue où spawner l'ennemi
   float y; // Position Y (ou -1 pour aléatoire)
-  float delay; // Délai avant spawn (en secondes depuis le début de la vague)
+  float delay; // Délai optionnel avant spawn (en secondes depuis le déclenchement de la vague)
   int count; // Nombre d'ennemis à spawner (défaut: 1)
   float spacing; // Espacement entre les ennemis du groupe (défaut: 50.0)
 
@@ -46,7 +47,7 @@ struct EnemySpawn {
 struct WaveConfig {
   std::string id;
   std::string name;
-  float startTime; // Temps de début de la vague (en secondes depuis le début du niveau)
+  float triggerX; // Position X où la vague se déclenche (quand le joueur atteint cette position)
   std::vector<EnemySpawn> spawns; // Liste des ennemis à spawner dans cette vague
 
   static WaveConfig fromJson(const nlohmann::json &json)
@@ -54,7 +55,7 @@ struct WaveConfig {
     WaveConfig wave;
     wave.id = json.value("id", "");
     wave.name = json.value("name", "");
-    wave.startTime = json.value("startTime", 0.0f);
+    wave.triggerX = json.value("triggerX", 0.0f);
 
     if (json.contains("spawns") && json["spawns"].is_array()) {
       for (const auto &spawnJson : json["spawns"]) {
@@ -73,6 +74,7 @@ struct LevelConfig {
   std::string id;
   std::string name;
   std::string description;
+  float levelLength; // Longueur totale du niveau en X (ex: 20000)
   std::vector<WaveConfig> waves;
 
   static LevelConfig fromJson(const nlohmann::json &json)
@@ -81,6 +83,7 @@ struct LevelConfig {
     level.id = json.value("id", "");
     level.name = json.value("name", "");
     level.description = json.value("description", "");
+    level.levelLength = json.value("levelLength", 20000.0f);
 
     if (json.contains("waves") && json["waves"].is_array()) {
       for (const auto &waveJson : json["waves"]) {
@@ -116,16 +119,16 @@ public:
    * @brief Get all level configurations
    * @return Map of level ID to configuration
    */
-  const std::unordered_map<std::string, LevelConfig> &getAllConfigs() const { return m_configs; }
+  const std::map<std::string, LevelConfig> &getAllConfigs() const { return m_configs; }
 
   /**
    * @brief Get list of all level IDs
-   * @return Vector of level IDs
+   * @return Vector of level IDs in order
    */
   std::vector<std::string> getLevelIds() const;
 
 private:
-  std::unordered_map<std::string, LevelConfig> m_configs;
+  std::map<std::string, LevelConfig> m_configs;  // Use std::map to maintain order
 };
 
 } // namespace server
