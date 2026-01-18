@@ -12,7 +12,7 @@
             {
               "count": 2,
               "delay": 0.0,
-              "enemyType": "enemy_elite_blue",
+              "enemyType": "enemy_elite_green",
               "spacing": 80.0,
               "x": 1450.0,
               "y": 200.0

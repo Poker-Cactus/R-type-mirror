@@ -12,6 +12,7 @@
 #include "../../../engineCore/include/ecs/ISystem.hpp"
 #include "../../../engineCore/include/ecs/World.hpp"
 #include "../../../engineCore/include/ecs/components/Collider.hpp"
+#include "../../../engineCore/include/ecs/components/Lifetime.hpp"
 #include "../../../engineCore/include/ecs/components/Networked.hpp"
 #include "../../../engineCore/include/ecs/components/Owner.hpp"
 #include "../../../engineCore/include/ecs/components/Pattern.hpp"
@@ -374,6 +375,181 @@ public:
         } else {
           // No player found: stay still on ground
           velocity.dx = 0.0F;
+          velocity.dy = 0.0F;
+        }
+      } else if (pattern.patternType == "elite_track") {
+        // Elite green enemy: track player at a small distance and fire straight shots
+        constexpr float FOLLOW_DISTANCE_DEFAULT = 240.0F;
+        constexpr float FOLLOW_SPEED_DEFAULT = 220.0F;
+        constexpr float SHOOT_INTERVAL = 1.8F;
+        constexpr float SHOOT_FRAME_DURATION = 0.2F;
+        constexpr float PROJECTILE_SPEED = 520.0F;
+
+        std::vector<ecs::Entity> players;
+        ecs::ComponentSignature playerSig;
+        playerSig.set(ecs::getComponentId<ecs::PlayerId>());
+        world.getEntitiesWithSignature(playerSig, players);
+
+        if (!players.empty()) {
+          auto &playerPos = world.getComponent<ecs::Transform>(players[0]);
+
+          const float followDistance = (pattern.amplitude > 0.0F) ? pattern.amplitude : FOLLOW_DISTANCE_DEFAULT;
+          const float followSpeed = (pattern.frequency > 0.0F) ? pattern.frequency : FOLLOW_SPEED_DEFAULT;
+
+          const float desiredX = playerPos.x + followDistance;
+          const float desiredY = playerPos.y;
+
+          const float dx = desiredX - transform.x;
+          const float dy = desiredY - transform.y;
+
+          const auto clampSpeed = [followSpeed](float value) {
+            if (value > followSpeed)
+              return followSpeed;
+            if (value < -followSpeed)
+              return -followSpeed;
+            return value;
+          };
+
+          velocity.dx = clampSpeed(dx);
+          velocity.dy = clampSpeed(dy);
+
+          // Shooting timer using pattern.phase
+          pattern.phase += deltaTime;
+          bool fired = false;
+
+          if (pattern.phase >= SHOOT_INTERVAL) {
+            pattern.phase = 0.0F;
+            fired = true;
+
+            // Compute straight direction towards player at fire time
+            float shotDx = playerPos.x - transform.x;
+            float shotDy = playerPos.y - transform.y;
+            float shotDist = std::sqrt(shotDx * shotDx + shotDy * shotDy);
+            if (shotDist < 1.0F)
+              shotDist = 1.0F;
+            const float dirX = (shotDx / shotDist) * PROJECTILE_SPEED;
+            const float dirY = (shotDy / shotDist) * PROJECTILE_SPEED;
+
+            constexpr float ELITE_SPRITE_WIDTH = 166.0F;
+            constexpr float ELITE_SPRITE_HEIGHT = 58.0F;
+            const float enemyWidth = ELITE_SPRITE_WIDTH * transform.scale;
+            const float enemyHeight = ELITE_SPRITE_HEIGHT * transform.scale;
+
+            const float projectileScale = transform.scale;
+            const float projectileWidth = 65.0F * projectileScale;
+            const float projectileHeight = 18.0F * projectileScale;
+
+            // Spawn slightly forward (left) and a bit lower on the enemy body
+            const float muzzleOffsetX = -projectileWidth * 1.2F;
+            const float muzzleOffsetY = (enemyHeight - projectileHeight) * 0.6F;
+
+            // Spawn projectile (elite_enemy_green_out)
+            ecs::Entity projectile = world.createEntity();
+
+            ecs::Transform projTransform;
+            projTransform.x = transform.x + muzzleOffsetX;
+            projTransform.y = transform.y + muzzleOffsetY;
+            projTransform.rotation = 0.0F;
+            projTransform.scale = projectileScale;
+            world.addComponent(projectile, projTransform);
+
+            ecs::Velocity projVelocity;
+            projVelocity.dx = dirX;
+            projVelocity.dy = dirY;
+            world.addComponent(projectile, projVelocity);
+
+            ecs::Sprite projSprite;
+            projSprite.spriteId = ecs::SpriteId::ELITE_ENEMY_GREEN_OUT;
+            projSprite.width = 65; // elite_enemy_green_out frame width (131/2)
+            projSprite.height = 18;
+            projSprite.animated = true;
+            projSprite.frameCount = 2;
+            projSprite.currentFrame = 0;
+            projSprite.startFrame = 0;
+            projSprite.endFrame = 1;
+            projSprite.frameTime = 0.08F;
+            projSprite.reverseAnimation = false;
+            projSprite.loop = true;
+            world.addComponent(projectile, projSprite);
+
+            ecs::Collider projCollider;
+            projCollider.width = projSprite.width * projectileScale;
+            projCollider.height = projSprite.height * projectileScale;
+            projCollider.shape = ecs::Collider::Shape::BOX;
+            world.addComponent(projectile, projCollider);
+
+            ecs::Owner projOwner;
+            projOwner.ownerId = entity;
+            world.addComponent(projectile, projOwner);
+
+            ecs::Networked net;
+            net.networkId = projectile;
+            world.addComponent(projectile, net);
+
+            // Spawn muzzle flash (elite_enemy_green_in) - one-shot animation
+            ecs::Entity muzzle = world.createEntity();
+
+            ecs::Transform muzzleTransform;
+            const float muzzleScale = projectileScale; // match projectile height
+            const float muzzleWidth = 31.0F * muzzleScale;
+            const float muzzleHeight = 18.0F * muzzleScale;
+            muzzleTransform.x = transform.x - muzzleWidth * 1.2F;
+            // Align muzzle Y with projectile Y so both are on the same line
+            muzzleTransform.y = projTransform.y;
+            muzzleTransform.rotation = 0.0F;
+            muzzleTransform.scale = muzzleScale;
+            world.addComponent(muzzle, muzzleTransform);
+
+            ecs::Velocity muzzleVelocity;
+            muzzleVelocity.dx = 0.0F;
+            muzzleVelocity.dy = 0.0F;
+            world.addComponent(muzzle, muzzleVelocity);
+
+            ecs::Sprite muzzleSprite;
+            muzzleSprite.spriteId = ecs::SpriteId::ELITE_ENEMY_GREEN_IN;
+            muzzleSprite.width = 31; // elite_enemy_green_in frame width (93/3)
+            muzzleSprite.height = 18;
+            muzzleSprite.animated = true;
+            muzzleSprite.frameCount = 3;
+            muzzleSprite.currentFrame = 0;
+            muzzleSprite.startFrame = 0;
+            muzzleSprite.endFrame = 2;
+            muzzleSprite.frameTime = 0.06F;
+            muzzleSprite.reverseAnimation = false;
+            muzzleSprite.loop = false;
+            world.addComponent(muzzle, muzzleSprite);
+
+            ecs::Lifetime life;
+            life.remaining = muzzleSprite.frameTime * static_cast<float>(muzzleSprite.frameCount);
+            world.addComponent(muzzle, life);
+
+            ecs::Networked muzzleNet;
+            muzzleNet.networkId = muzzle;
+            world.addComponent(muzzle, muzzleNet);
+          }
+
+          // Update elite green sprite frame based on movement/shooting
+          if (world.hasComponent<ecs::Sprite>(entity)) {
+            auto &sprite = world.getComponent<ecs::Sprite>(entity);
+            if (sprite.spriteId == ecs::SpriteId::ELITE_ENEMY_GREEN) {
+              uint32_t frame = 0;
+              if (pattern.phase <= SHOOT_FRAME_DURATION || fired) {
+                frame = 0; // shooting
+              } else if (velocity.dy < -0.1F) {
+                frame = 1; // moving up
+              } else if (velocity.dy > 0.1F) {
+                frame = 2; // moving down
+              } else {
+                frame = 1;
+              }
+              sprite.startFrame = frame;
+              sprite.endFrame = frame;
+              sprite.currentFrame = frame;
+            }
+          }
+        } else {
+          // No player found: move left slowly
+          velocity.dx = ENEMY_MOVE_SPEED;
           velocity.dy = 0.0F;
         }
       } else {

@@ -239,6 +239,10 @@ void PlayingState::render()
           frameWidth = 533 / 16; // 33px per frame
           frameHeight = 36;
           break;
+        case ecs::SpriteId::ELITE_ENEMY_GREEN:
+          frameWidth = 166 / 3; // 55px per frame
+          frameHeight = 58;
+          break;
         case ecs::SpriteId::PLAYER_SHIP:
           frameWidth = PLAYER_FRAME_WIDTH;
           frameHeight = PLAYER_FRAME_HEIGHT;
@@ -312,9 +316,13 @@ void PlayingState::render()
         case ecs::SpriteId::RUBAN12_PROJECTILE:
         case ecs::SpriteId::RUBAN13_PROJECTILE:
         case ecs::SpriteId::RUBAN14_PROJECTILE:
-          // Use sprite dimensions from server
-          frameWidth = static_cast<int>(sprite.width);
-          frameHeight = static_cast<int>(sprite.height);
+        case ecs::SpriteId::ELITE_ENEMY_GREEN_OUT:
+          frameWidth = 131 / 2; // 65px per frame
+          frameHeight = 18;
+          break;
+        case ecs::SpriteId::ELITE_ENEMY_GREEN_IN:
+          frameWidth = 93 / 3; // 31px per frame
+          frameHeight = 18;
 
           // Debug ruban projectiles
           if (sprite.spriteId >= ecs::SpriteId::RUBAN1_PROJECTILE &&
@@ -519,6 +527,7 @@ void PlayingState::render()
         break;
       case ecs::SpriteId::ENEMY_SHIP:
       case ecs::SpriteId::ELITE_ENEMY:
+      case ecs::SpriteId::ELITE_ENEMY_GREEN:
         color = COLOR_ENEMY_RED;
         break;
       case ecs::SpriteId::ENEMY_YELLOW:
@@ -537,6 +546,8 @@ void PlayingState::render()
         color = COLOR_PROJECTILE_YELLOW;
         break;
       case ecs::SpriteId::PROJECTILE:
+      case ecs::SpriteId::ELITE_ENEMY_GREEN_OUT:
+      case ecs::SpriteId::ELITE_ENEMY_GREEN_IN:
         color = COLOR_PROJECTILE_YELLOW;
         break;
       case ecs::SpriteId::POWERUP:
@@ -1069,6 +1080,51 @@ void PlayingState::loadSpriteTextures()
     } else {
       std::cerr << "[PlayingState] ✗ Failed to load elite_enemy_blue.png: " << e.what() << '\n';
     }
+  }
+
+  // ELITE_ENEMY_GREEN = 68 (elite_enemy_green.png)
+  try {
+    void *elite_green_tex = renderer->loadTexture("client/assets/sprites/elite_enemy_green.png");
+    if (elite_green_tex != nullptr) {
+      m_spriteTextures[ecs::SpriteId::ELITE_ENEMY_GREEN] = elite_green_tex;
+      std::cout << "[PlayingState] ✓ Loaded elite_enemy_green.png" << '\n';
+    } else if (m_spriteTextures.find(ecs::SpriteId::ENEMY_SHIP) != m_spriteTextures.end()) {
+      m_spriteTextures[ecs::SpriteId::ELITE_ENEMY_GREEN] = m_spriteTextures[ecs::SpriteId::ENEMY_SHIP];
+      std::cout << "[PlayingState] ✓ Using enemy_ship.gif for elite green (fallback)" << '\n';
+    }
+  } catch (const std::exception &e) {
+    if (m_spriteTextures.find(ecs::SpriteId::ENEMY_SHIP) != m_spriteTextures.end()) {
+      m_spriteTextures[ecs::SpriteId::ELITE_ENEMY_GREEN] = m_spriteTextures[ecs::SpriteId::ENEMY_SHIP];
+      std::cout << "[PlayingState] ✓ Using enemy_ship.gif for elite green (fallback after error)" << '\n';
+    } else {
+      std::cerr << "[PlayingState] ✗ Failed to load elite_enemy_green.png: " << e.what() << '\n';
+    }
+  }
+
+  // ELITE_ENEMY_GREEN_OUT = 69 (elite_enemy_green_out.png)
+  try {
+    void *elite_green_out_tex = renderer->loadTexture("client/assets/sprites/elite_enemy_green_out.png");
+    if (elite_green_out_tex != nullptr) {
+      m_spriteTextures[ecs::SpriteId::ELITE_ENEMY_GREEN_OUT] = elite_green_out_tex;
+      std::cout << "[PlayingState] ✓ Loaded elite_enemy_green_out.png" << '\n';
+    } else {
+      std::cerr << "[PlayingState] ✗ Failed to load elite_enemy_green_out.png (returned null)" << '\n';
+    }
+  } catch (const std::exception &e) {
+    std::cerr << "[PlayingState] ✗ Failed to load elite_enemy_green_out.png: " << e.what() << '\n';
+  }
+
+  // ELITE_ENEMY_GREEN_IN = 70 (elite_enemy_green_in.png)
+  try {
+    void *elite_green_in_tex = renderer->loadTexture("client/assets/sprites/elite_enemy_green_in.png");
+    if (elite_green_in_tex != nullptr) {
+      m_spriteTextures[ecs::SpriteId::ELITE_ENEMY_GREEN_IN] = elite_green_in_tex;
+      std::cout << "[PlayingState] ✓ Loaded elite_enemy_green_in.png" << '\n';
+    } else {
+      std::cerr << "[PlayingState] ✗ Failed to load elite_enemy_green_in.png (returned null)" << '\n';
+    }
+  } catch (const std::exception &e) {
+    std::cerr << "[PlayingState] ✗ Failed to load elite_enemy_green_in.png: " << e.what() << '\n';
   }
 
   // PROJECTILE = 3 (spritesheet: 422x92, 2 frames, using first frame only)

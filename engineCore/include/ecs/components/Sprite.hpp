@@ -166,6 +166,10 @@ constexpr std::uint32_t DEATH_ANIM = 65;
 // Elite enemy + shield
 constexpr std::uint32_t ELITE_ENEMY = 66;
 constexpr std::uint32_t SHIELD_BUBBLE = 67;
+// Elite green enemy + projectiles
+constexpr std::uint32_t ELITE_ENEMY_GREEN = 68;
+constexpr std::uint32_t ELITE_ENEMY_GREEN_OUT = 69;
+constexpr std::uint32_t ELITE_ENEMY_GREEN_IN = 70;
 } // namespace SpriteId
 
 } // namespace ecs
