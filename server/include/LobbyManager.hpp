@@ -8,6 +8,7 @@
 #ifndef LOBBY_MANAGER_HPP_
 #define LOBBY_MANAGER_HPP_
 
+#include "../../common/include/Common.hpp"
 #include "Lobby.hpp"
 #include <memory>
 #include <string>
@@ -51,7 +52,9 @@ public:
    * @param difficulty The game difficulty
    * @return true if lobby was created, false if code already exists
    */
-  bool createLobby(const std::string &code, GameConfig::Difficulty difficulty = GameConfig::Difficulty::MEDIUM);
+  bool createLobby(const std::string &code, GameConfig::Difficulty difficulty = GameConfig::Difficulty::MEDIUM,
+                   bool isSolo = false, AIDifficulty aiDifficulty = AIDifficulty::MEDIUM,
+                   GameMode mode = GameMode::CLASSIC);
 
   /**
    * @brief Add a client to a lobby
@@ -86,6 +89,11 @@ public:
    * @brief Remove empty lobbies
    */
   void cleanupEmptyLobbies();
+
+  /**
+   * @brief Force remove a lobby by code (stop game and erase)
+   */
+  void removeLobby(const std::string &code);
 
   /**
    * @brief Get all active lobbies

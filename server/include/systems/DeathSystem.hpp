@@ -13,10 +13,12 @@
 #include "../../../engineCore/include/ecs/World.hpp"
 #include "../../../engineCore/include/ecs/components/Collider.hpp"
 #include "../../../engineCore/include/ecs/components/Health.hpp"
+#include "../../../engineCore/include/ecs/components/Immortal.hpp"
 #include "../../../engineCore/include/ecs/components/Input.hpp"
 #include "../../../engineCore/include/ecs/components/Lifetime.hpp"
 #include "../../../engineCore/include/ecs/components/Networked.hpp"
 #include "../../../engineCore/include/ecs/components/Pattern.hpp"
+#include "../../../engineCore/include/ecs/components/Shield.hpp"
 #include "../../../engineCore/include/ecs/components/Sprite.hpp"
 #include "../../../engineCore/include/ecs/components/Transform.hpp"
 #include "../../../engineCore/include/ecs/events/EventListenerHandle.hpp"
@@ -25,6 +27,7 @@
 #include "../../engineCore/include/ecs/components/Score.hpp"
 #include "../Lobby.hpp"
 #include "../WorldLobbyRegistry.hpp"
+#include "SpawnSystem.hpp"
 #include "ecs/ComponentSignature.hpp"
 #include <iostream>
 #include <nlohmann/json.hpp>
@@ -65,7 +68,7 @@ public:
       // Don't show death animation for players
       bool isPlayer = world.hasComponent<ecs::Input>(entity);
 
-      if (!isPlayer && world.hasComponent<ecs::Transform>(entity)) {
+      if (!isPlayer && world.hasComponent<ecs::Transform>(entity) && !world.hasComponent<ecs::Shield>(entity)) {
         // Spawn death animation for enemies
         spawnDeathAnimation(world, entity);
       }
@@ -140,6 +143,16 @@ private:
 
   static void handleDeath(ecs::World &world, const ecs::DeathEvent &event)
   {
+    // If a shield dies, remove immortality from its parent
+    if (world.isAlive(event.entity) && world.hasComponent<ecs::Shield>(event.entity)) {
+      const auto &shield = world.getComponent<ecs::Shield>(event.entity);
+      if (world.isAlive(shield.parent) && world.hasComponent<ecs::Immortal>(shield.parent)) {
+        auto &immortal = world.getComponent<ecs::Immortal>(shield.parent);
+        immortal.isImmortal = false;
+        std::cout << "[DeathSystem] Shield destroyed, removing immortality from parent " << shield.parent << std::endl;
+      }
+    }
+
     // When an entity dies, award score to the killer
     if (world.isAlive(event.killer)) {
       // Award 100 points to the killer
@@ -236,32 +249,96 @@ private:
     }
 
     // Notify owning client (if any) that their player died so client can return to menu.
-    // Try to find the lobby owning this world and send a direct message.
     Lobby *lobby = getLobbyForWorld(&world);
     if (lobby != nullptr) {
       if (world.isAlive(event.entity) && world.hasComponent<ecs::PlayerId>(event.entity)) {
         const auto &pid = world.getComponent<ecs::PlayerId>(event.entity);
+
+        std::cout << "[DeathSystem] Player " << pid.clientId << " died. Counting remaining alive players..."
+                  << std::endl;
+
+        // Count remaining alive players (non-spectators), excluding the current dying player
+        int alivePlayerCount = 0;
+        int totalClients = 0;
+        int spectatorCount = 0;
+
+        for (const auto &clientId : lobby->getClients()) {
+          totalClients++;
+
+          // Skip spectators
+          if (lobby->isSpectator(clientId)) {
+            spectatorCount++;
+            std::cout << "[DeathSystem]   Client " << clientId << ": SPECTATOR (skipping)" << std::endl;
+            continue;
+          }
+
+          // Skip the player who is dying
+          if (clientId == pid.clientId) {
+            std::cout << "[DeathSystem]   Client " << clientId << ": DYING PLAYER (skipping)" << std::endl;
+            continue;
+          }
+
+          ecs::Entity playerEntity = lobby->getPlayerEntity(clientId);
+          std::cout << "[DeathSystem]   Client " << clientId << ": entity=" << playerEntity;
+
+          // Check if entity is alive (don't check != 0 because entity 0 is valid)
+          if (world.isAlive(playerEntity) && world.hasComponent<ecs::Health>(playerEntity)) {
+            const auto &health = world.getComponent<ecs::Health>(playerEntity);
+            std::cout << " hp=" << health.hp << "/" << health.maxHp;
+            if (health.hp > 0) {
+              alivePlayerCount++;
+              std::cout << " -> ALIVE" << std::endl;
+            } else {
+              std::cout << " -> DEAD" << std::endl;
+            }
+          } else {
+            std::cout << " -> NO VALID ENTITY (not alive or no health)" << std::endl;
+          }
+        }
+
+        std::cout << "[DeathSystem] Summary: totalClients=" << totalClients << " spectators=" << spectatorCount
+                  << " alive=" << alivePlayerCount << std::endl;
+
         nlohmann::json msg;
-        msg["type"] = "player_dead";
-        msg["reason"] = "killed";
-        // Include final HP (should be 0) and score if available
+
+        // If there are still alive players, convert dead player to spectator
+        if (alivePlayerCount > 0) {
+          std::cout << "[DeathSystem] -> Sending player_died_spectate" << std::endl;
+          msg["type"] = "player_died_spectate";
+          msg["reason"] = "killed";
+          msg["alive_players"] = alivePlayerCount;
+
+          // Convert player to spectator in the lobby
+          lobby->convertToSpectator(pid.clientId);
+
+        } else {
+          std::cout << "[DeathSystem] -> Last player died, stopping spawn and triggering end-screen" << std::endl;
+          // Last player died - game over for everyone
+
+          // Stop level spawning when game is over
+          if (auto *spawnSystem = world.getSystem<server::SpawnSystem>()) {
+            std::cout << "[DeathSystem] -> Stopping spawn system (game over)" << std::endl;
+            spawnSystem->stopLevel();
+          }
+
+          // Trigger lobby end-screen to send scores
+          if (lobby != nullptr) {
+            try {
+              lobby->endGameShowScores();
+            } catch (const std::exception &e) {
+              std::cerr << "[DeathSystem] Exception while triggering end-screen: " << e.what() << std::endl;
+            }
+          }
+          return; // Don't send any message - endGameShowScores handles it
+        }
         if (world.hasComponent<ecs::Health>(event.entity)) {
           const auto &health = world.getComponent<ecs::Health>(event.entity);
           msg["hp"] = health.hp;
-          msg["maxHp"] = health.maxHp;
-        } else {
-          msg["hp"] = 0;
-          msg["maxHp"] = 0;
         }
         if (world.hasComponent<ecs::Score>(event.entity)) {
           const auto &score = world.getComponent<ecs::Score>(event.entity);
           msg["score"] = score.points;
-        } else {
-          msg["score"] = 0;
         }
-        // Include game difficulty
-        msg["difficulty"] = static_cast<int>(lobby->getDifficulty());
-
         lobby->sendJsonToClient(pid.clientId, msg);
       }
     }

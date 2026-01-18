@@ -150,7 +150,6 @@ constexpr std::uint32_t BOSS_DOBKERATOP_SHOOT = 45;
 constexpr std::uint32_t BOSS_BROCOLIS = 46;
 constexpr std::uint32_t BOSS_BROCOLIS_SHOOT = 47;
 constexpr std::uint32_t BOSS_BROCOLIS_ECLOSION = 48;
-constexpr std::uint32_t BOSS_GOBLINS = 49;
 constexpr std::uint32_t BUBBLE_RUBAN_BACK1 = 50;
 constexpr std::uint32_t BUBBLE_RUBAN_BACK2 = 51;
 constexpr std::uint32_t BUBBLE_RUBAN_BACK3 = 52;
@@ -166,14 +165,27 @@ constexpr std::uint32_t BUBBLE_RUBAN_FRONT4 = 61;
 constexpr std::uint32_t TRIPLE_PROJECTILE_RIGHT = 62;
 constexpr std::uint32_t TRIPLE_PROJECTILE_UP = 63;
 constexpr std::uint32_t TRIPLE_PROJECTILE_DOWN = 64;
-constexpr std::uint32_t BOSS_GOBLINS_BABY = 65;
-constexpr std::uint32_t DEATH_ANIM = 66; // previously collided with BOSS_GOBLINS_BABY, assign unique id
-constexpr std::uint32_t BOSS_GREEN_MOTHERSHIP = 67;
-constexpr std::uint32_t BOSS_GREEN_MOTHERSHIP_SHOOT = 68;
-constexpr std::uint32_t BOSS_GREEN_MOTHERSHIP_ECLOSION = 69;
-constexpr std::uint32_t BOSS_GREEN_MOTHERSHIP_TURRET = 70;
-constexpr std::uint32_t BOSS_GREEN_MOTHERSHIP_TURRET_SHOT = 71;
-constexpr std::uint32_t BOSS_GREEN_MOTHERSHIP_BOOSTER = 72;
+// Death animation
+constexpr std::uint32_t DEATH_ANIM = 65;
+// Elite enemy + shield
+constexpr std::uint32_t ELITE_ENEMY = 66;
+constexpr std::uint32_t SHIELD_BUBBLE = 67;
+// Elite green enemy + projectiles
+constexpr std::uint32_t ELITE_ENEMY_GREEN = 68;
+constexpr std::uint32_t ELITE_ENEMY_GREEN_OUT = 69;
+constexpr std::uint32_t ELITE_ENEMY_GREEN_IN = 70;
+// Evangelic boss + projectiles
+constexpr std::uint32_t BOSS_EVANGELIC_SHOOT = 71;
+constexpr std::uint32_t BOSS_EVANGELIC = 72;
+// Green mothership boss sprites
+constexpr std::uint32_t BOSS_GOBLINS = 73;
+constexpr std::uint32_t BOSS_GOBLINS_BABY = 74;
+constexpr std::uint32_t BOSS_GREEN_MOTHERSHIP = 75;
+constexpr std::uint32_t BOSS_GREEN_MOTHERSHIP_SHOOT = 76;
+constexpr std::uint32_t BOSS_GREEN_MOTHERSHIP_ECLOSION = 77;
+constexpr std::uint32_t BOSS_GREEN_MOTHERSHIP_TURRET = 78;
+constexpr std::uint32_t BOSS_GREEN_MOTHERSHIP_TURRET_SHOT = 79;
+constexpr std::uint32_t BOSS_GREEN_MOTHERSHIP_BOOSTER = 80;
 } // namespace SpriteId
 
 } // namespace ecs

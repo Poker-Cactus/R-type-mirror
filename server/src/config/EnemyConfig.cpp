@@ -1,9 +1,9 @@
 /*
-** EPITECH PROJECT, 2025
-** R-type-mirror
-** File description:
-** EnemyConfig.cpp - Enemy configuration loader implementation
-*/
+ ** EPITECH PROJECT, 2025
+ ** R-type-mirror
+ ** File description:
+ ** EnemyConfig.cpp - Enemy configuration loader implementation
+ */
 
 #include "../include/config/EnemyConfig.hpp"
 #include <fstream>

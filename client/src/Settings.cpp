@@ -27,6 +27,8 @@ bool Settings::saveToFile()
     settingsJson["controls"]["right"] = right;
     settingsJson["controls"]["shoot"] = shoot;
     settingsJson["controls"]["chargedShoot"] = chargedShoot;
+    settingsJson["controls"]["detach"] = detach;
+    settingsJson["controls"]["toggleInfoMode"] = toggleInfoMode;
 
     // Graphics settings
     settingsJson["graphics"]["fullScreen"] = fullScreen;
@@ -88,6 +90,8 @@ bool Settings::loadFromFile()
       right = settingsJson["controls"].value("right", right);
       shoot = settingsJson["controls"].value("shoot", shoot);
       chargedShoot = settingsJson["controls"].value("chargedShoot", chargedShoot);
+      detach = settingsJson["controls"].value("detach", detach);
+      toggleInfoMode = settingsJson["controls"].value("toggleInfoMode", toggleInfoMode);
     }
 
     // Graphics settings

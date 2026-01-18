@@ -8,6 +8,7 @@
 #include "../../engineCore/include/ecs/components/Input.hpp"
 #include "../../network/include/AsioClient.hpp"
 #include "../ModuleLoader.hpp"
+#include "../include/AudioManager.hpp"
 #include "../include/Settings.hpp"
 #include "../include/systems/NetworkReceiveSystem.hpp"
 #include "../include/systems/NetworkSendSystem.hpp"
@@ -18,6 +19,7 @@
 #include "PlayingState.hpp"
 #include <cstdint>
 #include <memory>
+#include <nlohmann/json.hpp>
 #include <string>
 
 class INetworkManager;
@@ -40,7 +42,8 @@ public:
     MENU, ///< Main menu
     LOBBY_ROOM, ///< Lobby waiting room
     PLAYING, ///< Active gameplay
-    PAUSED ///< Game paused
+    PAUSED, ///< Game paused
+    VICTORY ///< Victory screen
   };
 
   /**
@@ -106,8 +109,11 @@ private:
   void handleLobbyRoomTransition();
   void handleLobbyRoomStateInput();
   void handlePlayingStateInput();
+  void handleVictoryInput();
   void updatePlayerInput();
   void delegateInputToCurrentState();
+  void renderEndScreen();
+  void renderVictoryScreen();
 
   std::unique_ptr<Module<IRenderer>> module;
   std::shared_ptr<IRenderer> renderer;
@@ -123,9 +129,20 @@ private:
   std::unique_ptr<LobbyRoomState> lobbyRoomState;
   std::unique_ptr<PlayingState> playingState;
   float m_lobbyStateTime = 0.0F;
-  Settings settings;
+  int m_victoryScore = 0; ///< Score at victory
+  bool m_showEndScreen = false;
+  nlohmann::json m_endScreenPayload;
   bool fullScreen = true;
   ColorBlindMode currentColorBlindMode = ColorBlindMode::NONE;
   HighscoreManager highscoreManager;
   std::unique_ptr<ChatUI> m_chatUI;
+  std::shared_ptr<AudioManager> m_audioManager;
+  Settings settings;
+
+public:
+  /**
+   * @brief Get the audio manager
+   * @return Shared pointer to audio manager
+   */
+  std::shared_ptr<AudioManager> getAudioManager() const { return m_audioManager; }
 };

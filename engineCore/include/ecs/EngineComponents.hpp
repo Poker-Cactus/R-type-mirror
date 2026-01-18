@@ -16,6 +16,7 @@
 
 // Components
 #include "components/Attachment.hpp"
+#include "components/Ally.hpp"
 #include "components/Attraction.hpp"
 #include "components/Collider.hpp"
 #include "components/Follower.hpp"
@@ -26,6 +27,7 @@
 #include "components/Pattern.hpp"
 #include "components/PlayerId.hpp"
 #include "components/Score.hpp"
+#include "components/Shield.hpp"
 #include "components/Sprite.hpp"
 #include "components/Transform.hpp"
 #include "components/Velocity.hpp"

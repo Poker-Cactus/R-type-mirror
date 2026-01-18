@@ -14,8 +14,8 @@
 #include <memory>
 
 SettingsMenu::SettingsMenu(std::shared_ptr<IRenderer> renderer)
-    : m_renderer(std::move(renderer)), font(nullptr), titleFont(nullptr), helpFont(nullptr), clickedSound(nullptr),
-      hoverSound(nullptr), errorSound(nullptr), currentCategory(SettingsCategory::AUDIO)
+    : m_renderer(std::move(renderer)), font(nullptr), titleFont(nullptr), helpFont(nullptr),
+      currentCategory(SettingsCategory::AUDIO), clickedSound(nullptr), hoverSound(nullptr), errorSound(nullptr)
 {
 }
 
@@ -129,6 +129,10 @@ void SettingsMenu::init(Settings &settings)
     controlsItems.push_back({.label = "Shoot", .type = SettingItemType::KEYBIND, .intTarget = &this->settings->shoot});
     controlsItems.push_back(
       {.label = "Charged Shoot", .type = SettingItemType::KEYBIND, .intTarget = &this->settings->chargedShoot});
+    controlsItems.push_back(
+      {.label = "Detach", .type = SettingItemType::KEYBIND, .intTarget = &this->settings->detach});
+    controlsItems.push_back(
+      {.label = "Toggle Info Mode", .type = SettingItemType::KEYBIND, .intTarget = &this->settings->toggleInfoMode});
 
     debugItems.clear();
     debugItems.push_back(

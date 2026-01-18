@@ -6,6 +6,8 @@
 */
 
 #include "Game.hpp"
+#include "../../engineCore/include/ecs/components/Input.hpp"
+#include "../../engineCore/include/ecs/components/Score.hpp"
 #include "../interface/IColorBlindSupport.hpp"
 #include "../interface/KeyCodes.hpp"
 #include "Menu/MenuState.hpp"
@@ -109,6 +111,19 @@ bool Game::init()
     }
     renderer->setWindowTitle("ChaD");
 
+    // Initialize audio manager
+    m_audioManager = std::make_shared<AudioManager>(renderer);
+    if (!m_audioManager->init()) {
+      std::cerr << "[Game::init] WARNING: Audio manager initialization failed" << '\n';
+    }
+
+    // Apply volume settings from config
+    std::cout << "[Game::init] Applying volume settings - Master: " << settings.masterVolume
+              << ", Music: " << settings.musicVolume << ", SFX: " << settings.sfxVolume << '\n';
+    m_audioManager->setMasterVolume(settings.masterVolume);
+    m_audioManager->setMusicVolume(settings.musicVolume);
+    m_audioManager->setSfxVolume(settings.sfxVolume);
+
     // Start the game in fullscreen by default
     try {
       renderer->setFullscreen(true);
@@ -116,7 +131,7 @@ bool Game::init()
       std::cerr << "[Game::init] Warning: failed to set fullscreen: " << e.what() << '\n';
     }
 
-    menu = std::make_unique<Menu>(renderer, settings);
+    menu = std::make_unique<Menu>(renderer, settings, m_audioManager);
     menu->init();
 
     m_world = std::make_shared<ecs::World>();
@@ -149,12 +164,30 @@ bool Game::init()
     auto *networkReceiveSystem = &m_world->registerSystem<ClientNetworkReceiveSystem>(m_networkManager);
 
     if (networkReceiveSystem != nullptr) {
+      // End-screen handler: show end-screen payload and wait for BACKSPACE
+      networkReceiveSystem->setLobbyEndCallback([this](const nlohmann::json &msg) {
+        std::cout << "[Game] Lobby end received, showing end-screen" << std::endl;
+        // Store payload for render/interaction
+        this->m_endScreenPayload = msg;
+        this->m_showEndScreen = true;
+
+        // If score for this client exists, save it locally to highscores
+        if (msg.contains("scores") && menu) {
+          auto &scores = msg["scores"];
+          for (const auto &entry : scores) {
+            if (entry.contains("client_id") && entry.contains("score")) {
+              // If this is our client id, persist to highscores
+              // We don't know our assigned client id here, so rely on Menu->Highscore addition when appropriate
+            }
+          }
+        }
+      });
       networkReceiveSystem->setGameStartedCallback([this]() {
         std::cout << "[Game] Game started callback triggered - transitioning to PLAYING" << '\n';
         // Ensure the playing state exists and is initialized (recreate after death)
         if (!this->playingState) {
-          this->playingState =
-            std::make_unique<PlayingState>(this->renderer, this->m_world, this->settings, this->m_networkManager);
+          this->playingState = std::make_unique<PlayingState>(this->renderer, this->m_world, this->settings,
+                                                              this->m_networkManager, this->m_audioManager);
           if (!this->playingState->init()) {
             std::cerr << "[Game] Failed to initialize playing state on game_started" << '\n';
             // Fallback to menu if we cannot initialize rendering state
@@ -163,9 +196,24 @@ bool Game::init()
               this->menu->setState(MenuState::MAIN_MENU);
             return;
           }
+          // Set solo mode if lobby room state exists
+          if (this->lobbyRoomState) {
+            this->playingState->setSoloMode(this->lobbyRoomState->isSolo());
+          }
+        }
+
+        // If the playing state already exists (re-entering after menu/death), reset transient visual state
+        if (this->playingState) {
+          this->playingState->resetForNewGame();
         }
 
         this->currentState = GameState::PLAYING;
+
+        // Stop menu music and start level music
+        if (this->m_audioManager) {
+          this->m_audioManager->playMusic("level1_music", true);
+        }
+
         // Send current viewport to server immediately after the game starts
         // so the server records the correct client viewport for the playing session.
         this->sendViewportToServer();
@@ -178,9 +226,40 @@ bool Game::init()
             this->m_chatUI->addMessage(sender, content, false, senderId);
           }
         });
+
+      // Set level complete callback to trigger transition
+      networkReceiveSystem->setLevelCompleteCallback(
+        [this](const std::string &currentLevel, const std::string &nextLevel) {
+          if (this->playingState && !this->playingState->isSpectator()) {
+            std::cout << "[Game] Level complete callback: " << currentLevel << " → " << nextLevel << std::endl;
+
+            // If nextLevel is empty, we've completed all levels → show victory screen
+            if (nextLevel.empty()) {
+              std::cout << "[Game] ✓ GAME COMPLETED! Showing victory screen..." << std::endl;
+
+              // Get player score before switching state
+              ecs::ComponentSignature playerSig;
+              playerSig.set(ecs::getComponentId<ecs::Input>());
+              playerSig.set(ecs::getComponentId<ecs::Score>());
+              std::vector<ecs::Entity> players;
+              this->m_world->getEntitiesWithSignature(playerSig, players);
+
+              if (!players.empty()) {
+                const auto &score = this->m_world->getComponent<ecs::Score>(players[0]);
+                this->m_victoryScore = score.points;
+              }
+
+              this->currentState = GameState::VICTORY;
+            } else {
+              this->playingState->startLevelTransition(nextLevel);
+            }
+          } else if (this->playingState && this->playingState->isSpectator()) {
+            std::cout << "[Game] Level complete but player is spectator - ignoring transition" << std::endl;
+          }
+        });
     }
 
-    playingState = std::make_unique<PlayingState>(renderer, m_world, settings, m_networkManager);
+    playingState = std::make_unique<PlayingState>(renderer, m_world, settings, m_networkManager, m_audioManager);
     if (!playingState->init()) {
       std::cerr << "Failed to initialize playing state" << '\n';
       return false;
@@ -245,6 +324,11 @@ void Game::shutdown()
     playingState.reset();
   }
 
+  if (m_audioManager) {
+    m_audioManager->cleanup();
+    m_audioManager.reset();
+  }
+
   if (menu) {
     menu->cleanup();
     menu.reset();
@@ -261,6 +345,79 @@ void Game::shutdown()
   renderer.reset();
   module.reset();
   isRunning = false;
+}
+
+void Game::renderEndScreen()
+{
+  if (!renderer || !m_showEndScreen) {
+    return;
+  }
+
+  // Semi-transparent dark overlay
+  const int windowWidth = renderer->getWindowWidth();
+  const int windowHeight = renderer->getWindowHeight();
+  renderer->drawRect(0, 0, windowWidth, windowHeight, {0, 0, 0, 200});
+
+  // Panel dimensions
+  const int panelWidth = windowWidth * 2 / 3;
+  const int panelHeight = windowHeight * 2 / 3;
+  const int panelX = (windowWidth - panelWidth) / 2;
+  const int panelY = (windowHeight - panelHeight) / 2;
+
+  // Draw panel background (filled)
+  renderer->drawRect(panelX, panelY, panelWidth, panelHeight, {20, 20, 40, 255});
+  // Draw panel border
+  renderer->drawRectOutline(panelX, panelY, panelWidth, panelHeight, {100, 100, 200, 255});
+
+  // Load font for end-screen (same as menu)
+  auto font = renderer->loadFont("client/assets/font.opf/r-type.otf", 32);
+  auto smallFont = renderer->loadFont("client/assets/font.opf/r-type.otf", 24);
+
+  // Title
+  const std::string title = "GAME OVER";
+  int titleWidth = 0, titleHeight = 0;
+  renderer->getTextSize(font, title, titleWidth, titleHeight);
+  renderer->drawText(font, title, panelX + (panelWidth - titleWidth) / 2, panelY + 40, {255, 100, 100, 255});
+
+  // Scores
+  int currentY = panelY + 120;
+  if (m_endScreenPayload.contains("scores") && m_endScreenPayload["scores"].is_array()) {
+    const std::string scoresTitle = "SCORES";
+    int scoresTitleW = 0, scoresTitleH = 0;
+    renderer->getTextSize(smallFont, scoresTitle, scoresTitleW, scoresTitleH);
+    renderer->drawText(smallFont, scoresTitle, panelX + (panelWidth - scoresTitleW) / 2, currentY,
+                       {200, 200, 255, 255});
+    currentY += 50;
+
+    for (const auto &entry : m_endScreenPayload["scores"]) {
+      if (entry.contains("score")) {
+        int score = entry["score"];
+        std::string displayName;
+        if (entry.contains("name") && entry["name"].is_string()) {
+          displayName = entry["name"].get<std::string>();
+        } else if (entry.contains("client_id")) {
+          displayName = "Player " + std::to_string(entry["client_id"].get<int>());
+        } else {
+          displayName = "Player";
+        }
+        std::string scoreText = displayName + "  " + std::to_string(score) + " points";
+        int textW = 0, textH = 0;
+        renderer->getTextSize(smallFont, scoreText, textW, textH);
+        renderer->drawText(smallFont, scoreText, panelX + (panelWidth - textW) / 2, currentY, {255, 255, 255, 255});
+        currentY += 40;
+      }
+    }
+  }
+
+  // Instructions
+  currentY = panelY + panelHeight - 80;
+  const std::string instructions = "Press BACKSPACE to return to menu";
+  int instrW = 0, instrH = 0;
+  renderer->getTextSize(smallFont, instructions, instrW, instrH);
+  renderer->drawText(smallFont, instructions, panelX + (panelWidth - instrW) / 2, currentY, {150, 255, 150, 255});
+
+  renderer->freeFont(font);
+  renderer->freeFont(smallFont);
 }
 
 void Game::sendLeaveToServer()
@@ -411,6 +568,29 @@ void Game::processInput()
     }
   }
 
+  // If end-screen is active, only accept BACKSPACE to leave
+  if (m_showEndScreen) {
+    if (renderer != nullptr && renderer->isKeyJustPressed(KeyCode::KEY_BACKSPACE)) {
+      // Tell server we've left the end-screen (so it can destroy lobby if everyone left)
+      if (m_networkManager) {
+        nlohmann::json msg;
+        msg["type"] = "end_screen_left";
+        const std::string jsonStr = msg.dump();
+        const auto serialized = m_networkManager->getPacketHandler()->serialize(jsonStr);
+        m_networkManager->send(
+          std::span<const std::byte>(reinterpret_cast<const std::byte *>(serialized.data()), serialized.size()), 0);
+      }
+
+      // Return to menu
+      m_showEndScreen = false;
+      currentState = GameState::MENU;
+      if (menu) {
+        menu->setState(MenuState::MAIN_MENU);
+      }
+    }
+    return; // consume other inputs while end-screen is active
+  }
+
   // Toggle fullscreen with M key (but not when editing profile)
   if (renderer != nullptr && renderer->isKeyJustPressed(KeyCode::KEY_M)) {
     // Don't toggle fullscreen if we're editing a username in the profile menu or chat is open
@@ -476,13 +656,16 @@ void Game::handleLobbyRoomTransition()
   const bool isCreating = menu->isCreatingLobby();
   const std::string lobbyCode = menu->getLobbyCodeToJoin();
   const Difficulty diff = menu->getLobbyMenu()->getSelectedDifficulty();
+  const GameMode mode = menu->getLobbyMenu()->getSelectedGameMode();
+  const AIDifficulty aiDiff = settings.aiDifficulty;
+  const bool isSolo = menu->isSolo();
 
   std::cout << "[Game] Transitioning from MENU to LOBBY_ROOM" << '\n';
   std::cout << "[Game] Creating: " << (isCreating ? "yes" : "no");
   if (!isCreating) {
     std::cout << ", Code: " << lobbyCode;
   } else {
-    std::cout << ", Difficulty: " << static_cast<int>(diff);
+    std::cout << ", Difficulty: " << static_cast<int>(diff) << ", AI: " << static_cast<int>(aiDiff);
   }
   std::cout << '\n';
 
@@ -503,8 +686,11 @@ void Game::handleLobbyRoomTransition()
     }
   }
 
+  // Provide settings pointer so LobbyRoomState can include username in requests
+  lobbyRoomState->setSettings(&settings);
+
   // Set the lobby mode (create or join)
-  lobbyRoomState->setLobbyMode(isCreating, lobbyCode, diff);
+  lobbyRoomState->setLobbyMode(isCreating, lobbyCode, diff, isSolo, aiDiff, mode);
 
   // Connect network callbacks to lobby state
   if (auto *networkReceiveSystem = m_world->getSystem<ClientNetworkReceiveSystem>()) {
@@ -514,9 +700,9 @@ void Game::handleLobbyRoomTransition()
       }
     });
 
-    networkReceiveSystem->setLobbyStateCallback([this](const std::string &code, int playerCount) {
+    networkReceiveSystem->setLobbyStateCallback([this](const std::string &code, int playerCount, int spectatorCount) {
       if (lobbyRoomState) {
-        lobbyRoomState->onLobbyState(code, playerCount);
+        lobbyRoomState->onLobbyState(code, playerCount, spectatorCount);
       }
     });
 
@@ -525,62 +711,72 @@ void Game::handleLobbyRoomTransition()
         lobbyRoomState->onError(errorMsg);
       }
     });
+
+    networkReceiveSystem->setLobbyMessageCallback([this](const std::string &msg, int dur) {
+      if (lobbyRoomState) {
+        lobbyRoomState->showTemporaryMessage(msg, dur);
+      }
+    });
+
     // Player-dead: server told us our player is dead and we should return to menu
-    networkReceiveSystem->setPlayerDeadCallback([this](UNUSED const nlohmann::json &msg) {
-      std::cout << "[Game] Received player_dead from server - returning to menu" << std::endl;
+    networkReceiveSystem->setPlayerDeadCallback([this](const nlohmann::json &msg) {
+      std::string msgType = msg.value("type", "");
 
-      // Save highscore if we have the necessary information
-      if (msg.contains("score") && menu != nullptr) {
-        int finalScore = msg.value("score", 0);
-        Difficulty gameDifficulty = menu->getCurrentDifficulty();
-        std::string playerName = settings.username;
+      if (msgType == "player_died_spectate") {
+        // Player died but game continues - become spectator
+        std::cout << "[Game] Player died - switching to spectator mode" << std::endl;
 
-        HighscoreEntry entry{playerName, finalScore, gameDifficulty};
-        if (highscoreManager.addHighscore(entry)) {
-          std::cout << "[Game] New highscore saved: " << playerName << " - " << finalScore << " points ("
-                    << (gameDifficulty == Difficulty::EASY       ? "Easy"
-                          : gameDifficulty == Difficulty::MEDIUM ? "Medium"
-                                                                 : "Expert")
-                    << ")" << std::endl;
+        int aliveCount = msg.value("alive_players", 0);
+        std::cout << "[Game] " << aliveCount << " player(s) still alive" << std::endl;
+
+        // Save highscore
+        if (msg.contains("score") && menu != nullptr) {
+          int finalScore = msg.value("score", 0);
+          Difficulty gameDifficulty = menu->getCurrentDifficulty();
+          std::string playerName = settings.username;
+          HighscoreEntry entry{playerName, finalScore, gameDifficulty};
+          menu->getLobbyMenu()->getHighscoreManager().addHighscore(entry);
         }
-      }
 
-      // Stop accepting snapshots
-      if (auto *netRec = m_world->getSystem<ClientNetworkReceiveSystem>()) {
-        netRec->setAcceptSnapshots(false);
-      }
+        if (playingState) {
+          std::cout << "[Game] Setting spectator mode to TRUE" << std::endl;
+          playingState->setSpectatorMode(true);
+          std::cout << "[Game] Spectator mode is now: " << playingState->isSpectator() << std::endl;
+        } else {
+          std::cerr << "[Game] ERROR: playingState is null, cannot set spectator mode!" << std::endl;
+        }
 
-      // Inform server we're leaving (best effort)
-      sendLeaveToServer();
+      } else if (msgType == "player_dead") {
+        std::cout << "[Game] Game over - returning to menu" << std::endl;
 
-      // Clean up playing state
-      if (playingState) {
-        playingState->cleanup();
-        playingState.reset();
-      }
+        if (msg.contains("score") && menu != nullptr) {
+          int finalScore = msg.value("score", 0);
+          Difficulty gameDifficulty = menu->getCurrentDifficulty();
+          std::string playerName = settings.username;
+          HighscoreEntry entry{playerName, finalScore, gameDifficulty};
+          menu->getLobbyMenu()->getHighscoreManager().addHighscore(entry);
+        }
 
-      // Clear world entities to stop any further rendering or AI
-      if (m_world) {
-        try {
-          ecs::ComponentSignature emptySig; // matches all
-          std::vector<ecs::Entity> allEntities;
-          m_world->getEntitiesWithSignature(emptySig, allEntities);
-          for (auto e : allEntities) {
-            if (m_world->isAlive(e)) {
-              m_world->destroyEntity(e);
+        if (m_world) {
+          try {
+            ecs::ComponentSignature emptySig;
+            std::vector<ecs::Entity> allEntities;
+            m_world->getEntitiesWithSignature(emptySig, allEntities);
+            for (auto e : allEntities) {
+              if (m_world->isAlive(e)) {
+                m_world->destroyEntity(e);
+              }
             }
+          } catch (const std::exception &e) {
+            std::cerr << "[Game] Error clearing world: " << e.what() << '\n';
           }
-        } catch (const std::exception &e) {
-          std::cerr << "[Game] Error clearing world on player_dead: " << e.what() << '\n';
         }
-      }
 
-      // Transition to main menu
-      currentState = GameState::MENU;
-      if (menu) {
-        menu->setState(MenuState::MAIN_MENU);
-        // Refresh highscores for when player returns to lobby menu
-        menu->refreshHighscoresIfInLobby();
+        currentState = GameState::MENU;
+        if (menu) {
+          menu->setState(MenuState::MAIN_MENU);
+          menu->refreshHighscoresIfInLobby();
+        }
       }
     });
 
@@ -606,6 +802,23 @@ void Game::handlePlayingStateInput()
 
   if (playingState && playingState->shouldReturnToMenu()) {
     std::cout << "[Game] Player died - returning to menu" << '\n';
+
+    // Save highscore if in solo mode
+    if (playingState->isSolo() && lobbyRoomState) {
+      int finalScore = playingState->getPlayerScore();
+      Difficulty gameDifficulty = lobbyRoomState->getCreationDifficulty();
+      std::string playerName = settings.username;
+
+      HighscoreEntry entry{playerName, finalScore, gameDifficulty};
+      if (highscoreManager.addHighscore(entry)) {
+        std::cout << "[Game] New highscore saved: " << playerName << " - " << finalScore << " points ("
+                  << (gameDifficulty == Difficulty::EASY       ? "Easy"
+                        : gameDifficulty == Difficulty::MEDIUM ? "Medium"
+                                                               : "Expert")
+                  << ")" << std::endl;
+      }
+    }
+
     // Notify server that we're leaving the lobby/game
     sendLeaveToServer();
 
@@ -613,12 +826,24 @@ void Game::handlePlayingStateInput()
     if (m_world) {
       if (auto *netRecv = m_world->getSystem<ClientNetworkReceiveSystem>()) {
         netRecv->setAcceptSnapshots(false);
+        // Clear lobby-related callbacks to avoid stale UI state after death
+        netRecv->setLobbyJoinedCallback(nullptr);
+        netRecv->setLobbyStateCallback(nullptr);
+        netRecv->setErrorCallback(nullptr);
+        netRecv->setLobbyLeftCallback(nullptr);
+        netRecv->setPlayerDeadCallback(nullptr);
       }
     }
 
-    // Clean up playing state resources
+    // Clean up playing state resources (this stops the game music)
     playingState->cleanup();
     playingState.reset();
+
+    // Resume menu music AFTER cleanup (so game music is stopped first)
+    if (m_audioManager) {
+      std::cout << "[Game] Resuming menu music" << std::endl;
+      m_audioManager->playMusic("menu_music", true);
+    }
 
     // Also clear all entities from the client world to avoid stale data
     if (m_world) {
@@ -700,6 +925,9 @@ void Game::delegateInputToCurrentState()
   case GameState::PAUSED:
     // TODO: handle pause input
     break;
+  case GameState::VICTORY:
+    handleVictoryInput();
+    break;
   }
 }
 
@@ -758,6 +986,8 @@ void Game::update(float deltaTime)
       lobbyRoomState->update(deltaTime);
     }
     break;
+  case GameState::VICTORY:
+    break;
   case GameState::PLAYING:
     if (playingState) {
       playingState->update(deltaTime);
@@ -790,11 +1020,19 @@ void Game::render()
       playingState->render();
     }
     break;
+  case GameState::VICTORY:
+    renderVictoryScreen();
+    break;
   }
 
   // Render chat UI overlay (on top of everything)
   if (m_chatUI) {
     m_chatUI->render();
+  }
+
+  // Render end-screen overlay if active (on top of everything else)
+  if (m_showEndScreen) {
+    renderEndScreen();
   }
 
   renderer->present();
@@ -803,6 +1041,72 @@ void Game::render()
 void Game::setState(GameState newState)
 {
   currentState = newState;
+}
+
+void Game::handleVictoryInput()
+{
+  // Check for ESC or ENTER to return to menu
+  constexpr int KEY_ESCAPE = 27; // SDL_SCANCODE_ESCAPE or SFML escape
+
+  // Detect any key or click to continue
+  // For now we'll check for specific keys: ENTER or ESC
+  if (renderer->isKeyPressed(KEY_ESCAPE) || renderer->isKeyPressed(13)) { // 13 = ENTER
+    std::cout << "[Game] Returning to menu from victory screen" << std::endl;
+    currentState = GameState::MENU;
+    if (menu) {
+      menu->setState(MenuState::MAIN_MENU);
+    }
+  }
+}
+
+void Game::renderVictoryScreen()
+{
+  if (!renderer) {
+    return;
+  }
+
+  const int windowWidth = renderer->getWindowWidth();
+  const int windowHeight = renderer->getWindowHeight();
+
+  // Draw semi-transparent dark overlay
+  renderer->drawRect(0, 0, windowWidth, windowHeight, {0, 0, 0, 200});
+
+  // Load fonts
+  auto titleFont = renderer->loadFont("client/assets/font.opf/r-type.otf", 48);
+  auto subtitleFont = renderer->loadFont("client/assets/font.opf/r-type.otf", 32);
+  auto smallFont = renderer->loadFont("client/assets/font.opf/r-type.otf", 24);
+
+  // Victory message text
+  const std::string victoryText = "CONGRATULATIONS!";
+  const std::string completedText = "YOU HAVE COMPLETED THE GAME!";
+  const std::string scoreText = "FINAL SCORE: " + std::to_string(m_victoryScore);
+  const std::string continueText = "Press ENTER or ESC to return to menu";
+
+  // Get text dimensions for centering
+  int victoryW = 0, victoryH = 0;
+  renderer->getTextSize(titleFont, victoryText, victoryW, victoryH);
+
+  int completedW = 0, completedH = 0;
+  renderer->getTextSize(subtitleFont, completedText, completedW, completedH);
+
+  int scoreW = 0, scoreH = 0;
+  renderer->getTextSize(smallFont, scoreText, scoreW, scoreH);
+
+  int continueW = 0, continueH = 0;
+  renderer->getTextSize(smallFont, continueText, continueW, continueH);
+
+  const int centerX = windowWidth / 2;
+  const int centerY = windowHeight / 2;
+
+  // Draw centered text
+  renderer->drawText(titleFont, victoryText, centerX - victoryW / 2, centerY - 100, {255, 255, 0, 255});
+  renderer->drawText(subtitleFont, completedText, centerX - completedW / 2, centerY - 20, {255, 255, 255, 255});
+  renderer->drawText(smallFont, scoreText, centerX - scoreW / 2, centerY + 40, {0, 255, 0, 255});
+  renderer->drawText(smallFont, continueText, centerX - continueW / 2, centerY + 120, {200, 200, 200, 255});
+
+  renderer->freeFont(titleFont);
+  renderer->freeFont(subtitleFont);
+  renderer->freeFont(smallFont);
 }
 
 Game::GameState Game::getState() const

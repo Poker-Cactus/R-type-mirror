@@ -20,10 +20,12 @@
 #include "../../../engineCore/include/ecs/components/GunOffset.hpp"
 #include "../../../engineCore/include/ecs/components/Health.hpp"
 #include "../../../engineCore/include/ecs/components/Immortal.hpp"
+#include "../../../engineCore/include/ecs/components/LevelProgress.hpp"
 #include "../../../engineCore/include/ecs/components/Networked.hpp"
 #include "../../../engineCore/include/ecs/components/Owner.hpp"
 #include "../../../engineCore/include/ecs/components/Pattern.hpp"
 #include "../../../engineCore/include/ecs/components/PlayerId.hpp"
+#include "../../../engineCore/include/ecs/components/Shield.hpp"
 #include "../../../engineCore/include/ecs/components/Sprite.hpp"
 #include "../../../engineCore/include/ecs/components/Transform.hpp"
 #include "../../../engineCore/include/ecs/components/Velocity.hpp"
@@ -83,6 +85,20 @@ public:
   }
 
   /**
+   * @brief Set the current game mode for spawning
+   * @param mode Game mode
+   */
+  void setGameMode(GameMode mode)
+  {
+    m_gameMode = mode;
+    if (mode == GameMode::ENDLESS) {
+      enableInfiniteMode();
+    } else {
+      disableInfiniteMode();
+    }
+  }
+
+  /**
    * @brief Start a level by ID
    * @param levelId Level ID from configuration
    * @param world ECS world reference for spawning
@@ -101,19 +117,81 @@ public:
     }
 
     m_currentLevel = config;
-    m_levelTime = 0.0F;
+    m_maxPlayerDistance = 0.0F;
     m_nextWaveIndex = 0;
     m_isLevelActive = true;
+    m_levelEnding = false; // Reset ending flag for new level
+    m_transitionState = TransitionState::NONE; // Reset transition state
+    m_transitionTimer = 0.0f;
 
     // Clear existing spawn modes
     m_enemyTypeTimers.clear();
     m_spawnQueue.clear();
 
-    std::cout << "[SpawnSystem] Started level: " << config->name << " (" << config->waves.size() << " waves)"
+    std::cout << "[SpawnSystem] *** STARTED LEVEL: " << config->name << " (" << config->waves.size() << " waves) ***"
               << std::endl;
+    std::cout << "[SpawnSystem] Level length: " << config->levelLength << std::endl;
+    for (size_t i = 0; i < config->waves.size(); ++i) {
+      std::cout << "[SpawnSystem]   Wave " << i << ": " << config->waves[i].name
+                << " (triggerX=" << config->waves[i].triggerX << ")" << std::endl;
+    }
+  }
 
-    // DEBUG: Spawn all bosses immediately for testing
-    spawnAllBossesForDebug(world);
+  /**
+   * @brief Count remaining alive enemies in the level
+   * @param world ECS world
+   * @return Number of alive enemies
+   */
+  size_t countAliveEnemies(ecs::World &world) const
+  {
+    // Count entities with Pattern component (enemies have Pattern component for AI)
+    ecs::ComponentSignature enemySig;
+    enemySig.set(ecs::getComponentId<ecs::Pattern>());
+
+    std::vector<ecs::Entity> enemies;
+    world.getEntitiesWithSignature(enemySig, enemies);
+
+    return enemies.size();
+  }
+
+  /**
+   * @brief Reset all players' level progress (called when starting a new level)
+   * @param world ECS world to update
+   */
+  void resetPlayersLevelProgress(ecs::World &world)
+  {
+    ecs::ComponentSignature playerSig;
+    playerSig.set(ecs::getComponentId<ecs::PlayerId>());
+    playerSig.set(ecs::getComponentId<ecs::LevelProgress>());
+
+    std::vector<ecs::Entity> players;
+    world.getEntitiesWithSignature(playerSig, players);
+
+    for (auto player : players) {
+      auto &progress = world.getComponent<ecs::LevelProgress>(player);
+      progress.distanceTraveled = 0.0f;
+      std::cout << "[SpawnSystem] Reset player distance to 0" << std::endl;
+    }
+  }
+
+  /**
+   * @brief Get the ID of the next level
+   * @param currentLevelId Current level ID
+   * @return Next level ID or empty string if no next level
+   */
+  std::string getNextLevelId(const std::string &currentLevelId)
+  {
+    if (!m_levelConfigManager) {
+      return "";
+    }
+
+    auto levelIds = m_levelConfigManager->getLevelIds();
+    for (size_t i = 0; i < levelIds.size(); ++i) {
+      if (levelIds[i] == currentLevelId && i + 1 < levelIds.size()) {
+        return levelIds[i + 1];
+      }
+    }
+    return ""; // No next level
   }
 
   /**
@@ -123,9 +201,14 @@ public:
   {
     m_isLevelActive = false;
     m_currentLevel = nullptr;
-    m_levelTime = 0.0F;
+    m_maxPlayerDistance = 0.0F;
     m_nextWaveIndex = 0;
-    std::cout << "[SpawnSystem] Level stopped" << std::endl;
+
+    // Clear spawn queue to prevent spawning enemies after death
+    m_spawnQueue.clear();
+    m_spawnQueueTimer = 0.0F;
+
+    std::cout << "[SpawnSystem] Level stopped (cleared spawn queue)" << std::endl;
   }
 
   void update(ecs::World &world, float deltaTime) override
@@ -133,6 +216,18 @@ public:
     (void)world;
     m_spawnTimer += deltaTime;
     m_powerupSpawnTimer += deltaTime;
+
+    // Priority - Infinite mode
+    if (m_isInfiniteMode) {
+      updateInfiniteSpawning(world, deltaTime);
+      processSpawnQueue(world, deltaTime);
+
+      if (m_powerupSpawnTimer >= POWERUP_SPAWN_INTERVAL) {
+        spawnPowerupRandom(world);
+        m_powerupSpawnTimer = 0.0F;
+      }
+      return;
+    }
 
     // Priority 0: Level-based spawning (highest priority)
     if (m_isLevelActive && m_currentLevel) {
@@ -146,6 +241,11 @@ public:
         m_powerupSpawnTimer = 0.0F;
       }
 
+      return;
+    }
+
+    // If level is not active and not in infinite mode, stop all spawning
+    if (!m_isLevelActive && !m_isInfiniteMode) {
       return;
     }
 
@@ -288,10 +388,92 @@ public:
   }
 
   /**
+   * @brief Update function for infinite mode spawning
+   */
+  void updateInfiniteSpawning(ecs::World &world, float deltaTime)
+  {
+    if (!m_enemyConfigManager)
+      return;
+
+    m_infiniteElapsed += deltaTime;
+
+    if (m_infiniteEnemyTypes.empty()) {
+      m_infiniteEnemyTypes = m_enemyConfigManager->getEnemyIds();
+      if (!m_infiniteEnemyTypes.empty()) {
+        m_infiniteUnlockedCount = 1;
+        m_infiniteEnemyTimers[m_infiniteEnemyTypes[0]] = 0.0F;
+      }
+    }
+
+    if (m_infiniteUnlockedCount < m_infiniteEnemyTypes.size()) {
+      m_infiniteUnlockTimer += deltaTime;
+      if (m_infiniteUnlockTimer >= INFINITE_UNLOCK_INTERVAL) {
+        m_infiniteUnlockTimer = 0.0F;
+        const auto &newType = m_infiniteEnemyTypes[m_infiniteUnlockedCount];
+        m_infiniteEnemyTimers[newType] = 0.0F;
+        m_infiniteUnlockedCount++;
+        std::cout << "[SpawnSystem] Infinite mode unlocked enemy type: " << newType << std::endl;
+      }
+    }
+
+    const float ramp = 1.0f + (m_infiniteElapsed / INFINITE_RAMP_INTERVAL);
+    int extraGroups = static_cast<int>(m_infiniteElapsed / INFINITE_EXTRA_GROUP_INTERVAL);
+    if (extraGroups > INFINITE_MAX_EXTRA_GROUPS)
+      extraGroups = INFINITE_MAX_EXTRA_GROUPS;
+
+    for (auto &[enemyType, timer] : m_infiniteEnemyTimers) {
+      timer += deltaTime;
+
+      const EnemyConfig *config = m_enemyConfigManager->getConfig(enemyType);
+      if (!config)
+        continue;
+
+      const float effectiveInterval = std::max(config->spawn.spawnInterval / ramp, INFINITE_MIN_INTERVAL);
+
+      if (timer >= effectiveInterval) {
+        spawnEnemyGroup(world, enemyType);
+        for (int i = 0; i < extraGroups; ++i) {
+          spawnEnemyGroup(world, enemyType);
+        }
+        timer = 0.0F;
+      }
+    }
+  }
+
+  void enableInfiniteMode()
+  {
+    m_isInfiniteMode = true;
+    m_infiniteElapsed = 0.0F;
+    m_infiniteUnlockTimer = 0.0F;
+    m_infiniteUnlockedCount = 0;
+    m_infiniteEnemyTimers.clear();
+    m_infiniteEnemyTypes.clear();
+    m_spawnQueue.clear();
+    m_spawnQueueTimer = 0.0F;
+    m_isLevelActive = false;
+    m_currentLevel = nullptr;
+    m_enemyTypeTimers.clear();
+  }
+
+  void disableInfiniteMode()
+  {
+    m_isInfiniteMode = false;
+    m_infiniteElapsed = 0.0F;
+    m_infiniteUnlockTimer = 0.0F;
+    m_infiniteUnlockedCount = 0;
+    m_infiniteEnemyTimers.clear();
+    m_infiniteEnemyTypes.clear();
+  }
+
+  /**
    * @brief Process the spawn queue for delayed spawns
    */
   void processSpawnQueue(ecs::World &world, float deltaTime)
   {
+    // Don't process spawn queue if level is not active (e.g., after player death)
+    if (!m_isLevelActive && !m_isInfiniteMode)
+      return;
+
     if (m_spawnQueue.empty())
       return;
 
@@ -319,79 +501,162 @@ public:
   }
 
   /**
-   * @brief Update level spawning - processes waves based on level time
+   * @brief Update level spawning - processes waves based on player distance traveled
    */
   void updateLevelSpawning(ecs::World &world, float deltaTime)
   {
     if (!m_currentLevel || !m_isLevelActive)
       return;
 
-    m_levelTime += deltaTime;
+    // Handle level transition state
+    if (m_transitionState == TransitionState::TRANSITIONING) {
+      m_transitionTimer += deltaTime;
+      std::cout << "[SpawnSystem] Transition in progress: " << m_transitionTimer << " / " << TRANSITION_DURATION
+                << " seconds" << std::endl;
 
-    // Check if we need to trigger the next wave
-    while (m_nextWaveIndex < m_currentLevel->waves.size()) {
-      const auto &wave = m_currentLevel->waves[m_nextWaveIndex];
+      if (m_transitionTimer >= TRANSITION_DURATION) {
+        std::cout << "[SpawnSystem] ✓ Transition complete! Loading next level..." << std::endl;
+        m_transitionState = TransitionState::NONE;
+        m_transitionTimer = 0.0f;
 
-      if (m_levelTime >= wave.startTime) {
-        std::cout << "[SpawnSystem] Triggering wave " << m_nextWaveIndex << ": " << wave.name
-                  << " (time=" << m_levelTime << ")" << std::endl;
-
-        // Get viewport width to spawn just outside screen
-        float worldWidth = DEFAULT_VIEWPORT_WIDTH;
-        ecs::ComponentSignature playerSig;
-        playerSig.set(ecs::getComponentId<ecs::PlayerId>());
-        playerSig.set(ecs::getComponentId<ecs::Viewport>());
-        std::vector<ecs::Entity> players;
-        world.getEntitiesWithSignature(playerSig, players);
-        for (const auto &player : players) {
-          const auto &viewport = world.getComponent<ecs::Viewport>(player);
-          if (viewport.width > 0) {
-            worldWidth = std::max(worldWidth, static_cast<float>(viewport.width));
-          }
+        if (!m_nextLevelIdToLoad.empty()) {
+          std::cout << "[SpawnSystem] Starting level: " << m_nextLevelIdToLoad << std::endl;
+          startLevel(m_nextLevelIdToLoad, world);
+          resetPlayersLevelProgress(world); // Reset distance to 0 for new level
+        } else {
+          std::cout << "[SpawnSystem] No more levels, game complete!" << std::endl;
+          stopLevel();
         }
-
-        // Queue all spawns in this wave
-        // If count > 1, create individual spawns with incrementing delays
-        for (const auto &spawn : wave.spawns) {
-          // Get enemy config to calculate proper delay based on velocity
-          const EnemyConfig *enemyConfig =
-            m_enemyConfigManager ? m_enemyConfigManager->getConfig(spawn.enemyType) : nullptr;
-          float enemyVelocity = enemyConfig ? std::abs(enemyConfig->velocity.dx) : 384.0f; // Default velocity
-
-          // Calculate delay to maintain spacing: delay = spacing / velocity
-          float spawnDelayPerEnemy = (enemyVelocity > 0.0f) ? (spawn.spacing / enemyVelocity) : 0.08f;
-
-          std::uniform_real_distribution<float> yVariation(-30.0f, 30.0f);
-          for (int i = 0; i < spawn.count; ++i) {
-            float offsetY = yVariation(m_rng);
-            float individualDelay = spawn.delay + i * spawnDelayPerEnemy;
-
-            // Spawn just outside the right edge of screen (worldWidth + 100px)
-            // Don't add offsetX here - let the delay create natural spacing
-            float spawnX = worldWidth + 100.0f;
-            // float spawnX = (spawn.x > 0.0f) ? spawn.x : (worldWidth + 100.0f);
-
-            m_spawnQueue.push_back({spawnX, spawn.y + offsetY, individualDelay, spawn.enemyType,
-                                    1, // Spawn only 1 enemy per queue entry
-                                    0.0f});
-          }
-        }
-
-        // Sort spawn queue by delay
-        std::sort(m_spawnQueue.begin(), m_spawnQueue.end(),
-                  [](const QueuedSpawn &a, const QueuedSpawn &b) { return a.delay < b.delay; });
-
-        m_spawnQueueTimer = 0.0F;
-        m_nextWaveIndex++;
-      } else {
-        break; // No more waves to trigger yet
       }
+      return; // Skip normal spawning during transition
     }
 
+    // Update max player distance traveled
+    ecs::ComponentSignature playerSig;
+    playerSig.set(ecs::getComponentId<ecs::PlayerId>());
+    playerSig.set(ecs::getComponentId<ecs::LevelProgress>());
+    std::vector<ecs::Entity> players;
+    world.getEntitiesWithSignature(playerSig, players);
+
+    float previousMaxDistance = m_maxPlayerDistance;
+    for (const auto &player : players) {
+      const auto &progress = world.getComponent<ecs::LevelProgress>(player);
+      m_maxPlayerDistance = std::max(m_maxPlayerDistance, progress.distanceTraveled);
+    }
+
+    // Debug log when player distance changes significantly
+    if (std::abs(m_maxPlayerDistance - previousMaxDistance) > 100.0f) {
+      std::cout << "[SpawnSystem] Player distance traveled: " << m_maxPlayerDistance << std::endl;
+    }
+
+    // DO NOT trigger new waves if level is ending (transition in progress)
+    if (!m_levelEnding) {
+      // Check if we need to trigger the next wave based on player distance
+      while (m_nextWaveIndex < m_currentLevel->waves.size()) {
+        const auto &wave = m_currentLevel->waves[m_nextWaveIndex];
+
+        if (m_maxPlayerDistance >= wave.triggerX) {
+          std::cout << "[SpawnSystem] *** Triggering wave " << m_nextWaveIndex << ": " << wave.name
+                    << " (distance=" << m_maxPlayerDistance << ", triggerX=" << wave.triggerX << ") ***" << std::endl;
+
+          // Get viewport width to spawn just outside screen
+          float worldWidth = DEFAULT_VIEWPORT_WIDTH;
+          ecs::ComponentSignature vpSig;
+          vpSig.set(ecs::getComponentId<ecs::PlayerId>());
+          vpSig.set(ecs::getComponentId<ecs::Viewport>());
+          std::vector<ecs::Entity> vpPlayers;
+          world.getEntitiesWithSignature(vpSig, vpPlayers);
+          for (const auto &player : vpPlayers) {
+            const auto &viewport = world.getComponent<ecs::Viewport>(player);
+            if (viewport.width > 0) {
+              worldWidth = std::max(worldWidth, static_cast<float>(viewport.width));
+            }
+          }
+
+          // Queue all spawns in this wave
+          for (const auto &spawn : wave.spawns) {
+            // Calculate delay to maintain spacing if count > 1
+            float spawnDelayPerEnemy = 0.0f;
+            if (spawn.count > 1 && spawn.spacing > 0.0f) {
+              // Get enemy config to calculate proper delay based on velocity
+              const EnemyConfig *enemyConfig =
+                m_enemyConfigManager ? m_enemyConfigManager->getConfig(spawn.enemyType) : nullptr;
+              float enemyVelocity = enemyConfig ? std::abs(enemyConfig->velocity.dx) : 384.0f;
+              spawnDelayPerEnemy = (enemyVelocity > 0.0f) ? (spawn.spacing / enemyVelocity) : 0.08f;
+            }
+
+            std::uniform_real_distribution<float> yVariation(-30.0f, 30.0f);
+            for (int i = 0; i < spawn.count; ++i) {
+              float offsetY = yVariation(m_rng);
+              float individualDelay = spawn.delay + i * spawnDelayPerEnemy;
+
+              // Spawn just outside the right edge of screen
+              float spawnX = worldWidth + 100.0f;
+              // float spawnX = (spawn.x > 0.0f) ? spawn.x : (worldWidth + 100.0f);
+
+              m_spawnQueue.push_back({spawnX, spawn.y + offsetY, individualDelay, spawn.enemyType,
+                                      1, // Spawn only 1 enemy per queue entry
+                                      0.0f});
+            }
+          }
+
+          std::cout << "[SpawnSystem] Queued " << wave.spawns.size() << " spawn groups for wave " << wave.name
+                    << std::endl;
+          std::cout << "[SpawnSystem] → Wave triggered at distance: " << m_maxPlayerDistance
+                    << " (triggerX: " << wave.triggerX << ")" << std::endl;
+
+          // Sort spawn queue by delay
+          std::sort(m_spawnQueue.begin(), m_spawnQueue.end(),
+                    [](const QueuedSpawn &a, const QueuedSpawn &b) { return a.delay < b.delay; });
+
+          m_spawnQueueTimer = 0.0F;
+          m_nextWaveIndex++;
+        } else {
+          break; // No more waves to trigger yet
+        }
+      }
+    } // Close the if (!m_levelEnding) block
+
     // Check if level is complete
-    if (m_nextWaveIndex >= m_currentLevel->waves.size() && m_spawnQueue.empty()) {
-      std::cout << "[SpawnSystem] Level completed: " << m_currentLevel->name << std::endl;
-      stopLevel();
+    if (m_nextWaveIndex >= m_currentLevel->waves.size()) {
+      // Log status every frame for debugging
+      static float debugLogTimer = 0;
+      debugLogTimer += deltaTime;
+
+      size_t aliveEnemies = countAliveEnemies(world);
+
+      if (debugLogTimer >= 1.0f) {
+        std::cout << "[SpawnSystem] Level completion check:" << std::endl;
+        std::cout << "  - Wave index: " << m_nextWaveIndex << " / " << m_currentLevel->waves.size() << std::endl;
+        std::cout << "  - Spawn queue size: " << m_spawnQueue.size() << std::endl;
+        std::cout << "  - Alive enemies: " << aliveEnemies << std::endl;
+        std::cout << "  - Distance: " << m_maxPlayerDistance << " / " << m_currentLevel->levelLength << std::endl;
+        debugLogTimer = 0;
+      }
+
+      // Level complete = all waves triggered + spawn queue empty + all enemies dead
+      if (m_spawnQueue.empty() && aliveEnemies == 0) {
+        std::cout << "[SpawnSystem] ✓✓✓ LEVEL COMPLETE ✓✓✓" << std::endl;
+        std::cout << "[SpawnSystem] Level: " << m_currentLevel->name << std::endl;
+        std::cout << "[SpawnSystem] Distance: " << m_maxPlayerDistance << std::endl;
+
+        // Mark level as ending to block new wave triggers
+        m_levelEnding = true;
+
+        // Get the next level ID
+        std::string currentLevelId = m_currentLevel->id;
+        std::string nextLevelId = getNextLevelId(currentLevelId);
+
+        // Start transition state (do NOT load next level yet)
+        m_transitionState = TransitionState::TRANSITIONING;
+        m_transitionTimer = 0.0f;
+        m_nextLevelIdToLoad = nextLevelId;
+
+        std::cout << "[SpawnSystem] → Emitting LevelCompleteEvent: " << currentLevelId << " → " << nextLevelId
+                  << std::endl;
+        std::cout << "[SpawnSystem] → Entering transition state (6 seconds)" << std::endl;
+        world.getEventBus().emit(ecs::LevelCompleteEvent{currentLevelId, nextLevelId});
+      }
     }
   }
 
@@ -406,11 +671,30 @@ private:
   std::shared_ptr<LevelConfigManager> m_levelConfigManager;
   std::string m_currentEnemyType = "enemy_red"; // Default enemy type
 
+  GameMode m_gameMode = GameMode::CLASSIC;
+  bool m_isInfiniteMode = false;
+  float m_infiniteElapsed = 0.0F;
+  float m_infiniteUnlockTimer = 0.0F;
+  size_t m_infiniteUnlockedCount = 0;
+  std::vector<std::string> m_infiniteEnemyTypes;
+  std::unordered_map<std::string, float> m_infiniteEnemyTimers;
+
   // Level-based spawning state
   const LevelConfig *m_currentLevel = nullptr;
-  float m_levelTime = 0.0F;
+  float m_maxPlayerDistance = 0.0F; // Distance maximale parcourue par les joueurs dans le niveau
   size_t m_nextWaveIndex = 0;
   bool m_isLevelActive = false;
+  bool m_levelEnding = false; // Flag to block new waves during transition
+
+  // Transition state management
+  enum class TransitionState {
+    NONE, // Normal gameplay
+    TRANSITIONING // Level transition in progress
+  };
+  TransitionState m_transitionState = TransitionState::NONE;
+  float m_transitionTimer = 0.0f; // Timer for transition (6 seconds)
+  std::string m_nextLevelIdToLoad; // Level to load after transition
+  static constexpr float TRANSITION_DURATION = 6.0f; // Must match client transition time
 
   // Timers individuels pour chaque type d'ennemi
   std::unordered_map<std::string, float> m_enemyTypeTimers;
@@ -437,6 +721,13 @@ private:
   static constexpr float ENEMY_COLLIDER_SIZE = 48.0F;
   static constexpr unsigned int ENEMY_SPRITE_SIZE = 96;
 
+  // Infinite mode tuning
+  static constexpr float INFINITE_UNLOCK_INTERVAL = 25.0F;
+  static constexpr float INFINITE_RAMP_INTERVAL = 60.0F;
+  static constexpr float INFINITE_MIN_INTERVAL = 0.7F;
+  static constexpr float INFINITE_EXTRA_GROUP_INTERVAL = 45.0F;
+  static constexpr int INFINITE_MAX_EXTRA_GROUPS = 2;
+
   // Enemy Red configuration
   static constexpr float ENEMY_RED_AMPLITUDE = 40.0F;
   static constexpr float ENEMY_RED_FREQUENCY = 6.0F;
@@ -460,21 +751,26 @@ private:
   static constexpr float POWERUP_COLLIDER_SIZE = 32.0F;
   static constexpr float POWERUP_SCALE = 4.0F;
 
-  static constexpr float PROJECTILE_COLLIDER_SIZE = 8.0F;
+  // Projectile dimensions (18×14 sprite)
+  static constexpr float PROJECTILE_COLLIDER_WIDTH = 18.0F;
+  static constexpr float PROJECTILE_COLLIDER_HEIGHT = 14.0F;
   static constexpr unsigned int PROJECTILE_SPRITE_WIDTH = 84;
   static constexpr unsigned int PROJECTILE_SPRITE_HEIGHT = 37;
   static constexpr float PROJECTILE_VELOCITY_MULTIPLIER = 2400.0F;
   static constexpr float DIRECTION_THRESHOLD = 0.01F;
 
-  // Charged projectile configuration
-  static constexpr float CHARGED_PROJECTILE_COLLIDER_SIZE = 20.0F;
+  // Charged projectile configuration (82×16 sprite)
+  static constexpr float CHARGED_PROJECTILE_COLLIDER_WIDTH = 82.0F;
+  static constexpr float CHARGED_PROJECTILE_COLLIDER_HEIGHT = 16.0F;
   static constexpr unsigned int CHARGED_PROJECTILE_SPRITE_WIDTH = 165;
   static constexpr unsigned int CHARGED_PROJECTILE_SPRITE_HEIGHT = 16;
   static constexpr float CHARGED_PROJECTILE_VELOCITY = 2400.0F;
   static constexpr float CHARGED_PROJECTILE_SCALE = 3.0F;
 
   // loading shot configuration
-  static constexpr float LOADING_SHOT_COLLIDER_SIZE = 12.0F;
+  // Loading shot properties (31x29 sprite)
+  static constexpr float LOADING_SHOT_COLLIDER_WIDTH = 31.0F;
+  static constexpr float LOADING_SHOT_COLLIDER_HEIGHT = 29.0F;
   static constexpr unsigned int LOADING_SHOT_SPRITE_WIDTH = 255 / 8;
   static constexpr unsigned int LOADING_SHOT_SPRITE_HEIGHT = 29;
   static constexpr float LOADING_SHOT_VELOCITY = 0.0F;
@@ -484,6 +780,7 @@ private:
   // Ruban/Wave beam projectile configuration (R-Type ribbon effect)
   // Uses xruban_projectile.png format (x = phase 1-14)
   // Phase 1 initial dimensions: 21x49, 1 frame
+  static constexpr float RUBAN_PROJECTILE_VELOCITY = 1800.0F; // Slower than regular shot (2400.0F)
   static constexpr float RUBAN_WAVE_AMPLITUDE = 50.0F;
   static constexpr float RUBAN_WAVE_FREQUENCY = 12.0F;
   static constexpr float RUBAN_SCALE = 3.0F;
@@ -677,9 +974,6 @@ private:
     health.maxHp = config->health.maxHp;
     world.addComponent(enemy, health);
 
-    // Collider component
-    world.addComponent(enemy, ecs::Collider{config->collider.width, config->collider.height});
-
     // Sprite component
     ecs::Sprite sprite;
     sprite.spriteId = config->sprite.spriteId;
@@ -693,6 +987,18 @@ private:
     sprite.frameTime = config->sprite.frameTime;
     sprite.reverseAnimation = config->sprite.reverseAnimation;
     world.addComponent(enemy, sprite);
+
+    // Elite enemy: spawn shield and make elite immortal until shield is destroyed
+    if (enemyType == "enemy_elite_blue") {
+      ecs::Immortal immortal;
+      immortal.isImmortal = true;
+      world.addComponent(enemy, immortal);
+      spawnEliteShield(world, enemy, transform);
+    }
+    // Collider component sized to sprite * transform.scale (matches visual size)
+    world.addComponent(enemy,
+                       ecs::Collider{static_cast<float>(sprite.width) * transform.scale,
+                                     static_cast<float>(sprite.height) * transform.scale});
 
     std::cout << "[SpawnSystem] Spawned enemy '" << enemyType << "' (spriteId=" << config->sprite.spriteId
               << ", pattern=" << config->pattern.type << ") at (" << posX << ", " << posY << ")" << std::endl;
@@ -910,7 +1216,66 @@ private:
     }
   }
 
-  static void handleSpawnEvent(ecs::World &world, const ecs::SpawnEntityEvent &event)
+  void spawnEliteShield(ecs::World &world, ecs::Entity parent, const ecs::Transform &parentTransform)
+  {
+    ecs::Entity shield = world.createEntity();
+
+    // Shield transform (follow parent)
+    ecs::Transform shieldTransform;
+    shieldTransform.x = parentTransform.x;
+    shieldTransform.y = parentTransform.y;
+    shieldTransform.rotation = 0.0F;
+    shieldTransform.scale = 2.5F;
+    world.addComponent(shield, shieldTransform);
+
+    ecs::Follower follower;
+    follower.parent = parent;
+    follower.offsetX = -60.0F;
+    follower.offsetY = 20.0F;
+    follower.smoothing = 30.0F;
+    world.addComponent(shield, follower);
+
+    // Shield marker with parent link
+    ecs::Shield shieldComp;
+    shieldComp.parent = parent;
+    world.addComponent(shield, shieldComp);
+
+    // Shield health: 3 hits (damageFromProjectile=20)
+    ecs::Health shieldHealth;
+    shieldHealth.hp = 60;
+    shieldHealth.maxHp = 60;
+    world.addComponent(shield, shieldHealth);
+
+    // Shield collider (bubble frame size * scale)
+    world.addComponent(shield, ecs::Collider{60.0F, 60.0F});
+
+    // Shield sprite (match BUBBLE animation)
+    ecs::Sprite shieldSprite;
+    shieldSprite.spriteId = ecs::SpriteId::SHIELD_BUBBLE;
+    shieldSprite.width = 24; // bubble.png frame width
+    shieldSprite.height = 24; // bubble.png height
+    shieldSprite.animated = true;
+    shieldSprite.frameCount = 12;
+    shieldSprite.startFrame = 0;
+    shieldSprite.endFrame = 11;
+    shieldSprite.currentFrame = 0;
+    shieldSprite.frameTime = 0.1F;
+    shieldSprite.reverseAnimation = false;
+    shieldSprite.loop = true;
+    shieldSprite.row = 0;
+    shieldSprite.offsetX = 0;
+    world.addComponent(shield, shieldSprite);
+
+    // Networked for replication
+    ecs::Networked net;
+    net.networkId = shield;
+    world.addComponent(shield, net);
+
+    std::cout << "[SpawnSystem] Spawned elite shield for entity " << parent << " (shield=" << shield << ")"
+              << std::endl;
+  }
+
+  void handleSpawnEvent(ecs::World &world, const ecs::SpawnEntityEvent &event)
   {
     configRubanProjectile config;
     switch (event.type) {
@@ -956,7 +1321,7 @@ private:
     // Ignore passed config - always start at phase 1
     (void)config;
 
-    const float projectileVelocity = PROJECTILE_VELOCITY_MULTIPLIER * 1.0F;
+    const float projectileVelocity = RUBAN_PROJECTILE_VELOCITY;
 
     ecs::Entity projectile = world.createEntity();
 
@@ -985,11 +1350,6 @@ private:
     // Add wave beam pattern for R-Type ribbon effect (oscillating vertically)
     world.addComponent(projectile, ecs::Pattern{"wave_beam", RUBAN_WAVE_AMPLITUDE, RUBAN_WAVE_FREQUENCY});
 
-    // Collider based on initial phase dimensions
-    world.addComponent(projectile,
-                       ecs::Collider{static_cast<float>(RUBAN_INITIAL_WIDTH) * RUBAN_SCALE,
-                                     static_cast<float>(RUBAN_INITIAL_HEIGHT) * RUBAN_SCALE});
-
     // Start with phase 1 sprite (1ruban_projectile.png: 21x49, 1 frame)
     ecs::Sprite sprite;
     sprite.spriteId = ecs::SpriteId::RUBAN1_PROJECTILE;
@@ -1003,6 +1363,11 @@ private:
     sprite.currentFrame = 0;
 
     world.addComponent(projectile, sprite);
+
+    // Collider based on initial phase dimensions (after sprite so it matches visual)
+    world.addComponent(projectile,
+                       ecs::Collider{static_cast<float>(sprite.width) * transform.scale,
+                                     static_cast<float>(sprite.height) * transform.scale});
 
     // Mark as networked so the snapshot system replicates it to clients.
     ecs::Networked net;
@@ -1052,8 +1417,6 @@ private:
       velocity.dy = projectileVelocity * std::sin(angles[i]);
       world.addComponent(projectile, velocity);
 
-      world.addComponent(projectile, ecs::Collider{PROJECTILE_COLLIDER_SIZE, PROJECTILE_COLLIDER_SIZE});
-
       // Sprite for triple projectile - use direction-specific sprite
       ecs::Sprite sprite;
       sprite.spriteId = spriteIds[i];
@@ -1066,6 +1429,11 @@ private:
       sprite.endFrame = 0;
 
       world.addComponent(projectile, sprite);
+
+      // Collider sized to sprite dimensions (scale == 1)
+      world.addComponent(projectile,
+                         ecs::Collider{static_cast<float>(sprite.width) * transform.scale,
+                                       static_cast<float>(sprite.height) * transform.scale});
 
       // Mark as networked
       ecs::Networked net;
@@ -1115,8 +1483,6 @@ private:
 
     // Despawn is handled by LifetimeSystem when projectile leaves the viewport.
 
-    world.addComponent(projectile, ecs::Collider{PROJECTILE_COLLIDER_SIZE, PROJECTILE_COLLIDER_SIZE});
-
     // SERVER ASSIGNS VISUAL IDENTITY AS DATA
     // Projectile sprite decided at creation, never inferred later
     ecs::Sprite sprite;
@@ -1130,6 +1496,11 @@ private:
     sprite.endFrame = 2;
 
     world.addComponent(projectile, sprite);
+
+    // Collider sized to sprite * transform.scale
+    world.addComponent(projectile,
+                       ecs::Collider{static_cast<float>(sprite.width) * transform.scale,
+                                     static_cast<float>(sprite.height) * transform.scale});
 
     // Mark as networked so the snapshot system replicates it to clients.
     ecs::Networked net;
@@ -1171,8 +1542,6 @@ private:
     velocity.dy = 0.0F;
     world.addComponent(projectile, velocity);
 
-    world.addComponent(projectile, ecs::Collider{CHARGED_PROJECTILE_COLLIDER_SIZE, CHARGED_PROJECTILE_COLLIDER_SIZE});
-
     ecs::Sprite sprite;
     sprite.spriteId = ecs::SpriteId::CHARGED_PROJECTILE;
     sprite.width = CHARGED_PROJECTILE_SPRITE_WIDTH;
@@ -1183,6 +1552,11 @@ private:
     sprite.startFrame = 0;
     sprite.endFrame = 1;
     world.addComponent(projectile, sprite);
+
+    // Collider sized to sprite * scale
+    world.addComponent(projectile,
+                       ecs::Collider{static_cast<float>(sprite.width) * transform.scale,
+                                     static_cast<float>(sprite.height) * transform.scale});
 
     ecs::Networked net;
     net.networkId = projectile;
@@ -1334,7 +1708,7 @@ private:
     (void)posY;
     // TODO: Implement explosion effect
   }
-}; // namespace server
+};
 
 } // namespace server
 

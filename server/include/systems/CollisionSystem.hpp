@@ -98,6 +98,7 @@ private:
       sprite.spriteId == ecs::SpriteId::BOSS_GREEN_MOTHERSHIP || sprite.spriteId == ecs::SpriteId::BOSS_GREEN_MOTHERSHIP_SHOOT ||
       sprite.spriteId == ecs::SpriteId::BOSS_GREEN_MOTHERSHIP_ECLOSION || sprite.spriteId == ecs::SpriteId::BOSS_GREEN_MOTHERSHIP_TURRET ||
       sprite.spriteId == ecs::SpriteId::BOSS_GREEN_MOTHERSHIP_TURRET_SHOT || sprite.spriteId == ecs::SpriteId::BOSS_GREEN_MOTHERSHIP_BOOSTER;
+      sprite.spriteId == ecs::SpriteId::ELITE_ENEMY || sprite.spriteId == ecs::SpriteId::SHIELD_BUBBLE;
   }
 
   static bool checkCollision(const ecs::Transform &transA, const ecs::Collider &colA, const ecs::Transform &transB,

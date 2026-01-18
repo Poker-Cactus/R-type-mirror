@@ -7,6 +7,7 @@
 #include "../../common/include/Common.hpp"
 #include "../../engineCore/include/ecs/Entity.hpp"
 #include "../../network/include/INetworkManager.hpp"
+#include "../include/Settings.hpp"
 #include "../interface/IRenderer.hpp"
 #include "Overlay.hpp"
 #include "ParallaxBackground.hpp"
@@ -92,11 +93,28 @@ public:
   [[nodiscard]] bool shouldReturnToMenu() const { return m_returnToMenuRequested; }
 
   /**
+   * @brief Check if this is solo mode
+   * @return true if solo mode
+   */
+  [[nodiscard]] bool isSolo() const { return m_isSolo; }
+
+  /**
+   * @brief Get the creation difficulty
+   * @return the difficulty
+   */
+  [[nodiscard]] Difficulty getCreationDifficulty() const { return m_creationDifficulty; }
+
+  /**
    * @brief Set lobby mode before connection
    * @param isCreating Whether creating new lobby
    * @param lobbyCode Lobby code (for joining)
+   * @param difficulty Game difficulty level
+   * @param aiDifficulty AI difficulty level
+   * @param isSolo Whether this is a solo game
    */
-  void setLobbyMode(bool isCreating, const std::string &lobbyCode = "", Difficulty difficulty = Difficulty::MEDIUM);
+  void setLobbyMode(bool isCreating, const std::string &lobbyCode = "", Difficulty difficulty = Difficulty::MEDIUM,
+                    bool isSolo = false, AIDifficulty aiDifficulty = AIDifficulty::MEDIUM,
+                    GameMode mode = GameMode::CLASSIC);
 
   /**
    * @brief Send leave lobby message to server
@@ -113,8 +131,9 @@ public:
    * @brief Network callback: lobby state update
    * @param lobbyCode Current lobby code
    * @param playerCount Number of players in lobby
+   * @param spectatorCount Number of spectators in lobby
    */
-  void onLobbyState(const std::string &lobbyCode, int playerCount);
+  void onLobbyState(const std::string &lobbyCode, int playerCount, int spectatorCount);
 
   /**
    * @brief Network callback: error occurred
@@ -123,9 +142,18 @@ public:
   void onError(const std::string &errorMsg);
 
   /**
+   * @brief Show a temporary lobby-wide message for the given duration (seconds)
+   */
+  void showTemporaryMessage(const std::string &message, int durationSeconds);
+
+  /**
    * @brief Send viewport dimensions to server
    */
   void sendViewportToServer();
+  /**
+   * @brief Provide Settings pointer so this state can include username in lobby requests
+   */
+  void setSettings(Settings *settings);
 
 private:
   void loadSpriteTextures();
@@ -147,9 +175,12 @@ private:
   bool m_lobbyRequested = false;
   float m_timeSinceLobbyRequest = 0.0F;
   Difficulty m_creationDifficulty = Difficulty::MEDIUM;
+  AIDifficulty m_aiDifficulty = AIDifficulty::MEDIUM;
+  GameMode m_gameMode = GameMode::CLASSIC;
 
   // Lobby mode
   bool m_isCreatingLobby = true;
+  bool m_isSolo = false;
   std::string m_targetLobbyCode;
   bool m_joinAsSpectator = false;
 
@@ -157,5 +188,11 @@ private:
   LobbyConnectionState m_connectionState = LobbyConnectionState::CONNECTING;
   std::string m_lobbyCode;
   int m_playerCount = 0;
+  int m_spectatorCount = 0;
   std::string m_errorMessage;
+  // Local settings pointer to include username in requests
+  Settings *m_settings = nullptr;
+  // Temporary lobby-wide message display
+  std::string m_tempMessage;
+  float m_tempMessageTimer = 0.0f;
 };

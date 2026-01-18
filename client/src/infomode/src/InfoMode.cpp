@@ -12,6 +12,7 @@
 #include "../../../interface/KeyCodes.hpp"
 #include <fstream>
 #include <iomanip>
+#include <iostream>
 #include <sstream>
 
 #ifdef __APPLE__
@@ -70,9 +71,11 @@ InfoMode::InfoMode(std::shared_ptr<IRenderer> renderer, std::shared_ptr<void> hu
     : m_renderer(std::move(renderer)), m_hudFont(std::move(hudFont)), m_settings(settings), m_isActive(false),
       m_lastSystemUpdate(std::chrono::steady_clock::now())
 {
-  m_settings.showInfoMode = false;
+  // Preserve settings value; enable if we successfully loaded a collision map below
   initStaticSystemInfo();
   updateDynamicSystemInfo();
+
+  // Map collision debug overlay disabled for now
 }
 
 void InfoMode::initStaticSystemInfo()
@@ -231,7 +234,7 @@ void InfoMode::processInput()
   if (!m_renderer)
     return;
 
-  bool keyPressed = m_renderer->isKeyPressed(KeyCode::KEY_I);
+  bool keyPressed = m_renderer->isKeyPressed(m_settings.toggleInfoMode);
   if (keyPressed && !m_keyWasPressed) {
     m_isActive = !m_isActive;
     m_settings.showInfoMode = m_isActive;
@@ -496,5 +499,54 @@ void InfoMode::setNetworkBandwidth(int uploadBytes, int downloadBytes)
   m_uploadBytes = uploadBytes;
   m_downloadBytes = downloadBytes;
 }
+
+void InfoMode::renderHitboxes(const std::shared_ptr<ecs::World> &world, float entityScaleX, float entityScaleY)
+{
+  if (!world || !m_isActive) {
+    return;
+  }
+
+  // Get all entities with Transform and Collider components
+  ecs::ComponentSignature signature;
+  signature.set(ecs::getComponentId<ecs::Transform>());
+  signature.set(ecs::getComponentId<ecs::Collider>());
+
+  std::vector<ecs::Entity> entities;
+  world->getEntitiesWithSignature(signature, entities);
+
+  // Define colors for different entity types
+  const Color playerColor = {0, 255, 0, 200}; // Green for players
+  const Color enemyColor = {255, 0, 0, 200}; // Red for enemies
+  const Color projectileColor = {255, 255, 0, 200}; // Yellow for projectiles
+  const Color defaultColor = {0, 255, 255, 200}; // Cyan for others
+
+  for (const auto &entity : entities) {
+    const auto &transform = world->getComponent<ecs::Transform>(entity);
+    const auto &collider = world->getComponent<ecs::Collider>(entity);
+
+    // Determine entity type and color
+    Color hitboxColor = defaultColor;
+
+    if (world->hasComponent<ecs::PlayerId>(entity)) {
+      hitboxColor = playerColor;
+    } else if (world->hasComponent<ecs::Health>(entity)) {
+      // Enemies typically have health
+      hitboxColor = enemyColor;
+    } else if (world->hasComponent<ecs::Velocity>(entity)) {
+      // Moving objects without health are likely projectiles
+      hitboxColor = projectileColor;
+    }
+
+    // Draw hitbox outline with scaling applied (entities use entity scale)
+    int x = static_cast<int>(transform.x * entityScaleX);
+    int y = static_cast<int>(transform.y * entityScaleY);
+    int w = static_cast<int>(collider.width * entityScaleX);
+    int h = static_cast<int>(collider.height * entityScaleY);
+
+    m_renderer->drawRectOutline(x, y, w, h, hitboxColor);
+  }
+}
+
+// Map collision rendering removed: no out-of-line method present.
 
 } // namespace rtype

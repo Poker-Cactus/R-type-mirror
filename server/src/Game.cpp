@@ -7,9 +7,13 @@
 
 #include "Game.hpp"
 #include "../../engineCore/include/ecs/EngineComponents.hpp"
+#include "../../engineCore/include/ecs/components/Immortal.hpp"
+#include "../include/TestMode.hpp"
 #include "../include/config/EnemyConfig.hpp"
 #include "../include/config/LevelConfig.hpp"
+#include "systems/AllySystem.hpp"
 #include "systems/ChargeSystem.hpp"
+#include "systems/InvulnerabilitySystem.hpp"
 #include "systems/SpawnSystem.hpp"
 #include <chrono>
 #include <cstdint>
@@ -29,6 +33,9 @@ Game::Game()
 
   // Register all systems
   world->registerSystem<server::InputMovementSystem>();
+  world->registerSystem<server::EnemyAISystem>();
+  world->registerSystem<server::AllySystem>();
+  // Map collision system removed — map collisions are no longer used
   world->registerSystem<ecs::MovementSystem>();
   world->registerSystem<server::CollisionSystem>();
 
@@ -48,6 +55,7 @@ Game::Game()
   spawnSystem = &world->registerSystem<server::SpawnSystem>();
   world->registerSystem<server::EntityLifetimeSystem>();
   world->registerSystem<server::LifetimeSystem>();
+  world->registerSystem<server::InvulnerabilitySystem>();
 
   // Initialize systems first
   initializeSystems();
@@ -75,6 +83,7 @@ Game::Game()
 
     // Start level 1
     spawnSystem->startLevel("level_1", *world);
+    // initializeMapCollision("level_1"); // Disabled: collision maps ignored for now
 
     std::cout << "[Game] Level configurations loaded successfully" << std::endl;
   } else {
@@ -141,30 +150,27 @@ void Game::spawnPlayer()
   world->addComponent(player, velocity);
 
   ecs::Health health;
-  int baseHealth = GameConfig::PLAYER_MAX_HP;
-
-  // Adjust player health based on difficulty
+  // Determine starting lives based on server difficulty
+  int startingLives = 0;
   switch (currentDifficulty) {
   case Difficulty::EASY:
-    baseHealth = static_cast<int>(baseHealth * 1.5f); // 150 HP
+    startingLives = 5;
     break;
   case Difficulty::MEDIUM:
-    // Normal health (100 HP)
+    startingLives = 3;
     break;
   case Difficulty::EXPERT:
-    baseHealth = static_cast<int>(baseHealth * 0.75f); // 75 HP
+    startingLives = 1;
+    break;
+  default:
+    startingLives = GameConfig::PLAYER_START_LIVES;
     break;
   }
-
-  health.hp = baseHealth;
-  health.maxHp = baseHealth;
+  health.hp = startingLives;
+  health.maxHp = startingLives;
   world->addComponent(player, health);
 
-  std::cout << "[Server] Spawning player with " << baseHealth << " HP (difficulty: "
-            << (currentDifficulty == Difficulty::EASY       ? "easy"
-                  : currentDifficulty == Difficulty::MEDIUM ? "medium"
-                                                            : "expert")
-            << ")" << std::endl;
+  std::cout << "[Server] Spawning player with " << startingLives << " LIVES" << std::endl;
 
   ecs::Input input;
   input.up = false;
@@ -174,7 +180,7 @@ void Game::spawnPlayer()
   input.shoot = false;
   world->addComponent(player, input);
 
-  world->addComponent(player, ecs::Collider{GameConfig::PLAYER_COLLIDER_SIZE, GameConfig::PLAYER_COLLIDER_SIZE});
+  world->addComponent(player, ecs::Collider{GameConfig::PLAYER_COLLIDER_WIDTH, GameConfig::PLAYER_COLLIDER_HEIGHT});
 
   ecs::Sprite sprite;
   sprite.spriteId = ecs::SpriteId::PLAYER_SHIP;
@@ -189,6 +195,11 @@ void Game::spawnPlayer()
   ecs::Score score;
   score.points = 0;
   world->addComponent(player, score);
+
+  if (TestMode::ENABLE_IMMORTAL_MODE) {
+    world->addComponent(player, ecs::Immortal{true});
+    std::cout << "[Server] ✓ IMMORTAL MODE: Player is invincible!" << std::endl;
+  }
 }
 
 /**
@@ -218,30 +229,28 @@ void Game::spawnPlayer(std::uint32_t networkId)
   world->addComponent(player, velocity);
 
   ecs::Health health;
-  int baseHealth = GameConfig::PLAYER_MAX_HP;
-
-  // Adjust player health based on difficulty
+  // Determine starting lives based on server difficulty
+  int startingLives = 0;
   switch (currentDifficulty) {
   case Difficulty::EASY:
-    baseHealth = static_cast<int>(baseHealth * 1.5f); // 150 HP
+    startingLives = 5;
     break;
   case Difficulty::MEDIUM:
-    // Normal health (100 HP)
+    startingLives = 3;
     break;
   case Difficulty::EXPERT:
-    baseHealth = static_cast<int>(baseHealth * 0.75f); // 75 HP
+    startingLives = 1;
+    break;
+  default:
+    startingLives = GameConfig::PLAYER_START_LIVES;
     break;
   }
-
-  health.hp = baseHealth;
-  health.maxHp = baseHealth;
+  health.hp = startingLives;
+  health.maxHp = startingLives;
   world->addComponent(player, health);
 
-  std::cout << "[Server] Spawning player with networkId " << networkId << " with " << baseHealth << " HP (difficulty: "
-            << (currentDifficulty == Difficulty::EASY       ? "easy"
-                  : currentDifficulty == Difficulty::MEDIUM ? "medium"
-                                                            : "expert")
-            << ")" << std::endl;
+  std::cout << "[Server] Spawning player with networkId " << networkId << " with " << startingLives << " LIVES"
+            << std::endl;
 
   ecs::Input input;
   input.up = false;
@@ -251,7 +260,7 @@ void Game::spawnPlayer(std::uint32_t networkId)
   input.shoot = false;
   world->addComponent(player, input);
 
-  world->addComponent(player, ecs::Collider{GameConfig::PLAYER_COLLIDER_SIZE, GameConfig::PLAYER_COLLIDER_SIZE});
+  world->addComponent(player, ecs::Collider{GameConfig::PLAYER_COLLIDER_WIDTH, GameConfig::PLAYER_COLLIDER_HEIGHT});
 
   ecs::Sprite sprite;
   sprite.spriteId = ecs::SpriteId::PLAYER_SHIP;
@@ -272,6 +281,11 @@ void Game::spawnPlayer(std::uint32_t networkId)
   ecs::PlayerId playerId;
   playerId.clientId = networkId;
   world->addComponent(player, playerId);
+
+  if (TestMode::ENABLE_IMMORTAL_MODE) {
+    world->addComponent(player, ecs::Immortal{true});
+    std::cout << "[Server] ✓ IMMORTAL MODE: Player is invincible!" << std::endl;
+  }
 
   std::cout << "[Server] Spawned player entity " << player << " for client " << networkId << '\n';
 }
@@ -394,3 +408,31 @@ LobbyManager &Game::getLobbyManager()
 {
   return m_lobbyManager;
 }
+
+void Game::startLevel(const std::string &levelId)
+{
+  initializeMap(levelId);
+  spawnSystem->startLevel(levelId, *world);
+}
+
+void Game::initializeMap(const std::string &levelId)
+{
+  const server::LevelConfig *levelConfig = m_levelConfigManager->getConfig(levelId);
+  if (!levelConfig) {
+    std::cerr << "[Game] Failed to initialize map: Level ID " << levelId << " not found." << std::endl;
+    return;
+  }
+
+  const server::MapConfig &map = levelConfig->map;
+  if (map.path.empty()) {
+    std::cerr << "[Game] No map path specified for level " << levelId << std::endl;
+    return;
+  }
+
+  std::cout << "[Game] Initializing map for level " << levelId << " with path: " << map.path << ", scale: " << map.scale
+            << ", speed: " << map.speed << std::endl;
+
+  // TODO: Add logic to load the map texture and integrate it into the rendering system
+}
+
+// Map collision initialization disabled while collision feature is removed

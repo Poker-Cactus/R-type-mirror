@@ -8,6 +8,7 @@
 #ifndef SERVER_LEVEL_CONFIG_HPP_
 #define SERVER_LEVEL_CONFIG_HPP_
 
+#include <map>
 #include <nlohmann/json.hpp>
 #include <string>
 #include <unordered_map>
@@ -21,9 +22,9 @@ namespace server
  */
 struct EnemySpawn {
   std::string enemyType; // ID de l'ennemi (enemy_red, enemy_blue, etc.)
-  float x; // Position X (ou -1 pour aléatoire)
+  float x; // Position X absolue où spawner l'ennemi
   float y; // Position Y (ou -1 pour aléatoire)
-  float delay; // Délai avant spawn (en secondes depuis le début de la vague)
+  float delay; // Délai optionnel avant spawn (en secondes depuis le déclenchement de la vague)
   int count; // Nombre d'ennemis à spawner (défaut: 1)
   float spacing; // Espacement entre les ennemis du groupe (défaut: 50.0)
 
@@ -46,7 +47,7 @@ struct EnemySpawn {
 struct WaveConfig {
   std::string id;
   std::string name;
-  float startTime; // Temps de début de la vague (en secondes depuis le début du niveau)
+  float triggerX; // Position X où la vague se déclenche (quand le joueur atteint cette position)
   std::vector<EnemySpawn> spawns; // Liste des ennemis à spawner dans cette vague
 
   static WaveConfig fromJson(const nlohmann::json &json)
@@ -54,7 +55,7 @@ struct WaveConfig {
     WaveConfig wave;
     wave.id = json.value("id", "");
     wave.name = json.value("name", "");
-    wave.startTime = json.value("startTime", 0.0f);
+    wave.triggerX = json.value("triggerX", 0.0f);
 
     if (json.contains("spawns") && json["spawns"].is_array()) {
       for (const auto &spawnJson : json["spawns"]) {
@@ -67,12 +68,35 @@ struct WaveConfig {
 };
 
 /**
+ * @brief Configuration for the map
+ */
+struct MapConfig {
+  std::string path; // Path to the map image
+  std::string collision_map; // Path to the TMX collision map
+  std::string scale; // Scaling behavior (e.g., "fit-height")
+  float speed; // Scrolling speed of the map
+
+  static MapConfig fromJson(const nlohmann::json &json)
+  {
+    MapConfig map;
+    map.path = json.value("path", "");
+    map.collision_map = json.value("collision_map", "");
+    map.scale = json.value("scale", "fit-height");
+    map.speed = json.value("speed", 1.0f);
+    return map;
+  }
+};
+
+/**
  * @brief Configuration for a complete level
  */
 struct LevelConfig {
   std::string id;
   std::string name;
   std::string description;
+  float levelLength; // Longueur totale du niveau en X (ex: 20000)
+  MapConfig map; // Map configuration
+  std::string collision_map; // Path to the collision map JSON file
   std::vector<WaveConfig> waves;
 
   static LevelConfig fromJson(const nlohmann::json &json)
@@ -81,11 +105,17 @@ struct LevelConfig {
     level.id = json.value("id", "");
     level.name = json.value("name", "");
     level.description = json.value("description", "");
+    level.levelLength = json.value("levelLength", 20000.0f);
+    level.collision_map = json.value("collision_map", "");
 
     if (json.contains("waves") && json["waves"].is_array()) {
       for (const auto &waveJson : json["waves"]) {
         level.waves.push_back(WaveConfig::fromJson(waveJson));
       }
+    }
+
+    if (json.contains("map") && json["map"].is_object()) {
+      level.map = MapConfig::fromJson(json["map"]);
     }
 
     return level;
@@ -116,16 +146,16 @@ public:
    * @brief Get all level configurations
    * @return Map of level ID to configuration
    */
-  const std::unordered_map<std::string, LevelConfig> &getAllConfigs() const { return m_configs; }
+  const std::map<std::string, LevelConfig> &getAllConfigs() const { return m_configs; }
 
   /**
    * @brief Get list of all level IDs
-   * @return Vector of level IDs
+   * @return Vector of level IDs in order
    */
   std::vector<std::string> getLevelIds() const;
 
 private:
-  std::unordered_map<std::string, LevelConfig> m_configs;
+  std::map<std::string, LevelConfig> m_configs; // Use std::map to maintain order
 };
 
 } // namespace server

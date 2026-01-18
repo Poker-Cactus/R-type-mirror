@@ -14,6 +14,12 @@
 #include "../../../engineCore/include/ecs/components/Input.hpp"
 #include "../../../engineCore/include/ecs/components/Velocity.hpp"
 #include "ecs/ComponentSignature.hpp"
+#include "../../../engineCore/include/ecs/components/Attraction.hpp"
+#include "../../../engineCore/include/ecs/components/Input.hpp"
+#include "../../../engineCore/include/ecs/components/Transform.hpp"
+#include "../../../engineCore/include/ecs/components/Velocity.hpp"
+#include "ecs/ComponentSignature.hpp"
+#include <cmath>
 #include <vector>
 
 namespace server
