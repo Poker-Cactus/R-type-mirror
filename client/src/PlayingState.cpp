@@ -278,6 +278,10 @@ void PlayingState::render()
           frameWidth = 549 / 7; // 78px per frame
           frameHeight = 72;
           break;
+        case ecs::SpriteId::ELITE_ENEMY_GREEN_OUT:
+          frameWidth = 131 / 2; // 65px per frame
+          frameHeight = 18;
+          break;
         case ecs::SpriteId::DRONE:
         case ecs::SpriteId::BUBBLE:
         case ecs::SpriteId::BUBBLE_TRIPLE:
@@ -316,13 +320,19 @@ void PlayingState::render()
         case ecs::SpriteId::RUBAN12_PROJECTILE:
         case ecs::SpriteId::RUBAN13_PROJECTILE:
         case ecs::SpriteId::RUBAN14_PROJECTILE:
-        case ecs::SpriteId::ELITE_ENEMY_GREEN_OUT:
-          frameWidth = 131 / 2; // 65px per frame
-          frameHeight = 18;
-          break;
-        case ecs::SpriteId::ELITE_ENEMY_GREEN_IN:
-          frameWidth = 93 / 3; // 31px per frame
-          frameHeight = 18;
+        case ecs::SpriteId::RUBAN15_PROJECTILE:
+        case ecs::SpriteId::RUBAN16_PROJECTILE:
+        case ecs::SpriteId::RUBAN17_PROJECTILE:
+        case ecs::SpriteId::RUBAN18_PROJECTILE:
+        case ecs::SpriteId::RUBAN19_PROJECTILE:
+        case ecs::SpriteId::RUBAN20_PROJECTILE:
+        case ecs::SpriteId::RUBAN21_PROJECTILE:
+        case ecs::SpriteId::RUBAN22_PROJECTILE:
+        case ecs::SpriteId::RUBAN23_PROJECTILE:
+        case ecs::SpriteId::RUBAN24_PROJECTILE:
+          // Use dimensions from server for per-file sprites and followers
+          frameWidth = static_cast<int>(sprite.width);
+          frameHeight = static_cast<int>(sprite.height);
 
           // Debug ruban projectiles
           if (sprite.spriteId >= ecs::SpriteId::RUBAN1_PROJECTILE &&
@@ -334,6 +344,10 @@ void PlayingState::render()
               logged = true;
             }
           }
+          break;
+        case ecs::SpriteId::ELITE_ENEMY_GREEN_IN:
+          frameWidth = 93 / 3; // 31px per frame
+          frameHeight = 18;
           break;
         case ecs::SpriteId::ENEMY_ROBOT:
           frameWidth = 200 / 6; // 33px per frame
