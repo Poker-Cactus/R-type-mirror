@@ -1,6 +1,8 @@
 #pragma once
+#include "../../include/ColorBlindFilter.hpp"
+#include "../../interface/IColorBlindSupport.hpp"
 #include "../../interface/IRenderer.hpp"
-#include <SDL2/SDL.h>
+#include <SDL.h>
 #include <map>
 #include <vector>
 
@@ -11,7 +13,7 @@ inline constexpr int kDefaultColorAlpha = 255;
 inline constexpr int kDefaultTargetFPS = 60;
 inline const Color kDefaultClearColor{.r = 0, .g = 0, .b = 0, .a = kDefaultColorAlpha};
 
-class RendererSDL2 : public IRenderer
+class RendererSDL2 : public IRenderer, public IColorBlindSupport
 {
 public:
   RendererSDL2(int width = kDefaultWindowWidth, int height = kDefaultWindowHeight);
@@ -97,6 +99,10 @@ public:
   bool checkCollisionCircles(const Circle &circle1, const Circle &circle2) override;
   bool checkPointInRect(int pointX, int pointY, int rectX, int rectY, int rectW, int rectH) override;
 
+  // === Color Blind Filter ===
+  void setColorBlindMode(ColorBlindMode mode) override;
+  ColorBlindMode getColorBlindMode() const override { return colorBlindMode; }
+
 private:
   SDL_Window *window = nullptr;
   SDL_Renderer *renderer = nullptr;
@@ -123,4 +129,12 @@ private:
 
   // Gamepads
   std::vector<SDL_GameController *> gamepads;
+
+  // Color blind filter
+  ColorBlindMode colorBlindMode = ColorBlindMode::NONE;
+  SDL_Texture *renderTarget = nullptr;
+
+  void applyColorBlindOverlay();
+  void initRenderTarget();
+  void cleanupRenderTarget();
 };

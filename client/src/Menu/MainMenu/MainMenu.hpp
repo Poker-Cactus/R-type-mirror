@@ -55,9 +55,13 @@ private:
   void *font;
   void *planet;
 
-  std::array<std::string, 4> mainMenuItems = {"Play", "Settings", "Profile", "Exit"};
+  std::array<std::string, 5> mainMenuItems = {"Play", "Settings", "Profile", "Asset Editor", "Exit"};
   int currentMenuIndex = 0;
 
   void *clickedSound;
   void *hoverSound;
+
+#ifndef _WIN32
+  pid_t assetEditorPid = -1; // Track Asset Editor process ID
+#endif
 };

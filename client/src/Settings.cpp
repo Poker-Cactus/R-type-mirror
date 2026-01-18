@@ -27,9 +27,20 @@ bool Settings::saveToFile()
     settingsJson["controls"]["right"] = right;
     settingsJson["controls"]["shoot"] = shoot;
     settingsJson["controls"]["chargedShoot"] = chargedShoot;
+    settingsJson["controls"]["detach"] = detach;
+    settingsJson["controls"]["toggleInfoMode"] = toggleInfoMode;
 
     // Graphics settings
     settingsJson["graphics"]["fullScreen"] = fullScreen;
+    settingsJson["graphics"]["colorBlindMode"] = static_cast<int>(colorBlindMode);
+
+    // Debug settings
+    settingsJson["debug"]["showInfoMode"] = showInfoMode;
+    settingsJson["debug"]["showCPUUsage"] = showCPUUsage;
+    settingsJson["debug"]["showRAMUsage"] = showRAMUsage;
+    settingsJson["debug"]["showFPS"] = showFPS;
+    settingsJson["debug"]["showEntityCount"] = showEntityCount;
+    settingsJson["debug"]["showNetworkInfo"] = showNetworkInfo;
 
     // Profile settings
     settingsJson["profile"]["username"] = username;
@@ -79,11 +90,27 @@ bool Settings::loadFromFile()
       right = settingsJson["controls"].value("right", right);
       shoot = settingsJson["controls"].value("shoot", shoot);
       chargedShoot = settingsJson["controls"].value("chargedShoot", chargedShoot);
+      detach = settingsJson["controls"].value("detach", detach);
+      toggleInfoMode = settingsJson["controls"].value("toggleInfoMode", toggleInfoMode);
     }
 
     // Graphics settings
     if (settingsJson.contains("graphics")) {
       fullScreen = settingsJson["graphics"].value("fullScreen", fullScreen);
+      int colorBlindModeInt = settingsJson["graphics"].value("colorBlindMode", static_cast<int>(colorBlindMode));
+      if (colorBlindModeInt >= 0 && colorBlindModeInt <= 3) {
+        colorBlindMode = static_cast<ColorBlindMode>(colorBlindModeInt);
+      }
+    }
+
+    // Debug settings
+    if (settingsJson.contains("debug")) {
+      showInfoMode = settingsJson["debug"].value("showInfoMode", showInfoMode);
+      showCPUUsage = settingsJson["debug"].value("showCPUUsage", showCPUUsage);
+      showRAMUsage = settingsJson["debug"].value("showRAMUsage", showRAMUsage);
+      showFPS = settingsJson["debug"].value("showFPS", showFPS);
+      showEntityCount = settingsJson["debug"].value("showEntityCount", showEntityCount);
+      showNetworkInfo = settingsJson["debug"].value("showNetworkInfo", showNetworkInfo);
     }
 
     // Profile settings

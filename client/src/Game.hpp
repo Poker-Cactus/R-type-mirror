@@ -12,6 +12,7 @@
 #include "../include/systems/NetworkReceiveSystem.hpp"
 #include "../include/systems/NetworkSendSystem.hpp"
 #include "../interface/IRenderer.hpp"
+#include "ChatUI.hpp"
 #include "LobbyRoomState.hpp"
 #include "Menu.hpp"
 #include "PlayingState.hpp"
@@ -53,6 +54,14 @@ public:
    * @param port Server port
    */
   Game(const std::string &host, const std::string &port);
+
+  /**
+   * @brief Construct game with specific server connection and renderer
+   * @param host Server hostname or IP
+   * @param port Server port
+   * @param rendererType Renderer type: "sdl2" or "sfml"
+   */
+  Game(const std::string &host, const std::string &port, const std::string &rendererType);
   ~Game();
 
   /**
@@ -90,6 +99,8 @@ private:
   void ensureInputEntity();
   void sendLeaveToServer();
   void sendViewportToServer();
+  void sendChatMessage(const std::string &message);
+  void handleChatInput();
 
   void handleMenuStateInput();
   void handleLobbyRoomTransition();
@@ -106,6 +117,7 @@ private:
   GameState currentState = GameState::MENU;
   std::string m_serverHost = "127.0.0.1";
   std::string m_serverPort = "4242";
+  std::string m_rendererType = "sfml";
   ecs::Entity m_inputEntity{0};
   std::unique_ptr<Menu> menu;
   std::unique_ptr<LobbyRoomState> lobbyRoomState;
@@ -113,5 +125,7 @@ private:
   float m_lobbyStateTime = 0.0F;
   Settings settings;
   bool fullScreen = true;
+  ColorBlindMode currentColorBlindMode = ColorBlindMode::NONE;
   HighscoreManager highscoreManager;
+  std::unique_ptr<ChatUI> m_chatUI;
 };

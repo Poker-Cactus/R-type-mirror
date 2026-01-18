@@ -78,8 +78,10 @@ print_result_banner() {
         echo -e "\033[1;33m🍝 Mamacita, les pâtes au Crous 🍝\033[0m"
         echo ""
         echo -e "${WHITE}${BOLD}Run:${RESET}"
-        echo -e "  ${GREEN}./build/server/server${RESET}  │  Server"
-        echo -e "  ${BLUE}./build/client/client${RESET}  │  Client"
+        echo -e "  ${GREEN}./build.sh server${RESET}  │  Server"
+        echo -e "  ${BLUE}./build.sh client${RESET}  │  Client"
+        echo -e "  ${MAGENTA}./build.sh editor${RESET}  │  Asset Editor"
+        echo -e "  ${CYAN}./build.sh engine${RESET}  │  Engine Only"
         echo ""
     else
         echo -e "${RED}${BOLD}"
@@ -150,15 +152,21 @@ configure_cmake() {
     print_step "Configuring CMake..."
     
     local log_file="/tmp/cmake_config_$$.log"
+    local cmake_args=("-S" "." "-B" "$BUILD_DIR" "-DCMAKE_BUILD_TYPE=$BUILD_TYPE")
     
-    if ! cmake --preset conan-release > "$log_file" 2>&1; then
+    # Add toolchain file if it exists (from Conan)
+    if [ -f "$BUILD_DIR/conan_toolchain.cmake" ]; then
+        cmake_args+=("-DCMAKE_TOOLCHAIN_FILE=$BUILD_DIR/conan_toolchain.cmake")
+    fi
+    
+    if ! cmake "${cmake_args[@]}" > "$log_file" 2>&1; then
         # Check for generator mismatch
         if grep -q "Does not match the generator used previously" "$log_file"; then
             print_warning "CMake cache mismatch, cleaning..."
             rm -f "$BUILD_DIR/CMakeCache.txt"
             rm -rf "$BUILD_DIR/CMakeFiles"
             
-            if ! cmake --preset conan-release > "$log_file" 2>&1; then
+            if ! cmake "${cmake_args[@]}" > "$log_file" 2>&1; then
                 print_error "CMake configuration failed!"
                 cat "$log_file"
                 rm -f "$log_file"
@@ -180,7 +188,57 @@ compile_project() {
     print_step "Compiling project..."
     echo ""
     
-    cmake --build "$BUILD_DIR" --config "$BUILD_TYPE" 2>&1 | format_build_output
+    cmake --build "$BUILD_DIR" --config "$BUILD_TYPE" -j8 2>&1 | format_build_output
+    return ${PIPESTATUS[0]}
+}
+
+compile_editor() {
+    # Setup ImGui if not present
+    if [ ! -d "assetEditor/vendor/imgui" ]; then
+        print_step "Downloading ImGui..."
+        ./assetEditor/setup_imgui.sh
+        print_success "ImGui downloaded"
+        echo ""
+    fi
+    
+    print_step "Compiling Asset Editor..."
+    
+    # Configure with editor flag
+    local cmake_args=("-S" "." "-B" "$BUILD_DIR" "-DCMAKE_BUILD_TYPE=$BUILD_TYPE" "-DBUILD_ASSET_EDITOR=ON")
+    [ -f "$BUILD_DIR/conan_toolchain.cmake" ] && cmake_args+=("-DCMAKE_TOOLCHAIN_FILE=$BUILD_DIR/conan_toolchain.cmake")
+    
+    cmake "${cmake_args[@]}" > /dev/null 2>&1 || {
+        print_error "CMake configuration failed!"
+        return 1
+    }
+    
+    # Build just the editor
+    cmake --build "$BUILD_DIR" --target assetEditor -j8 2>&1 | format_build_output
+    return ${PIPESTATUS[0]}
+}
+
+compile_editor() {
+    # Setup ImGui if not present
+    if [ ! -d "assetEditor/vendor/imgui" ]; then
+        print_step "Downloading ImGui..."
+        ./assetEditor/setup_imgui.sh
+        print_success "ImGui downloaded"
+        echo ""
+    fi
+    
+    print_step "Compiling Asset Editor..."
+    
+    # Configure with editor flag
+    local cmake_args=("-S" "." "-B" "$BUILD_DIR" "-DCMAKE_BUILD_TYPE=$BUILD_TYPE" "-DBUILD_ASSET_EDITOR=ON")
+    [ -f "$BUILD_DIR/conan_toolchain.cmake" ] && cmake_args+=("-DCMAKE_TOOLCHAIN_FILE=$BUILD_DIR/conan_toolchain.cmake")
+    
+    cmake "${cmake_args[@]}" > /dev/null 2>&1 || {
+        print_error "CMake configuration failed!"
+        return 1
+    }
+    
+    # Build just the editor
+    cmake --build "$BUILD_DIR" --target assetEditor 2>&1 | format_build_output
     return ${PIPESTATUS[0]}
 }
 
@@ -197,6 +255,11 @@ cmd_build() {
             print_result_banner "failure"
             exit 1
         fi
+        echo ""
+        if ! compile_editor; then
+            print_result_banner "failure"
+            exit 1
+        fi
     else
         print_section "Full Build"
         install_dependencies || exit 1
@@ -204,6 +267,11 @@ cmd_build() {
         configure_cmake || exit 1
         echo ""
         if ! compile_project; then
+            print_result_banner "failure"
+            exit 1
+        fi
+        echo ""
+        if ! compile_editor; then
             print_result_banner "failure"
             exit 1
         fi
@@ -230,6 +298,12 @@ cmd_clean() {
         print_success "Build artifacts cleaned"
     else
         print_info "Nothing to clean"
+    fi
+    
+    # Remove imgui.ini if it exists
+    if [ -f "imgui.ini" ]; then
+        rm -f "imgui.ini"
+        print_info "Removed imgui.ini"
     fi
 }
 
@@ -288,7 +362,7 @@ cmd_test() {
     ) || { print_error "CMake configuration failed!"; exit 1; }
     
     print_step "Building tests..."
-    cmake --build "$BUILD_DIR" --target component_signature_tests component_manager_tests entity_tests entity_manager_tests component_storage_tests system_manager_tests world_tests 2>&1 | tail -5
+    cmake --build "$BUILD_DIR" --target component_signature_tests component_manager_tests entity_tests entity_manager_tests component_storage_tests system_manager_tests world_tests -j8 2>&1 | tail -5
     
     print_step "Executing tests..."
     echo ""
@@ -336,6 +410,124 @@ cmd_run_client() {
     exec "$BUILD_DIR/client/client" "$@"
 }
 
+cmd_run_editor() {
+    if [ ! -f "$BUILD_DIR/assetEditor/assetEditor" ]; then
+        print_error "Asset Editor not built. Run './build.sh' first."
+        exit 1
+    fi
+    exec "$BUILD_DIR/assetEditor/assetEditor" "$@"
+}
+
+cmd_engine() {
+    print_banner
+    print_section "Building Engine"
+    
+    # Check if conan dependencies are installed
+    if [ ! -d "$BUILD_DIR" ] || [ ! -f "$BUILD_DIR/CMakeCache.txt" ]; then
+        install_dependencies || exit 1
+        echo ""
+        configure_cmake || exit 1
+        echo ""
+    fi
+    
+    print_step "Compiling engineCore..."
+    echo ""
+    
+    # Build just the engine
+    cmake --build "$BUILD_DIR" --target engineCore -j8 2>&1 | format_build_output
+    
+    if [ ${PIPESTATUS[0]} -eq 0 ]; then
+        echo ""
+        echo -e "${GREEN}${BOLD}"
+        echo "╔═══════════════════════════════════════════════════════════╗"
+        echo "║           ✨  ENGINE BUILD SUCCESSFUL!  ✨                ║"
+        echo "╚═══════════════════════════════════════════════════════════╝"
+        echo -e "${RESET}"
+    else
+        echo ""
+        echo -e "${RED}${BOLD}"
+        echo "╔═══════════════════════════════════════════════════════════╗"
+        echo "║              ❌  ENGINE BUILD FAILED!  ❌                ║"
+        echo "╚═══════════════════════════════════════════════════════════╝"
+        echo -e "${RESET}"
+        exit 1
+    fi
+}
+
+cmd_launch() {
+    print_banner
+    print_section "Quick Launch"
+    
+    # Quick recompile
+    if [ ! -d "$BUILD_DIR" ]; then
+        print_error "Build directory not found. Run './build.sh' first."
+        exit 1
+    fi
+    
+    print_step "Recompiling..."
+    cmake --build "$BUILD_DIR" --config "$BUILD_TYPE" -j8 > /dev/null 2>&1
+    
+    if [ $? -ne 0 ]; then
+        print_error "Compilation failed!"
+        exit 1
+    fi
+    
+    print_success "Compilation done"
+    
+    if [ ! -f "$BUILD_DIR/server/server" ] || [ ! -f "$BUILD_DIR/client/client" ]; then
+        print_error "Server or Client not found after compilation."
+        exit 1
+    fi
+    
+    print_step "Launching Server & Client..."
+    echo ""
+    
+    # Create temp files for output
+    local server_log="/tmp/rtype_server_$$.log"
+    local client_log="/tmp/rtype_client_$$.log"
+    
+    # Launch server in background
+    "$BUILD_DIR/server/server" > "$server_log" 2>&1 &
+    local server_pid=$!
+    
+    # Small delay to let server start
+    sleep 1
+    
+    # Launch client in background
+    "$BUILD_DIR/client/client" > "$client_log" 2>&1 &
+    local client_pid=$!
+    
+    # Function to cleanup on exit
+    cleanup() {
+        echo ""
+        print_step "Shutting down..."
+        kill $server_pid 2>/dev/null || true
+        kill $client_pid 2>/dev/null || true
+        rm -f "$server_log" "$client_log"
+        exit 0
+    }
+    
+    trap cleanup SIGINT SIGTERM
+    
+    # Tail both logs with colored prefixes
+    tail -f "$server_log" | while IFS= read -r line; do
+        echo -e "${GREEN}[SERVER]${RESET} $line"
+    done &
+    local tail_server=$!
+    
+    tail -f "$client_log" | while IFS= read -r line; do
+        echo -e "${BLUE}[CLIENT]${RESET} $line"
+    done &
+    local tail_client=$!
+    
+    # Wait for processes
+    wait $server_pid $client_pid 2>/dev/null
+    
+    # Cleanup
+    kill $tail_server $tail_client 2>/dev/null || true
+    rm -f "$server_log" "$client_log"
+}
+
 cmd_help() {
     echo -e "${CYAN}${BOLD}R-Type Build System${RESET}"
     echo ""
@@ -343,12 +535,15 @@ cmd_help() {
     echo ""
     echo -e "${WHITE}Commands:${RESET}"
     echo -e "  ${GREEN}(none)${RESET}      Build the project (incremental if possible)"
+    echo -e "  ${GREEN}-l, --launch${RESET} Recompile and launch server & client"
     echo -e "  ${GREEN}re${RESET}          Full clean and rebuild"
     echo -e "  ${GREEN}clean${RESET}       Remove build artifacts"
     echo -e "  ${GREEN}fclean${RESET}      Remove all generated files"
     echo -e "  ${GREEN}test${RESET}        Build and run tests"
     echo -e "  ${GREEN}server${RESET}      Run the server"
     echo -e "  ${GREEN}client${RESET}      Run the client"
+    echo -e "  ${GREEN}editor${RESET}      Run the Asset Editor"
+    echo -e "  ${GREEN}engine${RESET}      Build engineCore only"
     echo -e "  ${GREEN}help${RESET}        Show this help message"
     echo ""
 }
@@ -362,12 +557,15 @@ main() {
     
     case "$command" in
         ""|"all"|"build")   cmd_build ;;
+        "-l"|"--launch")    cmd_launch ;;
         "re"|"rebuild")     cmd_re ;;
         "clean")            cmd_clean ;;
         "fclean")           cmd_fclean ;;
         "test"|"tests")     cmd_test "$@" ;;
         "server")           cmd_run_server "$@" ;;
         "client")           cmd_run_client "$@" ;;
+        "editor")           cmd_run_editor "$@" ;;
+        "engine")           cmd_engine ;;
         "help"|"-h"|"--help") cmd_help ;;
         *)
             print_error "Unknown command: $command"

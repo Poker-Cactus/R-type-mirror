@@ -17,6 +17,12 @@ foreach(module_dir ${MODULE_DIRS})
             # Nom de la bibliothèque = nom du dossier en minuscule + "_module"
             string(TOLOWER ${module_dir} module_name)
             set(LIB_NAME "${module_name}_module")
+
+            # Skip SFML module if SFML is not found
+            if(module_dir STREQUAL "SFML" AND NOT SFML_FOUND)
+                message(WARNING "SFML not found - SFML module will not be built")
+                continue()
+            endif()
             
             message(STATUS "Building dynamic module: ${LIB_NAME}")
             
@@ -60,6 +66,9 @@ foreach(module_dir ${MODULE_DIRS})
                 else()
                     target_link_libraries(${LIB_NAME} PRIVATE SDL2::SDL2 ${_ttf_target} SDL2_image::SDL2_image ${_mixer_target})
                 endif()
+            elseif(module_dir STREQUAL "SFML")
+                # SFML dependencies - system installation
+                target_link_libraries(${LIB_NAME} PRIVATE sfml-graphics sfml-window sfml-system sfml-audio)
             endif()
             
             # Place les .so/.dll dans build/

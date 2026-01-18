@@ -9,7 +9,7 @@
 #include "../interface/IRenderer.hpp"
 #include "Menu/SettingsMenu/SettingsMenu.hpp"
 #include "ParallaxBackground.hpp"
-#include "infomode/InfoMode.hpp"
+#include "infomode/include/InfoMode.hpp"
 #include <memory>
 #include <unordered_map>
 
@@ -66,16 +66,51 @@ public:
   void cleanup();
 
   /**
-   * @brief Check if player is dead and should return to menu
-   * @return true if player health is zero or below
+   * @brief Set solo mode (no network multiplayer)
+   * @param isSolo true for solo gameplay
    */
-  bool shouldReturnToMenu() const { return m_playerHealth <= 0; }
+  void setSoloMode(bool isSolo);
+
+  /**
+   * @brief Check if this is solo mode
+   * @return true if solo mode
+   */
+  [[nodiscard]] bool isSolo() const { return m_isSolo; }
+
+  /**
+   * @brief Check if player is dead and should return to menu
+   * @return true if player health is zero or below AND not in spectator mode
+   */
+  bool shouldReturnToMenu() const { return m_playerHealth <= 0 && !m_isSpectator; }
+
+  /**
+   * @brief Get the current player score
+   * @return the player score
+   */
+  [[nodiscard]] int getPlayerScore() const { return m_playerScore; }
 
   /**
    * @brief Update player animation based on movement input
    * @param delta_time Time elapsed since last update
    */
   void changeAnimationPlayers(float delta_time);
+
+  /**
+   * @brief Reset player animation to idle state
+   */
+  void resetPlayerAnimation();
+
+  /**
+   * @brief Enable/disable spectator mode
+   * @param enabled true to enable spectator mode
+   */
+  void setSpectatorMode(bool enabled) { m_isSpectator = enabled; }
+
+  /**
+   * @brief Check if in spectator mode
+   * @return true if spectating
+   */
+  bool isSpectator() const { return m_isSpectator; }
 
 private:
   std::shared_ptr<IRenderer> renderer; ///< Renderer interface
@@ -96,7 +131,7 @@ private:
 
   // HUD state
   static constexpr int INITIAL_PLAYER_HEALTH = 100;
-  void *m_hudFont = nullptr;
+  std::shared_ptr<void> m_hudFont = nullptr;
   void *m_heartsTexture = nullptr;
   int m_playerHealth = INITIAL_PLAYER_HEALTH;
   int m_playerMaxHealth = INITIAL_PLAYER_HEALTH;
@@ -120,10 +155,9 @@ private:
   bool m_returnUp = false; ///< Return to neutral animation from up
   bool m_returnDown = false; ///< Return to neutral animation from down
 
-  std::unique_ptr<InfoMode> m_infoMode; ///< Info mode manager
+  std::unique_ptr<rtype::InfoMode> m_infoMode; ///< Info mode manager
 
   int m_playerFrameIndex = 2; ///< Current animation frame
-  int m_playerAnimToggle = 0; ///< Animation toggle state
   float m_playerAnimTimer = 0.f; ///< Animation timer
 
   /**
@@ -137,6 +171,7 @@ private:
 
   Settings &settings; ///< Game settings reference
   std::shared_ptr<SettingsMenu> settingsMenu; ///< Settings menu
+  bool m_isSolo = false; ///< Solo mode flag
 
   // FPS tracking
   float m_fpsAccumulator = 0.0f; ///< Time accumulator for FPS calculation
@@ -145,4 +180,6 @@ private:
 
   std::shared_ptr<INetworkManager> m_networkManager; ///< Network manager for stats
   float m_pingTimer = 0.0f; ///< Timer for sending pings
+
+  bool m_isSpectator = false; ///< Spectator mode flag
 };

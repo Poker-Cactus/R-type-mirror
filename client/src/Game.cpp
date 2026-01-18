@@ -6,6 +6,7 @@
 */
 
 #include "Game.hpp"
+#include "../interface/IColorBlindSupport.hpp"
 #include "../interface/KeyCodes.hpp"
 #include "Menu/MenuState.hpp"
 #include "Settings.hpp"
@@ -13,16 +14,23 @@
 #include <iostream>
 #include <nlohmann/json.hpp>
 #include <span>
+#include <vector>
 
 Game::Game()
     : module(nullptr), renderer(nullptr), isRunning(false), currentState(GameState::MENU), m_serverHost("127.0.0.1"),
-      m_serverPort("4242")
+      m_serverPort("4242"), m_rendererType("sfml")
 {
 }
 
 Game::Game(const std::string &host, const std::string &port)
     : module(nullptr), renderer(nullptr), isRunning(false), currentState(GameState::MENU), m_serverHost(host),
-      m_serverPort(port)
+      m_serverPort(port), m_rendererType("sfml")
+{
+}
+
+Game::Game(const std::string &host, const std::string &port, const std::string &rendererType)
+    : module(nullptr), renderer(nullptr), isRunning(false), currentState(GameState::MENU), m_serverHost(host),
+      m_serverPort(port), m_rendererType(rendererType)
 {
 }
 
@@ -37,22 +45,45 @@ bool Game::init()
     // Load settings from file
     settings.loadFromFile();
 
-    // Try multiple paths for the SDL2 module
-    const char *modulePaths[] = {
+    // Try multiple paths for the renderer modules
+    std::vector<std::string> modulePaths;
+
+    // Add paths for both SDL2 and SFML modules
+    std::vector<std::string> basePaths = {
 #ifdef _WIN32
-      "sdl2_module.dll", "libs/sdl2_module.dll", "./build/libs/sdl2_module.dll"
+      "sdl2_module.dll",      "libs/sdl2_module.dll",        "./build/libs/sdl2_module.dll", "sfml_module.dll",
+      "libs/sfml_module.dll", "./build/libs/sfml_module.dll"
 #elif defined(__APPLE__)
-      "sdl2_module.dylib", "libs/sdl2_module.dylib", "./build/libs/sdl2_module.dylib"
+      "sdl2_module.dylib",      "libs/sdl2_module.dylib",        "./build/libs/sdl2_module.dylib", "sfml_module.dylib",
+      "libs/sfml_module.dylib", "./build/libs/sfml_module.dylib"
 #else
-      "sdl2_module.so", "libs/sdl2_module.so", "./build/libs/sdl2_module.so"
+      "sdl2_module.so",         "libs/sdl2_module.so",   "./build/libs/sdl2_module.so",
+      "sfml_module.so",         "libs/sfml_module.so",   "./build/libs/sfml_module.so",
+      "../libs/sdl2_module.so", "../libs/sfml_module.so"
 #endif
     };
 
+    // Prioritize the requested renderer type
+    for (const auto &path : basePaths) {
+      if ((m_rendererType == "sdl2" && path.find("sdl2_module") != std::string::npos) ||
+          (m_rendererType == "sfml" && path.find("sfml_module") != std::string::npos)) {
+        modulePaths.push_back(path);
+      }
+    }
+
+    // Add the other renderer as fallback
+    for (const auto &path : basePaths) {
+      if ((m_rendererType == "sdl2" && path.find("sfml_module") != std::string::npos) ||
+          (m_rendererType == "sfml" && path.find("sdl2_module") != std::string::npos)) {
+        modulePaths.push_back(path);
+      }
+    }
+
     bool moduleLoaded = false;
-    for (const char *path : modulePaths) {
+    for (const std::string &path : modulePaths) {
       try {
-        module = std::make_unique<Module<IRenderer>>(path, "createRenderer", "destroyRenderer");
-        std::cout << "[Game::init] Loaded SDL2 module from: " << path << std::endl;
+        module = std::make_unique<Module<IRenderer>>(path.c_str(), "createRenderer", "destroyRenderer");
+        std::cout << "[Game::init] Loaded " << m_rendererType << " module from: " << path << std::endl;
         moduleLoaded = true;
         break;
       } catch (const std::exception &e) {
@@ -132,6 +163,10 @@ bool Game::init()
               this->menu->setState(MenuState::MAIN_MENU);
             return;
           }
+          // Set solo mode if lobby room state exists
+          if (this->lobbyRoomState) {
+            this->playingState->setSoloMode(this->lobbyRoomState->isSolo());
+          }
         }
 
         this->currentState = GameState::PLAYING;
@@ -139,6 +174,14 @@ bool Game::init()
         // so the server records the correct client viewport for the playing session.
         this->sendViewportToServer();
       });
+
+      // Set chat message callback to display incoming messages
+      networkReceiveSystem->setChatMessageCallback(
+        [this](const std::string &sender, const std::string &content, std::uint32_t senderId) {
+          if (this->m_chatUI) {
+            this->m_chatUI->addMessage(sender, content, false, senderId);
+          }
+        });
     }
 
     playingState = std::make_unique<PlayingState>(renderer, m_world, settings, m_networkManager);
@@ -146,6 +189,16 @@ bool Game::init()
       std::cerr << "Failed to initialize playing state" << '\n';
       return false;
     }
+
+    // Initialize chat UI
+    m_chatUI = std::make_unique<ChatUI>(renderer);
+    if (!m_chatUI->init()) {
+      std::cerr << "[Game] Warning: Failed to initialize chat UI - disabling chat" << '\n';
+      m_chatUI.reset(); // Disable chat completely if init fails
+    } else {
+      m_chatUI->setLocalUsername(settings.username);
+    }
+
     isRunning = true;
     return true;
   } catch (const std::exception &e) {
@@ -172,6 +225,14 @@ void Game::run()
 
 void Game::shutdown()
 {
+  // Reset color blind mode to normal when shutting down (only if renderer supports it)
+  if (renderer) {
+    auto *colorBlindSupport = dynamic_cast<IColorBlindSupport *>(renderer.get());
+    if (colorBlindSupport) {
+      colorBlindSupport->setColorBlindMode(ColorBlindMode::NONE);
+    }
+  }
+
   // Save settings before shutting down
   settings.saveToFile();
 
@@ -244,6 +305,82 @@ void Game::sendViewportToServer()
   std::cout << "[Game] Sent viewport update: " << viewport["width"] << "x" << viewport["height"] << '\n';
 }
 
+void Game::sendChatMessage(const std::string &message)
+{
+  if (!m_networkManager || message.empty()) {
+    return;
+  }
+
+  nlohmann::json chatMsg;
+  chatMsg["type"] = "chat_message";
+  chatMsg["content"] = message;
+  chatMsg["sender"] = settings.username;
+
+  std::string jsonStr = chatMsg.dump();
+  auto serialized = m_networkManager->getPacketHandler()->serialize(jsonStr);
+
+  m_networkManager->send(
+    std::span<const std::byte>(reinterpret_cast<const std::byte *>(serialized.data()), serialized.size()), 0);
+
+  std::cout << "[Game] Sent chat message: " << message << '\n';
+
+  // Add to local chat UI immediately with client ID
+  if (m_chatUI && m_world) {
+    std::uint32_t localClientId = 0;
+    if (auto *sendSys = m_world->getSystem<NetworkSendSystem>()) {
+      localClientId = sendSys->getClientId();
+    }
+    m_chatUI->addMessage(settings.username, message, false, localClientId);
+  }
+}
+
+void Game::handleChatInput()
+{
+  if (!renderer || !m_chatUI) {
+    return;
+  }
+
+  // Open chat with T key (only if not already open)
+  if (renderer->isKeyJustPressed(KeyCode::KEY_T) && !m_chatUI->isVisible()) {
+    m_chatUI->open();
+
+    // Reset player input when opening chat to prevent unwanted movement
+    if (m_world && m_inputEntity != 0 && m_world->hasComponent<ecs::Input>(m_inputEntity)) {
+      auto &input = m_world->getComponent<ecs::Input>(m_inputEntity);
+      input.up = false;
+      input.down = false;
+      input.left = false;
+      input.right = false;
+      input.shoot = false;
+      input.chargedShoot = false;
+      input.detach = false;
+    }
+
+    // Reset player animation to idle
+    if (playingState) {
+      playingState->resetPlayerAnimation();
+    }
+    return;
+  }
+
+  // Close chat with Escape key
+  if (renderer->isKeyJustPressed(KeyCode::KEY_ESCAPE) && m_chatUI->isVisible()) {
+    m_chatUI->close();
+    return;
+  }
+
+  // Process chat input if visible
+  if (m_chatUI->isVisible()) {
+    m_chatUI->processInput();
+
+    // Check if user wants to send a message
+    if (m_chatUI->hasMessageToSend()) {
+      std::string message = m_chatUI->consumeMessage();
+      sendChatMessage(message);
+    }
+  }
+}
+
 void Game::processInput()
 {
   if (renderer != nullptr && !renderer->pollEvents()) {
@@ -257,17 +394,33 @@ void Game::processInput()
     return;
   }
 
-  // Ignore ESC in lobby room to prevent accidental closures
-  if (currentState == GameState::LOBBY_ROOM && renderer != nullptr && renderer->isKeyJustPressed(KeyCode::KEY_ESCAPE)) {
-    std::cout << "[Game] ESC pressed in lobby - ignoring (use quit from menu to exit)" << '\n';
-    return;
+  // Handle ESC key - close chat if open, otherwise handle normally
+  if (renderer != nullptr && renderer->isKeyJustPressed(KeyCode::KEY_ESCAPE)) {
+    if (m_chatUI && m_chatUI->isVisible()) {
+      // Close chat instead of quitting
+      m_chatUI->close();
+      return;
+    }
+    // In menu, ESC can be used for navigation (handled by menu)
+    if (currentState == GameState::MENU) {
+      // Let menu handle ESC
+    } else if (currentState == GameState::LOBBY_ROOM) {
+      std::cout << "[Game] ESC pressed in lobby - ignoring (use quit from menu to exit)" << '\n';
+      return;
+    } else {
+      // In other states, ESC quits the game
+      std::cout << "[Game] ESC pressed - shutting down" << '\n';
+      isRunning = false;
+      return;
+    }
   }
 
   // Toggle fullscreen with M key (but not when editing profile)
   if (renderer != nullptr && renderer->isKeyJustPressed(KeyCode::KEY_M)) {
-    // Don't toggle fullscreen if we're editing a username in the profile menu
+    // Don't toggle fullscreen if we're editing a username in the profile menu or chat is open
     if (!(currentState == GameState::MENU && menu && menu->getState() == MenuState::PROFILE &&
-          menu->isProfileEditing())) {
+          menu->isProfileEditing()) &&
+        !(m_chatUI && m_chatUI->isInputFocused())) {
       bool currentFullscreen = renderer->isFullscreen();
       renderer->setFullscreen(!currentFullscreen);
       std::cout << "[Game] Toggled fullscreen: " << (!currentFullscreen ? "ON" : "OFF") << '\n';
@@ -276,6 +429,9 @@ void Game::processInput()
       sendViewportToServer();
     }
   }
+
+  // Toggle chat with Ctrl+T
+  handleChatInput();
 
   handleMenuStateInput();
   handleLobbyRoomTransition();
@@ -324,13 +480,16 @@ void Game::handleLobbyRoomTransition()
   const bool isCreating = menu->isCreatingLobby();
   const std::string lobbyCode = menu->getLobbyCodeToJoin();
   const Difficulty diff = menu->getLobbyMenu()->getSelectedDifficulty();
+  const GameMode mode = menu->getLobbyMenu()->getSelectedGameMode();
+  const AIDifficulty aiDiff = settings.aiDifficulty;
+  const bool isSolo = menu->isSolo();
 
   std::cout << "[Game] Transitioning from MENU to LOBBY_ROOM" << '\n';
   std::cout << "[Game] Creating: " << (isCreating ? "yes" : "no");
   if (!isCreating) {
     std::cout << ", Code: " << lobbyCode;
   } else {
-    std::cout << ", Difficulty: " << static_cast<int>(diff);
+    std::cout << ", Difficulty: " << static_cast<int>(diff) << ", AI: " << static_cast<int>(aiDiff);
   }
   std::cout << '\n';
 
@@ -352,7 +511,7 @@ void Game::handleLobbyRoomTransition()
   }
 
   // Set the lobby mode (create or join)
-  lobbyRoomState->setLobbyMode(isCreating, lobbyCode, diff);
+  lobbyRoomState->setLobbyMode(isCreating, lobbyCode, diff, isSolo, aiDiff, mode);
 
   // Connect network callbacks to lobby state
   if (auto *networkReceiveSystem = m_world->getSystem<ClientNetworkReceiveSystem>()) {
@@ -373,62 +532,66 @@ void Game::handleLobbyRoomTransition()
         lobbyRoomState->onError(errorMsg);
       }
     });
+
     // Player-dead: server told us our player is dead and we should return to menu
-    networkReceiveSystem->setPlayerDeadCallback([this](UNUSED const nlohmann::json &msg) {
-      std::cout << "[Game] Received player_dead from server - returning to menu" << std::endl;
+    networkReceiveSystem->setPlayerDeadCallback([this](const nlohmann::json &msg) {
+      std::string msgType = msg.value("type", "");
 
-      // Save highscore if we have the necessary information
-      if (msg.contains("score") && menu != nullptr) {
-        int finalScore = msg.value("score", 0);
-        Difficulty gameDifficulty = menu->getCurrentDifficulty();
-        std::string playerName = settings.username;
+      if (msgType == "player_died_spectate") {
+        // Player died but game continues - become spectator
+        std::cout << "[Game] Player died - switching to spectator mode" << std::endl;
 
-        HighscoreEntry entry{playerName, finalScore, gameDifficulty};
-        if (highscoreManager.addHighscore(entry)) {
-          std::cout << "[Game] New highscore saved: " << playerName << " - " << finalScore << " points ("
-                    << (gameDifficulty == Difficulty::EASY       ? "Easy"
-                          : gameDifficulty == Difficulty::MEDIUM ? "Medium"
-                                                                 : "Expert")
-                    << ")" << std::endl;
+        int aliveCount = msg.value("alive_players", 0);
+        std::cout << "[Game] " << aliveCount << " player(s) still alive" << std::endl;
+
+        // Save highscore
+        if (msg.contains("score") && menu != nullptr) {
+          int finalScore = msg.value("score", 0);
+          Difficulty gameDifficulty = menu->getCurrentDifficulty();
+          std::string playerName = settings.username;
+          HighscoreEntry entry{playerName, finalScore, gameDifficulty};
+          menu->getLobbyMenu()->getHighscoreManager().addHighscore(entry);
         }
-      }
 
-      // Stop accepting snapshots
-      if (auto *netRec = m_world->getSystem<ClientNetworkReceiveSystem>()) {
-        netRec->setAcceptSnapshots(false);
-      }
+        if (playingState) {
+          std::cout << "[Game] Setting spectator mode to TRUE" << std::endl;
+          playingState->setSpectatorMode(true);
+          std::cout << "[Game] Spectator mode is now: " << playingState->isSpectator() << std::endl;
+        } else {
+          std::cerr << "[Game] ERROR: playingState is null, cannot set spectator mode!" << std::endl;
+        }
 
-      // Inform server we're leaving (best effort)
-      sendLeaveToServer();
+      } else if (msgType == "player_dead") {
+        std::cout << "[Game] Game over - returning to menu" << std::endl;
 
-      // Clean up playing state
-      if (playingState) {
-        playingState->cleanup();
-        playingState.reset();
-      }
+        if (msg.contains("score") && menu != nullptr) {
+          int finalScore = msg.value("score", 0);
+          Difficulty gameDifficulty = menu->getCurrentDifficulty();
+          std::string playerName = settings.username;
+          HighscoreEntry entry{playerName, finalScore, gameDifficulty};
+          menu->getLobbyMenu()->getHighscoreManager().addHighscore(entry);
+        }
 
-      // Clear world entities to stop any further rendering or AI
-      if (m_world) {
-        try {
-          ecs::ComponentSignature emptySig; // matches all
-          std::vector<ecs::Entity> allEntities;
-          m_world->getEntitiesWithSignature(emptySig, allEntities);
-          for (auto e : allEntities) {
-            if (m_world->isAlive(e)) {
-              m_world->destroyEntity(e);
+        if (m_world) {
+          try {
+            ecs::ComponentSignature emptySig;
+            std::vector<ecs::Entity> allEntities;
+            m_world->getEntitiesWithSignature(emptySig, allEntities);
+            for (auto e : allEntities) {
+              if (m_world->isAlive(e)) {
+                m_world->destroyEntity(e);
+              }
             }
+          } catch (const std::exception &e) {
+            std::cerr << "[Game] Error clearing world: " << e.what() << '\n';
           }
-        } catch (const std::exception &e) {
-          std::cerr << "[Game] Error clearing world on player_dead: " << e.what() << '\n';
         }
-      }
 
-      // Transition to main menu
-      currentState = GameState::MENU;
-      if (menu) {
-        menu->setState(MenuState::MAIN_MENU);
-        // Refresh highscores for when player returns to lobby menu
-        menu->refreshHighscoresIfInLobby();
+        currentState = GameState::MENU;
+        if (menu) {
+          menu->setState(MenuState::MAIN_MENU);
+          menu->refreshHighscoresIfInLobby();
+        }
       }
     });
 
@@ -454,6 +617,23 @@ void Game::handlePlayingStateInput()
 
   if (playingState && playingState->shouldReturnToMenu()) {
     std::cout << "[Game] Player died - returning to menu" << '\n';
+
+    // Save highscore if in solo mode
+    if (playingState->isSolo() && lobbyRoomState) {
+      int finalScore = playingState->getPlayerScore();
+      Difficulty gameDifficulty = lobbyRoomState->getCreationDifficulty();
+      std::string playerName = settings.username;
+
+      HighscoreEntry entry{playerName, finalScore, gameDifficulty};
+      if (highscoreManager.addHighscore(entry)) {
+        std::cout << "[Game] New highscore saved: " << playerName << " - " << finalScore << " points ("
+                  << (gameDifficulty == Difficulty::EASY       ? "Easy"
+                        : gameDifficulty == Difficulty::MEDIUM ? "Medium"
+                                                               : "Expert")
+                  << ")" << std::endl;
+      }
+    }
+
     // Notify server that we're leaving the lobby/game
     sendLeaveToServer();
 
@@ -511,12 +691,19 @@ void Game::updatePlayerInput()
     return;
   }
 
+  // Don't update player input if chat input is focused
+  if (m_chatUI && m_chatUI->isInputFocused()) {
+    return;
+  }
+
   auto &input = m_world->getComponent<ecs::Input>(m_inputEntity);
   input.up = renderer->isKeyPressed(settings.up);
   input.down = renderer->isKeyPressed(settings.down);
   input.left = renderer->isKeyPressed(settings.left);
   input.right = renderer->isKeyPressed(settings.right);
   input.shoot = renderer->isKeyPressed(settings.shoot);
+  input.chargedShoot = renderer->isKeyPressed(settings.chargedShoot);
+  input.detach = renderer->isKeyPressed(settings.detach);
 }
 
 void Game::delegateInputToCurrentState()
@@ -533,7 +720,8 @@ void Game::delegateInputToCurrentState()
     }
     break;
   case GameState::PLAYING:
-    if (playingState) {
+    // Don't process playing state input if chat is focused
+    if (playingState && !(m_chatUI && m_chatUI->isInputFocused())) {
       playingState->processInput();
     }
     break;
@@ -567,8 +755,22 @@ void Game::update(float deltaTime)
     fullScreen = settings.fullScreen;
   }
 
+  // Update color blind filter if changed (only if renderer supports it)
+  if (settings.colorBlindMode != currentColorBlindMode) {
+    auto *colorBlindSupport = dynamic_cast<IColorBlindSupport *>(renderer.get());
+    if (colorBlindSupport) {
+      colorBlindSupport->setColorBlindMode(settings.colorBlindMode);
+      currentColorBlindMode = settings.colorBlindMode;
+    }
+  }
+
   if (m_world) {
     m_world->update(deltaTime);
+  }
+
+  // Update chat UI
+  if (m_chatUI) {
+    m_chatUI->update(deltaTime);
   }
 
   // Track time in lobby state
@@ -616,6 +818,11 @@ void Game::render()
       playingState->render();
     }
     break;
+  }
+
+  // Render chat UI overlay (on top of everything)
+  if (m_chatUI) {
+    m_chatUI->render();
   }
 
   renderer->present();

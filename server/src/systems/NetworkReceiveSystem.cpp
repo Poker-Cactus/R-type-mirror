@@ -13,6 +13,7 @@
 #include "../../engineCore/include/ecs/components/PlayerId.hpp"
 #include "../../engineCore/include/ecs/components/Transform.hpp"
 #include "../../engineCore/include/ecs/components/Viewport.hpp"
+#include "../include/ai/AllyAI.hpp"
 #include "Game.hpp"
 #include "Lobby.hpp"
 #include <iostream>
@@ -29,6 +30,43 @@ NetworkReceiveSystem::~NetworkReceiveSystem() {}
 void NetworkReceiveSystem::setGame(Game *game)
 {
   m_game = game;
+  if (m_networkManager) {
+    m_chat = std::make_unique<server::Chat>(m_networkManager);
+
+    // Set disconnect callback to properly handle kick command
+    m_chat->setDisconnectCallback([this](std::uint32_t clientId) {
+      if (!m_game) {
+        return;
+      }
+
+      // Get lobby manager from game
+      auto &lobbyManager = m_game->getLobbyManager();
+      Lobby *lobby = lobbyManager.getClientLobby(clientId);
+
+      if (lobby) {
+        // Remove client from lobby (this destroys the player entity)
+        lobby->removeClient(clientId);
+
+        // Remove from lobby manager tracking
+        lobbyManager.leaveLobby(clientId);
+
+        // Notify remaining players
+        if (!lobby->isEmpty()) {
+          nlohmann::json lobbyState;
+          lobbyState["type"] = "lobby_state";
+          lobbyState["code"] = lobby->getCode();
+          lobbyState["player_count"] = lobby->getClientCount();
+
+          for (const auto &playerId : lobby->getClients()) {
+            sendJsonMessage(playerId, lobbyState);
+          }
+        }
+      }
+
+      // Disconnect from network
+      m_networkManager->disconnect(clientId);
+    });
+  }
 }
 
 void NetworkReceiveSystem::update(ecs::World &world, [[maybe_unused]] float deltaTime)
@@ -91,6 +129,8 @@ void NetworkReceiveSystem::handleMessage(ecs::World &world, const std::string &m
       handleViewport(world, json, clientId);
     } else if (type == "set_difficulty") {
       handleSetDifficulty(json, clientId);
+    } else if (type == "chat_message") {
+      handleChatMessage(json, clientId);
     } else {
       std::cerr << "[Server] Unknown message type from client " << clientId << ": " << type << '\n';
     }
@@ -190,6 +230,8 @@ void NetworkReceiveSystem::handlePlayerInput([[maybe_unused]] ecs::World &world,
       input.left = inputJson.value("left", false);
       input.right = inputJson.value("right", false);
       input.shoot = inputJson.value("shoot", false);
+      input.chargedShoot = inputJson.value("chargedShoot", false);
+      input.detach = inputJson.value("detach", false);
       return;
     }
   } catch (const std::exception &) {
@@ -247,6 +289,7 @@ void NetworkReceiveSystem::handleRequestLobby(const nlohmann::json &json, std::u
   const std::string action = json.value("action", "create");
   const std::string requestedCode = json.value("lobby_code", "");
   const bool asSpectator = json.value("spectator", false);
+  const bool isSolo = json.value("solo", false);
 
   if (asSpectator) {
     std::cout << "[Server] Client " << clientId << " wants to join as SPECTATOR" << '\n';
@@ -305,14 +348,78 @@ void NetworkReceiveSystem::handleRequestLobby(const nlohmann::json &json, std::u
       std::cout << "[Server] >>> NO DIFFICULTY FIELD IN MESSAGE, USING DEFAULT MEDIUM <<<" << '\n';
     }
 
-    lobbyManager.createLobby(lobbyCode, difficulty);
-    targetLobby = lobbyManager.getLobby(lobbyCode);
-    std::cout << "[Server] Created lobby '" << lobbyCode << "' with final difficulty: " << static_cast<int>(difficulty)
-              << " ("
+    // Parse AI difficulty
+    AIDifficulty aiDifficulty = AIDifficulty::MEDIUM;
+    if (json.contains("ai_difficulty")) {
+      int aiDiffInt = json["ai_difficulty"];
+      std::cout << "[Server] >>> AI DIFFICULTY RECEIVED: " << aiDiffInt;
+      if (aiDiffInt == 0)
+        std::cout << " (WEAK)";
+      else if (aiDiffInt == 1)
+        std::cout << " (MEDIUM)";
+      else if (aiDiffInt == 2)
+        std::cout << " (STRONG)";
+      else if (aiDiffInt == 3)
+        std::cout << " (NO_ALLY)";
+      else
+        std::cout << " (INVALID)";
+      std::cout << " <<<" << '\n';
+
+      if (aiDiffInt >= 0 && aiDiffInt <= 3) {
+        aiDifficulty = static_cast<AIDifficulty>(aiDiffInt);
+        std::cout << "[Server] Parsed AI difficulty as: " << static_cast<int>(aiDifficulty) << " ("
+                  << (aiDifficulty == AIDifficulty::WEAK       ? "WEAK"
+                        : aiDifficulty == AIDifficulty::MEDIUM ? "MEDIUM"
+                        : aiDifficulty == AIDifficulty::STRONG ? "STRONG"
+                                                               : "NO_ALLY")
+                  << ")" << '\n';
+      } else {
+        std::cout << "[Server] Invalid AI difficulty value: " << aiDiffInt << ", using default MEDIUM" << '\n';
+      }
+    } else {
+      std::cout << "[Server] >>> NO AI DIFFICULTY FIELD IN MESSAGE, USING DEFAULT MEDIUM <<<" << '\n';
+    }
+    // Parse game mode
+    GameMode gameMode = GameMode::CLASSIC;
+    if (json.contains("mode")) {
+      int modeInt = json["mode"];
+      std::cout << "[Server] >>> GAME MODE RECEIVED: " << modeInt;
+      if (modeInt == 0)
+        std::cout << " (CLASSIC)";
+      else if (modeInt == 1)
+        std::cout << " (ENDLESS)";
+      else
+        std::cout << " (INVALID)";
+      std::cout << " <<<" << '\n';
+
+      if (modeInt >= 0 && modeInt <= 1) {
+        gameMode = static_cast<GameMode>(modeInt);
+        std::cout << "[Server] Parsed game mode as: " << static_cast<int>(gameMode) << " ("
+                  << (gameMode == GameMode::CLASSIC ? "CLASSIC" : "ENDLESS") << ")" << '\n';
+      } else {
+        std::cout << "[Server] Invalid game mode value: " << modeInt << ", using default CLASSIC" << '\n';
+      }
+    } else {
+      std::cout << "[Server] >>> NO GAME MODE FIELD IN MESSAGE, USING DEFAULT CLASSIC <<<" << '\n';
+    }
+    std::cout << "[Server] Created " << (isSolo ? "SOLO " : "") << "lobby '" << lobbyCode
+              << "' with final difficulty: " << static_cast<int>(difficulty) << " ("
               << (difficulty == GameConfig::Difficulty::EASY       ? "EASY"
                     : difficulty == GameConfig::Difficulty::MEDIUM ? "MEDIUM"
                                                                    : "EXPERT")
-              << ")" << '\n';
+              << ") and AI difficulty: " << static_cast<int>(aiDifficulty) << " ("
+              << (aiDifficulty == AIDifficulty::WEAK       ? "WEAK"
+                    : aiDifficulty == AIDifficulty::MEDIUM ? "MEDIUM"
+                    : aiDifficulty == AIDifficulty::STRONG ? "STRONG"
+                                                           : "NO_ALLY")
+              << ") and game mode: " << (gameMode == GameMode::CLASSIC ? "CLASSIC" : "ENDLESS") << '\n';
+
+    // Actually create the lobby
+    if (!lobbyManager.createLobby(lobbyCode, difficulty, isSolo, aiDifficulty, gameMode)) {
+      std::cerr << "[Server] Failed to create lobby: " << lobbyCode << '\n';
+      sendErrorResponse(clientId, "Failed to create lobby");
+      return;
+    }
   }
 
   // Try to join the lobby
@@ -493,4 +600,59 @@ void NetworkReceiveSystem::handleSetDifficulty(const nlohmann::json &json, std::
   }
 
   lobby->setDifficulty(gameConfigDiff);
+}
+
+void NetworkReceiveSystem::handleChatMessage(const nlohmann::json &json, std::uint32_t clientId)
+{
+  if (!json.contains("content") || !json.contains("sender")) {
+    std::cerr << "[Server] chat_message from client " << clientId << " missing required fields" << '\n';
+    return;
+  }
+
+  std::string content = json["content"].get<std::string>();
+  std::string sender = json["sender"].get<std::string>();
+
+  // Sanitize message (limit length, remove control chars)
+  constexpr size_t MAX_MESSAGE_LENGTH = 500;
+  if (content.length() > MAX_MESSAGE_LENGTH) {
+    content = content.substr(0, MAX_MESSAGE_LENGTH);
+  }
+
+  // Check if user is muted
+  if (m_chat && m_chat->isMuted(clientId)) {
+    m_chat->sendSystemMessage(clientId, "You are muted and cannot send messages.");
+    std::cout << "[Server] Blocked message from muted user " << sender << " (client " << clientId << ")" << '\n';
+    return;
+  }
+
+  // Check if message is a command
+  if (m_chat && m_chat->processMessage(clientId, sender, content)) {
+    // Command was processed, don't broadcast
+    std::cout << "[Server] Command from " << sender << " (client " << clientId << "): " << content << '\n';
+    return;
+  }
+
+  std::cout << "[Server] Chat from " << sender << " (client " << clientId << "): " << content << '\n';
+
+  // Broadcast to all connected clients
+  nlohmann::json broadcastMsg;
+  broadcastMsg["type"] = "chat_broadcast";
+  broadcastMsg["sender"] = sender;
+  broadcastMsg["content"] = content;
+  broadcastMsg["senderId"] = clientId;
+
+  std::string jsonStr = broadcastMsg.dump();
+  auto serialized = m_networkManager->getPacketHandler()->serialize(jsonStr);
+
+  // Get all connected clients and broadcast
+  auto clients = m_networkManager->getClients();
+  for (const auto &[targetClientId, endpoint] : clients) {
+    // Don't send back to the sender (they already added it locally)
+    if (targetClientId == clientId) {
+      continue;
+    }
+    m_networkManager->send(
+      std::span<const std::byte>(reinterpret_cast<const std::byte *>(serialized.data()), serialized.size()),
+      targetClientId);
+  }
 }

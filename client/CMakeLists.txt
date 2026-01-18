@@ -4,24 +4,22 @@ add_executable(client
     src/main.cpp
     src/Game.cpp
     src/Settings.cpp
+    src/ChatUI.cpp
     src/helper/KeyToLabel.cpp
     src/Menu.cpp
     src/Menu/ProcessInputMenu.cpp
     src/Menu/IntroScreen/IntroScreen.cpp
     src/Menu/MainMenu/MainMenu.cpp
+    src/Menu/AIDifficultyMenu/AIDifficultyMenu.cpp
     src/Menu/LobbyMenu/LobbyMenu.cpp
     src/Menu/SettingsMenu/SettingsMenu.cpp
     src/Menu/LobbyMenu/LobbyMenu.cpp
     src/Menu/SettingsMenu/SettingsMenu.cpp
     src/Menu/ProfileMenu/ProfileMenu.cpp
+    src/Menu/AIDifficultyMenu/AIDifficultyMenu.cpp
     src/LobbyRoomState.cpp
     src/PlayingState.cpp
-    src/infomode/InfoMode.cpp
-    src/infomode/InfoCategory.cpp
-    src/infomode/categories/CpuRamCategory.cpp
-    src/infomode/categories/GameCategory.cpp
-    src/infomode/categories/DeviceCategory.cpp
-    src/infomode/categories/NetworkCategory.cpp
+    src/infomode/src/InfoMode.cpp
     src/ParallaxBackground.cpp
     src/Overlay.cpp
     src/Client.cpp
@@ -41,6 +39,15 @@ target_link_libraries(client PRIVATE
     SDL2::SDL2main
     SDL2::SDL2
 )
+
+# Link macOS frameworks for DeviceCategory
+if(APPLE)
+    target_link_libraries(client PRIVATE
+        "-framework CoreFoundation"
+        "-framework CoreGraphics"
+        "-framework IOKit"
+    )
+endif()
 
 # Ensure SDL2main handles the main/WinMain conversion on Windows
 if(WIN32)

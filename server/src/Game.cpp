@@ -9,6 +9,8 @@
 #include "../../engineCore/include/ecs/EngineComponents.hpp"
 #include "../include/config/EnemyConfig.hpp"
 #include "../include/config/LevelConfig.hpp"
+#include "systems/AllySystem.hpp"
+#include "systems/ChargeSystem.hpp"
 #include "systems/SpawnSystem.hpp"
 #include <chrono>
 #include <cstdint>
@@ -28,15 +30,20 @@ Game::Game()
 
   // Register all systems
   world->registerSystem<server::InputMovementSystem>();
+  world->registerSystem<server::EnemyAISystem>();
+  world->registerSystem<server::AllySystem>();
   world->registerSystem<ecs::MovementSystem>();
   world->registerSystem<server::CollisionSystem>();
 
   damageSystem = &world->registerSystem<server::DamageSystem>();
   deathSystem = &world->registerSystem<server::DeathSystem>();
   shootingSystem = &world->registerSystem<server::ShootingSystem>();
+  world->registerSystem<server::ChargeSystem>();
   scoreSystem = &world->registerSystem<server::ScoreSystem>();
+  powerupSystem = &world->registerSystem<server::PowerupSystem>();
 
-  world->registerSystem<server::EnemyAISystem>();
+  world->registerSystem<server::FollowerSystem>();
+  world->registerSystem<server::RubanAnimationSystem>();
 
   spawnSystem = &world->registerSystem<server::SpawnSystem>();
   world->registerSystem<server::EntityLifetimeSystem>();
@@ -98,6 +105,9 @@ void Game::initializeSystems()
   }
   if (scoreSystem != nullptr) {
     scoreSystem->initialize(*world);
+  }
+  if (powerupSystem != nullptr) {
+    powerupSystem->initialize(*world);
   }
   if (spawnSystem != nullptr) {
     spawnSystem->initialize(*world);

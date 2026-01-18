@@ -6,6 +6,7 @@
 */
 
 #include "SettingsMenu.hpp"
+#include "../../../include/ColorBlindFilter.hpp"
 #include "../../../include/KeyToLabel.hpp"
 #include "../interface/Color.hpp"
 #include "../interface/KeyCodes.hpp"
@@ -13,8 +14,8 @@
 #include <memory>
 
 SettingsMenu::SettingsMenu(std::shared_ptr<IRenderer> renderer)
-    : m_renderer(std::move(renderer)), font(nullptr), titleFont(nullptr), helpFont(nullptr),
-      currentCategory(SettingsCategory::AUDIO)
+    : m_renderer(std::move(renderer)), font(nullptr), titleFont(nullptr), helpFont(nullptr), clickedSound(nullptr),
+      hoverSound(nullptr), errorSound(nullptr), currentCategory(SettingsCategory::AUDIO)
 {
 }
 
@@ -67,7 +68,7 @@ void SettingsMenu::init(Settings &settings)
     int winWidth = m_renderer->getWindowWidth();
     int winHeight = m_renderer->getWindowHeight();
 
-    std::vector<std::string> categoryLabels = {"Audio", "Graphics", "Controls"};
+    std::vector<std::string> categoryLabels = {"Audio", "Graphics", "Controls", "Debug"};
     const int tabWidth = winWidth / 4;
     const int tabHeight = static_cast<int>(winHeight * 0.06);
     const int tabY = static_cast<int>(winHeight * 0.05);
@@ -106,6 +107,17 @@ void SettingsMenu::init(Settings &settings)
     graphicItems.push_back(
       {.label = "Fullscreen", .type = SettingItemType::TOGGLE_BOOL, .boolTarget = &this->settings->fullScreen});
 
+    graphicItems.push_back({.label = "Color Blind Filter",
+                            .type = SettingItemType::ENUM_CYCLE,
+                            .enumLabels =
+                              {
+                                getColorBlindModeName(ColorBlindMode::NONE),
+                                getColorBlindModeName(ColorBlindMode::PROTANOPIA),
+                                getColorBlindModeName(ColorBlindMode::DEUTERANOPIA),
+                                getColorBlindModeName(ColorBlindMode::TRITANOPIA),
+                              },
+                            .enumTarget = reinterpret_cast<std::uint8_t *>(&this->settings->colorBlindMode)});
+
     controlsItems.clear();
     controlsItems.push_back({.label = "Move Up", .type = SettingItemType::KEYBIND, .intTarget = &this->settings->up});
     controlsItems.push_back(
@@ -117,6 +129,24 @@ void SettingsMenu::init(Settings &settings)
     controlsItems.push_back({.label = "Shoot", .type = SettingItemType::KEYBIND, .intTarget = &this->settings->shoot});
     controlsItems.push_back(
       {.label = "Charged Shoot", .type = SettingItemType::KEYBIND, .intTarget = &this->settings->chargedShoot});
+    controlsItems.push_back(
+      {.label = "Detach", .type = SettingItemType::KEYBIND, .intTarget = &this->settings->detach});
+    controlsItems.push_back(
+      {.label = "Toggle Info Mode", .type = SettingItemType::KEYBIND, .intTarget = &this->settings->toggleInfoMode});
+
+    debugItems.clear();
+    debugItems.push_back(
+      {.label = "Show Info Mode", .type = SettingItemType::TOGGLE_BOOL, .boolTarget = &this->settings->showInfoMode});
+    debugItems.push_back(
+      {.label = "Show CPU Usage", .type = SettingItemType::TOGGLE_BOOL, .boolTarget = &this->settings->showCPUUsage});
+    debugItems.push_back(
+      {.label = "Show RAM Usage", .type = SettingItemType::TOGGLE_BOOL, .boolTarget = &this->settings->showRAMUsage});
+    debugItems.push_back(
+      {.label = "Show FPS", .type = SettingItemType::TOGGLE_BOOL, .boolTarget = &this->settings->showFPS});
+    debugItems.push_back(
+      {.label = "Show Entities", .type = SettingItemType::TOGGLE_BOOL, .boolTarget = &this->settings->showEntityCount});
+    debugItems.push_back(
+      {.label = "Show Network", .type = SettingItemType::TOGGLE_BOOL, .boolTarget = &this->settings->showNetworkInfo});
 
     selectedIndex = 0;
     isCapturingKey = false;
@@ -141,6 +171,8 @@ std::vector<SettingItem> &SettingsMenu::activeItems()
     return graphicItems;
   case SettingsCategory::CONTROLS:
     return controlsItems;
+  case SettingsCategory::DEBUG:
+    return debugItems;
   }
   return audioItems;
 }
@@ -167,6 +199,15 @@ std::string SettingsMenu::itemValueText(const SettingItem &item) const
       label = "?";
     return label;
   }
+  case SettingItemType::ENUM_CYCLE: {
+    if (item.enumTarget != nullptr && !item.enumLabels.empty()) {
+      std::uint8_t value = *item.enumTarget;
+      if (value < item.enumLabels.size()) {
+        return item.enumLabels[value];
+      }
+    }
+    return "Unknown";
+  }
   }
   return "";
 }
@@ -188,6 +229,23 @@ void SettingsMenu::applyDelta(SettingItem &item, int direction)
   case SettingItemType::TOGGLE_BOOL:
     if (item.boolTarget != nullptr) {
       *item.boolTarget = !*item.boolTarget;
+      changed = true;
+    }
+    break;
+  case SettingItemType::ENUM_CYCLE:
+    if (item.enumTarget != nullptr && !item.enumLabels.empty()) {
+      std::uint8_t currentValue = *item.enumTarget;
+      std::uint8_t maxValue = static_cast<std::uint8_t>(item.enumLabels.size() - 1);
+
+      if (direction > 0) {
+        // Cycle forward
+        currentValue = (currentValue >= maxValue) ? 0 : currentValue + 1;
+      } else {
+        // Cycle backward
+        currentValue = (currentValue == 0) ? maxValue : currentValue - 1;
+      }
+
+      *item.enumTarget = currentValue;
       changed = true;
     }
     break;
@@ -385,7 +443,7 @@ void SettingsMenu::process()
   }
   if (m_renderer->isKeyJustPressed(KeyCode::KEY_RIGHT) && !isEditing) {
     int catIndex = static_cast<int>(currentCategory);
-    if (catIndex < 2) {
+    if (catIndex < 3) {
       m_renderer->playSound(hoverSound);
       currentCategory = static_cast<SettingsCategory>(catIndex + 1);
       selectedIndex = 0;

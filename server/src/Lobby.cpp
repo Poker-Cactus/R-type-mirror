@@ -15,8 +15,10 @@
 #include <iostream>
 #include <nlohmann/json.hpp>
 
-Lobby::Lobby(const std::string &code, std::shared_ptr<INetworkManager> networkManager)
-    : m_code(code), m_networkManager(std::move(networkManager))
+Lobby::Lobby(const std::string &code, std::shared_ptr<INetworkManager> networkManager, bool isSolo,
+             AIDifficulty aiDifficulty, GameMode mode)
+    : m_code(code), m_networkManager(std::move(networkManager)), m_isSolo(isSolo), m_aiDifficulty(aiDifficulty),
+      m_gameMode(mode)
 {
   // Create isolated world for this lobby
   m_world = std::make_shared<ecs::World>();
@@ -53,6 +55,12 @@ Lobby::~Lobby()
 
 bool Lobby::addClient(std::uint32_t clientId, bool asSpectator)
 {
+  // For solo lobbies, only allow 1 player (excluding spectators)
+  if (m_isSolo && !asSpectator && getPlayerCount() >= 1) {
+    std::cout << "[Lobby:" << m_code << "] Solo lobby full, rejecting player " << clientId << '\n';
+    return false;
+  }
+
   auto [_, inserted] = m_clients.insert(clientId);
   if (inserted) {
     if (asSpectator) {
@@ -91,6 +99,11 @@ bool Lobby::isEmpty() const
 std::size_t Lobby::getClientCount() const
 {
   return m_clients.size();
+}
+
+std::size_t Lobby::getPlayerCount() const
+{
+  return m_clients.size() - m_spectators.size();
 }
 
 const std::string &Lobby::getCode() const
@@ -133,8 +146,13 @@ void Lobby::startGame()
     }
   }
 
-  std::cout << "[Lobby:" << m_code << "] Game started with " << playerCount << " players and " << m_spectators.size()
-            << " spectators" << '\n';
+  // Spawn ally entity if this is solo mode and AI is enabled
+  if (m_isSolo && m_aiDifficulty != AIDifficulty::NO_ALLY) {
+    spawnAlly();
+  }
+
+  std::cout << "[Lobby:" << m_code << "] Game started with " << playerCount << " players" << (m_isSolo ? " + ally" : "")
+            << " and " << m_spectators.size() << " spectators" << '\n';
 }
 
 void Lobby::stopGame()
@@ -215,6 +233,8 @@ void Lobby::initializeSystems()
 
   // Register all game systems for this lobby's world
   m_world->registerSystem<server::InputMovementSystem>();
+  m_world->registerSystem<server::EnemyAISystem>();
+  m_world->registerSystem<server::AllySystem>();
   m_world->registerSystem<ecs::MovementSystem>();
   m_world->registerSystem<server::CollisionSystem>();
 
@@ -222,8 +242,10 @@ void Lobby::initializeSystems()
   auto *deathSystem = &m_world->registerSystem<server::DeathSystem>();
   auto *shootingSystem = &m_world->registerSystem<server::ShootingSystem>();
   auto *scoreSystem = &m_world->registerSystem<server::ScoreSystem>();
+  auto *powerupSystem = &m_world->registerSystem<server::PowerupSystem>();
 
-  m_world->registerSystem<server::EnemyAISystem>();
+  m_world->registerSystem<server::FollowerSystem>();
+  m_world->registerSystem<server::RubanAnimationSystem>();
 
   auto *spawnSystem = &m_world->registerSystem<server::SpawnSystem>();
   m_world->registerSystem<server::EntityLifetimeSystem>();
@@ -242,6 +264,9 @@ void Lobby::initializeSystems()
   if (scoreSystem != nullptr) {
     scoreSystem->initialize(*m_world);
   }
+  if (powerupSystem != nullptr) {
+    powerupSystem->initialize(*m_world);
+  }
   if (spawnSystem != nullptr) {
     spawnSystem->initialize(*m_world);
 
@@ -250,9 +275,17 @@ void Lobby::initializeSystems()
       spawnSystem->setEnemyConfigManager(m_enemyConfigManager);
     }
 
-    // Set level config manager if available and start level
+    // Set level config manager if available
     if (m_levelConfigManager) {
       spawnSystem->setLevelConfigManager(m_levelConfigManager);
+    }
+
+    // Apply game mode
+    spawnSystem->setGameMode(m_gameMode);
+
+    if (m_gameMode == GameMode::ENDLESS) {
+      std::cout << "[Lobby:" << m_code << "] Infinite mode enabled" << std::endl;
+    } else if (m_levelConfigManager) {
       spawnSystem->startLevel("level_1");
       std::cout << "[Lobby:" << m_code << "] Level config manager set, started level_1" << std::endl;
     } else if (m_enemyConfigManager) {
@@ -344,6 +377,94 @@ void Lobby::spawnPlayer(std::uint32_t clientId)
   std::cout << "[Lobby:" << m_code << "] Spawned player entity " << player << " for client " << clientId << '\n';
 }
 
+void Lobby::spawnAlly()
+{
+  if (!m_world || !m_isSolo) {
+    return;
+  }
+
+  ecs::Entity ally = m_world->createEntity();
+
+  m_world->addComponent(ally, ecs::GunOffset{GameConfig::PLAYER_GUN_OFFSET});
+
+  ecs::Transform transform;
+  transform.x = GameConfig::ALLY_SPAWN_X;
+  transform.y = GameConfig::ALLY_SPAWN_Y;
+  transform.rotation = 0.0F;
+  transform.scale = 1.0F;
+  m_world->addComponent(ally, transform);
+
+  ecs::Velocity velocity;
+  velocity.dx = 0.0F;
+  velocity.dy = 0.0F;
+  m_world->addComponent(ally, velocity);
+
+  // Ally has same HP as player, but stronger allies get bonus HP
+  int startingHP = GameConfig::getPlayerHPForDifficulty(m_difficulty);
+
+  // Map AI difficulty to AI strength (only in solo mode)
+  server::ai::AIStrength allyStrength;
+  switch (m_aiDifficulty) {
+  case AIDifficulty::WEAK:
+    allyStrength = server::ai::AIStrength::WEAK;
+    break;
+  case AIDifficulty::MEDIUM:
+    allyStrength = server::ai::AIStrength::MEDIUM;
+    break;
+  case AIDifficulty::STRONG:
+    allyStrength = server::ai::AIStrength::STRONG;
+    break;
+  case AIDifficulty::NO_ALLY:
+    // Should not reach here, but just in case
+    allyStrength = server::ai::AIStrength::MEDIUM;
+    break;
+  default:
+    allyStrength = server::ai::AIStrength::MEDIUM;
+    break;
+  }
+
+  if (allyStrength == server::ai::AIStrength::STRONG) {
+    startingHP *= 2; // Double HP for strong AI
+  }
+  ecs::Health health;
+  health.hp = startingHP;
+  health.maxHp = startingHP;
+  m_world->addComponent(ally, health);
+
+  m_world->addComponent(ally, ecs::Collider{GameConfig::ALLY_COLLIDER_SIZE, GameConfig::ALLY_COLLIDER_SIZE});
+
+  ecs::Sprite sprite;
+  sprite.spriteId = ecs::SpriteId::PLAYER_SHIP; // Same sprite as player
+  sprite.width = GameConfig::ALLY_SPRITE_WIDTH;
+  sprite.height = GameConfig::ALLY_SPRITE_HEIGHT;
+  // Configure ally sprite for ECS animation system (not manual animation)
+  sprite.animated = true;
+  sprite.frameCount = 5; // 5 frames: 0,1,2,3,4
+  sprite.currentFrame = 2; // Start at neutral frame (idle)
+  sprite.startFrame = 2; // Idle frame
+  sprite.endFrame = 2; // Stay at idle frame
+  sprite.loop = false; // Don't loop, stay at idle
+  sprite.frameTime = 1.0f; // Not used since no animation
+  sprite.offsetY = 34.4f; // Take sprite sheet from this point
+  m_world->addComponent(ally, sprite);
+
+  ecs::Networked networked;
+  networked.networkId = ally; // Use entity ID
+  m_world->addComponent(ally, networked);
+
+  ecs::Score score;
+  score.points = 0;
+  m_world->addComponent(ally, score);
+
+  // Add ally component to mark this as ally-controlled
+  m_world->addComponent(ally, ecs::Ally{allyStrength});
+
+  // Track the ally entity
+  m_allyEntity = ally;
+
+  std::cout << "[Lobby:" << m_code << "] Spawned ally entity " << ally << '\n';
+}
+
 void Lobby::destroyPlayerEntity(std::uint32_t clientId)
 {
   auto player_entity_it = m_playerEntities.find(clientId);
@@ -405,4 +526,50 @@ void Lobby::setDifficulty(GameConfig::Difficulty difficulty)
 GameConfig::Difficulty Lobby::getDifficulty() const
 {
   return m_difficulty;
+}
+
+void Lobby::setGameMode(GameMode mode)
+{
+  if (m_gameStarted) {
+    std::cerr << "[Lobby:" << m_code << "] Cannot change game mode after game has started" << '\n';
+    return;
+  }
+  m_gameMode = mode;
+}
+
+GameMode Lobby::getGameMode() const
+{
+  return m_gameMode;
+}
+
+void Lobby::convertToSpectator(std::uint32_t clientId)
+{
+  // Check if client is already a spectator
+  if (isSpectator(clientId)) {
+    return;
+  }
+
+  // Destroy the player entity (they're dead)
+  destroyPlayerEntity(clientId);
+
+  m_spectators.insert(clientId);
+
+  std::cout << "[Lobby:" << m_code << "] Client " << clientId << " converted to spectator after death ("
+            << m_spectators.size() << " spectators)" << '\n';
+
+  // Notify all clients about the change
+  nlohmann::json notification;
+  notification["type"] = "lobby_state";
+  notification["code"] = m_code;
+  notification["player_count"] = getClientCount();
+  notification["spectator_count"] = m_spectators.size();
+
+  for (const auto &playerId : m_clients) {
+    sendJsonToClient(playerId, notification);
+  }
+}
+
+AIDifficulty Lobby::getAIDifficulty() const
+{
+  return m_aiDifficulty;
 }

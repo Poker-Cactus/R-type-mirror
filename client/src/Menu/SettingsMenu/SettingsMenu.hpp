@@ -39,7 +39,8 @@ struct Component {
 enum class SettingsCategory : std::uint8_t {
   AUDIO = 0, ///< Audio settings
   GRAPHICS = 1, ///< Graphics settings
-  CONTROLS = 2 ///< Control bindings
+  CONTROLS = 2, ///< Control bindings
+  DEBUG = 3 ///< Debug settings
 };
 
 /**
@@ -49,7 +50,8 @@ enum class SettingsCategory : std::uint8_t {
 enum class SettingItemType : std::uint8_t {
   SLIDER_INT, ///< Integer slider
   TOGGLE_BOOL, ///< Boolean toggle
-  KEYBIND ///< Key binding
+  KEYBIND, ///< Key binding
+  ENUM_CYCLE ///< Cycle through enum values
 };
 
 /**
@@ -64,6 +66,8 @@ struct SettingItem {
   int step = 5; ///< Step increment (for sliders)
   int *intTarget = nullptr; ///< Target integer variable
   bool *boolTarget = nullptr; ///< Target boolean variable
+  std::vector<std::string> enumLabels; ///< Labels for enum values (for ENUM_CYCLE)
+  std::uint8_t *enumTarget = nullptr; ///< Target enum variable (for ENUM_CYCLE)
 };
 
 /**
@@ -105,12 +109,13 @@ private:
   void *helpFont;
 
   // Catégories
-  std::array<Component, 3> categoryTabs;
+  std::array<Component, 4> categoryTabs;
   SettingsCategory currentCategory;
 
   std::vector<SettingItem> audioItems;
   std::vector<SettingItem> graphicItems;
   std::vector<SettingItem> controlsItems;
+  std::vector<SettingItem> debugItems;
 
   std::size_t selectedIndex = 0;
   bool isCapturingKey = false;

@@ -60,6 +60,7 @@ public:
   void stop() override;
   bool poll(NetworkPacket &msg) override;
   [[nodiscard]] std::unordered_map<std::uint32_t, asio::ip::udp::endpoint> getClients() const override;
+  void disconnect(std::uint32_t clientId) override;
   float getLatency() const override { return -1.0f; } // Server doesn't measure latency
   bool isConnected() const override { return true; } // Server is always "connected"
   int getPacketsPerSecond() const override { return 0; } // Not implemented for server

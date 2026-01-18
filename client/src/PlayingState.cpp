@@ -21,6 +21,7 @@
 #include "../interface/Geometry.hpp"
 #include "../interface/KeyCodes.hpp"
 #include <iostream>
+#include <unordered_set>
 
 PlayingState::PlayingState(std::shared_ptr<IRenderer> renderer, const std::shared_ptr<ecs::World> &world,
                            Settings &settings, std::shared_ptr<INetworkManager> networkManager)
@@ -72,18 +73,24 @@ bool PlayingState::init()
 #ifdef __APPLE__
     // macOS system font path
     constexpr int HUD_FONT_SIZE = 18;
-    m_hudFont = renderer->loadFont("/System/Library/Fonts/Helvetica.ttc", HUD_FONT_SIZE);
+    void *rawFont = renderer->loadFont("/System/Library/Fonts/Helvetica.ttc", HUD_FONT_SIZE);
 #else
     constexpr int HUD_FONT_SIZE = 18;
-    m_hudFont = renderer->loadFont("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", HUD_FONT_SIZE);
+    void *rawFont = renderer->loadFont("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", HUD_FONT_SIZE);
 #endif
+    // Wrap in shared_ptr with custom deleter
+    auto fontDeleter = [r = renderer](void *font) {
+      if (font && r)
+        r->freeFont(font);
+    };
+    m_hudFont = std::shared_ptr<void>(rawFont, fontDeleter);
   } catch (const std::exception &e) {
     std::cerr << "PlayingState: Warning - Could not load HUD font: " << e.what() << '\n';
     m_hudFont = nullptr;
   }
 
   // Initialize info mode
-  m_infoMode = std::make_unique<InfoMode>(renderer, m_hudFont);
+  m_infoMode = std::make_unique<rtype::InfoMode>(renderer, m_hudFont, settings);
 
   std::cout << "PlayingState: Initialized successfully" << '\n';
 
@@ -117,7 +124,7 @@ void PlayingState::update(float delta_time)
 
   // Update info mode
   if (m_infoMode) {
-    m_infoMode->update(delta_time);
+    m_infoMode->update();
   }
 
   // Send ping periodically to measure latency
@@ -163,7 +170,6 @@ void PlayingState::render()
     if (textureIt != m_spriteTextures.end() && textureIt->second != nullptr) {
       constexpr int PLAYER_FRAME_WIDTH = 33; // 166 / 5
       constexpr int PLAYER_FRAME_HEIGHT = 17; // 86 / 5
-
       bool rendered = false;
 
       // Check if sprite is animated
@@ -172,28 +178,112 @@ void PlayingState::render()
         int frameWidth = 0;
         int frameHeight = 0;
 
-        if (sprite.spriteId == ecs::SpriteId::ENEMY_SHIP) {
-          // Enemy ship: 533x36 with 16 frames
+        switch (sprite.spriteId) {
+        case ecs::SpriteId::ENEMY_SHIP:
           frameWidth = 533 / 16; // 33px per frame
           frameHeight = 36;
-        } else if (sprite.spriteId == ecs::SpriteId::PLAYER_SHIP) {
+          break;
+        case ecs::SpriteId::PLAYER_SHIP:
           frameWidth = PLAYER_FRAME_WIDTH;
           frameHeight = PLAYER_FRAME_HEIGHT;
-        } else if (sprite.spriteId == ecs::SpriteId::PROJECTILE) {
+          break;
+        case ecs::SpriteId::PROJECTILE:
           frameWidth = 18;
           frameHeight = 14;
-        } else if (sprite.spriteId == ecs::SpriteId::ENEMY_YELLOW) {
+          break;
+        case ecs::SpriteId::POWERUP:
+          frameWidth = 12; // 84 / 7 = 12px per frame
+          frameHeight = 12;
+          break;
+        case ecs::SpriteId::ENEMY_YELLOW:
           // Yellow Bee: 256x64 with 2 rows x 8 columns = 16 frames
           frameWidth = 256 / 8; // 32px per frame
           frameHeight = 64 / 2; // 32px per frame (2 rows)
-        } else if (sprite.spriteId == ecs::SpriteId::ENEMY_WALKER) {
+          break;
+        case ecs::SpriteId::CHARGED_PROJECTILE:
+          frameWidth = 165 / 2; // 82px per frame
+          frameHeight = 16;
+          break;
+        case ecs::SpriteId::LOADING_SHOT:
+          frameWidth = 255 / 8; // 31-32px per frame
+          frameHeight = 29;
+          break;
+        case ecs::SpriteId::ENEMY_WALKER:
           // Walker: 200x67 with 2 rows x 6 columns = 12 frames
           frameWidth = 200 / 6; // 33px per frame
           frameHeight = 67 / 2; // 33px per frame (2 rows)
-        } else if (sprite.spriteId == ecs::SpriteId::WALKER_PROJECTILE) {
+          break;
+        case ecs::SpriteId::WALKER_PROJECTILE:
           // Walker Projectile: 549x72 with 7 frames in single row
           frameWidth = 549 / 7; // 78px per frame
           frameHeight = 72;
+          break;
+        case ecs::SpriteId::DRONE:
+        case ecs::SpriteId::BUBBLE:
+        case ecs::SpriteId::BUBBLE_TRIPLE:
+        case ecs::SpriteId::BUBBLE_RUBAN1:
+        case ecs::SpriteId::BUBBLE_RUBAN2:
+        case ecs::SpriteId::BUBBLE_RUBAN3:
+        // Individual bubble ruban animation frames
+        case ecs::SpriteId::BUBBLE_RUBAN_BACK1:
+        case ecs::SpriteId::BUBBLE_RUBAN_BACK2:
+        case ecs::SpriteId::BUBBLE_RUBAN_BACK3:
+        case ecs::SpriteId::BUBBLE_RUBAN_BACK4:
+        case ecs::SpriteId::BUBBLE_RUBAN_MIDDLE1:
+        case ecs::SpriteId::BUBBLE_RUBAN_MIDDLE2:
+        case ecs::SpriteId::BUBBLE_RUBAN_MIDDLE3:
+        case ecs::SpriteId::BUBBLE_RUBAN_MIDDLE4:
+        case ecs::SpriteId::BUBBLE_RUBAN_FRONT1:
+        case ecs::SpriteId::BUBBLE_RUBAN_FRONT2:
+        case ecs::SpriteId::BUBBLE_RUBAN_FRONT3:
+        case ecs::SpriteId::BUBBLE_RUBAN_FRONT4:
+        case ecs::SpriteId::TRIPLE_PROJECTILE:
+        case ecs::SpriteId::TRIPLE_PROJECTILE_RIGHT:
+        case ecs::SpriteId::TRIPLE_PROJECTILE_UP:
+        case ecs::SpriteId::TRIPLE_PROJECTILE_DOWN:
+        case ecs::SpriteId::RUBAN1_PROJECTILE:
+        case ecs::SpriteId::RUBAN2_PROJECTILE:
+        case ecs::SpriteId::RUBAN3_PROJECTILE:
+        case ecs::SpriteId::RUBAN4_PROJECTILE:
+        case ecs::SpriteId::RUBAN5_PROJECTILE:
+        case ecs::SpriteId::RUBAN6_PROJECTILE:
+        case ecs::SpriteId::RUBAN7_PROJECTILE:
+        case ecs::SpriteId::RUBAN8_PROJECTILE:
+        case ecs::SpriteId::RUBAN9_PROJECTILE:
+        case ecs::SpriteId::RUBAN10_PROJECTILE:
+        case ecs::SpriteId::RUBAN11_PROJECTILE:
+        case ecs::SpriteId::RUBAN12_PROJECTILE:
+        case ecs::SpriteId::RUBAN13_PROJECTILE:
+        case ecs::SpriteId::RUBAN14_PROJECTILE:
+          // Use sprite dimensions from server
+          frameWidth = static_cast<int>(sprite.width);
+          frameHeight = static_cast<int>(sprite.height);
+
+          // Debug ruban projectiles
+          if (sprite.spriteId >= ecs::SpriteId::RUBAN1_PROJECTILE &&
+              sprite.spriteId <= ecs::SpriteId::RUBAN5_PROJECTILE) {
+            static bool logged = false;
+            if (!logged) {
+              std::cout << "[Render] Ruban projectile - spriteId: " << sprite.spriteId << ", width: " << sprite.width
+                        << ", height: " << sprite.height << ", frameCount: " << sprite.frameCount << std::endl;
+              logged = true;
+            }
+          }
+          break;
+        case ecs::SpriteId::ENEMY_ROBOT:
+          frameWidth = 200 / 6; // 33px per frame
+          frameHeight = 34;
+          break;
+        case ecs::SpriteId::ROBOT_PROJECTILE:
+          frameWidth = 101;
+          frameHeight = 114;
+          break;
+        case ecs::SpriteId::DEATH_ANIM:
+          frameWidth = 586 / 6; // 6 frames horizontally
+          frameHeight = 94;
+          break;
+        default:
+          break;
         }
 
         if (frameWidth > 0 && frameHeight > 0) {
@@ -222,10 +312,32 @@ void PlayingState::render()
             // Walker Projectile: single row spritesheet
             srcX = sprite.currentFrame * frameWidth;
             srcY = 0;
-          } else {
-            // Single row spritesheets (ENEMY_SHIP, PLAYER_SHIP, PROJECTILE)
+          } else if (sprite.spriteId == ecs::SpriteId::ENEMY_ROBOT) {
+            // Robot: single row spritesheet with 6 frames
             srcX = sprite.currentFrame * frameWidth;
             srcY = 0;
+          } else if (sprite.spriteId == ecs::SpriteId::ROBOT_PROJECTILE) {
+            // Robot Projectile: single frame
+            srcX = 0;
+            srcY = 0;
+          } else if (sprite.spriteId == ecs::SpriteId::DEATH_ANIM) {
+            // Death animation: horizontal spritesheet with 6 frames
+            srcX = sprite.currentFrame * frameWidth;
+            srcY = 0;
+          } else if (sprite.spriteId >= ecs::SpriteId::BUBBLE_RUBAN_BACK1 &&
+                     sprite.spriteId <= ecs::SpriteId::BUBBLE_RUBAN_FRONT4) {
+            // Individual bubble ruban frames: single image per file, no spritesheet
+            srcX = 0;
+            srcY = 0;
+          } else if (sprite.spriteId >= ecs::SpriteId::TRIPLE_PROJECTILE_RIGHT &&
+                     sprite.spriteId <= ecs::SpriteId::TRIPLE_PROJECTILE_DOWN) {
+            // Triple projectile direction sprites: single image per file
+            srcX = 0;
+            srcY = 0;
+          } else {
+            // For Ruban and other sprites: use offsetX/offsetY/row if present
+            srcX = static_cast<int>(sprite.offsetX) + (sprite.currentFrame * frameWidth);
+            srcY = static_cast<int>(sprite.offsetY) + (sprite.row * frameHeight);
           }
 
           // Apply transform scale to sprite dimensions
@@ -261,7 +373,8 @@ void PlayingState::render()
         // Draw using actual texture
         if (sprite.spriteId == ecs::SpriteId::PLAYER_SHIP) {
           // Player ship is a spritesheet with player animation
-          int srcX = m_playerFrameIndex * PLAYER_FRAME_WIDTH;
+          int frameIndex = sprite.animated ? sprite.currentFrame : m_playerFrameIndex;
+          int srcX = frameIndex * PLAYER_FRAME_WIDTH;
           int srcY = 0; // première ligne seulement
           int scaledWidth = static_cast<int>(sprite.width * transformComponent.scale);
           int scaledHeight = static_cast<int>(sprite.height * transformComponent.scale);
@@ -284,6 +397,19 @@ void PlayingState::render()
              .y = static_cast<int>(transformComponent.y),
              .width = scaledWidth,
              .height = scaledHeight}); // Destination with scale
+        } else if (sprite.spriteId == ecs::SpriteId::POWERUP) {
+          // Powerup: R-Type_Items.png (84x12 total, 7 frames, using first 4)
+          constexpr int POWERUP_FRAME_WIDTH = 12; // 84 / 7 = 12px per frame
+          constexpr int POWERUP_FRAME_HEIGHT = 12;
+          int srcX = sprite.currentFrame * POWERUP_FRAME_WIDTH;
+          int scaledWidth = static_cast<int>(sprite.width * transformComponent.scale);
+          int scaledHeight = static_cast<int>(sprite.height * transformComponent.scale);
+          renderer->drawTextureRegion(textureIt->second,
+                                      {.x = srcX, .y = 0, .width = POWERUP_FRAME_WIDTH, .height = POWERUP_FRAME_HEIGHT},
+                                      {.x = static_cast<int>(transformComponent.x),
+                                       .y = static_cast<int>(transformComponent.y),
+                                       .width = scaledWidth,
+                                       .height = scaledHeight});
         } else if (sprite.spriteId == ecs::SpriteId::ENEMY_YELLOW) {
           // Yellow Bee: Use frame 8 (first of bottom row = left-facing)
           constexpr int YELLOW_BEE_FRAME_WIDTH = 32;
@@ -346,6 +472,12 @@ void PlayingState::render()
       case ecs::SpriteId::WALKER_PROJECTILE:
         color = COLOR_PROJECTILE_YELLOW;
         break;
+      case ecs::SpriteId::ENEMY_ROBOT:
+        color = COLOR_ENEMY_YELLOW;
+        break;
+      case ecs::SpriteId::ROBOT_PROJECTILE:
+        color = COLOR_PROJECTILE_YELLOW;
+        break;
       case ecs::SpriteId::PROJECTILE:
         color = COLOR_PROJECTILE_YELLOW;
         break;
@@ -354,6 +486,14 @@ void PlayingState::render()
         break;
       case ecs::SpriteId::EXPLOSION:
         color = COLOR_EXPLOSION_ORANGE;
+        break;
+      case ecs::SpriteId::BUBBLE:
+      case ecs::SpriteId::BUBBLE_TRIPLE:
+      case ecs::SpriteId::BUBBLE_RUBAN1:
+      case ecs::SpriteId::BUBBLE_RUBAN2:
+      case ecs::SpriteId::BUBBLE_RUBAN3:
+      case ecs::SpriteId::DRONE:
+        color = COLOR_POWERUP_GREEN; // Drones use same color as powerups
         break;
       default:
         color = COLOR_FALLBACK_GRAY;
@@ -436,15 +576,31 @@ void PlayingState::renderHUD()
   }
 
   // Score text (only if font is loaded)
-  if (m_hudFont != nullptr) {
+  if (m_hudFont) {
     std::string scoreText = "Score: " + std::to_string(m_playerScore);
-    renderer->drawText(m_hudFont, scoreText, HEARTS_X, HEARTS_Y + HUD_SCORE_OFFSET_Y, HUD_TEXT_WHITE);
+    renderer->drawText(m_hudFont.get(), scoreText, HEARTS_X, HEARTS_Y + HUD_SCORE_OFFSET_Y, HUD_TEXT_WHITE);
   }
 
   // Render info mode if active
   if (m_infoMode) {
-    const int infoTextY = HEARTS_Y + HUD_SCORE_OFFSET_Y + 30; // Below score
-    m_infoMode->render(HEARTS_X, infoTextY);
+    m_infoMode->render();
+  }
+
+  // Show spectator indicator if in spectator mode
+  if (m_isSpectator) {
+    const int winWidth = renderer->getWindowWidth();
+
+    constexpr std::uint8_t TEXT_WHITE = 255;
+    constexpr std::uint8_t TEXT_ALPHA = 255;
+    const Color spectatorColor = {TEXT_WHITE, TEXT_WHITE, TEXT_WHITE, TEXT_ALPHA};
+
+    // Use the HUD font like the score display
+    if (m_hudFont) {
+      renderer->drawText(m_hudFont.get(), "you died, you are in SPECTATOR MODE", winWidth / 2 - 100, 50,
+                         spectatorColor);
+    } else {
+      std::cout << "[PlayingState] Warning: m_hudFont is null, cannot render spectator text" << std::endl;
+    }
   }
 }
 
@@ -672,8 +828,14 @@ void PlayingState::updateHUDFromWorld(float deltaTime)
 
 void PlayingState::processInput()
 {
-  if (renderer == nullptr)
+  // Don't process input if in spectator mode
+  if (m_isSpectator) {
     return;
+  }
+
+  if (renderer == nullptr) {
+    return;
+  }
 
   if (renderer->isKeyPressed(settings.up)) {
     m_returnUp = true;
@@ -688,6 +850,17 @@ void PlayingState::processInput()
   if (m_infoMode) {
     m_infoMode->processInput();
   }
+}
+
+void PlayingState::resetPlayerAnimation()
+{
+  m_returnUp = false;
+  m_returnDown = false;
+  m_playerAnimTimer = 0.f;
+  m_playerFrameIndex = 2;
+  m_playerAnimDirection = PlayerAnimDirection::None;
+  m_playerAnimPlayingOnce = false;
+  m_playerAnimPhase = 0;
 }
 
 void PlayingState::changeAnimationPlayers(float delta_time)
@@ -758,13 +931,15 @@ void PlayingState::cleanup()
     m_heartsTexture = nullptr;
   }
 
-  // Free HUD font
-  if (m_hudFont != nullptr && renderer != nullptr) {
-    renderer->freeFont(m_hudFont);
-    m_hudFont = nullptr;
-  }
+  // Free HUD font (handled by shared_ptr destructor)
+  m_hudFont.reset();
 
   std::cout << "PlayingState: Cleaned up" << '\n';
+}
+
+void PlayingState::setSoloMode(bool isSolo)
+{
+  m_isSolo = isSolo;
 }
 
 void PlayingState::loadSpriteTextures()
@@ -804,7 +979,7 @@ void PlayingState::loadSpriteTextures()
 
   // PROJECTILE = 3 (spritesheet: 422x92, 2 frames, using first frame only)
   try {
-    void *projectile_tex = renderer->loadTexture("client/assets/sprites/r-typesheet1.png");
+    void *projectile_tex = renderer->loadTexture("client/assets/sprites/simpleShot.png");
     if (projectile_tex != nullptr) {
       m_spriteTextures[ecs::SpriteId::PROJECTILE] = projectile_tex;
       std::cout << "[PlayingState] ✓ Loaded projectile.png" << '\n';
@@ -813,19 +988,6 @@ void PlayingState::loadSpriteTextures()
     }
   } catch (const std::exception &e) {
     std::cerr << "[PlayingState] ✗ Failed to load projectile.png: " << e.what() << '\n';
-  }
-
-  // POWERUP = 5
-  try {
-    void *powerup_tex = renderer->loadTexture("client/assets/sprites/powerup.png");
-    if (powerup_tex != nullptr) {
-      m_spriteTextures[ecs::SpriteId::POWERUP] = powerup_tex;
-      std::cout << "[PlayingState] ✓ Loaded powerup.png" << '\n';
-    } else {
-      std::cerr << "[PlayingState] ✗ Failed to load powerup.png (returned null)" << '\n';
-    }
-  } catch (const std::exception &e) {
-    std::cerr << "[PlayingState] ✗ Failed to load powerup.png: " << e.what() << '\n';
   }
 
   // EXPLOSION = 4
@@ -839,6 +1001,233 @@ void PlayingState::loadSpriteTextures()
     }
   } catch (const std::exception &e) {
     std::cerr << "[PlayingState] ✗ Failed to load explosion.png: " << e.what() << '\n';
+  }
+
+  // POWERUP = 5 (spritesheet: R-Type_Items.png with 7 frames, using first 4)
+  try {
+    void *powerup_tex = renderer->loadTexture("client/assets/R-Type_Items.png");
+    if (powerup_tex != nullptr) {
+      m_spriteTextures[ecs::SpriteId::POWERUP] = powerup_tex;
+      std::cout << "[PlayingState] ✓ Loaded R-Type_Items.png" << '\n';
+    } else {
+      std::cerr << "[PlayingState] ✗ Failed to load R-Type_Items.png (returned null)" << '\n';
+    }
+  } catch (const std::exception &e) {
+    std::cerr << "[PlayingState] ✗ Failed to load R-Type_Items.png: " << e.what() << '\n';
+  }
+
+  // DRONE = 6 (uses powerup texture as fallback)
+  try {
+    void *drone_tex = renderer->loadTexture("client/assets/r-typesheet3.gif");
+    if (drone_tex != nullptr) {
+      m_spriteTextures[ecs::SpriteId::DRONE] = drone_tex;
+      std::cout << "[PlayingState] ✓ Loaded r-typesheet2.gif" << '\n';
+    } else {
+      // Fallback to powerup texture for drones
+      if (m_spriteTextures.find(ecs::SpriteId::POWERUP) != m_spriteTextures.end()) {
+        m_spriteTextures[ecs::SpriteId::DRONE] = m_spriteTextures[ecs::SpriteId::POWERUP];
+        std::cout << "[PlayingState] ✓ Using powerup.png for drone (fallback)" << '\n';
+      }
+    }
+  } catch (const std::exception &e) {
+    // Fallback to powerup texture for drones
+    if (m_spriteTextures.find(ecs::SpriteId::POWERUP) != m_spriteTextures.end()) {
+      m_spriteTextures[ecs::SpriteId::DRONE] = m_spriteTextures[ecs::SpriteId::POWERUP];
+      std::cout << "[PlayingState] ✓ Using powerup.png for drone (fallback after error)" << '\n';
+    }
+  }
+
+  // BUBBLE = 7 (uses powerup texture as fallback)
+  try {
+    void *bubble_tex = renderer->loadTexture("client/assets/sprites/bubble.png");
+    if (bubble_tex != nullptr) {
+      m_spriteTextures[ecs::SpriteId::BUBBLE] = bubble_tex;
+      std::cout << "[PlayingState] ✓ Loaded bubble.png" << '\n';
+    } else {
+      // Fallback to powerup texture for bubbles
+      if (m_spriteTextures.find(ecs::SpriteId::POWERUP) != m_spriteTextures.end()) {
+        m_spriteTextures[ecs::SpriteId::BUBBLE] = m_spriteTextures[ecs::SpriteId::POWERUP];
+        std::cout << "[PlayingState] ✓ Using powerup.png for bubble triple (fallback)" << '\n';
+      }
+    }
+  } catch (const std::exception &e) {
+    // Fallback to powerup texture for bubbles
+    if (m_spriteTextures.find(ecs::SpriteId::POWERUP) != m_spriteTextures.end()) {
+      m_spriteTextures[ecs::SpriteId::BUBBLE] = m_spriteTextures[ecs::SpriteId::POWERUP];
+      std::cout << "[PlayingState] ✓ Using powerup.png for bubble triple (fallback after error)" << '\n';
+    }
+  }
+
+  // BUBBLE = 8 (uses powerup texture as fallback)
+  try {
+    void *buble_triple_tex = renderer->loadTexture("client/assets/sprites/bubble_triple.png");
+    if (buble_triple_tex != nullptr) {
+      m_spriteTextures[ecs::SpriteId::BUBBLE_TRIPLE] = buble_triple_tex;
+      std::cout << "[PlayingState] ✓ Loaded bubble_triple.png" << '\n';
+    } else {
+      // Fallback to powerup texture for bubbles
+      if (m_spriteTextures.find(ecs::SpriteId::POWERUP) != m_spriteTextures.end()) {
+        m_spriteTextures[ecs::SpriteId::BUBBLE_TRIPLE] = m_spriteTextures[ecs::SpriteId::POWERUP];
+        std::cout << "[PlayingState] ✓ Using powerup.png for bubble triple (fallback)" << '\n';
+      }
+    }
+  } catch (const std::exception &e) {
+    // Fallback to powerup texture for BUBBLE_TRIPLEs
+    if (m_spriteTextures.find(ecs::SpriteId::POWERUP) != m_spriteTextures.end()) {
+      m_spriteTextures[ecs::SpriteId::BUBBLE_TRIPLE] = m_spriteTextures[ecs::SpriteId::POWERUP];
+      std::cout << "[PlayingState] ✓ Using powerup.png for bubble triple (fallback after error)" << '\n';
+    }
+  }
+
+  // Load all 12 bubble ruban frames (4 back + 4 middle + 4 front)
+  // BACK frames (compressed/backward)
+  const std::array<std::uint32_t, 4> backSpriteIds = {
+    ecs::SpriteId::BUBBLE_RUBAN_BACK1, ecs::SpriteId::BUBBLE_RUBAN_BACK2, ecs::SpriteId::BUBBLE_RUBAN_BACK3,
+    ecs::SpriteId::BUBBLE_RUBAN_BACK4};
+  for (int i = 0; i < 4; i++) {
+    std::string path = "client/assets/sprites/bubble_ruban_sprite/bubble_ruban_back" + std::to_string(i + 1) + ".png";
+    try {
+      void *tex = renderer->loadTexture(path.c_str());
+      if (tex != nullptr) {
+        m_spriteTextures[backSpriteIds[i]] = tex;
+        std::cout << "[PlayingState] ✓ Loaded bubble_ruban_back" << (i + 1) << ".png" << '\n';
+      }
+    } catch (const std::exception &e) {
+      std::cerr << "[PlayingState] ✗ Failed to load " << path << ": " << e.what() << '\n';
+    }
+  }
+  // Also set BUBBLE_RUBAN1 to point to first back frame for compatibility
+  if (m_spriteTextures.find(ecs::SpriteId::BUBBLE_RUBAN_BACK1) != m_spriteTextures.end()) {
+    m_spriteTextures[ecs::SpriteId::BUBBLE_RUBAN1] = m_spriteTextures[ecs::SpriteId::BUBBLE_RUBAN_BACK1];
+  }
+
+  // MIDDLE frames (neutral)
+  const std::array<std::uint32_t, 4> middleSpriteIds = {
+    ecs::SpriteId::BUBBLE_RUBAN_MIDDLE1, ecs::SpriteId::BUBBLE_RUBAN_MIDDLE2, ecs::SpriteId::BUBBLE_RUBAN_MIDDLE3,
+    ecs::SpriteId::BUBBLE_RUBAN_MIDDLE4};
+  for (int i = 0; i < 4; i++) {
+    std::string path = "client/assets/sprites/bubble_ruban_sprite/bubble_ruban_middle" + std::to_string(i + 1) + ".png";
+    try {
+      void *tex = renderer->loadTexture(path.c_str());
+      if (tex != nullptr) {
+        m_spriteTextures[middleSpriteIds[i]] = tex;
+        std::cout << "[PlayingState] ✓ Loaded bubble_ruban_middle" << (i + 1) << ".png" << '\n';
+      }
+    } catch (const std::exception &e) {
+      std::cerr << "[PlayingState] ✗ Failed to load " << path << ": " << e.what() << '\n';
+    }
+  }
+  // Also set BUBBLE_RUBAN2 to point to first middle frame for compatibility
+  if (m_spriteTextures.find(ecs::SpriteId::BUBBLE_RUBAN_MIDDLE1) != m_spriteTextures.end()) {
+    m_spriteTextures[ecs::SpriteId::BUBBLE_RUBAN2] = m_spriteTextures[ecs::SpriteId::BUBBLE_RUBAN_MIDDLE1];
+  }
+
+  // FRONT frames (stretched/forward)
+  const std::array<std::uint32_t, 4> frontSpriteIds = {
+    ecs::SpriteId::BUBBLE_RUBAN_FRONT1, ecs::SpriteId::BUBBLE_RUBAN_FRONT2, ecs::SpriteId::BUBBLE_RUBAN_FRONT3,
+    ecs::SpriteId::BUBBLE_RUBAN_FRONT4};
+  for (int i = 0; i < 4; i++) {
+    std::string path = "client/assets/sprites/bubble_ruban_sprite/bubble_ruban_front" + std::to_string(i + 1) + ".png";
+    try {
+      void *tex = renderer->loadTexture(path.c_str());
+      if (tex != nullptr) {
+        m_spriteTextures[frontSpriteIds[i]] = tex;
+        std::cout << "[PlayingState] ✓ Loaded bubble_ruban_front" << (i + 1) << ".png" << '\n';
+      }
+    } catch (const std::exception &e) {
+      std::cerr << "[PlayingState] ✗ Failed to load " << path << ": " << e.what() << '\n';
+    }
+  }
+  // Also set BUBBLE_RUBAN3 to point to first front frame for compatibility
+  if (m_spriteTextures.find(ecs::SpriteId::BUBBLE_RUBAN_FRONT1) != m_spriteTextures.end()) {
+    m_spriteTextures[ecs::SpriteId::BUBBLE_RUBAN3] = m_spriteTextures[ecs::SpriteId::BUBBLE_RUBAN_FRONT1];
+  }
+
+  // triple_projectile = 15 (uses bubble_shoot.png) - legacy, kept for compatibility
+  try {
+    void *triple_projectile_tex = renderer->loadTexture("client/assets/bubble_shoot.png");
+    if (triple_projectile_tex != nullptr) {
+      m_spriteTextures[ecs::SpriteId::TRIPLE_PROJECTILE] = triple_projectile_tex;
+      std::cout << "[PlayingState] ✓ Loaded bubble_shoot.png for TRIPLE_PROJECTILE" << '\n';
+    } else {
+      // Fallback to projectile texture
+      if (m_spriteTextures.find(ecs::SpriteId::PROJECTILE) != m_spriteTextures.end()) {
+        m_spriteTextures[ecs::SpriteId::TRIPLE_PROJECTILE] = m_spriteTextures[ecs::SpriteId::PROJECTILE];
+        std::cout << "[PlayingState] ✓ Using projectile texture for TRIPLE_PROJECTILE (fallback)" << '\n';
+      }
+    }
+  } catch (const std::exception &e) {
+    // Fallback to projectile texture for TRIPLE_PROJECTILE
+    if (m_spriteTextures.find(ecs::SpriteId::PROJECTILE) != m_spriteTextures.end()) {
+      m_spriteTextures[ecs::SpriteId::TRIPLE_PROJECTILE] = m_spriteTextures[ecs::SpriteId::PROJECTILE];
+      std::cout << "[PlayingState] ✓ Using projectile texture for TRIPLE_PROJECTILE (fallback after error)" << '\n';
+    }
+  }
+
+  // Triple projectile direction sprites
+  try {
+    void *triple_right_tex = renderer->loadTexture("client/assets/sprites/triple_projectile_srpite/triple_right.png");
+    if (triple_right_tex != nullptr) {
+      m_spriteTextures[ecs::SpriteId::TRIPLE_PROJECTILE_RIGHT] = triple_right_tex;
+      std::cout << "[PlayingState] ✓ Loaded triple_right.png" << '\n';
+    }
+  } catch (const std::exception &e) {
+    std::cerr << "[PlayingState] ✗ Failed to load triple_right.png: " << e.what() << '\n';
+  }
+  try {
+    void *triple_up_tex = renderer->loadTexture("client/assets/sprites/triple_projectile_srpite/triple_up.png");
+    if (triple_up_tex != nullptr) {
+      m_spriteTextures[ecs::SpriteId::TRIPLE_PROJECTILE_UP] = triple_up_tex;
+      std::cout << "[PlayingState] ✓ Loaded triple_up.png" << '\n';
+    }
+  } catch (const std::exception &e) {
+    std::cerr << "[PlayingState] ✗ Failed to load triple_up.png: " << e.what() << '\n';
+  }
+  try {
+    void *triple_down_tex = renderer->loadTexture("client/assets/sprites/triple_projectile_srpite/triple_down.png");
+    if (triple_down_tex != nullptr) {
+      m_spriteTextures[ecs::SpriteId::TRIPLE_PROJECTILE_DOWN] = triple_down_tex;
+      std::cout << "[PlayingState] ✓ Loaded triple_down.png" << '\n';
+    }
+  } catch (const std::exception &e) {
+    std::cerr << "[PlayingState] ✗ Failed to load triple_down.png: " << e.what() << '\n';
+  }
+
+  // Ruban projectile sprites (24 phases): Xruban_projectile.png where X = 1-24
+  // Sprite IDs: RUBAN1_PROJECTILE (16) through RUBAN24_PROJECTILE (39)
+  constexpr std::uint32_t RUBAN_SPRITE_IDS[] = {
+    ecs::SpriteId::RUBAN1_PROJECTILE,  ecs::SpriteId::RUBAN2_PROJECTILE,  ecs::SpriteId::RUBAN3_PROJECTILE,
+    ecs::SpriteId::RUBAN4_PROJECTILE,  ecs::SpriteId::RUBAN5_PROJECTILE,  ecs::SpriteId::RUBAN6_PROJECTILE,
+    ecs::SpriteId::RUBAN7_PROJECTILE,  ecs::SpriteId::RUBAN8_PROJECTILE,  ecs::SpriteId::RUBAN9_PROJECTILE,
+    ecs::SpriteId::RUBAN10_PROJECTILE, ecs::SpriteId::RUBAN11_PROJECTILE, ecs::SpriteId::RUBAN12_PROJECTILE,
+    ecs::SpriteId::RUBAN13_PROJECTILE, ecs::SpriteId::RUBAN14_PROJECTILE, ecs::SpriteId::RUBAN15_PROJECTILE,
+    ecs::SpriteId::RUBAN16_PROJECTILE, ecs::SpriteId::RUBAN17_PROJECTILE, ecs::SpriteId::RUBAN18_PROJECTILE,
+    ecs::SpriteId::RUBAN19_PROJECTILE, ecs::SpriteId::RUBAN20_PROJECTILE, ecs::SpriteId::RUBAN21_PROJECTILE,
+    ecs::SpriteId::RUBAN22_PROJECTILE, ecs::SpriteId::RUBAN23_PROJECTILE, ecs::SpriteId::RUBAN24_PROJECTILE};
+
+  for (int i = 1; i <= 24; i++) {
+    std::string texturePath =
+      "client/assets/sprites/ruban_projectile_sprite/" + std::to_string(i) + "ruban_projectile.png";
+    std::uint32_t spriteId = RUBAN_SPRITE_IDS[i - 1];
+    try {
+      void *ruban_tex = renderer->loadTexture(texturePath.c_str());
+      if (ruban_tex != nullptr) {
+        m_spriteTextures[spriteId] = ruban_tex;
+        std::cout << "[PlayingState] ✓ Loaded " << i << "ruban_projectile.png" << '\n';
+      } else {
+        // Fallback to powerup texture
+        if (m_spriteTextures.find(ecs::SpriteId::POWERUP) != m_spriteTextures.end()) {
+          m_spriteTextures[spriteId] = m_spriteTextures[ecs::SpriteId::POWERUP];
+          std::cout << "[PlayingState] ✓ Using powerup.png for ruban" << i << " (fallback)" << '\n';
+        }
+      }
+    } catch (const std::exception &e) {
+      // Fallback to powerup texture
+      if (m_spriteTextures.find(ecs::SpriteId::POWERUP) != m_spriteTextures.end()) {
+        m_spriteTextures[spriteId] = m_spriteTextures[ecs::SpriteId::POWERUP];
+        std::cout << "[PlayingState] ✓ Using powerup.png for ruban" << i << " (fallback after error)" << '\n';
+      }
+    }
   }
 
   // ENEMY_YELLOW = 6 (animated spritesheet: 256x64, 2 rows x 8 columns = 16 frames)
@@ -880,23 +1269,89 @@ void PlayingState::loadSpriteTextures()
     std::cerr << "[PlayingState] ✗ Failed to load walk_projectile.png: " << e.what() << '\n';
   }
 
-  constexpr int EXPECTED_TEXTURE_COUNT = 8;
+  // ENEMY_ROBOT = 9 (animated spritesheet: 200x34, 6 frames in single row)
+  try {
+    void *enemy_robot_tex = renderer->loadTexture(resolveAssetPath("client/assets/sprites/enemy_robot.gif"));
+    if (enemy_robot_tex != nullptr) {
+      m_spriteTextures[ecs::SpriteId::ENEMY_ROBOT] = enemy_robot_tex;
+      std::cout << "[PlayingState] ✓ Loaded enemy_robot.gif" << '\n';
+    } else {
+      std::cerr << "[PlayingState] ✗ Failed to load enemy_robot.gif (returned null)" << '\n';
+    }
+  } catch (const std::exception &e) {
+    std::cerr << "[PlayingState] ✗ Failed to load enemy_robot.gif: " << e.what() << '\n';
+  }
+  // ROBOT_PROJECTILE = 10 (single frame: 101x114)
+  try {
+    void *robot_projectile_tex = renderer->loadTexture(resolveAssetPath("client/assets/sprites/robot_projectile.png"));
+    if (robot_projectile_tex != nullptr) {
+      m_spriteTextures[ecs::SpriteId::ROBOT_PROJECTILE] = robot_projectile_tex;
+      std::cout << "[PlayingState] ✓ Loaded robot_projectile.png" << '\n';
+    } else {
+      std::cerr << "[PlayingState] ✗ Failed to load robot_projectile.png (returned null)" << '\n';
+    }
+  } catch (const std::exception &e) {
+    std::cerr << "[PlayingState] ✗ Failed to load robot_projectile.png: " << e.what() << '\n';
+  }
+  constexpr int EXPECTED_TEXTURE_COUNT = 39;
   std::cout << "[PlayingState] Successfully loaded " << m_spriteTextures.size() << " / " << EXPECTED_TEXTURE_COUNT
             << " sprite textures" << '\n';
   if (m_spriteTextures.size() < EXPECTED_TEXTURE_COUNT) {
     std::cerr << "[PlayingState] Missing textures will use fallback colored rectangles" << '\n';
   }
+
+  // CHARGED_PROJECTILE = 6
+  try {
+    void *charged_projectile_tex = renderer->loadTexture("client/assets/sprites/chargedShot.png");
+    if (charged_projectile_tex != nullptr) {
+      m_spriteTextures[ecs::SpriteId::CHARGED_PROJECTILE] = charged_projectile_tex;
+      std::cout << "[PlayingState] ✓ Loaded charged_projectile.png" << '\n';
+    } else {
+      std::cerr << "[PlayingState] ✗ Failed to load charged_projectile.png (returned null)" << '\n';
+    }
+  } catch (const std::exception &e) {
+    std::cerr << "[PlayingState] ✗ Failed to load charged_projectile.png: " << e.what() << '\n';
+  }
+
+  // LOAD_CHARGED_SHOT = 8
+  try {
+    void *charged_projectile_tex = renderer->loadTexture("client/assets/sprites/loadChargedShot.png");
+    if (charged_projectile_tex != nullptr) {
+      m_spriteTextures[ecs::SpriteId::LOADING_SHOT] = charged_projectile_tex;
+      std::cout << "[PlayingState] ✓ Loaded loadChargedShot.png" << '\n';
+    } else {
+      std::cerr << "[PlayingState] ✗ Failed to load loadChargedShot.png (returned null)" << '\n';
+    }
+  } catch (const std::exception &e) {
+    std::cerr << "[PlayingState] ✗ Failed to load loadChargedShot.png: " << e.what() << '\n';
+  }
+
+  // DEATH_ANIM = 65 (spritesheet: 586x94, 6 frames)
+  try {
+    void *death_anim_tex = renderer->loadTexture("client/assets/sprites/death_anim.png");
+    if (death_anim_tex != nullptr) {
+      m_spriteTextures[ecs::SpriteId::DEATH_ANIM] = death_anim_tex;
+      std::cout << "[PlayingState] ✓ Loaded death_anim.png" << '\n';
+    } else {
+      std::cerr << "[PlayingState] ✗ Failed to load death_anim.png (returned null)" << '\n';
+    }
+  } catch (const std::exception &e) {
+    std::cerr << "[PlayingState] ✗ Failed to load death_anim.png: " << e.what() << '\n';
+  }
 }
 
 void PlayingState::freeSpriteTextures()
 {
-  if (renderer == nullptr) {
+  if (renderer == nullptr || m_spriteTextures.empty()) {
     return;
   }
 
+  std::unordered_set<void *> destroyedTextures;
+
   for (auto &[spriteId, texture] : m_spriteTextures) {
-    if (texture != nullptr) {
+    if (texture != nullptr && destroyedTextures.find(texture) == destroyedTextures.end()) {
       renderer->freeTexture(texture);
+      destroyedTextures.insert(texture);
     }
   }
 

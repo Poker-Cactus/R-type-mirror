@@ -7,6 +7,7 @@
 #include "../../../../common/include/Common.hpp"
 #include "../../../../common/include/Highscore.hpp"
 #include "../../../../network/include/INetworkManager.hpp"
+#include "../../../include/MenuCommon.hpp"
 #include "../../../include/Settings.hpp"
 #include "../../../interface/IRenderer.hpp"
 #include "../MenuState.hpp"
@@ -18,21 +19,13 @@
 class Settings;
 
 /**
- * @struct WindowDimensions
- * @brief Window size container to prevent parameter confusion
- */
-struct WindowDimensions {
-  int width; ///< Window width in pixels
-  int height; ///< Window height in pixels
-};
-
-/**
  * @enum LobbyMenuOption
  * @brief Available lobby menu actions
  */
 enum class LobbyMenuOption : std::uint8_t {
   CREATE_LOBBY, ///< Create new lobby
   JOIN_LOBBY, ///< Join existing lobby
+  SOLO, ///< Play solo
   CLEAR_HIGHSCORES, ///< Clear highscores
   BACK ///< Return to main menu
 };
@@ -87,6 +80,35 @@ public:
   [[nodiscard]] bool shouldEnterLobbyRoom() const { return m_shouldEnterLobbyRoom; }
 
   /**
+   * @brief Set solo mode
+   * @param solo true to enable solo mode
+   */
+  void setSolo(bool solo) { m_isSolo = solo; }
+
+  /**
+   * @brief Set should enter lobby room flag
+   * @param enter true to enter lobby room
+   */
+  void setShouldEnterLobbyRoom(bool enter) { m_shouldEnterLobbyRoom = enter; }
+
+  /**
+   * @brief Set is creating lobby flag
+   * @param creating true if creating lobby
+   */
+  void setIsCreatingLobby(bool creating) { m_isCreatingLobby = creating; }
+
+  /**
+   * @brief Set selected difficulty
+   * @param diff the difficulty level
+   */
+  void setSelectedDifficulty(Difficulty diff) { m_selectedDifficulty = diff; }
+
+  /**
+   * @brief Start difficulty selection mode
+   */
+  void startDifficultySelection();
+
+  /**
    * @brief Reset lobby room transition flag
    */
   void resetLobbyRoomFlag() { m_shouldEnterLobbyRoom = false; }
@@ -107,7 +129,20 @@ public:
    * @return true if creating lobby
    */
   [[nodiscard]] bool isCreatingLobby() const { return m_isCreatingLobby; }
+
+  /**
+   * @brief Check if player is playing solo
+   * @return true if solo mode
+   */
+  [[nodiscard]] bool isSolo() const { return m_isSolo; }
   [[nodiscard]] Difficulty getSelectedDifficulty() const { return m_selectedDifficulty; }
+  [[nodiscard]] GameMode getSelectedGameMode() const { return m_selectedGameMode; }
+
+  /**
+   * @brief Get highscore manager for adding/reading scores
+   * @return Reference to the highscore manager
+   */
+  [[nodiscard]] HighscoreManager &getHighscoreManager() { return m_highscoreManager; }
 
 private:
   std::shared_ptr<IRenderer> m_renderer;
@@ -116,12 +151,15 @@ private:
   void renderMenuOptions(const WindowDimensions &windowDims);
   void renderLobbyCodeInput(const WindowDimensions &windowDims);
   void renderDifficultySelection(const WindowDimensions &windowDims);
+  void renderModeSelection(const WindowDimensions &windowDims);
   void renderHighscores(const WindowDimensions &windowDims);
   void handleMenuNavigation(Settings &settings);
   void handleDifficultyNavigation();
+  void handleModeNavigation();
   void handleTextInput();
   void selectCurrentOption(MenuState *currentState);
   void selectDifficultyOption();
+  void selectModeOption();
 
   // Settings
   Settings *m_settings = nullptr;
@@ -143,7 +181,7 @@ private:
   float m_parallaxOffsetFloor;
 
   // Menu state
-  std::vector<std::string> m_menuItems = {"Create Lobby", "Join Lobby", "Clear Highscores", "Back"};
+  std::vector<std::string> m_menuItems = {"Create Lobby", "Join Lobby", "Solo", "Clear Highscores", "Back"};
   std::size_t m_currentIndex;
   bool m_isEnteringCode;
   std::string m_lobbyCodeInput;
@@ -155,9 +193,16 @@ private:
   std::size_t m_difficultyIndex = 1; // Default to Medium
   Difficulty m_selectedDifficulty = Difficulty::MEDIUM;
 
+  // Game mode selection
+  bool m_isSelectingMode = false;
+  std::vector<std::string> m_modeItems = {"Classic", "Endless"};
+  std::size_t m_modeIndex = 0; // Default to Classic
+  GameMode m_selectedGameMode = GameMode::CLASSIC;
+
   // Transition flags
   bool m_shouldEnterLobbyRoom;
   bool m_isCreatingLobby;
+  bool m_isSolo;
 
   // Network
   std::shared_ptr<INetworkManager> m_networkManager;

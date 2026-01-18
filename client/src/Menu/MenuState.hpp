@@ -9,4 +9,4 @@
  * @enum MenuState
  * @brief Represents different menu screens
  */
-enum class MenuState { INTRO, MAIN_MENU, LOBBY, SETTINGS, PROFILE, EXIT };
+enum class MenuState { INTRO, MAIN_MENU, LOBBY, AI_DIFFICULTY, SETTINGS, PROFILE, EXIT };

@@ -1,21 +1,32 @@
 {
   "audio": {
-    "masterVolume": 100,
-    "musicVolume": 100,
-    "sfxVolume": 100
+    "masterVolume": 0,
+    "musicVolume": 0,
+    "sfxVolume": 0
   },
   "controls": {
     "chargedShoot": 24,
+    "detach": 43,
     "down": 11,
     "left": 12,
     "right": 13,
     "shoot": 5,
+    "toggleInfoMode": 28,
     "up": 10
   },
+  "debug": {
+    "showCPUUsage": true,
+    "showEntityCount": true,
+    "showFPS": true,
+    "showInfoMode": false,
+    "showNetworkInfo": true,
+    "showRAMUsage": true
+  },
   "graphics": {
+    "colorBlindMode": 0,
     "fullScreen": true
   },
   "profile": {
-    "username": "prou"
+    "username": "Player"
   }
 }

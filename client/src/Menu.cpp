@@ -43,6 +43,10 @@ void Menu::init()
     m_lobbyMenu = std::make_shared<LobbyMenu>(m_renderer);
     m_lobbyMenu->init(settings);
 
+    m_aiDifficultyMenu =
+      std::make_shared<AIDifficultyMenu>(m_renderer, [this](AIDifficulty) { this->startSoloDifficultySelection(); });
+    m_aiDifficultyMenu->init();
+
     m_profileMenu = std::make_shared<ProfileMenu>(m_renderer);
     m_profileMenu->init(settings);
 
@@ -83,6 +87,10 @@ void Menu::render()
   case MenuState::LOBBY:
     m_lobbyMenu->render({.width = winWidth, .height = winHeight});
     break;
+  case MenuState::AI_DIFFICULTY:
+    renderMoonParalax(winWidth, winHeight);
+    m_aiDifficultyMenu->render(winWidth, winHeight);
+    break;
   case MenuState::SETTINGS:
     renderMoonParalax(winWidth, winHeight);
     m_settingsMenu->render(winWidth, winHeight);
@@ -113,6 +121,9 @@ void Menu::processInput()
   case MenuState::LOBBY:
     m_lobbyMenu->process(&currentState, settings);
     break;
+  case MenuState::AI_DIFFICULTY:
+    m_aiDifficultyMenu->process(&currentState, settings);
+    break;
   default:
     break;
   }
@@ -123,6 +134,8 @@ void Menu::cleanup()
 {
   if (menu_font != nullptr && m_renderer != nullptr)
     m_renderer->freeFont(menu_font);
+  if (menuMusic != nullptr && m_renderer != nullptr)
+    m_renderer->freeMusic(menuMusic);
   if (moonFloor != nullptr && m_renderer != nullptr)
     m_renderer->freeTexture(moonFloor);
   if (moonSky != nullptr && m_renderer != nullptr)
@@ -134,6 +147,7 @@ void Menu::cleanup()
   if (moonBack != nullptr && m_renderer != nullptr)
     m_renderer->freeTexture(moonBack);
   menu_font = nullptr;
+  menuMusic = nullptr;
   moonFloor = nullptr;
   moonSky = nullptr;
   moonMid = nullptr;
@@ -143,7 +157,6 @@ void Menu::cleanup()
 
 void Menu::setState(MenuState newState)
 {
-  MenuState previousState = currentState;
   currentState = newState;
 
   // Refresh highscores when entering lobby menu
@@ -191,6 +204,11 @@ bool Menu::isCreatingLobby() const
   return m_lobbyMenu != nullptr && m_lobbyMenu->isCreatingLobby();
 }
 
+bool Menu::isSolo() const
+{
+  return m_lobbyMenu != nullptr && m_lobbyMenu->isSolo();
+}
+
 void Menu::refreshHighscoresIfInLobby()
 {
   if (currentState == MenuState::LOBBY && m_lobbyMenu != nullptr) {
@@ -211,6 +229,7 @@ void Menu::resetLobbySelection()
   if (m_lobbyMenu != nullptr) {
     // Cache the current difficulty before resetting
     currentDifficulty = m_lobbyMenu->getSelectedDifficulty();
+    currentGameMode = m_lobbyMenu->getSelectedGameMode();
     m_lobbyMenu->resetLobbyRoomFlag();
   }
 }
@@ -222,6 +241,14 @@ Difficulty Menu::getCurrentDifficulty() const
     return m_lobbyMenu->getSelectedDifficulty();
   }
   return currentDifficulty;
+}
+
+GameMode Menu::getCurrentGameMode() const
+{
+  if (m_lobbyMenu != nullptr) {
+    return m_lobbyMenu->getSelectedGameMode();
+  }
+  return currentGameMode;
 }
 
 void Menu::renderMoonParalax(int winWidth, int winHeight)
@@ -276,5 +303,24 @@ void Menu::renderMoonParalax(int winWidth, int winHeight)
                               false);
     m_renderer->drawTextureEx(moonFloor, static_cast<int>(parallaxOffsetFloor - winWidth), 0, winWidth, winHeight, 0.0,
                               false, false);
+  }
+}
+
+void Menu::setSoloMode()
+{
+  if (m_lobbyMenu != nullptr) {
+    m_lobbyMenu->setSolo(true);
+    m_lobbyMenu->setShouldEnterLobbyRoom(true);
+    m_lobbyMenu->setIsCreatingLobby(true);
+    m_lobbyMenu->setSelectedDifficulty(Difficulty::MEDIUM);
+  }
+}
+
+void Menu::startSoloDifficultySelection()
+{
+  if (m_lobbyMenu != nullptr) {
+    m_lobbyMenu->setSolo(true);
+    m_lobbyMenu->setIsCreatingLobby(true);
+    m_lobbyMenu->startDifficultySelection();
   }
 }

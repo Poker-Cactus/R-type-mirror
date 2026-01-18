@@ -9,16 +9,113 @@
 #include "../../../include/Settings.hpp"
 #include "../../../interface/Geometry.hpp"
 #include "../../../interface/KeyCodes.hpp"
+#include <cstdlib>
+#include <filesystem>
 #include <iostream>
+#include <vector>
+
+#ifdef _WIN32
+#include <windows.h>
+using pid_t = int; // Windows doesn't have pid_t, use int
+#else
+#include <signal.h>
+#include <spawn.h>
+#include <sys/wait.h>
+#include <unistd.h>
+extern char **environ;
+#endif
+
+namespace fs = std::filesystem;
+
+// Track Asset Editor PID globally
+static pid_t g_assetEditorPid = -1;
+
+// Helper function to find and launch the Asset Editor
+static bool LaunchAssetEditor()
+{
+  // Try to find the asset editor binary
+  std::vector<std::string> possiblePaths = {
+    "./assetEditor", // Same directory
+    "./build/assetEditor/assetEditor", // Build directory
+    "../assetEditor/assetEditor", // Relative from client
+    "../build/assetEditor/assetEditor", // Relative build
+    "assetEditor/assetEditor", // From project root
+    "build/assetEditor/assetEditor" // From project root build
+  };
+
+#ifdef _WIN32
+  // Add .exe extension for Windows
+  for (auto &path : possiblePaths) {
+    path += ".exe";
+  }
+#endif
+
+  std::string editorPath;
+  for (const auto &path : possiblePaths) {
+    if (fs::exists(path) && fs::is_regular_file(path)) {
+      editorPath = fs::absolute(path).string();
+      break;
+    }
+  }
+
+  if (editorPath.empty()) {
+    std::cerr << "[MainMenu] Asset Editor not found! Please compile the assetEditor target." << std::endl;
+    return false;
+  }
+
+  std::cout << "[MainMenu] Launching Asset Editor: " << editorPath << std::endl;
+
+#ifdef _WIN32
+  // Windows: Use ShellExecute for non-blocking launch
+  HINSTANCE result = ShellExecuteA(NULL, "open", editorPath.c_str(), NULL, NULL, SW_SHOWNORMAL);
+  if ((intptr_t)result <= 32) {
+    std::cerr << "[MainMenu] Failed to launch Asset Editor (error: " << (intptr_t)result << ")" << std::endl;
+    return false;
+  }
+  return true;
+#else
+  // Unix (Linux/macOS): Fork and exec
+  pid_t pid = fork();
+  if (pid == 0) {
+    // Child process
+    char *args[] = {const_cast<char *>(editorPath.c_str()), nullptr};
+    execv(editorPath.c_str(), args);
+    // If execv fails
+    std::cerr << "[MainMenu] Failed to exec Asset Editor" << std::endl;
+    _exit(1);
+  } else if (pid < 0) {
+    std::cerr << "[MainMenu] Failed to fork for Asset Editor" << std::endl;
+    return false;
+  }
+  // Store PID to kill on exit
+  g_assetEditorPid = pid;
+  std::cout << "[MainMenu] Asset Editor launched with PID: " << pid << std::endl;
+  // Parent continues immediately (non-blocking)
+  return true;
+#endif
+}
 
 MainMenu::MainMenu(std::shared_ptr<IRenderer> renderer)
     : m_renderer(renderer), font(nullptr), planet(nullptr), currentMenuIndex(0)
 {
-  mainMenuItems = {"Play", "Settings", "Profile", "Exit"};
+  // mainMenuItems is initialized in the header
 }
 
 MainMenu::~MainMenu()
 {
+#ifndef _WIN32
+  // Kill Asset Editor if it's still running
+  if (g_assetEditorPid > 0) {
+    std::cout << "[MainMenu] Terminating Asset Editor (PID: " << g_assetEditorPid << ")" << std::endl;
+    kill(g_assetEditorPid, SIGTERM);
+    // Give it a moment to terminate gracefully
+    usleep(100000); // 100ms
+    // Force kill if still alive
+    kill(g_assetEditorPid, SIGKILL);
+    waitpid(g_assetEditorPid, nullptr, WNOHANG);
+    g_assetEditorPid = -1;
+  }
+#endif
   if (font != nullptr && m_renderer != nullptr) {
     m_renderer->freeFont(font);
   }
@@ -67,6 +164,7 @@ void MainMenu::render(int winWidth, int winHeight)
 
 void MainMenu::process(MenuState *currentState, Settings &settings)
 {
+  (void)settings; // Unused parameter
   // Flèche bas - descendre dans le menu
   if (m_renderer->isKeyJustPressed(KeyCode::KEY_DOWN)) {
     m_renderer->playSound(hoverSound);
@@ -88,6 +186,10 @@ void MainMenu::process(MenuState *currentState, Settings &settings)
       *currentState = MenuState::SETTINGS;
     } else if (selectedButton == "Profile") {
       *currentState = MenuState::PROFILE;
+    } else if (selectedButton == "Asset Editor") {
+      if (!LaunchAssetEditor()) {
+        std::cerr << "[MainMenu] Could not launch Asset Editor - binary not found" << std::endl;
+      }
     } else {
       *currentState = MenuState::EXIT;
     }
