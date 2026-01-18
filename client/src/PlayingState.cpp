@@ -222,9 +222,13 @@ void PlayingState::render()
           frameWidth = 34;
           frameHeight = 34;
           break;
-        case ecs::SpriteId::BOSS_GOBLINS:
-          frameWidth = 67;
-          frameHeight = 67;
+        case ecs::SpriteId::BOSS_EVANGELIC:
+          frameWidth = 65;
+          frameHeight = 74;
+          break;
+        case ecs::SpriteId::BOSS_EVANGELIC_SHOOT:
+          frameWidth = 32; // 197 / 6 frames ≈ 32.83, arrondi à 32
+          frameHeight = 30;
           break;
         case ecs::SpriteId::BOSS_BROCOLIS:
           frameWidth = 33;
@@ -241,10 +245,6 @@ void PlayingState::render()
         case ecs::SpriteId::BOSS_BROCOLIS_ECLOSION:
           frameWidth = 33;
           frameHeight = 34;
-          break;
-        case ecs::SpriteId::BOSS_GOBLINS_BABY:
-          frameWidth = 262; // a voir car sprite sheet
-          frameHeight = 261;
           break;
         case ecs::SpriteId::DRONE:
         case ecs::SpriteId::BUBBLE:
@@ -366,7 +366,11 @@ void PlayingState::render()
             // For player ship and other standard sprites: use currentFrame
             srcX = sprite.currentFrame * frameWidth;
             srcY = 0;
-          } else if (sprite.spriteId >= ecs::SpriteId::BOSS_GOBLINS) {
+          } else if (sprite.spriteId >= ecs::SpriteId::BOSS_EVANGELIC) {
+            // For player ship and other standard sprites: use currentFrame
+            srcX = sprite.currentFrame * frameWidth;
+            srcY = 0;
+          } else if (sprite.spriteId >= ecs::SpriteId::BOSS_EVANGELIC_SHOOT) {
             // For player ship and other standard sprites: use currentFrame
             srcX = sprite.currentFrame * frameWidth;
             srcY = 0;
@@ -375,10 +379,6 @@ void PlayingState::render()
             srcX = sprite.currentFrame * frameWidth;
             srcY = 0;
           } else if (sprite.spriteId >= ecs::SpriteId::BOSS_BROCOLIS) {
-            // For player ship and other standard sprites: use currentFrame
-            srcX = sprite.currentFrame * frameWidth;
-            srcY = 0;
-          } else if (sprite.spriteId >= ecs::SpriteId::BOSS_GOBLINS_BABY) {
             // For player ship and other standard sprites: use currentFrame
             srcX = sprite.currentFrame * frameWidth;
             srcY = 0;
@@ -537,15 +537,15 @@ void PlayingState::render()
         break;
       case ecs::SpriteId::ENEMY_ROBOT:
       case ecs::SpriteId::BOSS_DOBKERATOP:
-      case ecs::SpriteId::BOSS_GOBLINS:
+      case ecs::SpriteId::BOSS_EVANGELIC:
       case ecs::SpriteId::BOSS_BROCOLIS_ECLOSION:
       case ecs::SpriteId::BOSS_BROCOLIS:
         color = COLOR_ENEMY_YELLOW;
         break;
       case ecs::SpriteId::BOSS_DOBKERATOP_SHOOT:
       case ecs::SpriteId::ROBOT_PROJECTILE:
-      case ecs::SpriteId::BOSS_GOBLINS_BABY:
       case ecs::SpriteId::BOSS_BROCOLIS_SHOOT:
+      case ecs::SpriteId::BOSS_EVANGELIC_SHOOT:
         color = COLOR_PROJECTILE_YELLOW;
         break;
       case ecs::SpriteId::PROJECTILE:
@@ -1476,30 +1476,30 @@ void PlayingState::loadSpriteTextures()
     std::cerr << "[PlayingState] ✗ Failed to load BOSS_anim.png: " << e.what() << '\n';
   }
 
-  // BOSS_ANIM = 65 (spritesheet: 586x94, 6 frames)
+  // New: boss_goblins_shoot_down (non-animated, used for projectiles originating from bottom)
   try {
-    void *boss_anim_tex = renderer->loadTexture("client/assets/boss/boss_goblins.png");
-    if (boss_anim_tex != nullptr) {
-      m_spriteTextures[ecs::SpriteId::BOSS_GOBLINS] = boss_anim_tex;
-      std::cout << "[PlayingState] ✓ Loaded BOSS_anim.png" << '\n';
+    void *boss_anim_tex_down = renderer->loadTexture("client/assets/boss/boss_evangelic.png");
+    if (boss_anim_tex_down != nullptr) {
+      m_spriteTextures[ecs::SpriteId::BOSS_EVANGELIC] = boss_anim_tex_down;
+      std::cout << "[PlayingState] ✓ Loaded boss_goblins_shoot_down.png" << '\n';
     } else {
-      std::cerr << "[PlayingState] ✗ Failed to load BOSS_anim.png (returned null)" << '\n';
+      std::cerr << "[PlayingState] ✗ Failed to load boss_goblins_shoot_down.png (returned null)" << '\n';
     }
   } catch (const std::exception &e) {
-    std::cerr << "[PlayingState] ✗ Failed to load BOSS_anim.png: " << e.what() << '\n';
+    std::cerr << "[PlayingState] ✗ Failed to load boss_goblins_shoot_down.png: " << e.what() << '\n';
   }
 
-  // BOSS_ANIM = 65 (spritesheet: 586x94, 6 frames)
+  // New: boss_goblins_shoot_down (non-animated, used for projectiles originating from bottom)
   try {
-    void *boss_anim_tex = renderer->loadTexture("client/assets/boss/boss_goblins_baby.png");
-    if (boss_anim_tex != nullptr) {
-      m_spriteTextures[ecs::SpriteId::BOSS_GOBLINS_BABY] = boss_anim_tex;
-      std::cout << "[PlayingState] ✓ Loaded BOSS_anim.png" << '\n';
+    void *boss_anim_tex_down = renderer->loadTexture("client/assets/boss/boss_evangelic_shoot.png");
+    if (boss_anim_tex_down != nullptr) {
+      m_spriteTextures[ecs::SpriteId::BOSS_EVANGELIC_SHOOT] = boss_anim_tex_down;
+      std::cout << "[PlayingState] ✓ Loaded boss_goblins_shoot_down.png" << '\n';
     } else {
-      std::cerr << "[PlayingState] ✗ Failed to load BOSS_anim.png (returned null)" << '\n';
+      std::cerr << "[PlayingState] ✗ Failed to load boss_goblins_shoot_down.png (returned null)" << '\n';
     }
   } catch (const std::exception &e) {
-    std::cerr << "[PlayingState] ✗ Failed to load BOSS_anim.png: " << e.what() << '\n';
+    std::cerr << "[PlayingState] ✗ Failed to load boss_goblins_shoot_down.png: " << e.what() << '\n';
   }
 }
 

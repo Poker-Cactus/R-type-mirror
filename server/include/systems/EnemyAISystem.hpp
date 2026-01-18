@@ -31,6 +31,10 @@
 namespace server
 {
 
+struct SpriteFrame {
+  int x, y, width, height;
+};
+
 /**
  * @brief System that controls enemy AI behavior
  */
@@ -41,6 +45,39 @@ public:
   {
     std::vector<ecs::Entity> entities;
     world.getEntitiesWithSignature(getSignature(), entities);
+
+    static const std::vector<SpriteFrame> babyGoblinFrames = [] {
+      std::vector<SpriteFrame> f;
+      f.push_back({100, 1, 26, 29}); // Sprite 0
+      f.push_back({136, 1, 26, 29}); // Sprite 1
+      f.push_back({65, 34, 25, 28}); // Sprite 2
+      f.push_back({100, 34, 25, 28}); // Sprite 3
+      f.push_back({137, 34, 25, 28}); // Sprite 4
+      f.push_back({172, 34, 25, 28}); // Sprite 5
+      f.push_back({32, 70, 31, 23}); // Sprite 6
+      f.push_back({65, 70, 31, 22}); // Sprite 7
+      f.push_back({166, 70, 31, 22}); // Sprite 8
+      f.push_back({199, 70, 31, 23}); // Sprite 9
+      f.push_back({1, 100, 23, 27}); // Sprite 10
+      f.push_back({34, 100, 26, 27}); // Sprite 11
+      f.push_back({202, 100, 26, 27}); // Sprite 12
+      f.push_back({238, 100, 23, 27}); // Sprite 13
+      f.push_back({1, 134, 23, 27}); // Sprite 14
+      f.push_back({34, 134, 26, 27}); // Sprite 15
+      f.push_back({202, 134, 26, 27}); // Sprite 16
+      f.push_back({238, 134, 23, 27}); // Sprite 17
+      f.push_back({32, 168, 31, 23}); // Sprite 18
+      f.push_back({65, 169, 31, 22}); // Sprite 19
+      f.push_back({166, 169, 31, 22}); // Sprite 20
+      f.push_back({199, 168, 31, 23}); // Sprite 21
+      f.push_back({65, 199, 25, 28}); // Sprite 22
+      f.push_back({100, 199, 25, 28}); // Sprite 23
+      f.push_back({137, 199, 25, 28}); // Sprite 24
+      f.push_back({172, 199, 25, 28}); // Sprite 25
+      f.push_back({100, 231, 26, 29}); // Sprite 26
+      f.push_back({136, 231, 26, 29}); // Sprite 27
+      return f;
+    }();
 
     for (auto entity : entities) {
       auto &transform = world.getComponent<ecs::Transform>(entity);
@@ -833,7 +870,7 @@ public:
                 ecs::Transform projTrans;
                 projTrans.x = transform.x;
                 projTrans.y = transform.y + 40.0F;
-                projTrans.scale = 1.0F;
+                projTrans.scale = 0.75F; // reduced for smaller visual projectile
                 world.addComponent(proj, projTrans);
 
                 // Utilisation du sprite PROJECTILE (SHOOT) au départ
@@ -852,8 +889,8 @@ public:
                 projSprite.loop = true;
                 world.addComponent(proj, projSprite);
 
-                // Vélocité vers le joueur
-                constexpr float PROJ_SPEED = 250.0F;
+                // Vélocité vers le joueur (slightly faster)
+                constexpr float PROJ_SPEED = 300.0F;
                 ecs::Velocity projVel;
                 projVel.dx = shootDirX * PROJ_SPEED;
                 projVel.dy = shootDirY * PROJ_SPEED;
@@ -872,8 +909,8 @@ public:
 
                 // Collider (Pour faire des dégâts au joueur ET être touché)
                 ecs::Collider projCol;
-                projCol.width = 33.0F;
-                projCol.height = 31.0F;
+                projCol.width = 33.0F * projTrans.scale; // match visual scale
+                projCol.height = 31.0F * projTrans.scale; // match visual scale
                 projCol.shape = ecs::Collider::Shape::CIRCLE;
                 world.addComponent(proj, projCol);
 
@@ -913,7 +950,7 @@ public:
                 ecs::Transform projTrans;
                 projTrans.x = transform.x;
                 projTrans.y = transform.y + 28.0F; // légèrement différent
-                projTrans.scale = 1.0F;
+                projTrans.scale = 0.65F; // smaller than parent projectiles
                 world.addComponent(proj, projTrans);
 
                 ecs::Sprite projSprite;
@@ -929,8 +966,8 @@ public:
                 projSprite.loop = true;
                 world.addComponent(proj, projSprite);
 
-                // Vitesse et résistance moindres
-                constexpr float PROJ_SPEED_CHILD = 200.0F;
+                // Vitesse et résistance moindres (slightly faster than before)
+                constexpr float PROJ_SPEED_CHILD = 240.0F;
                 ecs::Velocity projVel;
                 projVel.dx = shootDirX * PROJ_SPEED_CHILD;
                 projVel.dy = shootDirY * PROJ_SPEED_CHILD;
@@ -948,8 +985,8 @@ public:
                 world.addComponent(proj, projHp);
 
                 ecs::Collider projCol;
-                projCol.width = 28.0F;
-                projCol.height = 28.0F;
+                projCol.width = 28.0F * projTrans.scale;
+                projCol.height = 28.0F * projTrans.scale;
                 projCol.shape = ecs::Collider::Shape::CIRCLE;
                 world.addComponent(proj, projCol);
 
@@ -964,7 +1001,214 @@ public:
             }
           }
         }
-      } else if (pattern.patternType == "boss_goblins") {
+      } else if (pattern.patternType == "boss_evangelic_pattern") {
+        bool isProjectile = world.hasComponent<ecs::Owner>(entity);
+        std::vector<ecs::Entity> players;
+        ecs::ComponentSignature playerSig;
+        playerSig.set(ecs::getComponentId<ecs::PlayerId>());
+        world.getEntitiesWithSignature(playerSig, players);
+
+        if (isProjectile) {
+          // Structure pour gérer l'état du projectile boomerang
+          struct BoomerangState {
+            float spawnX = 0.0F;
+            float spawnY = 0.0F;
+            float timer = 0.0F;
+            bool returning = false;
+            bool hasReachedSpawn = false;
+          };
+          static std::unordered_map<ecs::Entity, BoomerangState> s_boomerangStates;
+          auto &bState = s_boomerangStates[entity];
+
+          constexpr float PROJ_SPEED = 250.0F;
+          constexpr float BOOMERANG_TIMER = 7.0F;
+
+          // Initialiser la position de spawn au premier frame
+          if (bState.timer == 0.0F && bState.spawnX == 0.0F && bState.spawnY == 0.0F) {
+            bState.spawnX = transform.x;
+            bState.spawnY = transform.y;
+          }
+
+          // Incrémenter le timer
+          bState.timer += deltaTime;
+
+          // Phase 1 : Aller vers le joueur (0-7 secondes)
+          if (!bState.returning && bState.timer < BOOMERANG_TIMER) {
+            if (!players.empty()) {
+              auto &playerPos = world.getComponent<ecs::Transform>(players[0]);
+
+              float dx = playerPos.x - transform.x;
+              float dy = playerPos.y - transform.y;
+              float dist = std::sqrt(dx * dx + dy * dy);
+
+              if (dist > 0.0F) {
+                velocity.dx = (dx / dist) * PROJ_SPEED;
+                velocity.dy = (dy / dist) * PROJ_SPEED;
+                float angleRad = std::atan2(velocity.dy, velocity.dx);
+                transform.rotation = angleRad * (180.0F / 3.14159F);
+              }
+            } else {
+              if (velocity.dx == 0 && velocity.dy == 0) {
+                velocity.dx = -PROJ_SPEED;
+              }
+            }
+          }
+          // Phase 2 : Retourner au point de spawn (après 7 secondes)
+          else if (bState.timer >= BOOMERANG_TIMER && !bState.hasReachedSpawn) {
+            bState.returning = true;
+
+            float dx = bState.spawnX - transform.x;
+            float dy = bState.spawnY - transform.y;
+            float dist = std::sqrt(dx * dx + dy * dy);
+
+            // Si on est arrivé au point de spawn (à 20 pixels près)
+            if (dist < 20.0F) {
+              bState.hasReachedSpawn = true;
+              bState.timer = 0.0F; // Reset le timer pour repartir
+            } else if (dist > 0.0F) {
+              velocity.dx = (dx / dist) * PROJ_SPEED;
+              velocity.dy = (dy / dist) * PROJ_SPEED;
+              float angleRad = std::atan2(velocity.dy, velocity.dx);
+              transform.rotation = angleRad * (180.0F / 3.14159F);
+            }
+          }
+          // Phase 3 : Repartir vers le joueur après être revenu au spawn
+          else if (bState.hasReachedSpawn) {
+            if (!players.empty()) {
+              auto &playerPos = world.getComponent<ecs::Transform>(players[0]);
+
+              float dx = playerPos.x - transform.x;
+              float dy = playerPos.y - transform.y;
+              float dist = std::sqrt(dx * dx + dy * dy);
+
+              if (dist > 0.0F) {
+                velocity.dx = (dx / dist) * PROJ_SPEED;
+                velocity.dy = (dy / dist) * PROJ_SPEED;
+                float angleRad = std::atan2(velocity.dy, velocity.dx);
+                transform.rotation = angleRad * (180.0F / 3.14159F);
+              }
+            }
+          }
+
+          // Détruire si vraiment trop loin (sécurité)
+          if (transform.x < -400.0F || transform.x > 2320.0F || transform.y < -400.0F || transform.y > 1480.0F) {
+            world.destroyEntity(entity);
+            s_boomerangStates.erase(entity);
+          }
+        } else {
+          // CODE DU BOSS
+          constexpr float PREFERRED_X = 1400.0F;
+          constexpr float PREFERRED_Y = 540.0F;
+          constexpr float X_SMOOTH = 3.0F;
+          constexpr float HOVER_AMPL = 120.0F;
+          constexpr float HOVER_FREQ = 1.2F;
+          constexpr float EDGE_SPAWN_INTERVAL = 2.0F;
+          constexpr float EDGE_MARGIN = 24.0F;
+          constexpr int MAX_PROJECTILES = 5;
+
+          float targetDx = (PREFERRED_X - transform.x) * X_SMOOTH;
+          velocity.dx += (targetDx - velocity.dx) * std::min(1.0F, deltaTime * 4.0F);
+
+          pattern.phase += deltaTime * HOVER_FREQ;
+          float hoverTargetY = PREFERRED_Y + std::sin(pattern.phase) * HOVER_AMPL;
+          float desiredDy = (hoverTargetY - transform.y) * 2.0F;
+          velocity.dy += (desiredDy - velocity.dy) * (0.5F * deltaTime);
+
+          pattern.amplitude += deltaTime;
+
+          if (pattern.amplitude >= EDGE_SPAWN_INTERVAL) {
+            pattern.amplitude = 0.0F;
+
+            // Compter les projectiles existants du boss
+            std::vector<ecs::Entity> allEntities;
+            ecs::ComponentSignature projSig;
+            projSig.set(ecs::getComponentId<ecs::Owner>());
+            projSig.set(ecs::getComponentId<ecs::Pattern>());
+            world.getEntitiesWithSignature(projSig, allEntities);
+
+            int currentProjectiles = 0;
+            for (auto e : allEntities) {
+              if (world.hasComponent<ecs::Owner>(e)) {
+                auto &owner = world.getComponent<ecs::Owner>(e);
+                if (owner.ownerId == entity) {
+                  currentProjectiles++;
+                }
+              }
+            }
+
+            // Ne spawn que si on n'a pas atteint le maximum
+            if (!players.empty() && currentProjectiles < MAX_PROJECTILES) {
+              auto &targetPos = world.getComponent<ecs::Transform>(players[0]);
+
+              // Spawn seulement 2 projectiles par cycle (un en haut, un en bas)
+              int toSpawn = std::min(2, MAX_PROJECTILES - currentProjectiles);
+
+              for (int side = 0; side < toSpawn; ++side) {
+                ecs::Entity proj = world.createEntity();
+
+                ecs::Transform projTrans;
+                projTrans.x = transform.x;
+                projTrans.y = (side == 0) ? EDGE_MARGIN : (1080.0F - EDGE_MARGIN);
+                projTrans.rotation = 0.0F;
+                projTrans.scale = 3.0F;
+                world.addComponent(proj, projTrans);
+
+                float dx = targetPos.x - projTrans.x;
+                float dy = targetPos.y - projTrans.y;
+                float dist = std::sqrt(dx * dx + dy * dy);
+                float dirX = -1.0F;
+                float dirY = 0.0F;
+
+                if (dist > 0.0F) {
+                  dirX = dx / dist;
+                  dirY = dy / dist;
+                }
+
+                constexpr float INITIAL_SPEED = 250.0F;
+                ecs::Velocity projVel;
+                projVel.dx = dirX * INITIAL_SPEED;
+                projVel.dy = dirY * INITIAL_SPEED;
+                world.addComponent(proj, projVel);
+
+                ecs::Pattern projPattern;
+                projPattern.patternType = "boss_evangelic_pattern";
+                world.addComponent(proj, projPattern);
+
+                ecs::Sprite projSprite;
+                projSprite.spriteId = ecs::SpriteId::BOSS_EVANGELIC_SHOOT;
+                projSprite.width = 32;
+                projSprite.height = 30;
+                projSprite.animated = true;
+                projSprite.frameCount = 6;
+                projSprite.currentFrame = 0;
+                projSprite.startFrame = 0;
+                projSprite.endFrame = 5;
+                projSprite.frameTime = 0.08F;
+                projSprite.loop = true;
+                world.addComponent(proj, projSprite);
+
+                ecs::Collider projCol;
+                projCol.width = 32.0F * projTrans.scale;
+                projCol.height = 30.0F * projTrans.scale;
+                projCol.shape = ecs::Collider::Shape::CIRCLE;
+                world.addComponent(proj, projCol);
+
+                ecs::Health projHp;
+                projHp.maxHp = 12;
+                projHp.hp = 12;
+                world.addComponent(proj, projHp);
+
+                ecs::Owner owner;
+                owner.ownerId = entity;
+                world.addComponent(proj, owner);
+
+                ecs::Networked net;
+                net.networkId = proj;
+                world.addComponent(proj, net);
+              }
+            }
+          }
+        }
       } else {
         // Default or "none" pattern: keep velocity as configured
         // velocity.dx and velocity.dy are already set from config

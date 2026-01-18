@@ -349,17 +349,17 @@
         "height": 100.0,
         "width": 100.0
       },
-      "description": "BOSS goblins",
+      "description": "BOSS evangelic",
       "health": {
         "hp": 40,
         "maxHp": 40
       },
-      "id": "boss_goblins",
-      "name": "boss_goblins",
+      "id": "boss_evangelic",
+      "name": "boss_evangelic",
       "pattern": {
         "amplitude": 0.0,
         "frequency": 0.0,
-        "type": "boss_goblins_pattern"
+        "type": "boss_evangelic_pattern"
       },
       "spawn": {
         "groupSizeMax": 1,
@@ -369,15 +369,15 @@
       },
       "sprite": {
         "animated": true,
-        "endFrame": 4,
-        "frameCount": 5,
+        "endFrame": 3,
+        "frameCount": 4,
         "frameTime": 0.3,
-        "height": 67,
+        "height": 74,
         "loop": true,
         "reverseAnimation": false,
-        "spriteId": 49,
+        "spriteId": 69,
         "startFrame": 0,
-        "width": 67
+        "width": 65
       },
       "transform": {
         "scale": 6.0

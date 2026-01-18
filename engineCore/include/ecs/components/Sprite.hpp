@@ -142,7 +142,6 @@ constexpr std::uint32_t BOSS_DOBKERATOP_SHOOT = 45;
 constexpr std::uint32_t BOSS_BROCOLIS = 46;
 constexpr std::uint32_t BOSS_BROCOLIS_SHOOT = 47;
 constexpr std::uint32_t BOSS_BROCOLIS_ECLOSION = 48;
-constexpr std::uint32_t BOSS_GOBLINS = 49;
 constexpr std::uint32_t BUBBLE_RUBAN_BACK1 = 50;
 constexpr std::uint32_t BUBBLE_RUBAN_BACK2 = 51;
 constexpr std::uint32_t BUBBLE_RUBAN_BACK3 = 52;
@@ -158,8 +157,9 @@ constexpr std::uint32_t BUBBLE_RUBAN_FRONT4 = 61;
 constexpr std::uint32_t TRIPLE_PROJECTILE_RIGHT = 62;
 constexpr std::uint32_t TRIPLE_PROJECTILE_UP = 63;
 constexpr std::uint32_t TRIPLE_PROJECTILE_DOWN = 64;
-constexpr std::uint32_t BOSS_GOBLINS_BABY = 65;
-constexpr std::uint32_t DEATH_ANIM = 66; // previously collided with BOSS_GOBLINS_BABY, assign unique id
+constexpr std::uint32_t DEATH_ANIM = 66;
+constexpr std::uint32_t BOSS_EVANGELIC_SHOOT = 68;
+constexpr std::uint32_t BOSS_EVANGELIC = 69;
 } // namespace SpriteId
 
 } // namespace ecs
