@@ -15,6 +15,7 @@
 #include "World.hpp"
 
 // Components
+#include "components/Attachment.hpp"
 #include "components/Attraction.hpp"
 #include "components/Collider.hpp"
 #include "components/Follower.hpp"
@@ -30,6 +31,7 @@
 #include "components/Velocity.hpp"
 
 // Core systems
+#include "systems/AttachmentSystem.hpp"
 #include "systems/MovementSystem.hpp"
 // IWYU pragma: end_exports
 

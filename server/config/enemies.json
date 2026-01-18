@@ -400,8 +400,8 @@
       "id": "boss_green_mothership",
       "name": "boss_green_mothership",
       "pattern": {
-        "amplitude": 0.0,
-        "frequency": 0.0,
+        "amplitude": 200.0,
+        "frequency": 1.0,
         "type": "boss_green_mothership_pattern"
       },
       "spawn": {
@@ -427,6 +427,92 @@
       },
       "velocity": {
         "dx": -200.0,
+        "dy": 0.0
+      }
+    },
+    {
+      "collider": {
+        "height": 28.0,
+        "width": 34.0
+      },
+      "description": "Turret attached to green mothership",
+      "health": {
+        "hp": 20,
+        "maxHp": 20
+      },
+      "id": "boss_green_mothership_turret",
+      "name": "boss_green_mothership_turret",
+      "pattern": {
+        "amplitude": 0.0,
+        "frequency": 0.0,
+        "type": "none"
+      },
+      "spawn": {
+        "groupSizeMax": 1,
+        "groupSizeMin": 1,
+        "spawnDelay": 0.0,
+        "spawnInterval": 0.0
+      },
+      "sprite": {
+        "animated": true,
+        "endFrame": 8,
+        "frameCount": 9,
+        "frameTime": 0.1,
+        "height": 28,
+        "loop": false,
+        "reverseAnimation": false,
+        "spriteId": 70,
+        "startFrame": 0,
+        "width": 34
+      },
+      "transform": {
+        "scale": 1.0
+      },
+      "velocity": {
+        "dx": 0.0,
+        "dy": 0.0
+      }
+    },
+    {
+      "collider": {
+        "height": 16.0,
+        "width": 16.0
+      },
+      "description": "Projectile shot by green mothership turret",
+      "health": {
+        "hp": 1,
+        "maxHp": 1
+      },
+      "id": "boss_green_mothership_turret_shot",
+      "name": "boss_green_mothership_turret_shot",
+      "pattern": {
+        "amplitude": 0.0,
+        "frequency": 0.0,
+        "type": "none"
+      },
+      "spawn": {
+        "groupSizeMax": 1,
+        "groupSizeMin": 1,
+        "spawnDelay": 0.0,
+        "spawnInterval": 0.0
+      },
+      "sprite": {
+        "animated": false,
+        "endFrame": 0,
+        "frameCount": 1,
+        "frameTime": 0.0,
+        "height": 16,
+        "loop": false,
+        "reverseAnimation": false,
+        "spriteId": 71,
+        "startFrame": 0,
+        "width": 16
+      },
+      "transform": {
+        "scale": 1.0
+      },
+      "velocity": {
+        "dx": 0.0,
         "dy": 0.0
       }
     }

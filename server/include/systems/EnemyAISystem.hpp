@@ -8,6 +8,7 @@
 #ifndef SERVER_ENEMY_AI_SYSTEM_HPP_
 #define SERVER_ENEMY_AI_SYSTEM_HPP_
 
+#include <cmath>
 #include "../../../engineCore/include/ecs/Entity.hpp"
 #include "../../../engineCore/include/ecs/ISystem.hpp"
 #include "../../../engineCore/include/ecs/World.hpp"
@@ -388,7 +389,6 @@ public:
 
         constexpr float SCREEN_TOP_BOUNDARY = 0.0F;
         constexpr float SCREEN_BOTTOM_BOUNDARY = 1080.0F;
-        constexpr float SCREEN_LEFT_BOUNDARY = 0.0F;
         constexpr float SCREEN_RIGHT_BOUNDARY = 1920.0F;
         constexpr float DEFAULT_ENTRY_MARGIN = 400.0F; // fallback if sprite info missing
 
@@ -965,117 +965,218 @@ public:
           }
         }
       } else if (pattern.patternType == "boss_green_mothership_pattern") {
-        // Green Mothership Boss Logic
-        // This boss moves in a circular pattern around the screen and shoots homing projectiles
+        // Green Mothership Boss Logic - Simple back and forth horizontal movement
 
-        struct MothershipState {
-          bool hasEntered = false;
-          float orbitAngle = 0.0F;
-          float shootTimer = 0.0F;
-        };
-        static std::unordered_map<ecs::Entity, MothershipState> s_mothershipStates;
-        auto &state = s_mothershipStates[entity];
-
-        constexpr float CENTER_X = 960.0F;
-        constexpr float CENTER_Y = 300.0F;
-        constexpr float ORBIT_RADIUS = 300.0F;
-        constexpr float ORBIT_SPEED = 1.0F; // radians per second
-        constexpr float ENTER_SPEED = 200.0F;
-        constexpr float SHOOT_INTERVAL = 3.0F;
-
-        if (!state.hasEntered) {
-          // Enter phase: move to orbit center
-          float dx = CENTER_X - transform.x;
-          float dy = CENTER_Y - transform.y;
-          float dist = std::sqrt(dx * dx + dy * dy);
-
-          if (dist < 10.0F) {
-            state.hasEntered = true;
-            velocity.dx = 0.0F;
-            velocity.dy = 0.0F;
-          } else {
-            velocity.dx = (dx / dist) * ENTER_SPEED;
-            velocity.dy = (dy / dist) * ENTER_SPEED;
-          }
-        } else {
-          // Orbit phase
-          state.orbitAngle += ORBIT_SPEED * deltaTime;
-          transform.x = CENTER_X + std::cos(state.orbitAngle) * ORBIT_RADIUS;
-          transform.y = CENTER_Y + std::sin(state.orbitAngle) * ORBIT_RADIUS;
-
-          // Shooting
-          state.shootTimer += deltaTime;
-          if (state.shootTimer >= SHOOT_INTERVAL) {
-            state.shootTimer = 0.0F;
-
-            // Find player to shoot at
-            std::vector<ecs::Entity> players;
-            ecs::ComponentSignature playerSig;
-            playerSig.set(ecs::getComponentId<ecs::PlayerId>());
-            world.getEntitiesWithSignature(playerSig, players);
-
-            if (!players.empty()) {
-              auto &playerPos = world.getComponent<ecs::Transform>(players[0]);
-
-              // Create homing projectile
-              ecs::Entity proj = world.createEntity();
-
-              ecs::Transform projTrans;
-              projTrans.x = transform.x;
-              projTrans.y = transform.y;
-              projTrans.scale = 1.0F;
-              world.addComponent(proj, projTrans);
-
-              ecs::Sprite projSprite;
-              projSprite.spriteId = ecs::SpriteId::BOSS_GREEN_MOTHERSHIP_SHOOT;
-              projSprite.width = 20;
-              projSprite.height = 20;
-              projSprite.animated = true;
-              projSprite.frameCount = 4;
-              projSprite.startFrame = 0;
-              projSprite.endFrame = 3;
-              projSprite.frameTime = 0.1F;
-              projSprite.loop = true;
-              world.addComponent(proj, projSprite);
-
-              // Calculate direction to player
-              float dx = playerPos.x - transform.x;
-              float dy = playerPos.y - transform.y;
-              float dist = std::sqrt(dx * dx + dy * dy);
-              if (dist > 0) {
-                dx /= dist;
-                dy /= dist;
-              }
-
-              ecs::Velocity projVel;
-              projVel.dx = dx * 300.0F; // projectile speed
-              projVel.dy = dy * 300.0F;
-              world.addComponent(proj, projVel);
-
-              ecs::Health projHp;
-              projHp.maxHp = 5;
-              projHp.hp = 5;
-              world.addComponent(proj, projHp);
-
-              ecs::Collider projCol;
-              projCol.width = 20.0F;
-              projCol.height = 20.0F;
-              world.addComponent(proj, projCol);
-
-              ecs::Owner owner;
-              owner.ownerId = entity;
-              world.addComponent(proj, owner);
-
-              ecs::Networked net;
-              net.networkId = proj;
-              world.addComponent(proj, net);
-            }
-          }
+        // Use static map to store center position for each mothership
+        static std::unordered_map<ecs::Entity, float> s_mothershipCenters;
+        auto it = s_mothershipCenters.find(entity);
+        if (it == s_mothershipCenters.end()) {
+          // First time seeing this mothership, store its initial X position as center
+          s_mothershipCenters[entity] = transform.x;
+          it = s_mothershipCenters.find(entity);
         }
+        float centerX = it->second;
+
+        // Accumulate time in pattern.phase
+        pattern.phase += deltaTime * pattern.frequency;
+
+        // Directly set position using sine wave (like sine_wave pattern does for Y)
+        transform.x = centerX + pattern.amplitude * std::sin(pattern.phase);
+
+        // Set velocity to 0 since we're directly setting position
+        velocity.dx = 0.0F;
+        velocity.dy = 0.0F;
       } else if (pattern.patternType == "boss_goblins") {
       } else {
         // Default or "none" pattern: keep velocity as configured
         // velocity.dx and velocity.dy are already set from config
+      }
+
+      // Handle turret aiming towards player
+      if (world.hasComponent<ecs::Sprite>(entity)) {
+        auto &sprite = world.getComponent<ecs::Sprite>(entity);
+        if (sprite.spriteId == ecs::SpriteId::BOSS_GREEN_MOTHERSHIP_TURRET) {
+          // Turret aiming cooldown - can only change direction every 0.25 seconds
+          static std::unordered_map<ecs::Entity, float> s_turretCooldownTimer;
+          auto timerIt = s_turretCooldownTimer.find(entity);
+          if (timerIt == s_turretCooldownTimer.end()) {
+            s_turretCooldownTimer[entity] = 0.0F;
+            timerIt = s_turretCooldownTimer.find(entity);
+          }
+          
+          // Update cooldown timer
+          timerIt->second += deltaTime;
+          
+          // Check if cooldown has passed (0.25 seconds)
+          if (timerIt->second >= 0.5F) {
+            // Find player position
+            std::vector<ecs::Entity> allEntities;
+            world.getEntitiesWithSignature(ecs::ComponentSignature(), allEntities);
+            
+            ecs::Entity playerEntity = 0;
+            for (auto ent : allEntities) {
+              if (world.hasComponent<ecs::PlayerId>(ent)) {
+                playerEntity = ent;
+                break;
+              }
+            }
+            
+            if (playerEntity != 0 && world.hasComponent<ecs::Transform>(playerEntity)) {
+              const auto &playerTransform = world.getComponent<ecs::Transform>(playerEntity);
+              
+              // Calculate angle from turret to player
+              float dx = playerTransform.x - transform.x;
+              float dy = playerTransform.y - transform.y;
+              float angle = std::atan2(dy, dx) * 180.0F / 3.14159265F; // Convert to degrees
+              
+              // Normalize angle to 0-180 range (left to right)
+              // atan2 gives -180 to 180, we want 0 to 180
+              if (angle < 0) angle += 360.0F;
+              if (angle > 180.0F) angle = 360.0F - angle; // Mirror angles > 180 to < 180
+              
+              // Invert the angle mapping so turrets aim correctly
+              // Player on right (0°) should show frame 8 (right aiming)
+              // Player on left (180°) should show frame 0 (left aiming)
+              angle = 180.0F - angle;
+              
+              // Map angle (0-180) to frame (0-8) with hysteresis to prevent rapid switching
+              // Each frame covers 22.5 degrees (180/8), but with hysteresis zones
+              const float degreesPerFrame = 180.0F / 8.0F; // 22.5 degrees per frame
+              const float hysteresis = degreesPerFrame * 0.3F; // 30% hysteresis
+              
+              // Get current frame for hysteresis
+              int currentFrame = sprite.currentFrame;
+              
+              // Calculate target frame
+              int targetFrame = static_cast<int>((angle / 180.0F) * 8.0F);
+              if (targetFrame > 8) targetFrame = 8;
+              if (targetFrame < 0) targetFrame = 0;
+              
+              // Apply hysteresis - only change frame if we've moved significantly
+              bool shouldChange = false;
+              if (targetFrame > currentFrame) {
+                // Moving to higher frame number
+                float threshold = (currentFrame + 0.5F) * degreesPerFrame + hysteresis;
+                if (angle >= threshold) {
+                  shouldChange = true;
+                }
+              } else if (targetFrame < currentFrame) {
+                // Moving to lower frame number
+                float threshold = (currentFrame - 0.5F) * degreesPerFrame - hysteresis;
+                if (angle <= threshold) {
+                  shouldChange = true;
+                }
+              }
+              
+              // Apply the frame change and reset cooldown timer
+              if (shouldChange) {
+                sprite.currentFrame = targetFrame;
+                timerIt->second = 0.0F; // Reset cooldown timer
+              }
+            }
+          }
+
+          // Turret shooting logic - shoot every 2 seconds
+          static std::unordered_map<ecs::Entity, float> s_turretShootTimer;
+          auto shootTimerIt = s_turretShootTimer.find(entity);
+          if (shootTimerIt == s_turretShootTimer.end()) {
+            s_turretShootTimer[entity] = 0.0F;
+            shootTimerIt = s_turretShootTimer.find(entity);
+          }
+          
+          // Update shooting timer
+          shootTimerIt->second += deltaTime;
+          
+          // Check if shooting cooldown has passed (2 seconds)
+          if (shootTimerIt->second >= 2.0F) {
+            // Find player position
+            std::vector<ecs::Entity> allEntities;
+            world.getEntitiesWithSignature(ecs::ComponentSignature(), allEntities);
+            
+            ecs::Entity playerEntity = 0;
+            for (auto ent : allEntities) {
+              if (world.hasComponent<ecs::PlayerId>(ent)) {
+                playerEntity = ent;
+                break;
+              }
+            }
+            
+            if (playerEntity != 0 && world.hasComponent<ecs::Transform>(playerEntity)) {
+              const auto &playerTransform = world.getComponent<ecs::Transform>(playerEntity);
+              
+              // Calculate direction to player
+              float dx = playerTransform.x - transform.x;
+              float dy = playerTransform.y - transform.y;
+              float distance = std::sqrt(dx * dx + dy * dy);
+              
+              if (distance > 0.0F) {
+                // Normalize direction
+                dx /= distance;
+                dy /= distance;
+                
+                // Set projectile speed (adjust as needed)
+                const float PROJECTILE_SPEED = 300.0F;
+                
+                // Spawn turret shot
+                ecs::Entity shot = world.createEntity();
+                
+                // Add components for the shot
+                ecs::Transform shotTransform;
+                shotTransform.x = transform.x + 17.0F; // Offset from turret center
+                shotTransform.y = transform.y + 14.0F;
+                shotTransform.rotation = 0.0F;
+                shotTransform.scale = 1.0F;
+                world.addComponent(shot, shotTransform);
+                
+                ecs::Velocity shotVelocity;
+                shotVelocity.dx = dx * PROJECTILE_SPEED;
+                shotVelocity.dy = dy * PROJECTILE_SPEED;
+                world.addComponent(shot, shotVelocity);
+                
+                ecs::Sprite shotSprite;
+                shotSprite.spriteId = ecs::SpriteId::BOSS_GREEN_MOTHERSHIP_TURRET_SHOT;
+                shotSprite.currentFrame = 0;
+                shotSprite.startFrame = 0;
+                shotSprite.endFrame = 0;
+                shotSprite.frameCount = 1;
+                shotSprite.width = 16;
+                shotSprite.height = 16;
+                shotSprite.animated = false;
+                shotSprite.loop = false;
+                shotSprite.reverseAnimation = false;
+                shotSprite.frameTime = 0.0F;
+                shotSprite.animationTimer = 0.0F;
+                world.addComponent(shot, shotSprite);
+                
+                ecs::Collider shotCollider;
+                shotCollider.width = 16.0F;
+                shotCollider.height = 16.0F;
+                shotCollider.shape = ecs::Collider::Shape::BOX;
+                world.addComponent(shot, shotCollider);
+                
+                ecs::Health shotHealth;
+                shotHealth.hp = 1;
+                shotHealth.maxHp = 1;
+                world.addComponent(shot, shotHealth);
+                
+                ecs::Owner shotOwner;
+                shotOwner.ownerId = entity; // Mark turret as owner
+                world.addComponent(shot, shotOwner);
+                
+                ecs::Networked shotNetworked;
+                shotNetworked.networkId = shot;
+                world.addComponent(shot, shotNetworked);
+                
+                ecs::Lifetime shotLifetime;
+                shotLifetime.remaining = 10.0F; // Auto-destroy after 10 seconds
+                world.addComponent(shot, shotLifetime);
+                
+                // Reset shooting timer
+                shootTimerIt->second = 0.0F;
+              }
+            }
+          }
+        }
       }
 
       // Update rotation for yellow bee based on velocity direction

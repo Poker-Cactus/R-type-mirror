@@ -258,6 +258,10 @@ void PlayingState::render()
           frameWidth = 100;
           frameHeight = 50;
           break;
+        case ecs::SpriteId::BOSS_GREEN_MOTHERSHIP_TURRET:
+          frameWidth = 34;
+          frameHeight = 28;
+          break;
         case ecs::SpriteId::DRONE:
         case ecs::SpriteId::BUBBLE:
         case ecs::SpriteId::BUBBLE_TRIPLE:
@@ -407,6 +411,10 @@ void PlayingState::render()
                      sprite.spriteId == ecs::SpriteId::BOSS_GREEN_MOTHERSHIP_ECLOSION) {
             // Green mothership boss sprites: static image, no animation
             srcX = 0;
+            srcY = 0;
+          } else if (sprite.spriteId == ecs::SpriteId::BOSS_GREEN_MOTHERSHIP_TURRET) {
+            // Turret: animated with different orientations
+            srcX = sprite.currentFrame * frameWidth;
             srcY = 0;
           } else {
             // For Ruban and other sprites: use offsetX/offsetY/row if present
@@ -1559,6 +1567,19 @@ void PlayingState::loadSpriteTextures()
     }
   } catch (const std::exception &e) {
     std::cerr << "[PlayingState] ✗ Failed to load green-mothership eclosion texture: " << e.what() << '\n';
+  }
+
+  // BOSS_GREEN_MOTHERSHIP_TURRET = 70
+  try {
+    void *turret_tex = renderer->loadTexture(resolveAssetPath("client/assets/boss/green-mothership/touret.gif"));
+    if (turret_tex != nullptr) {
+      m_spriteTextures[ecs::SpriteId::BOSS_GREEN_MOTHERSHIP_TURRET] = turret_tex;
+      std::cout << "[PlayingState] ✓ Loaded green-mothership turret texture" << '\n';
+    } else {
+      std::cerr << "[PlayingState] ✗ Failed to load green-mothership turret texture (returned null)" << '\n';
+    }
+  } catch (const std::exception &e) {
+    std::cerr << "[PlayingState] ✗ Failed to load green-mothership turret texture: " << e.what() << '\n';
   }
 }
 

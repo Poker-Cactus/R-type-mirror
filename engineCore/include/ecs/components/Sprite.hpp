@@ -54,7 +54,8 @@ struct Sprite : public IComponent {
     json["height"] = height;
     json["animated"] = animated;
     json["frameCount"] = frameCount;
-    // currentFrame is NOT serialized - it's client-side animation state
+    // currentFrame is included for server-controlled sprites like turrets
+    json["currentFrame"] = currentFrame;
     json["startFrame"] = startFrame;
     json["endFrame"] = endFrame;
     json["loop"] = loop;
@@ -74,11 +75,10 @@ struct Sprite : public IComponent {
     sprite.height = json.value("height", 32u);
     sprite.animated = json.value("animated", false);
     sprite.frameCount = json.value("frameCount", 1u);
-    // currentFrame is NOT deserialized - client manages it locally
-    // If it's a new sprite, initialize currentFrame to startFrame
+    // currentFrame can be deserialized for server-controlled sprites
+    sprite.currentFrame = json.value("currentFrame", json.value("startFrame", 0u));
     sprite.startFrame = json.value("startFrame", 0u);
     sprite.endFrame = json.value("endFrame", 0u);
-    sprite.currentFrame = json.value("startFrame", 0u); // Initialize to startFrame
     sprite.loop = json.value("loop", true);
     sprite.frameTime = json.value("frameTime", 0.1f);
     sprite.reverseAnimation = json.value("reverseAnimation", false);
@@ -163,6 +163,8 @@ constexpr std::uint32_t DEATH_ANIM = 66; // previously collided with BOSS_GOBLIN
 constexpr std::uint32_t BOSS_GREEN_MOTHERSHIP = 67;
 constexpr std::uint32_t BOSS_GREEN_MOTHERSHIP_SHOOT = 68;
 constexpr std::uint32_t BOSS_GREEN_MOTHERSHIP_ECLOSION = 69;
+constexpr std::uint32_t BOSS_GREEN_MOTHERSHIP_TURRET = 70;
+constexpr std::uint32_t BOSS_GREEN_MOTHERSHIP_TURRET_SHOT = 71;
 } // namespace SpriteId
 
 } // namespace ecs

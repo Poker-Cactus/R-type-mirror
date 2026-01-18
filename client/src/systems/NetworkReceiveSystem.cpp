@@ -257,6 +257,9 @@ void ClientNetworkReceiveSystem::handleSnapshot(ecs::World &world, const nlohman
         // Existing sprite: update only non-animated fields to preserve client animation state
         auto &existingSprite = world.getComponent<ecs::Sprite>(entity);
 
+        // For turrets, allow server to control currentFrame for aiming
+        bool isTurret = (existingSprite.spriteId == ecs::SpriteId::BOSS_GREEN_MOTHERSHIP_TURRET);
+        
         // Preserve animation state (currentFrame and animationTimer are client-managed)
         uint32_t preservedCurrentFrame = existingSprite.currentFrame;
         float preservedAnimationTimer = existingSprite.animationTimer;
@@ -264,8 +267,10 @@ void ClientNetworkReceiveSystem::handleSnapshot(ecs::World &world, const nlohman
         // Update sprite from server
         existingSprite = sprite;
 
-        // Restore client animation state
-        existingSprite.currentFrame = preservedCurrentFrame;
+        // Restore client animation state, but allow server control for turrets
+        if (!isTurret) {
+          existingSprite.currentFrame = preservedCurrentFrame;
+        }
         existingSprite.animationTimer = preservedAnimationTimer;
       }
     }

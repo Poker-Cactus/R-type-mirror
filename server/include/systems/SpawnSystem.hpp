@@ -14,6 +14,7 @@
 #include "../../../engineCore/include/ecs/ISystem.hpp"
 #include "../../../engineCore/include/ecs/World.hpp"
 #include "../../../engineCore/include/ecs/components/Attraction.hpp"
+#include "../../../engineCore/include/ecs/components/Attachment.hpp"
 #include "../../../engineCore/include/ecs/components/Collider.hpp"
 #include "../../../engineCore/include/ecs/components/Follower.hpp"
 #include "../../../engineCore/include/ecs/components/GunOffset.hpp"
@@ -696,10 +697,94 @@ private:
     std::cout << "[SpawnSystem] Spawned enemy '" << enemyType << "' (spriteId=" << config->sprite.spriteId
               << ", pattern=" << config->pattern.type << ") at (" << posX << ", " << posY << ")" << std::endl;
 
+    // Special handling for boss with turrets
+    if (enemyType == "boss_green_mothership") {
+      spawnMothershipTurrets(world, enemy, posX, posY);
+    }
+
     // Networked component
     ecs::Networked net;
     net.networkId = enemy;
     world.addComponent(enemy, net);
+  }
+
+  void spawnMothershipTurrets(ecs::World &world, ecs::Entity mothership, float mothershipX, float mothershipY)
+  {
+    // Define turret positions relative to mothership center
+    // Assuming mothership is 100x50 pixels at scale 8.0 = 800x400 rendered size
+    std::vector<std::pair<float, float>> turretOffsets = {
+      {19.0f, 175.0f}, 
+      {75.0f, 158.0f},
+      {131.0f, 141.0f},
+    };
+
+    for (size_t i = 0; i < turretOffsets.size(); ++i) {
+      const auto &offset = turretOffsets[i];
+      
+      // Spawn turret using config
+      const EnemyConfig *turretConfig = m_enemyConfigManager->getConfig("boss_green_mothership_turret");
+      if (!turretConfig) {
+        std::cerr << "[SpawnSystem] ERROR: Turret config not found!" << std::endl;
+        continue;
+      }
+
+      ecs::Entity turret = world.createEntity();
+
+      // Pattern component
+      world.addComponent(turret, ecs::Pattern{turretConfig->pattern.type, turretConfig->pattern.amplitude, turretConfig->pattern.frequency});
+
+      // Transform component - position will be set by AttachmentSystem
+      ecs::Transform transform;
+      transform.x = mothershipX + offset.first;
+      transform.y = mothershipY + offset.second;
+      transform.rotation = 0.0F;
+      transform.scale = turretConfig->transform.scale;
+      world.addComponent(turret, transform);
+
+      // Velocity component
+      ecs::Velocity velocity;
+      velocity.dx = turretConfig->velocity.dx;
+      velocity.dy = turretConfig->velocity.dy;
+      world.addComponent(turret, velocity);
+
+      // Health component
+      ecs::Health health;
+      health.hp = turretConfig->health.hp;
+      health.maxHp = turretConfig->health.maxHp;
+      world.addComponent(turret, health);
+
+      // Collider component
+      world.addComponent(turret, ecs::Collider{turretConfig->collider.width, turretConfig->collider.height});
+
+      // Sprite component
+      ecs::Sprite sprite;
+      sprite.spriteId = turretConfig->sprite.spriteId;
+      sprite.width = turretConfig->sprite.width;
+      sprite.height = turretConfig->sprite.height;
+      sprite.animated = turretConfig->sprite.animated;
+      sprite.frameCount = turretConfig->sprite.frameCount;
+      sprite.startFrame = turretConfig->sprite.startFrame;
+      sprite.endFrame = turretConfig->sprite.endFrame;
+      sprite.currentFrame = turretConfig->sprite.startFrame;
+      sprite.frameTime = turretConfig->sprite.frameTime;
+      sprite.reverseAnimation = turretConfig->sprite.reverseAnimation;
+      world.addComponent(turret, sprite);
+
+      // Attachment component - links turret to mothership
+      ecs::Attachment attachment;
+      attachment.parentId = mothership;
+      attachment.offsetX = offset.first;
+      attachment.offsetY = offset.second;
+      world.addComponent(turret, attachment);
+
+      // Networked component
+      ecs::Networked net;
+      net.networkId = turret;
+      world.addComponent(turret, net);
+
+      std::cout << "[SpawnSystem] Spawned turret " << i + 1 << " for mothership at offset (" 
+                << offset.first << ", " << offset.second << ")" << std::endl;
+    }
   }
 
   static void handleSpawnEvent(ecs::World &world, const ecs::SpawnEntityEvent &event)
