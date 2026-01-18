@@ -17,7 +17,7 @@ namespace server
 
 /**
  * @brief System that handles collisions between entities and the map
- * 
+ *
  * The map is scaled to fill the game viewport height (1080px by default).
  * Collisions must be checked in the scaled coordinate space.
  */

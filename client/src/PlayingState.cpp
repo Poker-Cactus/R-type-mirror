@@ -22,10 +22,10 @@
 #include "../include/systems/NetworkSendSystem.hpp"
 #include "../interface/Geometry.hpp"
 #include "../interface/KeyCodes.hpp"
-#include <iostream>
-#include <unordered_set>
 #include <fstream>
+#include <iostream>
 #include <nlohmann/json.hpp>
+#include <unordered_set>
 
 PlayingState::PlayingState(std::shared_ptr<IRenderer> renderer, const std::shared_ptr<ecs::World> &world,
                            Settings &settings, std::shared_ptr<INetworkManager> networkManager,
@@ -58,9 +58,9 @@ bool PlayingState::init()
   m_scaleX = static_cast<float>(windowWidth) / REFERENCE_WIDTH;
   // Vertical scale is based on the game area height (top 11/12)
   m_scaleY = static_cast<float>(m_gameHeight) / REFERENCE_HEIGHT;
-  
-  std::cout << "[PlayingState] Window: " << windowWidth << "x" << windowHeight 
-            << ", Scale: " << m_scaleX << "x" << m_scaleY << '\n';
+
+  std::cout << "[PlayingState] Window: " << windowWidth << "x" << windowHeight << ", Scale: " << m_scaleX << "x"
+            << m_scaleY << '\n';
 
   settingsMenu = std::make_shared<SettingsMenu>(renderer);
 
@@ -72,55 +72,55 @@ bool PlayingState::init()
   }
 
   // Load level map texture
-    // Default to ruins_map.png but try to read first level from server/config/levels.json
-    std::string mapPath = "client/assets/ruins_map.png";
-    std::string collisionPath = "client/assets/collisions/ruins_map.png";
-    try {
-      std::ifstream cfg("server/config/levels.json");
-      if (cfg) {
-        nlohmann::json j;
-        cfg >> j;
-        if (j.contains("levels") && j["levels"].is_array() && !j["levels"].empty()) {
-          const auto &first = j["levels"][0];
-                if (first.contains("map")) {
-                  if (first["map"].is_string()) {
-                    mapPath = first["map"].get<std::string>();
-                  } else if (first["map"].is_object()) {
-                    const auto &m = first["map"];
-                    if (m.contains("path") && m["path"].is_string()) {
-                      mapPath = m["path"].get<std::string>();
-                    }
-                    if (m.contains("collision_map") && m["collision_map"].is_string()) {
-                      collisionPath = m["collision_map"].get<std::string>();
-                    }
-                    // Read optional speed parameter to control client map scroll
-                    if (m.contains("speed") && (m["speed"].is_number_float() || m["speed"].is_number())) {
-                      try {
-                        m_mapScrollSpeed = static_cast<float>(m["speed"].get<double>());
-                      } catch (...) {
-                        // ignore and keep default
-                      }
-                    }
-                  }
-                }
+  // Default to ruins_map.png but try to read first level from server/config/levels.json
+  std::string mapPath = "client/assets/ruins_map.png";
+  std::string collisionPath = "client/assets/collisions/ruins_map.png";
+  try {
+    std::ifstream cfg("server/config/levels.json");
+    if (cfg) {
+      nlohmann::json j;
+      cfg >> j;
+      if (j.contains("levels") && j["levels"].is_array() && !j["levels"].empty()) {
+        const auto &first = j["levels"][0];
+        if (first.contains("map")) {
+          if (first["map"].is_string()) {
+            mapPath = first["map"].get<std::string>();
+          } else if (first["map"].is_object()) {
+            const auto &m = first["map"];
+            if (m.contains("path") && m["path"].is_string()) {
+              mapPath = m["path"].get<std::string>();
+            }
+            if (m.contains("collision_map") && m["collision_map"].is_string()) {
+              collisionPath = m["collision_map"].get<std::string>();
+            }
+            // Read optional speed parameter to control client map scroll
+            if (m.contains("speed") && (m["speed"].is_number_float() || m["speed"].is_number())) {
+              try {
+                m_mapScrollSpeed = static_cast<float>(m["speed"].get<double>());
+              } catch (...) {
+                // ignore and keep default
+              }
+            }
+          }
         }
-      } else {
-        std::cerr << "PlayingState: Warning - Could not open server/config/levels.json, using default map" << std::endl;
       }
-    } catch (const std::exception &e) {
-      std::cerr << "PlayingState: Warning - Failed to parse levels.json: " << e.what() << std::endl;
-    }
-
-    m_mapTexture = renderer->loadTexture(mapPath);
-    if (m_mapTexture) {
-      renderer->getTextureSize(m_mapTexture, m_mapWidth, m_mapHeight);
-      std::cout << "PlayingState: Loaded map texture (" << m_mapWidth << "x" << m_mapHeight << ") from " << mapPath
-                << std::endl;
     } else {
-      std::cerr << "PlayingState: Warning - Failed to load map texture from " << mapPath << std::endl;
+      std::cerr << "PlayingState: Warning - Could not open server/config/levels.json, using default map" << std::endl;
     }
+  } catch (const std::exception &e) {
+    std::cerr << "PlayingState: Warning - Failed to parse levels.json: " << e.what() << std::endl;
+  }
 
-    // Map collision support removed from client; no TMX loading here
+  m_mapTexture = renderer->loadTexture(mapPath);
+  if (m_mapTexture) {
+    renderer->getTextureSize(m_mapTexture, m_mapWidth, m_mapHeight);
+    std::cout << "PlayingState: Loaded map texture (" << m_mapWidth << "x" << m_mapHeight << ") from " << mapPath
+              << std::endl;
+  } else {
+    std::cerr << "PlayingState: Warning - Failed to load map texture from " << mapPath << std::endl;
+  }
+
+  // Map collision support removed from client; no TMX loading here
 
   // Load sprite textures
   loadSpriteTextures();
@@ -197,7 +197,7 @@ void PlayingState::update(float delta_time)
 
   // Update map scrolling (scale based on game area height)
   if (m_mapTexture) {
-  m_mapOffsetX += m_mapScrollSpeed * delta_time;
+    m_mapOffsetX += m_mapScrollSpeed * delta_time;
 
     // Reset offset when it exceeds map width for seamless looping
     const float scale = static_cast<float>(m_gameHeight) / static_cast<float>(m_mapHeight);
@@ -598,7 +598,7 @@ void PlayingState::render()
               renderScale = it->second.currentScale;
             }
           }
-                    // Apply transform scale to sprite dimensions AND screen scaling
+          // Apply transform scale to sprite dimensions AND screen scaling
           int scaledWidth = static_cast<int>(sprite.width * transformComponent.scale * m_scaleX);
           int scaledHeight = static_cast<int>(sprite.height * transformComponent.scale * m_scaleY);
 
@@ -698,7 +698,8 @@ void PlayingState::render()
           int scaledWidth = static_cast<int>(sprite.width * transformComponent.scale * m_scaleX);
           int scaledHeight = static_cast<int>(sprite.height * transformComponent.scale * m_scaleY);
           renderer->drawTextureEx(textureIt->second, static_cast<int>(transformComponent.x * m_scaleX),
-                                  static_cast<int>(transformComponent.y * m_scaleY), scaledWidth, scaledHeight, 0.0, false, false);
+                                  static_cast<int>(transformComponent.y * m_scaleY), scaledWidth, scaledHeight, 0.0,
+                                  false, false);
         }
       }
     } else {
@@ -774,8 +775,8 @@ void PlayingState::render()
 
       int scaledWidth = static_cast<int>(sprite.width * transformComponent.scale * m_scaleX);
       int scaledHeight = static_cast<int>(sprite.height * transformComponent.scale * m_scaleY);
-      renderer->drawRect(static_cast<int>(transformComponent.x * m_scaleX), static_cast<int>(transformComponent.y * m_scaleY), scaledWidth,
-                         scaledHeight, color);
+      renderer->drawRect(static_cast<int>(transformComponent.x * m_scaleX),
+                         static_cast<int>(transformComponent.y * m_scaleY), scaledWidth, scaledHeight, color);
     }
   }
 

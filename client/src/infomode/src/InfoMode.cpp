@@ -11,8 +11,8 @@
 #include "../../../include/Settings.hpp"
 #include "../../../interface/KeyCodes.hpp"
 #include <fstream>
-#include <iostream>
 #include <iomanip>
+#include <iostream>
 #include <sstream>
 
 #ifdef __APPLE__
@@ -515,10 +515,10 @@ void InfoMode::renderHitboxes(const std::shared_ptr<ecs::World> &world, float en
   world->getEntitiesWithSignature(signature, entities);
 
   // Define colors for different entity types
-  const Color playerColor = {0, 255, 0, 200};      // Green for players
-  const Color enemyColor = {255, 0, 0, 200};       // Red for enemies
+  const Color playerColor = {0, 255, 0, 200}; // Green for players
+  const Color enemyColor = {255, 0, 0, 200}; // Red for enemies
   const Color projectileColor = {255, 255, 0, 200}; // Yellow for projectiles
-  const Color defaultColor = {0, 255, 255, 200};   // Cyan for others
+  const Color defaultColor = {0, 255, 255, 200}; // Cyan for others
 
   for (const auto &entity : entities) {
     const auto &transform = world->getComponent<ecs::Transform>(entity);
@@ -526,7 +526,7 @@ void InfoMode::renderHitboxes(const std::shared_ptr<ecs::World> &world, float en
 
     // Determine entity type and color
     Color hitboxColor = defaultColor;
-    
+
     if (world->hasComponent<ecs::PlayerId>(entity)) {
       hitboxColor = playerColor;
     } else if (world->hasComponent<ecs::Health>(entity)) {

@@ -11,8 +11,8 @@
 #include "../include/config/LevelConfig.hpp"
 #include "systems/AllySystem.hpp"
 #include "systems/ChargeSystem.hpp"
-#include "systems/SpawnSystem.hpp"
 #include "systems/InvulnerabilitySystem.hpp"
+#include "systems/SpawnSystem.hpp"
 #include <chrono>
 #include <cstdint>
 #include <memory>
@@ -241,7 +241,8 @@ void Game::spawnPlayer(std::uint32_t networkId)
   health.maxHp = startingLives;
   world->addComponent(player, health);
 
-  std::cout << "[Server] Spawning player with networkId " << networkId << " with " << startingLives << " LIVES" << std::endl;
+  std::cout << "[Server] Spawning player with networkId " << networkId << " with " << startingLives << " LIVES"
+            << std::endl;
 
   ecs::Input input;
   input.up = false;
@@ -415,8 +416,8 @@ void Game::initializeMap(const std::string &levelId)
     return;
   }
 
-  std::cout << "[Game] Initializing map for level " << levelId << " with path: " << map.path
-            << ", scale: " << map.scale << ", speed: " << map.speed << std::endl;
+  std::cout << "[Game] Initializing map for level " << levelId << " with path: " << map.path << ", scale: " << map.scale
+            << ", speed: " << map.speed << std::endl;
 
   // TODO: Add logic to load the map texture and integrate it into the rendering system
 }

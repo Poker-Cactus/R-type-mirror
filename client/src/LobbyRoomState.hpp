@@ -129,11 +129,11 @@ public:
 
   /**
    * @brief Network callback: lobby state update
-    * @param lobbyCode Current lobby code
-    * @param playerCount Number of players in lobby
-    * @param spectatorCount Number of spectators in lobby
+   * @param lobbyCode Current lobby code
+   * @param playerCount Number of players in lobby
+   * @param spectatorCount Number of spectators in lobby
    */
-    void onLobbyState(const std::string &lobbyCode, int playerCount, int spectatorCount);
+  void onLobbyState(const std::string &lobbyCode, int playerCount, int spectatorCount);
 
   /**
    * @brief Network callback: error occurred
@@ -195,5 +195,4 @@ private:
   // Temporary lobby-wide message display
   std::string m_tempMessage;
   float m_tempMessageTimer = 0.0f;
-
 };

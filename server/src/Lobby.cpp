@@ -10,9 +10,9 @@
 #include "../../network/include/INetworkManager.hpp"
 #include "../include/Game.hpp"
 #include "../include/ServerSystems.hpp"
-#include "systems/InvulnerabilitySystem.hpp"
 #include "../include/config/EnemyConfig.hpp"
 #include "WorldLobbyRegistry.hpp"
+#include "systems/InvulnerabilitySystem.hpp"
 #include <iostream>
 #include <nlohmann/json.hpp>
 
@@ -373,11 +373,12 @@ void Lobby::spawnPlayer(std::uint32_t clientId)
   health.maxHp = startingLives;
   m_world->addComponent(player, health);
 
-    std::cout << "[Lobby:" << m_code << "] Player " << clientId << " spawned with " << startingLives << " LIVES (Difficulty: "
-      << (m_difficulty == GameConfig::Difficulty::EASY
-        ? "EASY"
-        : (m_difficulty == GameConfig::Difficulty::MEDIUM ? "MEDIUM" : "EXPERT"))
-      << ")" << '\n';
+  std::cout << "[Lobby:" << m_code << "] Player " << clientId << " spawned with " << startingLives
+            << " LIVES (Difficulty: "
+            << (m_difficulty == GameConfig::Difficulty::EASY
+                  ? "EASY"
+                  : (m_difficulty == GameConfig::Difficulty::MEDIUM ? "MEDIUM" : "EXPERT"))
+            << ")" << '\n';
 
   ecs::Input input;
   input.up = false;
@@ -583,8 +584,8 @@ void Lobby::setGameMode(GameMode mode)
 {
   if (m_gameStarted) {
     std::cerr << "[Lobby:" << m_code << "] Cannot change game mode after game has started" << '\n';
-  m_world->registerSystem<server::InvulnerabilitySystem>();
-  // Include the InvulnerabilitySystem for handling invulnerability mechanics
+    m_world->registerSystem<server::InvulnerabilitySystem>();
+    // Include the InvulnerabilitySystem for handling invulnerability mechanics
   }
   m_gameMode = mode;
 }
@@ -695,7 +696,8 @@ void Lobby::endGameShowScores()
     sendJsonToClient(clientId, payload);
   }
 
-  std::cout << "[Lobby:" << m_code << "] Sent end-screen with scores to " << m_clients.size() << " clients" << std::endl;
+  std::cout << "[Lobby:" << m_code << "] Sent end-screen with scores to " << m_clients.size() << " clients"
+            << std::endl;
 }
 
 void Lobby::notifyEndScreenLeft(std::uint32_t clientId)
@@ -722,8 +724,8 @@ void Lobby::convertToPlayer(std::uint32_t clientId)
   // Remove from spectator set
   m_spectators.erase(clientId);
 
-  std::cout << "[Lobby:" << m_code << "] Client " << clientId << " converted to PLAYER ("
-            << getPlayerCount() << " players, " << (getClientCount() - getPlayerCount()) << " spectators)" << '\n';
+  std::cout << "[Lobby:" << m_code << "] Client " << clientId << " converted to PLAYER (" << getPlayerCount()
+            << " players, " << (getClientCount() - getPlayerCount()) << " spectators)" << '\n';
 
   // If the game has already started, spawn a player entity for them
   if (m_gameStarted) {
