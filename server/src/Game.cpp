@@ -33,7 +33,7 @@ Game::Game()
   world->registerSystem<server::InputMovementSystem>();
   world->registerSystem<server::EnemyAISystem>();
   world->registerSystem<server::AllySystem>();
-  // MapCollisionSystem disabled for now
+  // Map collision system removed — map collisions are no longer used
   world->registerSystem<ecs::MovementSystem>();
   world->registerSystem<server::CollisionSystem>();
 
@@ -391,6 +391,32 @@ const std::unordered_set<std::uint32_t> &Game::getLobbyClients() const
 LobbyManager &Game::getLobbyManager()
 {
   return m_lobbyManager;
+}
+
+void Game::startLevel(const std::string &levelId)
+{
+  initializeMap(levelId);
+  spawnSystem->startLevel(levelId);
+}
+
+void Game::initializeMap(const std::string &levelId)
+{
+  const server::LevelConfig *levelConfig = m_levelConfigManager->getConfig(levelId);
+  if (!levelConfig) {
+    std::cerr << "[Game] Failed to initialize map: Level ID " << levelId << " not found." << std::endl;
+    return;
+  }
+
+  const server::MapConfig &map = levelConfig->map;
+  if (map.path.empty()) {
+    std::cerr << "[Game] No map path specified for level " << levelId << std::endl;
+    return;
+  }
+
+  std::cout << "[Game] Initializing map for level " << levelId << " with path: " << map.path
+            << ", scale: " << map.scale << ", speed: " << map.speed << std::endl;
+
+  // TODO: Add logic to load the map texture and integrate it into the rendering system
 }
 
 // Map collision initialization disabled while collision feature is removed

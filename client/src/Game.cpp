@@ -189,6 +189,11 @@ bool Game::init()
           }
         }
 
+        // If the playing state already exists (re-entering after menu/death), reset transient visual state
+        if (this->playingState) {
+          this->playingState->resetForNewGame();
+        }
+
         this->currentState = GameState::PLAYING;
         // Send current viewport to server immediately after the game starts
         // so the server records the correct client viewport for the playing session.

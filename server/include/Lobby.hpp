@@ -223,7 +223,7 @@ public:
 
 private:
   void initializeSystems();
-  void initializeMapCollision(const std::string &levelId);
+  // Map collisions removed: no initialization required
   void spawnPlayer(std::uint32_t clientId);
   void spawnAlly();
   void destroyPlayerEntity(std::uint32_t clientId);
@@ -243,7 +243,7 @@ private:
   // Map client IDs to their player entities
   std::unordered_map<std::uint32_t, ecs::Entity> m_playerEntities;
   ecs::Entity m_allyEntity = 0;
-  ecs::Entity m_mapEntity = 0; // Entity holding map collision data
+  // Map collision entity removed
   // Pointer back to owning manager (not owning)
   class LobbyManager *m_manager = nullptr;
 

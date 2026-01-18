@@ -85,6 +85,8 @@ public:
   void removeClientFromLobby(std::uint32_t clientId);
   [[nodiscard]] const std::unordered_set<std::uint32_t> &getLobbyClients() const;
   [[nodiscard]] LobbyManager &getLobbyManager();
+  void initializeMap(const std::string &levelId); // Initialize map for a level
+  void startLevel(const std::string &levelId); // Start a level and initialize its map
 
   Difficulty currentDifficulty = Difficulty::MEDIUM;
 

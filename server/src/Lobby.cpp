@@ -309,7 +309,6 @@ void Lobby::initializeSystems()
       std::cout << "[Lobby:" << m_code << "] Infinite mode enabled" << std::endl;
     } else if (m_levelConfigManager) {
       spawnSystem->startLevel("level_1");
-      // initializeMapCollision("level_1"); // Disabled: collision maps are ignored for now
       std::cout << "[Lobby:" << m_code << "] Level config manager set, started level_1" << std::endl;
     } else if (m_enemyConfigManager) {
       // Fallback to multi-type spawning if no level config
@@ -746,4 +745,4 @@ AIDifficulty Lobby::getAIDifficulty() const
   return m_aiDifficulty;
 }
 
-// Map collision initialization disabled while collision feature is removed
+// Map collision initialization removed

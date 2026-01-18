@@ -101,6 +101,13 @@ public:
   void resetPlayerAnimation();
 
   /**
+   * @brief Reset transient state for a new game (map offsets, background, etc.)
+   *
+   * Called when starting a new game so visual state begins at origin.
+   */
+  void resetForNewGame();
+
+  /**
    * @brief Enable/disable spectator mode
    * @param enabled true to enable spectator mode
    */
@@ -122,6 +129,7 @@ private:
   int m_mapHeight = 0; ///< Map texture height
   float m_mapOffsetX = 0.0f; ///< Map horizontal scroll offset
   static constexpr float MAP_SCROLL_SPEED = 50.0f; ///< Map scroll speed (pixels/second)
+  float m_mapScrollSpeed = MAP_SCROLL_SPEED; ///< Configurable map scroll speed (from level config)
 
   // Reference resolution for coordinate normalization (same as server)
   static constexpr float REFERENCE_WIDTH = 1920.0F;

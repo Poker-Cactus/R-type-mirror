@@ -266,3 +266,10 @@ void ParallaxBackground::cleanup()
 
   layers.clear();
 }
+
+void ParallaxBackground::resetOffsets()
+{
+  for (auto &layer : layers) {
+    layer.offsetX = 0.0f;
+  }
+}

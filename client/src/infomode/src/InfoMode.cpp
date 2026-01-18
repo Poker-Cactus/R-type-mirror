@@ -545,8 +545,8 @@ void InfoMode::renderHitboxes(const std::shared_ptr<ecs::World> &world, float en
 
     m_renderer->drawRectOutline(x, y, w, h, hitboxColor);
   }
-
-  // Map overlay disabled
 }
+
+// Map collision rendering removed: no out-of-line method present.
 
 } // namespace rtype

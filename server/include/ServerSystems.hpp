@@ -18,7 +18,6 @@
 #include "systems/FollowerSystem.hpp"
 #include "systems/InputMovementSystem.hpp"
 #include "systems/LifetimeSystem.hpp"
-#include "systems/MapCollisionSystem.hpp"
 #include "systems/NetworkReceiveSystem.hpp"
 #include "systems/NetworkSendSystem.hpp"
 #include "systems/PowerupSystem.hpp"

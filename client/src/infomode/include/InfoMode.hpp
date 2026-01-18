@@ -14,7 +14,6 @@
 #include <chrono>
 #include <memory>
 #include <string>
-#include "../../../../engineCore/include/ecs/components/MapCollision.hpp"
 
 class Settings;
 
@@ -71,6 +70,8 @@ public:
    */
   void renderHitboxes(const std::shared_ptr<ecs::World> &world, float entityScaleX = 1.0f,
                        float entityScaleY = 1.0f);
+
+  // Map collision overlay removed; no API exposed
 
 private:
   /** @brief Fetch static system info once (OS, CPU name, cores, total RAM) */

@@ -69,8 +69,9 @@ bool PlayingState::init()
   }
 
   // Load level map texture
-    // Load level map texture. Default to ruins_map.png but try to read first level from server/config/levels.json
+    // Default to ruins_map.png but try to read first level from server/config/levels.json
     std::string mapPath = "client/assets/ruins_map.png";
+    std::string collisionPath = "client/assets/collisions/ruins_map.png";
     try {
       std::ifstream cfg("server/config/levels.json");
       if (cfg) {
@@ -78,9 +79,27 @@ bool PlayingState::init()
         cfg >> j;
         if (j.contains("levels") && j["levels"].is_array() && !j["levels"].empty()) {
           const auto &first = j["levels"][0];
-          if (first.contains("map") && first["map"].is_string()) {
-            mapPath = first["map"].get<std::string>();
-          }
+                if (first.contains("map")) {
+                  if (first["map"].is_string()) {
+                    mapPath = first["map"].get<std::string>();
+                  } else if (first["map"].is_object()) {
+                    const auto &m = first["map"];
+                    if (m.contains("path") && m["path"].is_string()) {
+                      mapPath = m["path"].get<std::string>();
+                    }
+                    if (m.contains("collision_map") && m["collision_map"].is_string()) {
+                      collisionPath = m["collision_map"].get<std::string>();
+                    }
+                    // Read optional speed parameter to control client map scroll
+                    if (m.contains("speed") && (m["speed"].is_number_float() || m["speed"].is_number())) {
+                      try {
+                        m_mapScrollSpeed = static_cast<float>(m["speed"].get<double>());
+                      } catch (...) {
+                        // ignore and keep default
+                      }
+                    }
+                  }
+                }
         }
       } else {
         std::cerr << "PlayingState: Warning - Could not open server/config/levels.json, using default map" << std::endl;
@@ -97,6 +116,8 @@ bool PlayingState::init()
     } else {
       std::cerr << "PlayingState: Warning - Failed to load map texture from " << mapPath << std::endl;
     }
+
+    // Map collision support removed from client; no TMX loading here
 
   // Load sprite textures
   loadSpriteTextures();
@@ -142,6 +163,17 @@ bool PlayingState::init()
   return true;
 }
 
+void PlayingState::resetForNewGame()
+{
+  // Reset map scroll offset so map starts at left origin for each new game
+  m_mapOffsetX = 0.0f;
+
+  // Reset background layer offsets if background exists
+  if (background) {
+    background->resetOffsets();
+  }
+}
+
 void PlayingState::update(float delta_time)
 {
   // Calculate FPS
@@ -162,7 +194,7 @@ void PlayingState::update(float delta_time)
 
   // Update map scrolling (scale based on game area height)
   if (m_mapTexture) {
-    m_mapOffsetX += MAP_SCROLL_SPEED * delta_time;
+  m_mapOffsetX += m_mapScrollSpeed * delta_time;
 
     // Reset offset when it exceeds map width for seamless looping
     const float scale = static_cast<float>(m_gameHeight) / static_cast<float>(m_mapHeight);
@@ -593,8 +625,9 @@ void PlayingState::render()
   // Render info overlay (hitboxes, panels) while still in game viewport
   if (m_infoMode) {
     m_infoMode->render();
-    // Compute map scale and offset used when drawing the map so collision overlay aligns
+    // Render hitboxes
     m_infoMode->renderHitboxes(world, m_scaleX, m_scaleY);
+    // Map collision overlay removed
   }
 
   // Reset viewport back to full window before drawing HUD
