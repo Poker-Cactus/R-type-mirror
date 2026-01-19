@@ -30,7 +30,7 @@ Unlike the original solo experience, our engine supports **Networked Multiplayer
 
 ![Gameplay Screenshot](images/moon.png)
 ![Gameplay Screenshot](images/menu.png)
-![Gameplay Screenshot](images/game.png)
+![Gameplay Screenshot](images/gameplay.png)
 
 ### Visual Elements
 
